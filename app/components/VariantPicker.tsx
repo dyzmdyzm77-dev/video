@@ -1,0 +1,115 @@
+"use client";
+
+// 상단 위치명("8층 사무실 A/B/C")을 누르면 뜨는 바텀시트.
+// A안·B안·C안 사이를 전환한다. 현재 보고 있는 안에는 체크 표시.
+type VariantKey = "a" | "b" | "c";
+
+const OPTIONS: { key: VariantKey; label: string; href: string }[] = [
+  { key: "a", label: "A안", href: "/a" },
+  { key: "b", label: "B안", href: "/b" },
+  { key: "c", label: "C안", href: "/c" },
+];
+
+export default function VariantPicker({
+  open,
+  current,
+  bottomOffset = 0,
+  onClose,
+}: {
+  open: boolean;
+  current: VariantKey;
+  bottomOffset?: number;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 z-40"
+      aria-hidden={!open}
+    >
+      {/* 배경 딤 */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-300 ease-out ${
+          open ? "pointer-events-auto" : ""
+        }`}
+        style={{ backgroundColor: "rgba(0,0,0,0.5)", opacity: open ? 1 : 0 }}
+        onClick={onClose}
+      />
+      {/* 시트 */}
+      <div
+        className={`absolute inset-x-0 flex max-h-[90%] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
+          open ? "pointer-events-auto" : ""
+        }`}
+        style={{
+          bottom: bottomOffset,
+          borderTopLeftRadius: "10px",
+          borderTopRightRadius: "10px",
+          transform: open
+            ? "translateY(0%)"
+            : `translateY(calc(100% + ${bottomOffset}px))`,
+        }}
+      >
+        {/* 헤더 */}
+        <div
+          className="flex items-center justify-between"
+          style={{ height: "74px", padding: "0 20px" }}
+        >
+          <h2 className="text-[20px] font-bold leading-none text-neutral-900">
+            화면안 선택
+          </h2>
+          <button
+            type="button"
+            aria-label="닫기"
+            onClick={onClose}
+            className="flex h-6 w-6 items-center justify-center"
+          >
+            <img src="/close.svg" alt="" className="h-6 w-6" />
+          </button>
+        </div>
+
+        {/* 옵션 목록 */}
+        <div className="flex flex-col" style={{ padding: "0 20px 24px" }}>
+          {OPTIONS.map((o) => {
+            const selected = o.key === current;
+            return (
+              <button
+                key={o.key}
+                type="button"
+                onClick={() => {
+                  if (selected) onClose();
+                  else window.location.assign(o.href);
+                }}
+                className="flex items-center justify-between border-b border-neutral-100 text-left"
+                style={{ height: "56px" }}
+              >
+                <span
+                  className="text-[16px] leading-none"
+                  style={{
+                    color: selected ? "#1D6CEB" : "#262626",
+                    fontWeight: selected ? 700 : 500,
+                  }}
+                >
+                  {o.label}
+                </span>
+                {selected && (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#1D6CEB"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M5 12.5l4.5 4.5L19 7" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
