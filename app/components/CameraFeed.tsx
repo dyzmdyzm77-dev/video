@@ -225,11 +225,17 @@ export function GridSelectionOverlay({
   currentPage = 0,
   totalPages = 2,
   onGallery,
+  mode,
+  onBack,
+  title,
 }: {
   visible: boolean;
   currentPage?: number;
   totalPages?: number;
   onGallery?: () => void;
+  mode?: "live" | "recording";
+  onBack?: () => void;
+  title?: string;
 }) {
   return (
     <div
@@ -254,6 +260,45 @@ export function GridSelectionOverlay({
             "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
         }}
       />
+
+      {/* 녹화 모드: 딤 좌측 상단에 뒤로가기 + 타이틀 */}
+      {mode === "recording" && (
+        <div
+          className="absolute flex items-center"
+          style={{
+            top: "12px",
+            left: "12px",
+            gap: "8px",
+            pointerEvents: visible ? "auto" : "none",
+          }}
+        >
+          <button
+            type="button"
+            aria-label="뒤로가기"
+            onClick={onBack}
+            className="flex h-8 w-8 items-center justify-center"
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
+          </button>
+          {title && (
+            <span className="text-[18px] font-bold leading-none text-white">
+              {title}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* 우상단 아이콘 */}
       <div className="absolute right-4 top-3 flex items-center gap-3 text-white">

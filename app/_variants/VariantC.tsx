@@ -574,32 +574,34 @@ function GridView({
 
   return (
     <>
-      {/* 상단 헤더(타이틀+실시간/녹화 탭) — 녹화 모드에서도 항상 표시 */}
-      <header
-        className="flex items-center px-5"
-        style={{ height: "56px", marginTop: "16px" }}
-      >
-        <div className="flex w-full items-center justify-between">
-          <div className="flex flex-col gap-[2px]">
-            <button
-              type="button"
-              onClick={onOpenVariantPicker}
-              className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900"
-            >
-              8층 사무실 C
-              <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
-            </button>
-            <p
-              className="text-[12px] leading-none"
-              style={{ color: "#BFBFBF" }}
-            >
-              에스원 본사 · N1234567
-            </p>
-          </div>
+      {/* 상단 헤더(타이틀+실시간/녹화 탭) — 녹화 모드에서는 숨김 */}
+      {mode !== "recording" && (
+        <header
+          className="flex items-center px-5"
+          style={{ height: "56px", marginTop: "16px" }}
+        >
+          <div className="flex w-full items-center justify-between">
+            <div className="flex flex-col gap-[2px]">
+              <button
+                type="button"
+                onClick={onOpenVariantPicker}
+                className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900"
+              >
+                8층 사무실 C
+                <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
+              </button>
+              <p
+                className="text-[12px] leading-none"
+                style={{ color: "#BFBFBF" }}
+              >
+                에스원 본사 · N1234567
+              </p>
+            </div>
 
-          <ModeToggle mode={mode} setMode={setMode} />
-        </div>
-      </header>
+            <ModeToggle mode={mode} setMode={setMode} />
+          </div>
+        </header>
+      )}
 
       <section
         className="relative min-h-0 flex-1 touch-pan-y select-none overflow-hidden"
@@ -667,6 +669,9 @@ function GridView({
           currentPage={currentPage}
           totalPages={totalPages}
           onGallery={onOpenSheet}
+          mode={mode}
+          onBack={() => setMode("live")}
+          title="8층 사무실 C"
         />
         <SectionSkeleton visible={gridLoading} cols={cols} rows={rows} />
       </section>
