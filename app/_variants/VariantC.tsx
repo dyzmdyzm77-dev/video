@@ -1692,14 +1692,17 @@ function RecordingEventTimeline({
           if (clusterKey) {
             toggleCluster(clusterKey);
           } else if (playbackMs !== null && target.dataset.eventMs) {
-            // 선택한 썸네일의 시각으로 이동. 파란 라인의 시각(playbackMs)은 항상 시간축과
-            // 일치해야 하므로 별도 정렬 오프셋은 쓰지 않는다 — 단일 카드는 시간축 위치(yOf)에
-            // 그려져 그대로 라인에 맞는다. 펼친 멤버는 아코디언 위치라 라인과 어긋나므로,
-            // 그 묶음을 접어 시간축 위치로 되돌린 뒤 그 시각으로 이동한다(시간↔썸네일 일치).
-            const ms = Number(target.dataset.eventMs);
+            const eventMs = Number(target.dataset.eventMs);
             const ownerKey = target.dataset.clusterOwner;
-            if (ownerKey) collapseCluster(ownerKey);
-            setPlaybackMs(clampMs(ms));
+            if (ownerKey) {
+              // 펼친 멤버를 접으면 카드는 cluster.ms(대표, members[0]) 위치로 돌아간다.
+              // playbackMs도 대표 시각에 맞춰야 파란 라인과 카드 위치가 일치한다.
+              collapseCluster(ownerKey);
+              const ownerCluster = clusters.find((c) => c.key === ownerKey);
+              setPlaybackMs(clampMs(ownerCluster ? ownerCluster.ms : eventMs));
+            } else {
+              setPlaybackMs(clampMs(eventMs));
+            }
             // 선택 지점까지 부드럽게 이동(약 320ms) 후 transition 해제 → 이후 시간 흐름은 또렷하게.
             setAnimateScroll(true);
             if (animTimerRef.current) clearTimeout(animTimerRef.current);
