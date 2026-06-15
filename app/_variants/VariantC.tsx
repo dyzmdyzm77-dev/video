@@ -1821,7 +1821,8 @@ function RecordingEventTimeline({
           );
         })}
 
-        {/* 이벤트 영상 길이 막대 — 선(x=80) 위, 막대 중심을 썸네일 중심(cy)에 정렬.
+        {/* 이벤트 영상 길이 막대 — 선(x=80) 위, 막대 하단을 썸네일 중심(cy=이벤트 시작 시각)에 정렬.
+            위=최신/아래=과거이므로 이벤트 시작(과거)=하단, 종료(최신)=상단 방향으로 막대를 그린다.
             펼친 상태에서는 썸네일과 동일하게 anchorY 기준 ROW_H 간격으로 쌓는다.
             맨 위(anchorY)=가장 오래된 멤버(접힘 대표와 동일), 아래로 갈수록 최신.
             모든 썸네일 옆에 막대가 붙도록 한다. 영상 길이(durSec)만큼 길어진다(줌에 비례, 최대 72px). */}
@@ -1843,7 +1844,7 @@ function RecordingEventTimeline({
                 }`}
                 style={{
                   left: "100px",
-                  top: `${b.cy - h / 2}px`,
+                  top: `${b.cy - h}px`,
                   width: "6px",
                   height: `${h}px`,
                   marginLeft: "-3px",

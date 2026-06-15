@@ -1014,7 +1014,7 @@ function ExpandedView({
       {/* 날짜/시간 영역 — 영상 위 (두 모드 모두 동일) */}
       <div
         className="relative flex items-center px-5"
-        style={{ height: "32px" }}
+        style={{ height: "32px", marginBottom: "9px" }}
       >
         {mode === "recording" ? (
           <button
