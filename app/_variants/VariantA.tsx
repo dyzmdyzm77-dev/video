@@ -202,7 +202,13 @@ function MenuIcon({ className }: { className?: string }) {
   );
 }
 
-export default function VariantA() {
+export default function VariantA({
+  platform = "android",
+  onHome,
+}: {
+  platform?: "android" | "ios";
+  onHome?: () => void;
+}) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -210,7 +216,8 @@ export default function VariantA() {
   const [vertLayout, setVertLayout] = useState<LayoutKey>("2x4");
   const [horzLayout, setHorzLayout] = useState<LayoutKey>("2x2");
   const [mode, setMode] = useState<"live" | "recording">("live");
-  const [chromeVisible, setChromeVisible] = useState(true);
+  // 기본 진입 시 위아래 시스템 바를 숨긴 몰입 상태로 시작 (LIVE 칩을 누르면 토글).
+  const [chromeVisible, setChromeVisible] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [playbackMs, setPlaybackMs] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -295,10 +302,11 @@ export default function VariantA() {
   const dateLabel = now ? formatNow(now) : "";
 
   return (
-    <div className="relative mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden bg-white">
-      {/* 펀치홀 카메라 점 — 시스템 바가 보일 때만 노출. 누르면 상태바/네비게이션바 토글.
-          숨김 상태에선 칩(LIVE/녹화)을 눌러 다시 켤 수 있다. */}
-      {chromeVisible && (
+    <div className="app-safe-frame h-full w-full flex flex-col items-center bg-white">
+    <div className="relative flex min-h-0 flex-1 w-full max-w-[440px] flex-col overflow-hidden bg-white">
+      {/* 펀치홀 카메라 점 — Android 환경에서 시스템 바가 보일 때만. 누르면 토글.
+          iOS 환경에선 실제 상태바를 쓰므로 가짜 상단 바를 그리지 않는다. */}
+      {platform === "android" && chromeVisible && (
         <button
           type="button"
           aria-label="시스템 바 토글"
@@ -307,8 +315,8 @@ export default function VariantA() {
           style={{ left: "50%", top: "5.5px", width: "16px", height: "16px" }}
         />
       )}
-      {/* 안드로이드 상태바 */}
-      {chromeVisible && (
+      {/* 안드로이드 상태바 — Android 환경에서만 */}
+      {platform === "android" && chromeVisible && (
         <div
           className="relative flex items-center justify-between bg-white px-5 text-[13px] font-semibold text-neutral-900"
           style={{ height: "27px" }}
@@ -339,6 +347,7 @@ export default function VariantA() {
           setMode={handleSetMode}
           now={now}
           onToggleChrome={toggleChrome}
+          chromeVisible={chromeVisible}
           isScrubbing={isScrubbing}
           onScrubbingChange={setIsScrubbing}
           playbackMs={playbackMs}
@@ -360,6 +369,7 @@ export default function VariantA() {
           mode={mode}
           setMode={handleSetMode}
           onToggleChrome={toggleChrome}
+          chromeVisible={chromeVisible}
           onOpenDateTime={() => setDateTimeOpen(true)}
           videoLoading={videoLoading}
           playbackMs={playbackMs}
@@ -377,7 +387,7 @@ export default function VariantA() {
       <DateTimePickerSheet
         open={dateTimeOpen}
         initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
-        bottomOffset={chromeVisible ? 48 : 0}
+        bottomOffset={platform === "android" && chromeVisible ? 48 : 0}
         onClose={() => setDateTimeOpen(false)}
         onApply={(ms) => {
           setPlaybackMs(ms);
@@ -392,7 +402,7 @@ export default function VariantA() {
         open={sheetOpen}
         initialVert={vertLayout}
         initialHorz={horzLayout}
-        bottomOffset={chromeVisible ? 48 : 0}
+        bottomOffset={platform === "android" && chromeVisible ? 48 : 0}
         onClose={() => setSheetOpen(false)}
         onApply={(vert, horz) => {
           setVertLayout(vert);
@@ -405,26 +415,27 @@ export default function VariantA() {
       <VariantPicker
         open={variantPickerOpen}
         current="a"
-        bottomOffset={chromeVisible ? 48 : 0}
+        platform={platform}
+        bottomOffset={platform === "android" && chromeVisible ? 48 : 0}
         onClose={() => setVariantPickerOpen(false)}
       />
 
-      {mode === "live" && (
-        <nav className="mt-auto border-t border-neutral-200 bg-white">
-          <ul
-            className="grid grid-cols-4 items-center"
-            style={{ height: "60px" }}
-          >
-            <TabItem iconSrc="/nav/home.svg" label="홈" />
-            <TabItem iconSrc="/nav/security.svg" label="경비" />
-            <TabItem iconSrc="/nav/video.svg" label="영상" active />
-            <TabItem iconSrc="/nav/menu.svg" label="전체" />
-          </ul>
-        </nav>
-      )}
+      {/* 하단 탭바 — 라이브·녹화 모드 모두에서 표시. */}
+      <nav className="mt-auto border-t border-neutral-200 bg-white">
+        <ul
+          className="grid grid-cols-4 items-center"
+          style={{ height: "60px" }}
+        >
+          <TabItem iconSrc="/nav/home.svg" label="홈" onClick={onHome} />
+          <TabItem iconSrc="/nav/security.svg" label="경비" />
+          <TabItem iconSrc="/nav/video.svg" label="영상" active />
+          <TabItem iconSrc="/nav/menu.svg" label="전체" />
+        </ul>
+      </nav>
 
-      {/* 안드로이드 시스템 네비게이션 바 */}
-      {chromeVisible && (
+      {/* 하단 안드로이드 네비(48px) — Android 환경+시스템바 켜짐일 때만.
+          홈 인디케이터/제스처 네비 여백은 .app-safe-frame 의 padding-bottom 이 담당. */}
+      {platform === "android" && chromeVisible && (
         <div
           className="relative z-40 grid grid-cols-3 items-center"
           style={{ height: "48px", backgroundColor: "#F6F6F6" }}
@@ -464,6 +475,7 @@ export default function VariantA() {
         </div>
       )}
     </div>
+    </div>
   );
 }
 
@@ -482,6 +494,7 @@ function GridView({
   setMode,
   now,
   onToggleChrome,
+  chromeVisible = true,
   isScrubbing,
   onScrubbingChange,
   playbackMs,
@@ -507,6 +520,7 @@ function GridView({
   setMode: (m: "live" | "recording") => void;
   now: Date | null;
   onToggleChrome: () => void;
+  chromeVisible?: boolean;
   isScrubbing: boolean;
   onScrubbingChange: (s: boolean) => void;
   playbackMs: number | null;
@@ -574,10 +588,11 @@ function GridView({
 
   return (
     <>
-      {/* 상단 헤더(타이틀+실시간/녹화 탭) — 녹화 모드에서도 항상 표시 */}
+      {/* 상단 헤더(타이틀+실시간/녹화 탭) — 녹화 모드에서도 항상 표시.
+          시스템 바를 끄는 몰입 모드에선 헤더 위 16px 여백도 함께 제거해 위로 붙인다. */}
       <header
         className="flex items-center px-5"
-        style={{ height: "56px", marginTop: "16px" }}
+        style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
       >
         <div className="flex w-full items-center justify-between">
           <div className="flex flex-col gap-[2px]">
@@ -778,6 +793,7 @@ function ExpandedView({
   mode,
   setMode,
   onToggleChrome,
+  chromeVisible = true,
   onOpenDateTime,
   videoLoading,
   playbackMs,
@@ -798,6 +814,7 @@ function ExpandedView({
   mode: "live" | "recording";
   setMode: (m: "live" | "recording") => void;
   onToggleChrome: () => void;
+  chromeVisible?: boolean;
   onOpenDateTime: () => void;
   videoLoading: boolean;
   playbackMs: number | null;
@@ -925,7 +942,7 @@ function ExpandedView({
       {/* 확대뷰 헤더 — 다채널 화면과 동일. 녹화 모드에서도 항상 표시 */}
       <header
         className="flex items-center px-5"
-        style={{ height: "56px", marginTop: "16px" }}
+        style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
       >
         <div className="flex w-full items-center justify-between">
           <div className="flex flex-col gap-[2px]">
@@ -2846,7 +2863,7 @@ function DateTimePickerSheet({
 
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-30"
+      className="pointer-events-none absolute inset-0 z-30"
       aria-hidden={!open}
     >
       <div
@@ -3273,15 +3290,20 @@ function TabItem({
   iconSrc,
   label,
   active,
+  onClick,
 }: {
   iconSrc: string;
   label: string;
   active?: boolean;
+  onClick?: () => void;
 }) {
   const iconColor = active ? "#1D6CEB" : "#C4C4C4";
   const textColor = active ? "#1D6CEB" : "#7F7F7F";
   return (
-    <li className="flex flex-col items-center gap-1">
+    <li
+      onClick={onClick}
+      className={`flex flex-col items-center gap-1${onClick ? " cursor-pointer" : ""}`}
+    >
       <span
         aria-hidden
         className="block"

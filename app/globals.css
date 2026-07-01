@@ -27,6 +27,17 @@ body {
   padding: 0;
 }
 
+/* iOS/Android 안전 영역 처리. 상·하·좌·우 시스템 바(상태바·노치·홈 인디케이터·
+   제스처 네비)만큼 인셋을 줘서 콘텐츠가 시스템 바와 겹치지 않게 한다. 이렇게 하면
+   OS가 그리는 상단 구분선·하단 스크림이 콘텐츠를 침범하지 않는다.
+   안드로이드/데스크톱에선 env()=0이라 무영향. */
+.app-safe-frame {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
 @keyframes timeline-scroll {
   from {
     transform: translateX(0);

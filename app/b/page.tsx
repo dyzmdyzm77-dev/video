@@ -1,6 +1,21 @@
+"use client";
+
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import VariantB from "../_variants/VariantB";
 
-// B안 — A안 복사본으로 시작. 여기서부터 조금씩 다르게 수정해 나간다.
+// B안. ?platform= 으로 환경(iOS/Android)을 받고, 홈 버튼은 선택 화면(/)으로 보낸다.
+function Inner() {
+  const router = useRouter();
+  const platform =
+    useSearchParams().get("platform") === "ios" ? "ios" : "android";
+  return <VariantB platform={platform} onHome={() => router.push("/")} />;
+}
+
 export default function PageB() {
-  return <VariantB />;
+  return (
+    <Suspense>
+      <Inner />
+    </Suspense>
+  );
 }

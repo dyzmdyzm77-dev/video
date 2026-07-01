@@ -15,11 +15,14 @@ export default function VariantPicker({
   current,
   bottomOffset = 0,
   onClose,
+  platform,
 }: {
   open: boolean;
   current: VariantKey;
   bottomOffset?: number;
   onClose: () => void;
+  // 변형 전환 시에도 선택한 환경(iOS/Android)을 URL 쿼리로 이어준다.
+  platform?: "android" | "ios";
 }) {
   return (
     <div
@@ -76,7 +79,10 @@ export default function VariantPicker({
                 type="button"
                 onClick={() => {
                   if (selected) onClose();
-                  else window.location.assign(o.href);
+                  else
+                    window.location.assign(
+                      platform ? `${o.href}?platform=${platform}` : o.href,
+                    );
                 }}
                 className="flex items-center justify-between border-b border-neutral-100 text-left"
                 style={{ height: "56px" }}
