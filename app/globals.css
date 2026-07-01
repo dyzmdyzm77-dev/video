@@ -22,7 +22,12 @@ body {
   color: var(--foreground);
   overflow: hidden !important;
   overscroll-behavior: none;
-  height: 100%;
+  /* iOS Safari 대응: height:100% 는 툴바가 걸친 '큰 뷰포트' 기준이라 하단 탭바가
+     Safari 하단 툴바 아래로 밀려 들어가고, 툴바의 반투명 그라데이션이 탭바 위에
+     겹쳐 보인다. 스크롤이 없는 앱이라 툴바도 접히지 않아 계속 남는다. 작은
+     뷰포트(svh)로 잡아 앱이 툴바 위에 딱 맞게 앉도록 한다. vh 는 구형 폴백. */
+  height: 100vh;
+  height: 100svh;
   margin: 0;
   padding: 0;
 }
