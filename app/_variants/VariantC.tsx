@@ -1458,13 +1458,6 @@ function RecordingEventTimeline({
       else next.add(key);
       return next;
     });
-  const collapseCluster = (key: string) =>
-    setExpandedClusters((prev) => {
-      if (!prev.has(key)) return prev;
-      const next = new Set(prev);
-      next.delete(key);
-      return next;
-    });
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef<{ y: number; ms: number } | null>(null);
   // 탭 판정용 — 카드 위에서 시작해도 드래그는 통과시키고, 거의 안 움직이면 탭으로 처리
@@ -1716,23 +1709,15 @@ function RecordingEventTimeline({
             const ownerKey = target.dataset.clusterOwner;
             const occKey = target.dataset.occKey ?? null;
             if (ownerKey) {
-              // 펼친 클러스터 멤버. 접지 않고 그 멤버를 파란 라인에 정렬해 '선택'한다.
+              // 펼친 클러스터 멤버 → 접지 않고 파란 라인을 그 썸네일로 이동(정렬)한다.
               // 펼친 멤버는 아코디언 위치(anchorY+i·ROW_H)라 시간축과 어긋나므로, 카드가
               // 그려진 위치(content-y)와 그 시각의 시간축 위치(time-y) 차이를 정렬 오프셋으로
-              // 밀어 카드 중심이 라인에 오게 한다. 같은 멤버를 다시 탭하면 그때 접는다.
-              if (selectedOccKey === occKey) {
-                collapseCluster(ownerKey);
-                setSelectedOccKey(null);
-                setAlignOffset(0);
-                const ownerCluster = clusters.find((c) => c.key === ownerKey);
-                setPlaybackMs(clampMs(ownerCluster ? ownerCluster.ms : eventMs));
-              } else {
-                const timeY = Number(target.dataset.timeY);
-                const contentY = Number(target.dataset.contentY);
-                setAlignOffset(timeY - contentY);
-                setSelectedOccKey(occKey);
-                setPlaybackMs(clampMs(eventMs));
-              }
+              // 밀어 카드 중심이 라인에 오게 한다. 접기는 카드 밖 빈 곳 탭으로만 한다.
+              const timeY = Number(target.dataset.timeY);
+              const contentY = Number(target.dataset.contentY);
+              setAlignOffset(timeY - contentY);
+              setSelectedOccKey(occKey);
+              setPlaybackMs(clampMs(eventMs));
             } else {
               // 단일 카드 → 시간축 위치 그대로라 오프셋 없이 그 시각으로 이동.
               setAlignOffset(0);
