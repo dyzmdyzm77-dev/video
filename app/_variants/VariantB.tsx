@@ -1487,6 +1487,8 @@ function RecordingEventTimeline({
   // transition을 건다. 시간 흐름(50ms 틱)·드래그가 시작되면 즉시 끈다.
   const [animateScroll, setAnimateScroll] = useState(false);
   const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 펼친 클러스터에서 라인에 정렬해 '선택'한 멤버(occ.key). 같은 멤버를 다시 탭하면 접는다.
+  const [selectedOccKey, setSelectedOccKey] = useState<string | null>(null);
 
   // 가로 타임라인과 동일: ±2시간(VISIBLE_MINUTES) 윈도우
   const VISIBLE_MINUTES = TIMELINE_VISIBLE_MIN;
@@ -1725,21 +1727,47 @@ function RecordingEventTimeline({
         if (target) {
           const clusterKey = target.dataset.clusterKey;
           if (clusterKey) {
+            // 접힌 묶음 → 펼침.
             toggleCluster(clusterKey);
           } else if (playbackMs !== null && target.dataset.eventMs) {
-            // 선택한 썸네일의 시각으로 이동. 파란 라인의 시각(playbackMs)은 항상 시간축과
-            // 일치해야 하므로 별도 정렬 오프셋은 쓰지 않는다 — 단일 카드는 시간축 위치(yOf)에
-            // 그려져 그대로 라인에 맞는다. 펼친 멤버는 아코디언 위치라 라인과 어긋나므로,
-            // 그 묶음을 접어 시간축 위치로 되돌린 뒤 그 시각으로 이동한다(시간↔썸네일 일치).
             const ms = Number(target.dataset.eventMs);
             const ownerKey = target.dataset.clusterOwner;
-            if (ownerKey) collapseCluster(ownerKey);
-            setPlaybackMs(clampMs(ms));
+            const occKey = target.dataset.occKey ?? null;
+            if (ownerKey) {
+              // 펼친 클러스터 멤버. 접지 않고 그 멤버를 파란 라인에 정렬해 '선택'한다.
+              // 펼친 멤버는 아코디언 위치(anchorY+i·ROW_H)라 시간축과 어긋나므로, 카드가
+              // 그려진 위치(content-y)와 그 시각의 시간축 위치(time-y) 차이를 정렬 오프셋으로
+              // 밀어 카드 중심이 라인에 오게 한다. 같은 멤버를 다시 탭하면 그때 접는다.
+              if (selectedOccKey === occKey) {
+                collapseCluster(ownerKey);
+                setSelectedOccKey(null);
+                setAlignOffset(0);
+              } else {
+                const timeY = Number(target.dataset.timeY);
+                const contentY = Number(target.dataset.contentY);
+                setAlignOffset(timeY - contentY);
+                setSelectedOccKey(occKey);
+                setPlaybackMs(clampMs(ms));
+              }
+            } else {
+              // 단일 카드 → 시간축 위치 그대로라 오프셋 없이 그 시각으로 이동.
+              setAlignOffset(0);
+              setSelectedOccKey(null);
+              setPlaybackMs(clampMs(ms));
+            }
             // 선택 지점까지 부드럽게 이동(약 320ms) 후 transition 해제 → 이후 시간 흐름은 또렷하게.
             setAnimateScroll(true);
             if (animTimerRef.current) clearTimeout(animTimerRef.current);
             animTimerRef.current = setTimeout(() => setAnimateScroll(false), 340);
           }
+        } else if (expandedClusters.size > 0) {
+          // 카드 밖 빈 곳 탭 → 펼친 묶음 모두 접기.
+          setExpandedClusters(new Set());
+          setSelectedOccKey(null);
+          setAlignOffset(0);
+          setAnimateScroll(true);
+          if (animTimerRef.current) clearTimeout(animTimerRef.current);
+          animTimerRef.current = setTimeout(() => setAnimateScroll(false), 340);
         }
       }
       tapRef.current = null;
@@ -1912,6 +1940,8 @@ function RecordingEventTimeline({
               data-event-ms={occ.ms}
               data-dur-sec={occ.durSec}
               data-occ-key={occ.key}
+              data-content-y={y}
+              data-time-y={yOf(occ.secOffset)}
               className={`absolute flex items-center${
                 fanIndex != null ? " cluster-card-fan-in" : ""
               }`}
@@ -1955,7 +1985,17 @@ function RecordingEventTimeline({
                 {/* 앞쪽(대표) 썸네일 */}
                 <div
                   className="absolute overflow-hidden rounded-md bg-neutral-900"
-                  style={{ left: 0, top: 0, width: "128px", height: "72px", zIndex: 2 }}
+                  style={{
+                    left: 0,
+                    top: 0,
+                    width: "128px",
+                    height: "72px",
+                    zIndex: 2,
+                    // 펼친 상태에서 라인에 정렬해 선택된 멤버 표시.
+                    ...(ownerKey != null && occ.key === selectedOccKey
+                      ? { outline: "2px solid #1D6CEB", outlineOffset: "-1px" }
+                      : null),
+                  }}
                 >
                   <FrozenImage
                     src={cameraSrc}
