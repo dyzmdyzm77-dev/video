@@ -1229,12 +1229,6 @@ function ExpandedView({
                   }}
                 >
                   {t.label}
-                  {active && (
-                    <span
-                      className="absolute inset-x-0 bottom-0"
-                      style={{ height: "2px", backgroundColor: "#1D6CEB" }}
-                    />
-                  )}
                 </button>
               );
             })}
