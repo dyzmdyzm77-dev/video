@@ -1663,15 +1663,15 @@ function RecordingEventTimeline({
             const ms = Number(target.dataset.eventMs);
             const ownerKey = target.dataset.clusterOwner;
             const occKey = target.dataset.occKey ?? null;
-            // 파란 라인을 진한 그레이 막대의 아랫끝(이벤트 시작)에 맞춘다.
+            // 파란 라인을 막대 아랫끝(=썸네일 아랫변, 이벤트 시작)에 맞춘다. 막대는 썸네일
+            // 아랫변에 고정돼 있으므로 목표는 카드 중심(cy)에서 THUMB_HALF 아래 지점.
             // 펼친 멤버는 아코디언 위치(anchorY+i·ROW_H)라 시간축과 어긋나므로 카드가 그려진
             // 위치(content-y)와 그 시각의 시간축 위치(time-y) 차이로 먼저 보정하고, 거기서 다시
-            // 막대 높이의 절반만큼 내려 막대 아랫끝이 라인에 오게 한다(단일 카드는 time-y==content-y).
+            // THUMB_HALF 만큼 내려 썸네일 아랫변이 라인에 오게 한다(단일 카드는 time-y==content-y).
             // 접기는 카드 밖 빈 곳 탭으로만 한다.
-            const barH = Math.min(72, Math.max(6, Number(target.dataset.durSec) * pxPerSec));
             const timeY = Number(target.dataset.timeY);
             const contentY = Number(target.dataset.contentY);
-            setAlignOffset(timeY - contentY - barH / 2);
+            setAlignOffset(timeY - contentY - THUMB_HALF);
             setSelectedOccKey(ownerKey ? occKey : null);
             setPlaybackMs(clampMs(ms));
             // 선택 지점까지 부드럽게 이동(약 320ms) 후 transition 해제 → 이후 시간 흐름은 또렷하게.
@@ -1800,10 +1800,10 @@ function RecordingEventTimeline({
           );
         })}
 
-        {/* 이벤트 영상 길이 막대 — 선(x=80) 위, 막대 중심을 썸네일 중심(cy)에 정렬.
-            펼친 상태에서는 썸네일과 동일하게 anchorY 기준 ROW_H 간격으로 쌓는다.
-            맨 위(anchorY)=가장 오래된 멤버(접힘 대표와 동일), 아래로 갈수록 최신.
-            모든 썸네일 옆에 막대가 붙도록 한다. 영상 길이(durSec)만큼 길어진다(줌에 비례, 최대 72px). */}
+        {/* 이벤트 영상 길이 막대 — 선(x=100) 위. 막대 아랫끝(이벤트 시작)을 썸네일 아랫변에
+            고정하고 영상 길이(durSec)만큼 위로 자란다(줌 비례, 최대 = 썸네일 높이 72px).
+            → 막대는 항상 썸네일 세로 범위 안에 있고, 탭 시 파란 라인이 썸네일 아랫변에 걸린다.
+            펼친 상태에서는 썸네일과 동일하게 anchorY 기준 ROW_H 간격으로 쌓는다. */}
         {clusters.flatMap((cluster) => {
           const { key, secOffset, members } = cluster;
           const count = members.length;
@@ -1822,7 +1822,7 @@ function RecordingEventTimeline({
                 }`}
                 style={{
                   left: "100px",
-                  top: `${b.cy - h / 2}px`,
+                  top: `${b.cy + THUMB_HALF - h}px`,
                   width: "6px",
                   height: `${h}px`,
                   marginLeft: "-3px",
