@@ -1861,10 +1861,9 @@ function RecordingEventTimeline({
           );
         })}
 
-        {/* 이벤트 영상 길이 막대 — 선(x=100) 위. 막대 아랫끝(이벤트 시작)을 썸네일 아랫변에
-            고정하고 영상 길이(durSec)만큼 위로 자란다(줌 비례, 최대 = 썸네일 높이 72px).
-            → 막대는 항상 썸네일 세로 범위 안에 있고, 탭 시 파란 라인이 썸네일 아랫변에 걸린다.
-            펼친 상태에서는 썸네일과 동일하게 anchorY 기준 ROW_H 간격으로 쌓는다. */}
+        {/* 이벤트 영상 길이 막대 — 선(x=100) 위, 막대 중심을 썸네일 세로 중앙(cy)에 정렬.
+            영상 길이(durSec)만큼 길어진다(줌 비례, 최대 = 썸네일 높이 72px)라 항상 썸네일
+            세로 범위 안에 있다. 펼친 상태에서는 anchorY 기준 ROW_H 간격으로 쌓는다. */}
         {clusters.flatMap((cluster) => {
           const { key, secOffset, members } = cluster;
           const count = members.length;
@@ -1883,7 +1882,7 @@ function RecordingEventTimeline({
                 }`}
                 style={{
                   left: "100px",
-                  top: `${b.cy + THUMB_HALF - h}px`,
+                  top: `${b.cy - h / 2}px`,
                   width: "6px",
                   height: `${h}px`,
                   marginLeft: "-3px",
