@@ -1726,13 +1726,15 @@ function RecordingEventTimeline({
             const ms = Number(target.dataset.eventMs);
             const ownerKey = target.dataset.clusterOwner;
             const occKey = target.dataset.occKey ?? null;
-            // 파란 라인을 썸네일 세로 중앙(카드 중심 cy)에 맞춘다.
-            // 펼친 멤버는 아코디언 위치(anchorY+i·ROW_H)라 시간축과 어긋나므로 카드가 그려진
-            // 위치(content-y)와 그 시각의 시간축 위치(time-y) 차이로 보정해 중심이 라인에 오게
-            // 한다(단일 카드는 time-y==content-y라 오프셋 0). 접기는 카드 밖 빈 곳 탭으로만 한다.
+            // 파란 라인을 다크 막대의 아랫끝(이벤트 시작)에 맞춘다. 막대는 중앙 정렬이라
+            // 아랫끝 = 카드 중심(cy) + 막대높이/2. 펼친 멤버는 아코디언 위치(anchorY+i·ROW_H)라
+            // 시간축과 어긋나므로 카드가 그려진 위치(content-y)와 그 시각의 시간축 위치(time-y)
+            // 차이로 보정하고, 거기서 막대높이/2 만큼 더 내려 아랫끝이 라인에 오게 한다.
+            // 접기는 카드 밖 빈 곳 탭으로만 한다.
+            const barH = Math.min(72, Math.max(6, Number(target.dataset.durSec) * pxPerSec));
             const timeY = Number(target.dataset.timeY);
             const contentY = Number(target.dataset.contentY);
-            setAlignOffset(timeY - contentY);
+            setAlignOffset(timeY - contentY - barH / 2);
             setSelectedOccKey(ownerKey ? occKey : null);
             setPlaybackMs(clampMs(ms));
             // 선택 지점까지 부드럽게 이동(약 320ms) 후 transition 해제 → 이후 시간 흐름은 또렷하게.
