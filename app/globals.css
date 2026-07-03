@@ -43,6 +43,25 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
+/* 데스크톱(마우스로 hover 가능한 정밀 포인터 환경)에선 앱을 360×780 모바일
+   프레임으로 고정해 화면 가운데 배치한다. 실제 모바일/터치 기기에선 이 쿼리가
+   적용되지 않아 화면을 그대로 꽉 채운다. h-full/w-full 유틸은 layer 안이라
+   unlayered 인 아래 규칙이 이긴다. */
+@media (hover: hover) and (pointer: fine) {
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e5e5e5;
+  }
+  .app-safe-frame {
+    width: 360px;
+    height: 780px;
+    flex: none;
+    overflow: hidden;
+  }
+}
+
 @keyframes timeline-scroll {
   from {
     transform: translateX(0);

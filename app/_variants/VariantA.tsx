@@ -206,9 +206,11 @@ function MenuIcon({ className }: { className?: string }) {
 
 export default function VariantA({
   platform = "android",
+  initialChrome = false,
   onHome,
 }: {
   platform?: "android" | "ios";
+  initialChrome?: boolean;
   onHome?: () => void;
 }) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
@@ -218,8 +220,9 @@ export default function VariantA({
   const [vertLayout, setVertLayout] = useState<LayoutKey>("2x4");
   const [horzLayout, setHorzLayout] = useState<LayoutKey>("2x2");
   const [mode, setMode] = useState<"live" | "recording">("live");
-  // 기본 진입 시 위아래 시스템 바를 숨긴 몰입 상태로 시작 (LIVE 칩을 누르면 토글).
-  const [chromeVisible, setChromeVisible] = useState(false);
+  // 위아래 가짜 시스템 바 표시 여부. 기본은 숨긴 몰입 상태(LIVE 칩으로 토글).
+  // 단 데스크톱 진입(initialChrome)이면 켠 채로 시작한다.
+  const [chromeVisible, setChromeVisible] = useState(initialChrome);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [playbackMs, setPlaybackMs] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);

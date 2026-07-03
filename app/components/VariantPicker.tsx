@@ -84,13 +84,23 @@ export default function VariantPicker({
                 type="button"
                 onClick={() => {
                   if (selected) onClose();
-                  else
-                    // window.location 은 next 라우터가 아니라 basePath 가 자동으로 안 붙는다
+                  else {
+                    // window.location 은 next 라우터가 아니라 basePath 가 자동으로 안 붙는다.
+                    // 현재 URL 의 chrome(데스크톱 가짜 시스템 바) 플래그는 이어준다.
+                    const chrome =
+                      new URLSearchParams(window.location.search).get(
+                        "chrome",
+                      ) === "1";
+                    const qs = [
+                      platform ? `platform=${platform}` : "",
+                      chrome ? "chrome=1" : "",
+                    ]
+                      .filter(Boolean)
+                      .join("&");
                     window.location.assign(
-                      platform
-                        ? `${BASE}${o.href}?platform=${platform}`
-                        : `${BASE}${o.href}`,
+                      `${BASE}${o.href}${qs ? `?${qs}` : ""}`,
                     );
+                  }
                 }}
                 className="flex items-center justify-between border-b border-neutral-100 text-left"
                 style={{ height: "56px" }}

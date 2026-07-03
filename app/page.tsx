@@ -1,43 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import PlatformSelect from "./components/PlatformSelect";
 
-// 접속 기기의 OS 를 userAgent 로 감지한다. 모바일이면 해당 플랫폼으로 자동 진입,
-// 데스크톱/알 수 없음이면 null 을 돌려 수동 선택 화면을 띄운다.
-function detectPlatform(): "ios" | "android" | null {
-  if (typeof navigator === "undefined") return null;
-  const ua = navigator.userAgent;
-  if (/android/i.test(ua)) return "android";
-  if (/iphone|ipad|ipod/i.test(ua)) return "ios";
-  // iPadOS 13+ 는 데스크톱 사파리로 위장(Macintosh)한다. 터치 지원으로 구분.
-  if (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) {
-    return "ios";
+// 접속 기기 판별.
+// - iPhone/iPad(iPadOS 13+ 는 데스크톱 사파리로 위장 → MacIntel+터치로 구분) → ios
+// - Android → android
+// - 그 외(데스크톱 등) → android + desktop 표시
+function detect(): { platform: "ios" | "android"; desktop: boolean } {
+  if (typeof navigator === "undefined") {
+    return { platform: "android", desktop: true };
   }
-  return null;
+  const ua = navigator.userAgent;
+  const isIOS =
+    /iphone|ipad|ipod/i.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (isIOS) return { platform: "ios", desktop: false };
+  if (/android/i.test(ua)) return { platform: "android", desktop: false };
+  return { platform: "android", desktop: true };
 }
 
-// 루트(/): 접속 기기 자동 감지.
-// - iOS/Android 기기 → /a?platform=... 로 자동 이동(수동 선택 생략).
-// - 데스크톱 등 → 기존 선택 화면 표시.
-// 이후 변형 전환(A↔B↔C)·홈 버튼에서도 이 platform 쿼리가 유지된다.
+// 루트(/): 선택 화면 없이 접속 기기에 맞춰 바로 A안으로 진입한다.
+// - 모바일: 감지한 OS 로.
+// - 데스크톱: Android 로 + 가짜 시스템 바(chrome=1)를 기본 표시. 실제 폰에는
+//   OS 가 이미 상태바/네비를 그리므로 붙이지 않는다(이중 표시 방지).
 export default function Page() {
   const router = useRouter();
-  const [showPicker, setShowPicker] = useState(false);
-
   useEffect(() => {
-    const platform = detectPlatform();
-    if (platform) {
-      // replace: 자동 이동은 히스토리에 안 남겨 뒤로가기가 선택화면으로 안 돌아오게.
-      router.replace(`/a?platform=${platform}`);
-    } else {
-      setShowPicker(true);
-    }
+    const { platform, desktop } = detect();
+    router.replace(`/a?platform=${platform}${desktop ? "&chrome=1" : ""}`);
   }, [router]);
-
-  // 감지 전(또는 모바일 리다이렉트 직전)엔 빈 화면. 선택 화면 깜빡임 방지.
-  if (!showPicker) return null;
-
-  return <PlatformSelect onSelect={(p) => router.push(`/a?platform=${p}`)} />;
+  // 리다이렉트 직전엔 빈 화면(선택 화면 없음).
+  return null;
 }
