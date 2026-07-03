@@ -1,3 +1,4 @@
+import { BASE } from "../basePath";
 import { useEffect, useRef, useState } from "react";
 
 type CameraFeedProps = {
@@ -309,12 +310,12 @@ export function GridSelectionOverlay({
           style={{ pointerEvents: visible ? "auto" : "none" }}
         >
           <OverlayIcon
-            src="/ic_list_gallery.svg"
+            src={`${BASE}/ic_list_gallery.svg`}
             size={32}
           />
         </button>
-        <OverlayIcon src="/nav/rotate.svg" size={32} />
-        <OverlayIcon src="/nav/etc.svg" size={32} />
+        <OverlayIcon src={`${BASE}/nav/rotate.svg`} size={32} />
+        <OverlayIcon src={`${BASE}/nav/etc.svg`} size={32} />
       </div>
 
       {/* 하단 페이지 인디케이터 */}

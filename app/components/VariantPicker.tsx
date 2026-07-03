@@ -1,5 +1,7 @@
 "use client";
 
+import { BASE } from "../basePath";
+
 // 상단 위치명("8층 사무실 A/B/C")을 누르면 뜨는 바텀시트.
 // A안·B안·C안 사이를 전환한다. 현재 보고 있는 안에는 체크 표시.
 type VariantKey = "a" | "b" | "c";
@@ -49,6 +51,9 @@ export default function VariantPicker({
           transform: open
             ? "translateY(0%)"
             : `translateY(calc(100% + ${bottomOffset}px))`,
+          // 닫혔을 땐 그림자를 끈다: 시트 윗변이 화면 하단에 걸쳐 shadow-2xl 이
+          // 화면 안쪽 하단 가장자리로 새어 올라오는 걸 막는다.
+          boxShadow: open ? undefined : "none",
         }}
       >
         {/* 헤더 */}
@@ -65,7 +70,7 @@ export default function VariantPicker({
             onClick={onClose}
             className="flex h-6 w-6 items-center justify-center"
           >
-            <img src="/close.svg" alt="" className="h-6 w-6" />
+            <img src={`${BASE}/close.svg`} alt="" className="h-6 w-6" />
           </button>
         </div>
 
@@ -80,8 +85,11 @@ export default function VariantPicker({
                 onClick={() => {
                   if (selected) onClose();
                   else
+                    // window.location 은 next 라우터가 아니라 basePath 가 자동으로 안 붙는다
                     window.location.assign(
-                      platform ? `${o.href}?platform=${platform}` : o.href,
+                      platform
+                        ? `${BASE}${o.href}?platform=${platform}`
+                        : `${BASE}${o.href}`,
                     );
                 }}
                 className="flex items-center justify-between border-b border-neutral-100 text-left"

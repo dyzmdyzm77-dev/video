@@ -1,5 +1,7 @@
 "use client";
 
+import { BASE } from "../basePath";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import {
@@ -10,22 +12,22 @@ import {
 import VariantPicker from "../components/VariantPicker";
 
 const CAMERAS = [
-  { label: "카메라 01", src: "/cameras/cam1.gif", zoom: 1.18 },
-  { label: "카메라 02", src: "/cameras/cam2.gif" },
-  { label: "카메라 03", src: "/cameras/cam3.gif" },
-  { label: "카메라 04", src: "/cameras/cam4.gif" },
-  { label: "카메라 05", src: "/cameras/cam1.gif", zoom: 1.18 },
-  { label: "카메라 06", src: "/cameras/cam2.gif" },
-  { label: "카메라 07", src: "/cameras/cam3.gif" },
-  { label: "카메라 08", src: "/cameras/cam4.gif" },
-  { label: "카메라 09", src: "/cameras/cam2.gif" },
-  { label: "카메라 10", src: "/cameras/cam4.gif" },
-  { label: "카메라 11", src: "/cameras/cam3.gif" },
-  { label: "카메라 12", src: "/cameras/cam1.gif", zoom: 1.18 },
-  { label: "카메라 13", src: "/cameras/cam4.gif" },
-  { label: "카메라 14", src: "/cameras/cam3.gif" },
-  { label: "카메라 15", src: "/cameras/cam2.gif" },
-  { label: "카메라 16", src: "/cameras/cam1.gif", zoom: 1.18 },
+  { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
+  { label: "카메라 02", src: `${BASE}/cameras/cam2.gif` },
+  { label: "카메라 03", src: `${BASE}/cameras/cam3.gif` },
+  { label: "카메라 04", src: `${BASE}/cameras/cam4.gif` },
+  { label: "카메라 05", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
+  { label: "카메라 06", src: `${BASE}/cameras/cam2.gif` },
+  { label: "카메라 07", src: `${BASE}/cameras/cam3.gif` },
+  { label: "카메라 08", src: `${BASE}/cameras/cam4.gif` },
+  { label: "카메라 09", src: `${BASE}/cameras/cam2.gif` },
+  { label: "카메라 10", src: `${BASE}/cameras/cam4.gif` },
+  { label: "카메라 11", src: `${BASE}/cameras/cam3.gif` },
+  { label: "카메라 12", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
+  { label: "카메라 13", src: `${BASE}/cameras/cam4.gif` },
+  { label: "카메라 14", src: `${BASE}/cameras/cam3.gif` },
+  { label: "카메라 15", src: `${BASE}/cameras/cam2.gif` },
+  { label: "카메라 16", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
 ];
 
 const LAYOUT_DIMS: Record<
@@ -52,8 +54,8 @@ function ChevronDownIcon({ className }: { className?: string }) {
       aria-hidden
       className={`inline-block bg-current ${className ?? ""}`}
       style={{
-        WebkitMaskImage: "url(/More.svg)",
-        maskImage: "url(/More.svg)",
+        WebkitMaskImage: `url(${BASE}/More.svg)`,
+        maskImage: `url(${BASE}/More.svg)`,
         WebkitMaskRepeat: "no-repeat",
         maskRepeat: "no-repeat",
         WebkitMaskPosition: "center",
@@ -427,10 +429,10 @@ export default function VariantB({
           className="grid grid-cols-4 items-center"
           style={{ height: "60px" }}
         >
-          <TabItem iconSrc="/nav/home.svg" label="홈" onClick={onHome} />
-          <TabItem iconSrc="/nav/security.svg" label="경비" />
-          <TabItem iconSrc="/nav/video.svg" label="영상" active />
-          <TabItem iconSrc="/nav/menu.svg" label="전체" />
+          <TabItem iconSrc={`${BASE}/nav/home.svg`} label="홈" onClick={onHome} />
+          <TabItem iconSrc={`${BASE}/nav/security.svg`} label="경비" />
+          <TabItem iconSrc={`${BASE}/nav/video.svg`} label="영상" active />
+          <TabItem iconSrc={`${BASE}/nav/menu.svg`} label="전체" />
         </ul>
       </nav>
 
@@ -1055,7 +1057,7 @@ function ExpandedView({
           onClick={onCapture}
           className="ml-auto flex h-[30px] w-[30px] items-center justify-center rounded-full border border-neutral-300"
         >
-          <img src="/camera.svg" alt="카메라" className="h-6 w-6" />
+          <img src={`${BASE}/camera.svg`} alt="카메라" className="h-6 w-6" />
         </button>
         <RowSkeleton visible={videoLoading} />
       </div>
@@ -1122,18 +1124,18 @@ function ExpandedView({
             >
               <button type="button" aria-label="목록" onClick={onOpenSheet}>
                 <img
-                  src="/ic_list_gallery.svg"
+                  src={`${BASE}/ic_list_gallery.svg`}
                   alt=""
                   className="h-8 w-8"
                   style={{ filter: "brightness(0) invert(1)" }}
                 />
               </button>
               <button type="button" aria-label="회전">
-                <img src="/nav/rotate.svg" alt="" className="h-8 w-8" />
+                <img src={`${BASE}/nav/rotate.svg`} alt="" className="h-8 w-8" />
               </button>
               <button type="button" aria-label="더보기">
                 <img
-                  src="/nav/etc.svg"
+                  src={`${BASE}/nav/etc.svg`}
                   alt=""
                   className="h-8 w-8"
                   style={{ filter: "brightness(0) invert(1)" }}
@@ -1363,7 +1365,7 @@ function ExpandedView({
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <img
-                      src="/nav/playing.gif"
+                      src={`${BASE}/nav/playing.gif`}
                       alt="재생 중"
                       className="h-6 w-6"
                     />
@@ -2160,15 +2162,15 @@ type LayoutKey =
   | "4x4";
 
 const VERTICAL_LAYOUTS: { key: LayoutKey; label: string; iconSrc: string }[] = [
-  { key: "1x2", label: "1×2", iconSrc: "/solid%2Bcontailner.svg" },
-  { key: "1x3", label: "1×3", iconSrc: "/solid%2Bcontailner-1.svg" },
-  { key: "2x4", label: "2×4", iconSrc: "/solid%2Bcontailner-2.svg" },
+  { key: "1x2", label: "1×2", iconSrc: `${BASE}/solid%2Bcontailner.svg` },
+  { key: "1x3", label: "1×3", iconSrc: `${BASE}/solid%2Bcontailner-1.svg` },
+  { key: "2x4", label: "2×4", iconSrc: `${BASE}/solid%2Bcontailner-2.svg` },
 ];
 
 const HORIZONTAL_LAYOUTS: { key: LayoutKey; label: string; iconSrc: string }[] = [
-  { key: "2x2", label: "2×2", iconSrc: "/4%20channel.svg" },
-  { key: "3x3", label: "3×3", iconSrc: "/9%20channel.svg" },
-  { key: "4x4", label: "4×4", iconSrc: "/16%20channel.svg" },
+  { key: "2x2", label: "2×2", iconSrc: `${BASE}/4%20channel.svg` },
+  { key: "3x3", label: "3×3", iconSrc: `${BASE}/9%20channel.svg` },
+  { key: "4x4", label: "4×4", iconSrc: `${BASE}/16%20channel.svg` },
 ];
 
 function LayoutConfigSheet({
@@ -2226,6 +2228,9 @@ function LayoutConfigSheet({
           transform: open
             ? "translateY(0%)"
             : `translateY(calc(100% + ${bottomOffset}px))`,
+          // 닫혔을 땐 그림자를 끈다: 시트 윗변이 화면 하단에 걸쳐 shadow-2xl 이
+          // 화면 안쪽 하단 가장자리로 새어 올라오는 걸 막는다.
+          boxShadow: open ? undefined : "none",
         }}
       >
         {/* 헤더 */}
@@ -2242,7 +2247,7 @@ function LayoutConfigSheet({
             onClick={onClose}
             className="flex h-6 w-6 items-center justify-center"
           >
-            <img src="/close.svg" alt="" className="h-6 w-6" />
+            <img src={`${BASE}/close.svg`} alt="" className="h-6 w-6" />
           </button>
         </div>
 
@@ -2835,6 +2840,9 @@ function DateTimePickerSheet({
           transform: open
             ? "translateY(0%)"
             : `translateY(calc(100% + ${bottomOffset}px))`,
+          // 닫혔을 땐 그림자를 끈다: 시트 윗변이 화면 하단에 걸쳐 shadow-2xl 이
+          // 화면 안쪽 하단 가장자리로 새어 올라오는 걸 막는다.
+          boxShadow: open ? undefined : "none",
         }}
       >
         {/* 헤더 */}
@@ -2851,7 +2859,7 @@ function DateTimePickerSheet({
             onClick={onClose}
             className="flex h-6 w-6 items-center justify-center"
           >
-            <img src="/close.svg" alt="" className="h-6 w-6" />
+            <img src={`${BASE}/close.svg`} alt="" className="h-6 w-6" />
           </button>
         </div>
         {/* 선택된 날짜시간 표시 */}
@@ -3066,12 +3074,12 @@ function PlayerButton({
 }
 
 const PLAYER_ICON_SRC: Record<PlayerButtonKind, string> = {
-  "skip-back": "/ic_skip_back.svg",
-  back10: "/ic_back10.svg",
-  pause: "/ic_pause.svg",
-  play: "/ic_play.svg",
-  forward10: "/ic_forward10.svg",
-  "skip-forward": "/ic_skip_forward.svg",
+  "skip-back": `${BASE}/ic_skip_back.svg`,
+  back10: `${BASE}/ic_back10.svg`,
+  pause: `${BASE}/ic_pause.svg`,
+  play: `${BASE}/ic_play.svg`,
+  forward10: `${BASE}/ic_forward10.svg`,
+  "skip-forward": `${BASE}/ic_skip_forward.svg`,
 };
 
 function PlayerIcon({
@@ -3213,7 +3221,7 @@ function NoCameraPlaceholder() {
       style={{ backgroundColor: "#B0B0B0" }}
     >
       <img
-        src="/no_camera.svg"
+        src={`${BASE}/no_camera.svg`}
         alt=""
         style={{ width: "30%", maxWidth: "70px" }}
       />
