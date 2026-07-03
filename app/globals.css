@@ -53,14 +53,20 @@ body {
    적용되지 않아 화면을 그대로 꽉 채운다. h-full/w-full 유틸은 layer 안이라
    unlayered 인 아래 규칙이 이긴다. */
 @media (hover: hover) and (pointer: fine) {
+  /* 배경 회색은 html 에 둔다. 그래야 목업(z-index:-1)이 이 배경 위·모든 콘텐츠
+     아래(맨 뒤 레이어)에 안정적으로 깔린다. body 를 회색으로 두면 목업을 덮어버림. */
+  html {
+    background: #e5e5e5;
+  }
   body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #e5e5e5;
+    background: transparent;
   }
-  /* 화면 뒤 폰 목업(380×800). 뷰포트 정중앙 고정 — 앱도 flex 로 정중앙에
-     오므로 겹쳐서, 앱보다 사방 10px 크게 뒤에 깔린다. */
+  /* 화면 뒤 맨 뒤 레이어 폰 목업(380×800). 뷰포트 정중앙 고정 — 앱도 flex 로
+     정중앙에 오므로 화면과 겹치고, 앱보다 사방 10px 크게 뒤에 보인다.
+     z-index:-1 이라 앱 등 모든 콘텐츠 아래에 위치. */
   .device-mockup {
     display: block;
     position: fixed;
@@ -69,12 +75,10 @@ body {
     transform: translate(-50%, -50%);
     width: 380px;
     height: 800px;
-    z-index: 0;
+    z-index: -1;
     pointer-events: none;
   }
   .app-safe-frame {
-    position: relative;
-    z-index: 1;
     width: 360px;
     height: 780px;
     flex: none;
