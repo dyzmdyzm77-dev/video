@@ -59,6 +59,10 @@ body {
     height: 780px;
     flex: none;
     overflow: hidden;
+    /* 폰 목업 느낌: 검정 2px 외곽선 + 라운드 코너. overflow:hidden 이라
+       상단바·하단 네비 등 내부가 둥근 모서리에 맞춰 클립된다. */
+    border: 2px solid #000;
+    border-radius: 38px;
   }
 }
 
