@@ -43,6 +43,11 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
+/* 목업은 데스크톱에서만 보인다(모바일/터치에선 숨김). */
+.device-mockup {
+  display: none;
+}
+
 /* 데스크톱(마우스로 hover 가능한 정밀 포인터 환경)에선 앱을 360×780 모바일
    프레임으로 고정해 화면 가운데 배치한다. 실제 모바일/터치 기기에선 이 쿼리가
    적용되지 않아 화면을 그대로 꽉 채운다. h-full/w-full 유틸은 layer 안이라
@@ -54,14 +59,27 @@ body {
     justify-content: center;
     background: #e5e5e5;
   }
+  /* 화면 뒤 폰 목업(380×800). 뷰포트 정중앙 고정 — 앱도 flex 로 정중앙에
+     오므로 겹쳐서, 앱보다 사방 10px 크게 뒤에 깔린다. */
+  .device-mockup {
+    display: block;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 380px;
+    height: 800px;
+    z-index: 0;
+    pointer-events: none;
+  }
   .app-safe-frame {
+    position: relative;
+    z-index: 1;
     width: 360px;
     height: 780px;
     flex: none;
     overflow: hidden;
-    /* 폰 목업 느낌: 검정 2px 외곽선 + 라운드 코너. overflow:hidden 이라
-       상단바·하단 네비 등 내부가 둥근 모서리에 맞춰 클립된다. */
-    border: 2px solid #000;
+    /* 검정 외곽선은 목업이 대신하므로 제거. 모서리 라운드는 목업 화면에 맞춰 유지. */
     border-radius: 38px;
   }
 }

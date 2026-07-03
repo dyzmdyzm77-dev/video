@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { BASE } from "./basePath";
 
 export const metadata: Metadata = {
   title: "에스원 CCTV",
@@ -36,7 +37,17 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css"
         />
       </head>
-      <body className="min-h-full bg-neutral-100">{children}</body>
+      <body className="min-h-full bg-neutral-100">
+        {/* 데스크톱 전용: 화면 뒤에 깔리는 폰 목업(380×800). 앱(360×780)보다
+            사방 10px 크게 뒤에서 베젤처럼 보인다. 모바일/터치에선 CSS로 숨김. */}
+        <img
+          src={`${BASE}/mockup.svg`}
+          alt=""
+          aria-hidden
+          className="device-mockup"
+        />
+        {children}
+      </body>
     </html>
   );
 }
