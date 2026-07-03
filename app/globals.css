@@ -43,8 +43,9 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
-/* 목업은 데스크톱에서만 보인다(모바일/터치에선 숨김). */
-.device-mockup {
+/* 목업/데스크톱 네비는 데스크톱에서만 보인다(모바일/터치에선 숨김). */
+.device-mockup,
+.desktop-variant-nav {
   display: none;
 }
 
@@ -85,6 +86,42 @@ body {
     overflow: hidden;
     /* 검정 외곽선은 목업이 대신하므로 제거. 모서리 라운드는 목업 화면에 맞춰 유지. */
     border-radius: 38px;
+  }
+  /* 폰 목업 오른쪽의 A/B/C 안 이동 버튼. 뷰포트 세로 중앙, 폰(반폭 190px)
+     오른쪽 가장자리에서 약간 띄워 배치. */
+  .desktop-variant-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: fixed;
+    top: 50%;
+    left: calc(50% + 212px);
+    transform: translateY(-50%);
+    z-index: 10;
+  }
+  .desktop-variant-nav button {
+    min-width: 92px;
+    padding: 12px 20px;
+    border: 1px solid #d4d4d4;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #262626;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+  .desktop-variant-nav button:hover {
+    background: #f5f5f5;
+  }
+  .desktop-variant-nav button[data-active="true"] {
+    background: #1d6ceb;
+    border-color: #1d6ceb;
+    color: #ffffff;
   }
 }
 
