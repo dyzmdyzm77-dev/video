@@ -73,7 +73,8 @@ body {
     position: fixed;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    /* 창 높이에 맞춘 배율(--device-scale)로 목업·화면이 함께 축소된다. */
+    transform: translate(-50%, -50%) scale(var(--device-scale, 1));
     width: 380px;
     height: 800px;
     z-index: -1;
@@ -86,6 +87,8 @@ body {
     overflow: hidden;
     /* 검정 외곽선은 목업이 대신하므로 제거. 모서리 라운드는 목업 화면에 맞춰 유지. */
     border-radius: 38px;
+    /* 목업과 동일 배율로 축소(정중앙 기준). 레이아웃 박스는 360×780 유지, 시각만 축소. */
+    transform: scale(var(--device-scale, 1));
   }
   /* 폰 목업 오른쪽의 A/B/C 안 이동 버튼. 뷰포트 세로 중앙, 폰(반폭 190px)
      오른쪽 가장자리에서 약간 띄워 배치. */
@@ -95,7 +98,8 @@ body {
     gap: 12px;
     position: fixed;
     top: 50%;
-    left: calc(50% + 212px);
+    /* 축소된 폰의 오른쪽 가장자리(반폭 190px × 배율)에서 22px 띄워 따라붙는다. */
+    left: calc(50% + 190px * var(--device-scale, 1) + 22px);
     transform: translateY(-50%);
     z-index: 10;
   }

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { BASE } from "./basePath";
 import DesktopVariantNav from "./components/DesktopVariantNav";
+import DeviceScaler from "./components/DeviceScaler";
 
 export const metadata: Metadata = {
   title: "에스원 CCTV",
@@ -48,6 +49,7 @@ export default function RootLayout({
           className="device-mockup"
         />
         {children}
+        <DeviceScaler />
         <DesktopVariantNav />
       </body>
     </html>
