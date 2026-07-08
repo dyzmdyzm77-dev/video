@@ -45,6 +45,8 @@ body {
 
 /* 목업/데스크톱 네비는 데스크톱에서만 보인다(모바일/터치에선 숨김). */
 .device-mockup,
+.device-frame,
+.device-resizer,
 .desktop-variant-nav {
   display: none;
 }
@@ -64,69 +66,328 @@ body {
     align-items: center;
     justify-content: center;
     background: transparent;
+    /* 왼쪽 패널 폭만큼 왼쪽 여백을 줘, 앱이 "패널을 뺀 영역" 중앙에 오게 한다. */
+    padding-left: var(--panel-w, 200px);
+    transition: padding-left 0.22s ease;
   }
   /* 화면 뒤 맨 뒤 레이어 폰 목업(380×800). 뷰포트 정중앙 고정 — 앱도 flex 로
      정중앙에 오므로 화면과 겹치고, 앱보다 사방 10px 크게 뒤에 보인다.
      z-index:-1 이라 앱 등 모든 콘텐츠 아래에 위치. */
+  /* 폰(360px) 프리셋에서만 보이는 SVG 폰 목업. 넓은 프리셋(폴더블 등)에선
+     아래 .device-frame(CSS 베젤)이 대신 보인다. */
   .device-mockup {
     display: block;
     position: fixed;
     top: 50%;
-    left: 50%;
+    /* 앱과 동일하게 패널을 뺀 영역 중앙(반폭만큼 오른쪽으로) 정렬. */
+    left: calc(50% + var(--panel-w, 200px) / 2);
     /* 창 높이에 맞춘 배율(--device-scale)로 목업·화면이 함께 축소된다. */
     transform: translate(-50%, -50%) scale(var(--device-scale, 1));
-    width: 380px;
-    height: 800px;
+    width: calc(var(--device-w, 360px) + var(--device-margin, 10px) * 2);
+    height: calc(var(--device-h, 780px) + var(--device-margin, 10px) * 2);
     z-index: -1;
     pointer-events: none;
+    opacity: 1;
+    transition:
+      left 0.22s ease,
+      width 0.15s ease-out,
+      height 0.15s ease-out,
+      transform 0.15s ease-out,
+      opacity 0.15s ease-out;
+  }
+  /* 넓은 프리셋용 CSS 베젤(폴더블/트리폴드). 앱보다 사방 10px 큰 어두운 라운드 프레임. */
+  .device-frame {
+    display: block;
+    position: fixed;
+    top: 50%;
+    left: calc(50% + var(--panel-w, 200px) / 2);
+    transform: translate(-50%, -50%) scale(var(--device-scale, 1));
+    width: calc(var(--device-w, 360px) + var(--device-margin, 10px) * 2);
+    height: calc(var(--device-h, 780px) + var(--device-margin, 10px) * 2);
+    border-radius: var(--device-radius, 44px);
+    background: #111111;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0;
+    transition:
+      left 0.22s ease,
+      width 0.15s ease-out,
+      height 0.15s ease-out,
+      border-radius 0.15s ease-out,
+      transform 0.15s ease-out,
+      opacity 0.15s ease-out;
+  }
+  /* 프리셋 종류에 따라 목업/베젤을 크로스페이드(둘 다 항상 렌더 → 크기가 함께 전환).
+     display 토글은 전환이 안 걸려 베젤이 툭 튀므로 opacity 로 처리. */
+  html[data-device-kind="phone"] .device-mockup {
+    opacity: 1;
+  }
+  html[data-device-kind="phone"] .device-frame {
+    opacity: 0;
+  }
+  html[data-device-kind="wide"] .device-mockup {
+    opacity: 0;
+  }
+  html[data-device-kind="wide"] .device-frame {
+    opacity: 1;
   }
   .app-safe-frame {
-    width: 360px;
-    height: 780px;
+    width: var(--device-w, 360px);
+    height: var(--device-h, 780px);
     flex: none;
     overflow: hidden;
-    /* 검정 외곽선은 목업이 대신하므로 제거. 모서리 라운드는 목업 화면에 맞춰 유지. */
-    border-radius: 38px;
-    /* 목업과 동일 배율로 축소(정중앙 기준). 레이아웃 박스는 360×780 유지, 시각만 축소. */
+    /* 검정 외곽선은 목업/프레임이 대신하므로 제거. 안쪽 화면은 베젤보다 7px 작은
+       라운드로 베젤과 동심원을 이룬다(360: 45-7=38 로 기존과 동일). */
+    border-radius: calc(var(--device-radius, 45px) - 7px);
+    /* 목업과 동일 배율로 축소(정중앙 기준). 레이아웃 박스는 원본 크기 유지, 시각만 축소. */
     transform: scale(var(--device-scale, 1));
+    /* 폭·세로·라운드·배율 모두 부드럽게 전환(버튼 클릭 등). 단, 드래그 중엔
+       아래 [data-resizing] 규칙으로 전환을 꺼 폭이 마우스를 즉시 따라오게 한다. */
+    transition:
+      width 0.15s ease-out,
+      height 0.15s ease-out,
+      border-radius 0.15s ease-out,
+      transform 0.15s ease-out;
   }
-  /* 폰 목업 오른쪽의 A/B/C 안 이동 버튼. 뷰포트 세로 중앙, 폰(반폭 190px)
-     오른쪽 가장자리에서 약간 띄워 배치. */
+  /* 드래그 중엔 '폭'만 전환을 꺼 마우스에 즉시 반응하게 한다(세로·라운드·크로스페이드는
+     그대로 부드럽게). 각 요소의 전환 목록에서 width 만 뺀다. */
+  html[data-resizing="true"] .app-safe-frame {
+    transition:
+      height 0.15s ease-out,
+      border-radius 0.15s ease-out,
+      transform 0.15s ease-out;
+  }
+  html[data-resizing="true"] .device-mockup {
+    transition:
+      left 0.22s ease,
+      height 0.15s ease-out,
+      transform 0.15s ease-out,
+      opacity 0.15s ease-out;
+  }
+  html[data-resizing="true"] .device-frame {
+    transition:
+      left 0.22s ease,
+      height 0.15s ease-out,
+      border-radius 0.15s ease-out,
+      transform 0.15s ease-out,
+      opacity 0.15s ease-out;
+  }
+  /* 기기 프레임의 좌·우 가장자리 드래그 영역(폭 조절). 보이는 핸들 없이 투명하며,
+     hover 시에만 옅은 세로선으로 표시. 위치·높이는 프레임과 동일한 변수로 계산돼
+     자동으로 프레임 가장자리에 붙는다. */
+  .device-resizer {
+    display: block;
+  }
+  /* 목업 상단 폭 치수 눈금자. left/top/width 는 JS 가 프레임에 맞춰 설정하고,
+     translateY(-100%) 로 앵커(베젤 위 지점)에서 위로 자란다. */
+  .device-ruler {
+    position: fixed;
+    transform: translateY(-100%);
+    z-index: 12;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: #111111;
+  }
+  .device-ruler-label {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+  /* 치수선(가로 1px). */
+  .device-ruler-line {
+    position: relative;
+    width: 100%;
+    height: 0;
+    border-top: 1px solid #111111;
+  }
+  /* 양끝 세로선(끝단 바, 1px). */
+  .device-ruler-line::before,
+  .device-ruler-line::after {
+    content: "";
+    position: absolute;
+    top: -5px;
+    width: 1px;
+    height: 10px;
+    background: #111111;
+  }
+  .device-ruler-line::before {
+    left: 0;
+  }
+  .device-ruler-line::after {
+    right: 0;
+  }
+  /* 양끝 화살표(바깥 방향). */
+  .device-ruler-arrow {
+    position: absolute;
+    top: -3px;
+    border-top: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+  }
+  .device-ruler-arrow.dra-left {
+    left: 0;
+    border-right: 6px solid #111111;
+  }
+  .device-ruler-arrow.dra-right {
+    right: 0;
+    border-left: 6px solid #111111;
+  }
+
+  /* top/left/height 는 JS(DeviceResizer)가 실제 프레임 위치에 맞춰 설정한다.
+     여기선 폭·커서만(시각 힌트 없이 투명, 커서로만 안내). */
+  .device-resize-edge {
+    position: fixed;
+    width: 40px;
+    transform: translateX(-50%);
+    z-index: 15;
+    cursor: ew-resize;
+    touch-action: none;
+    background: transparent;
+  }
+
+  /* 화면 왼쪽 가장자리에 붙는 LNB 패널(좌측 레일). 전체 높이, 흰 패널.
+     펼침 200px / 접힘 64px(아이콘 레일)로 슬라이드된다. */
   .desktop-variant-nav {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    align-items: stretch;
+    gap: 4px;
     position: fixed;
-    top: 50%;
-    /* 축소된 폰의 오른쪽 가장자리(반폭 190px × 배율)에서 22px 띄워 따라붙는다. */
-    left: calc(50% + 190px * var(--device-scale, 1) + 22px);
-    transform: translateY(-50%);
-    z-index: 10;
-  }
-  .desktop-variant-nav button {
-    min-width: 92px;
-    padding: 12px 20px;
-    border: 1px solid #d4d4d4;
-    border-radius: 10px;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 200px;
+    padding: 20px 14px;
     background: #ffffff;
-    color: #262626;
+    border-right: 1px solid #e5e5e5;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
+    z-index: 10;
+    overflow: hidden;
+    transition: width 0.22s ease;
+  }
+  .desktop-variant-nav[data-open="false"] {
+    width: 64px;
+  }
+
+  /* 짧은 토큰(A/B/C · 360/480…): 접힘 상태에서만 보이는 플레인 텍스트. */
+  .desktop-variant-nav .dvn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    min-width: 28px;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  /* 펼침 상태에선 목록의 짧은 토큰을 숨긴다(라벨만 텍스트로). */
+  .desktop-variant-nav[data-open="true"] .dvn-list .dvn-icon {
+    display: none;
+  }
+  /* 라벨: 펼침 상태에서만 보인다. */
+  .desktop-variant-nav .dvn-label {
+    white-space: nowrap;
+    transition: opacity 0.15s ease;
+  }
+  .desktop-variant-nav[data-open="false"] .dvn-label {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* 상단 접기/펼치기 토글. */
+  .desktop-variant-nav .dvn-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px;
+    border: none;
+    background: transparent;
+    color: #525252;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .desktop-variant-nav .dvn-toggle-icon {
+    font-size: 19px;
+    color: #525252;
+    transition: color 0.15s ease;
+  }
+  .desktop-variant-nav .dvn-toggle:hover .dvn-toggle-icon {
+    color: #171717;
+  }
+
+  /* 그룹 제목(화면안 / 해상도). 펼침 상태에서만 보인다. */
+  .desktop-variant-nav .dvn-group-title {
+    margin: 18px 0 2px;
+    padding: 0 4px;
+    color: #000000;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .desktop-variant-nav[data-open="false"] .dvn-group-title {
+    margin: 14px 0 0;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  /* 메뉴 목록. */
+  .desktop-variant-nav .dvn-list {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    margin: 0;
+    padding: 6px 0 0;
+    list-style: none;
+  }
+  /* 플레인 텍스트 버튼. 활성=검정, 비활성=그레이. 짧은 토큰/라벨 모두 색 상속. */
+  .desktop-variant-nav .dvn-list button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 4px 2px;
+    border: none;
+    background: transparent;
+    color: #a3a3a3;
     font-size: 15px;
     font-weight: 600;
-    line-height: 1;
+    text-align: left;
     cursor: pointer;
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease,
-      color 0.15s ease;
+    transition: color 0.15s ease;
   }
-  .desktop-variant-nav button:hover {
-    background: #f5f5f5;
+  .desktop-variant-nav .dvn-list button:hover {
+    color: #737373;
   }
-  .desktop-variant-nav button[data-active="true"] {
-    background: #1d6ceb;
-    border-color: #1d6ceb;
-    color: #ffffff;
+  .desktop-variant-nav .dvn-list button[data-active="true"] {
+    color: #000000;
   }
+
+  /* 해상도 짧은 토큰은 숫자(360/1080 등)라 폰트를 작게. */
+  .desktop-variant-nav .dvn-icon-num {
+    font-size: 12px;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* 안드로이드 네비 3버튼 그룹 폭 전환(<620 전체 ↔ 620+ CLUSTER). 같은 요소를
+   재사용하며 폭만 전환돼 슬라이드한다. 드래그 중엔(html[data-resizing]) 전환을
+   꺼 폭을 실시간으로 따라오게 한다. */
+/* 619→620 경계에서 태스크바(오른쪽에서 드러남)와 3버튼(폭·오른쪽여백) 전환이 트리거된다.
+   드래그로 넘어도 이 애니메이션이 재생되도록 전환은 항상 켠다(360~618 은 컴포넌트에서
+   전환 클래스를 안 붙여 즉시 처리 → 지연 없음). */
+.android-nav-taskbar {
+  transition: transform 0.15s ease-out;
+}
+.android-nav-buttons {
+  transition:
+    width 0.15s ease-out,
+    right 0.15s ease-out;
 }
 
 @keyframes timeline-scroll {

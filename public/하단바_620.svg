@@ -1,0 +1,16 @@
+<svg width="620" height="48" viewBox="0 0 620 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="620" height="48" fill="#F6F6F6"/>
+<rect width="278" height="48" transform="translate(342)" fill="#F6F6F6"/>
+<path d="M420 31V17" stroke="#8F8F8F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M413 31V17" stroke="#8F8F8F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M427 31V17" stroke="#8F8F8F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="474" y="17" width="14" height="14" rx="4" stroke="#8F8F8F" stroke-width="2"/>
+<path d="M544.75 30.875L537.875 24L544.75 17.125" stroke="#8F8F8F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="120" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+<rect x="165" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+<rect x="210" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+<rect x="255" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+<path d="M297 33.5007C297 33.5007 297 34 296.5 34C296 34 296 33.5007 296 33.5007V14.4994C296 14.4994 296 14 296.5 14C297 14 297 14.4994 297 14.4994V33.5007Z" fill="#8F8F8F"/>
+<rect x="305" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+<rect x="350" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+</svg>
