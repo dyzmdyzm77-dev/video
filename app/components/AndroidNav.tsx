@@ -3,9 +3,10 @@
 import { useDeviceWidth } from "./useDeviceWidth";
 
 // 안드로이드 시스템 하단 네비(디바이스 전체 폭). 3버튼은 한 번만 렌더해 재사용.
-//  - <620: 3버튼이 화면 폭 전체에 균등.
-//  - 620/750/1080: 왼쪽 앱 아이콘 태스크바 + (고정 GAP) + 3버튼 유닛, 가운데 정렬.
-// 구간이 바뀌면 태스크바 아이콘 슬롯 폭이 0↔33 으로 전환돼 슬라이드하며 늘고 준다.
+//  - <620: 3버튼이 화면 폭 전체에 균등(왼쪽·오른쪽 0 앵커).
+//  - 620~1080: 3버튼은 오른쪽 끝에서 고정 마진(back ≈ RIGHTPAD+…≈67px)으로 붙고,
+//    태스크바(앱 아이콘)는 왼쪽 정렬. 화면이 넓어져도 버튼은 오른쪽 고정, 태스크바는
+//    왼쪽 고정, 가운데 회색만 늘어난다(둘 다 CSS 앵커라 드래그 지연·구간 튐 없음).
 
 function RecentAppsIcon({ className }: { className?: string }) {
   return (
@@ -33,12 +34,12 @@ function BackIcon({ className }: { className?: string }) {
   );
 }
 
-const GAP = 56; // 태스크바 ↔ 3버튼 고정 간격
 const CLUSTER = 180; // 620+ 3버튼 그룹 폭
-const ICON = 33;
-const IGAP = 12;
-const MAX_BEFORE = 6; // 구분선 앞 최대 아이콘 수
-const MAX_AFTER = 3; // 구분선 뒤 최대 아이콘 수
+const RIGHTPAD = 37; // 그룹 오른쪽 여백 → back 버튼이 화면 오른쪽에서 ≈67px
+const TB_GAP = 60; // 태스크바 오른쪽 끝 ↔ 3버튼 사이 간격
+// 태스크바 오른쪽 앵커 위치(화면 오른쪽에서). 3버튼 그룹 왼쪽에 TB_GAP 만큼 붙는다.
+const TB_RIGHT = RIGHTPAD + CLUSTER + TB_GAP;
+const IGAP = 12; // 앱 아이콘 간격
 
 // 구간별 태스크바(앱 아이콘) 구성 — 구분선 앞/뒤 개수.
 function taskbarSpec(w: number) {
@@ -46,18 +47,6 @@ function taskbarSpec(w: number) {
   if (w >= 750) return { before: 6, after: 2 };
   if (w >= 620) return { before: 4, after: 1 }; // 620~749
   return { before: 0, after: 0 };
-}
-
-// 폭이 0↔(ICON+IGAP) 로 전환되는 아이콘 슬롯(개수 대신 폭 애니메이션).
-function IconSlot({ active }: { active: boolean }) {
-  return (
-    <span
-      className="android-nav-slot flex flex-none items-center overflow-hidden"
-      style={{ width: active ? `${ICON + IGAP}px` : "0px" }}
-    >
-      <span className="h-[33px] w-[33px] flex-none rounded-[13px] bg-[#ECECEC]" />
-    </span>
-  );
 }
 
 export default function AndroidNav({
@@ -71,48 +60,51 @@ export default function AndroidNav({
   if (platform !== "android" || !chromeVisible) return null;
 
   const taskbar = w >= 620;
-  const spec = taskbarSpec(w);
+  // 619→620 경계에서 전환이 트리거되도록, 전환 클래스는 619 이상에서만 붙인다.
+  // (360~618 은 클래스가 없어 폭이 즉시 바뀜 → 지연 없음. 그대로 둠)
+  const animate = w >= 619;
+  // 항상 620 세트를 렌더(양방향 애니메이션용). 620 미만이면 클립 밖(오른쪽)으로 숨김.
+  const spec = taskbarSpec(Math.max(w, 620));
 
   return (
     <div
       className="relative z-40 w-full overflow-hidden"
       style={{ height: "48px", backgroundColor: "#F6F6F6" }}
     >
-      {/* [태스크바] —(GAP)— [3버튼] 유닛. 가운데 정렬, 양옆 회색이 채운다. */}
+      {/* 앱 아이콘 태스크바 — 3버튼 왼쪽에 TB_GAP 간격으로 오른쪽 앵커. 클립(overflow-hidden)
+          안에서 아이콘이 왼쪽에서 드러나며 등장/퇴장한다(둘 다 애니메이션, 모든 폭에서 <620엔 숨김). */}
       <div
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ gap: taskbar ? `${GAP}px` : "0px" }}
+        className="absolute inset-y-0 flex items-center overflow-hidden"
+        style={{ right: `${TB_RIGHT}px` }}
       >
-        {/* 왼쪽 앱 아이콘 태스크바 — 620 진입 시 왼쪽에서 슬라이드로 들어오고,
-            구간 변화 땐 아이콘 슬롯 폭이 늘고 준다. */}
         <div
-          className="flex items-center transition-transform duration-150 ease-out"
-          style={{ transform: taskbar ? "translateX(0)" : "translateX(-40px)" }}
+          className="android-nav-taskbar flex items-center"
+          style={{ gap: `${IGAP}px`, transform: taskbar ? "translateX(0)" : "translateX(100%)" }}
         >
-          {Array.from({ length: MAX_BEFORE }).map((_, i) => (
-            <IconSlot key={`b${i}`} active={i < spec.before} />
+          {Array.from({ length: spec.before }).map((_, i) => (
+            <span key={`b${i}`} className="h-[33px] w-[33px] flex-none rounded-[13px] bg-[#ECECEC]" />
           ))}
-          {/* 구분선 — 태스크바가 있을 때만 폭 전환으로 등장. */}
-          <span
-            className="android-nav-slot flex flex-none items-center overflow-hidden"
-            style={{ width: taskbar ? `${IGAP}px` : "0px" }}
-          >
-            <span className="h-[22px] w-px flex-none bg-[#D0D0D0]" />
-          </span>
-          {Array.from({ length: MAX_AFTER }).map((_, i) => (
-            <IconSlot key={`a${i}`} active={i < spec.after} />
+          <span className="h-[22px] w-px flex-none bg-[#D0D0D0]" />
+          {Array.from({ length: spec.after }).map((_, i) => (
+            <span key={`a${i}`} className="h-[33px] w-[33px] flex-none rounded-[13px] bg-[#ECECEC]" />
           ))}
         </div>
+      </div>
 
-        {/* 3버튼 — 항상 한 번만 렌더(재사용). 폭만 전환(전체↔CLUSTER). */}
-        <div
-          className="android-nav-buttons flex flex-none items-center justify-around"
-          style={{ width: taskbar ? `${CLUSTER}px` : `${w}px` }}
-        >
-          <RecentAppsIcon className="h-5 w-5 text-neutral-500" />
-          <SystemHomeIcon className="h-6 w-6 text-neutral-500" />
-          <BackIcon className="h-5 w-5 text-neutral-500" />
-        </div>
+      {/* 3버튼 — 오른쪽 앵커 유지. 620+ 은 폭 CLUSTER(클러스터), <620 은 폭 w(전체 균등).
+          전환 클래스는 620+ 에서만 → 480→620 진입 시 폭 w→CLUSTER 이 부드럽게 슬라이드,
+          360~479 연속 드래그는 전환 없이 즉시 추종(지연 없음). 같은 요소 재사용. */}
+      <div
+        className={`absolute inset-y-0 flex items-center justify-around ${animate ? "android-nav-buttons" : ""}`}
+        style={
+          taskbar
+            ? { right: `${RIGHTPAD}px`, width: `${CLUSTER}px` }
+            : { right: 0, width: `${w}px` }
+        }
+      >
+        <RecentAppsIcon className="h-5 w-5 text-neutral-500" />
+        <SystemHomeIcon className="h-6 w-6 text-neutral-500" />
+        <BackIcon className="h-5 w-5 text-neutral-500" />
       </div>
     </div>
   );

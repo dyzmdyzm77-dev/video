@@ -378,10 +378,16 @@ body {
 /* 안드로이드 네비 3버튼 그룹 폭 전환(<620 전체 ↔ 620+ CLUSTER). 같은 요소를
    재사용하며 폭만 전환돼 슬라이드한다. 드래그 중엔(html[data-resizing]) 전환을
    꺼 폭을 실시간으로 따라오게 한다. */
-/* 3버튼 그룹 폭 + 태스크바 아이콘 슬롯 폭 전환. */
-.android-nav-buttons,
-.android-nav-slot {
-  transition: width 0.15s ease-out;
+/* 619→620 경계에서 태스크바(오른쪽에서 드러남)와 3버튼(폭·오른쪽여백) 전환이 트리거된다.
+   드래그로 넘어도 이 애니메이션이 재생되도록 전환은 항상 켠다(360~618 은 컴포넌트에서
+   전환 클래스를 안 붙여 즉시 처리 → 지연 없음). */
+.android-nav-taskbar {
+  transition: transform 0.15s ease-out;
+}
+.android-nav-buttons {
+  transition:
+    width 0.15s ease-out,
+    right 0.15s ease-out;
 }
 
 @keyframes timeline-scroll {
