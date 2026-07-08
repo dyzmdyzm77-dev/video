@@ -83,8 +83,12 @@ export default function AndroidNav({
         className="absolute inset-0 flex items-center justify-center"
         style={{ gap: taskbar ? `${GAP}px` : "0px" }}
       >
-        {/* 왼쪽 앱 아이콘 태스크바 — 아이콘 슬롯 폭 전환으로 슬라이드하며 늘고 준다. */}
-        <div className="flex items-center">
+        {/* 왼쪽 앱 아이콘 태스크바 — 620 진입 시 왼쪽에서 슬라이드로 들어오고,
+            구간 변화 땐 아이콘 슬롯 폭이 늘고 준다. */}
+        <div
+          className="flex items-center transition-transform duration-150 ease-out"
+          style={{ transform: taskbar ? "translateX(0)" : "translateX(-40px)" }}
+        >
           {Array.from({ length: MAX_BEFORE }).map((_, i) => (
             <IconSlot key={`b${i}`} active={i < spec.before} />
           ))}
