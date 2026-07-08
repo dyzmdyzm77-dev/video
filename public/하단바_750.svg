@@ -1,0 +1,18 @@
+<svg width="750" height="48" viewBox="0 0 750 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="750" height="48" fill="#F6F6F6"/>
+<rect width="278" height="48" transform="translate(472)" fill="#F6F6F6"/>
+<path d="M550 31V17" stroke="#8F8F8F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M543 31V17" stroke="#8F8F8F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M557 31V17" stroke="#8F8F8F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="604" y="17" width="14" height="14" rx="4" stroke="#8F8F8F" stroke-width="2"/>
+<path d="M674.75 30.875L667.875 24L674.75 17.125" stroke="#8F8F8F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="150" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+<rect x="195" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+<rect x="240" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+<rect x="285" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+<rect x="330" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+<rect x="375" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+<path d="M417 33.5007C417 33.5007 417 34 416.5 34C416 34 416 33.5007 416 33.5007V14.4994C416 14.4994 416 14 416.5 14C417 14 417 14.4994 417 14.4994V33.5007Z" fill="#8F8F8F"/>
+<rect x="425" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+<rect x="470" y="7.5" width="33" height="33" rx="13" fill="#ECECEC"/>
+</svg>

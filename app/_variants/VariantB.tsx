@@ -10,6 +10,7 @@ import {
   useGifFrameCanvas,
 } from "../components/CameraFeed";
 import VariantPicker from "../components/VariantPicker";
+import AndroidNav from "../components/AndroidNav";
 
 const CAMERAS = [
   { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
@@ -135,57 +136,6 @@ function BatteryIcon({ className, level }: { className?: string; level: number }
   );
 }
 
-function RecentAppsIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      className={className}
-      aria-hidden
-    >
-      <line x1="7" y1="5" x2="7" y2="19" />
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="17" y1="5" x2="17" y2="19" />
-    </svg>
-  );
-}
-
-function SystemHomeIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <rect x="5" y="5" width="14" height="14" rx="3.5" />
-    </svg>
-  );
-}
-
-function BackIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <polyline points="15 6 9 12 15 18" />
-    </svg>
-  );
-}
-
 function MenuIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -308,7 +258,7 @@ export default function VariantB({
 
   return (
     <div className="app-safe-frame h-full w-full flex flex-col items-center bg-white">
-    <div className="relative flex min-h-0 flex-1 w-full max-w-[440px] flex-col overflow-hidden bg-white">
+    <div className="relative flex min-h-0 flex-1 w-full max-w-[620px] flex-col overflow-hidden bg-white">
       {/* 펀치홀 카메라 점 — 시스템 바가 보일 때만 노출. 누르면 상태바/네비게이션바 토글.
           숨김 상태에선 칩(LIVE/녹화)을 눌러 다시 켤 수 있다. */}
       {platform === "android" && chromeVisible && (
@@ -427,7 +377,7 @@ export default function VariantB({
         onClose={() => setVariantPickerOpen(false)}
       />
 
-      <nav className="mt-auto border-t border-neutral-200 bg-white">
+      <nav className="mx-auto mt-auto w-full max-w-[620px] border-t border-neutral-200 bg-white">
         <ul
           className="grid grid-cols-4 items-center"
           style={{ height: "60px" }}
@@ -438,25 +388,6 @@ export default function VariantB({
           <TabItem iconSrc={`${BASE}/nav/menu.svg`} label="전체" />
         </ul>
       </nav>
-
-      {/* 하단 안드로이드 네비(48px) — Android 환경+시스템바 켜짐일 때만.
-          홈 인디케이터/제스처 네비 여백은 .app-safe-frame 의 padding-bottom 이 담당. */}
-      {platform === "android" && chromeVisible && (
-        <div
-          className="relative z-40 grid grid-cols-3 items-center"
-          style={{ height: "48px", backgroundColor: "#F6F6F6" }}
-        >
-          <div className="flex justify-center">
-            <RecentAppsIcon className="h-5 w-5 text-neutral-500" />
-          </div>
-          <div className="flex justify-center">
-            <SystemHomeIcon className="h-6 w-6 text-neutral-500" />
-          </div>
-          <div className="flex justify-center">
-            <BackIcon className="h-5 w-5 text-neutral-500" />
-          </div>
-        </div>
-      )}
 
       {/* 화면 캡처 토스트 — 하단탭/시스템 네비게이션 바 위로 20px 띄워 노출. */}
       {captureToast && (
@@ -479,6 +410,9 @@ export default function VariantB({
         </div>
       )}
     </div>
+
+      {/* 하단 안드로이드 네비 — 디바이스 전체 폭(콘텐츠 620 컬럼 밖). 해상도별 형태. */}
+      <AndroidNav platform={platform} chromeVisible={chromeVisible} />
     </div>
   );
 }

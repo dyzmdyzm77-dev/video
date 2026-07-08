@@ -3,6 +3,7 @@ import "./globals.css";
 import { BASE } from "./basePath";
 import DesktopVariantNav from "./components/DesktopVariantNav";
 import DeviceScaler from "./components/DeviceScaler";
+import DeviceResizer from "./components/DeviceResizer";
 
 export const metadata: Metadata = {
   title: "에스원 CCTV",
@@ -48,6 +49,10 @@ export default function RootLayout({
           aria-hidden
           className="device-mockup"
         />
+        {/* 넓은 프리셋(폴더블/트리폴드)용 CSS 베젤. 폰 프리셋에선 CSS로 숨김. */}
+        <div aria-hidden className="device-frame" />
+        {/* 기기 가장자리 드래그 핸들(폭·높이 조절). */}
+        <DeviceResizer />
         {children}
         <DeviceScaler />
         <DesktopVariantNav />
