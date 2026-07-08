@@ -15,13 +15,11 @@ const OPTIONS: { key: VariantKey; label: string; href: string }[] = [
 export default function VariantPicker({
   open,
   current,
-  bottomOffset = 0,
   onClose,
   platform,
 }: {
   open: boolean;
   current: VariantKey;
-  bottomOffset?: number;
   onClose: () => void;
   // 변형 전환 시에도 선택한 환경(iOS/Android)을 URL 쿼리로 이어준다.
   platform?: "android" | "ios";
@@ -41,16 +39,14 @@ export default function VariantPicker({
       />
       {/* 시트 */}
       <div
-        className={`absolute inset-x-0 flex max-h-[90%] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
+        className={`absolute inset-x-0 mx-auto w-full max-w-[480px] flex max-h-[90%] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
           open ? "pointer-events-auto" : ""
         }`}
         style={{
-          bottom: bottomOffset,
+          bottom: 0,
           borderTopLeftRadius: "10px",
           borderTopRightRadius: "10px",
-          transform: open
-            ? "translateY(0%)"
-            : `translateY(calc(100% + ${bottomOffset}px))`,
+          transform: open ? "translateY(0%)" : "translateY(100%)",
           // 닫혔을 땐 그림자를 끈다: 시트 윗변이 화면 하단에 걸쳐 shadow-2xl 이
           // 화면 안쪽 하단 가장자리로 새어 올라오는 걸 막는다.
           boxShadow: open ? undefined : "none",
