@@ -258,7 +258,7 @@ export default function VariantB({
 
   return (
     <div className="app-safe-frame h-full w-full flex flex-col items-center bg-white">
-    <div className="relative flex min-h-0 flex-1 w-full max-w-[620px] flex-col overflow-hidden bg-white">
+    <div className="relative flex min-h-0 flex-1 w-full flex-col overflow-hidden bg-white">
       {/* 펀치홀 카메라 점 — 시스템 바가 보일 때만 노출. 누르면 상태바/네비게이션바 토글.
           숨김 상태에선 칩(LIVE/녹화)을 눌러 다시 켤 수 있다. */}
       {platform === "android" && chromeVisible && (
@@ -344,7 +344,6 @@ export default function VariantB({
       <DateTimePickerSheet
         open={dateTimeOpen}
         initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
-        bottomOffset={platform === "android" && chromeVisible ? 48 : 0}
         onClose={() => setDateTimeOpen(false)}
         onApply={(ms) => {
           setPlaybackMs(ms);
@@ -359,7 +358,6 @@ export default function VariantB({
         open={sheetOpen}
         initialVert={vertLayout}
         initialHorz={horzLayout}
-        bottomOffset={platform === "android" && chromeVisible ? 48 : 0}
         onClose={() => setSheetOpen(false)}
         onApply={(vert, horz) => {
           setVertLayout(vert);
@@ -373,13 +371,12 @@ export default function VariantB({
         open={variantPickerOpen}
         current="b"
         platform={platform}
-        bottomOffset={platform === "android" && chromeVisible ? 48 : 0}
         onClose={() => setVariantPickerOpen(false)}
       />
 
-      <nav className="mx-auto mt-auto w-full max-w-[620px] border-t border-neutral-200 bg-white">
+      <nav className="mx-auto mt-auto w-full border-t border-neutral-200 bg-white">
         <ul
-          className="grid grid-cols-4 items-center"
+          className="mx-auto grid w-full max-w-[480px] grid-cols-4 items-center"
           style={{ height: "60px" }}
         >
           <TabItem iconSrc={`${BASE}/nav/home.svg`} label="홈" onClick={onHome} />
@@ -394,7 +391,7 @@ export default function VariantB({
         <div
           className="toast-slide-up pointer-events-none absolute left-1/2 z-50 flex items-center justify-center"
           style={{
-            bottom: `${60 + (chromeVisible ? 48 : 0) + 20}px`,
+            bottom: `${60 + 20}px`,
             transform: "translateX(-50%)",
             width: "320px",
             height: "48px",
@@ -2114,14 +2111,12 @@ function LayoutConfigSheet({
   open,
   initialVert,
   initialHorz,
-  bottomOffset = 0,
   onClose,
   onApply,
 }: {
   open: boolean;
   initialVert: LayoutKey;
   initialHorz: LayoutKey;
-  bottomOffset?: number;
   onClose: () => void;
   onApply: (vert: LayoutKey, horz: LayoutKey) => void;
 }) {
@@ -2153,18 +2148,16 @@ function LayoutConfigSheet({
       />
       {/* 시트 */}
       <div
-        className={`absolute inset-x-0 flex max-h-[90%] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
+        className={`absolute inset-x-0 mx-auto w-full max-w-[480px] flex max-h-[90%] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
           open ? "pointer-events-auto" : ""
         }`}
         style={{
-          // 안드로이드 시스템 네비게이션 바(48px)는 페이지 내부 DOM이라 bottom:0이면 겹친다.
-          // 네비 표시 중이면 그 높이만큼 띄우고, 숨김이면 0으로 붙인다(날짜시간 시트와 동일).
-          bottom: bottomOffset,
+          // 시트의 기준 컨테이너(콘텐츠 컬럼)가 안드로이드 시스템 네비 위에서 끝나므로
+          // bottom:0 이면 시스템 네비 바로 위에 딱 붙는다.
+          bottom: 0,
           borderTopLeftRadius: "10px",
           borderTopRightRadius: "10px",
-          transform: open
-            ? "translateY(0%)"
-            : `translateY(calc(100% + ${bottomOffset}px))`,
+          transform: open ? "translateY(0%)" : "translateY(100%)",
           // 닫혔을 땐 그림자를 끈다: 시트 윗변이 화면 하단에 걸쳐 shadow-2xl 이
           // 화면 안쪽 하단 가장자리로 새어 올라오는 걸 막는다.
           boxShadow: open ? undefined : "none",
@@ -2671,13 +2664,11 @@ const DATE_PICK_RANGE = 30; // 오늘 기준 과거 30일 (오늘 포함 31일)
 function DateTimePickerSheet({
   open,
   initialMs,
-  bottomOffset = 0,
   onClose,
   onApply,
 }: {
   open: boolean;
   initialMs: number;
-  bottomOffset?: number;
   onClose: () => void;
   onApply: (ms: number) => void;
 }) {
@@ -2764,19 +2755,16 @@ function DateTimePickerSheet({
         onClick={onClose}
       />
       <div
-        className={`absolute inset-x-0 flex flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
+        className={`absolute inset-x-0 mx-auto w-full max-w-[480px] flex flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
           open ? "pointer-events-auto" : ""
         }`}
         style={{
-          // 안드로이드 시스템 네비게이션 바(목, 48px)는 페이지 내부 DOM 요소라 bottom:0이면
-          // 그 뒤로 겹친다. 시스템 네비 높이만큼만 띄워 그 위에 둔다(앱 탭바는 시트가 덮어도 됨).
-          bottom: bottomOffset,
+          // 시트의 기준 컨테이너(콘텐츠 컬럼)가 안드로이드 시스템 네비 위에서 끝나므로
+          // bottom:0 이면 시스템 네비 바로 위에 딱 붙는다(앱 탭바는 시트가 덮어도 됨).
+          bottom: 0,
           borderTopLeftRadius: "10px",
           borderTopRightRadius: "10px",
-          // 닫힐 땐 bottomOffset만큼(네비 위에 떠 있던 거리) 더 내려 화면 밖으로 완전히 숨긴다.
-          transform: open
-            ? "translateY(0%)"
-            : `translateY(calc(100% + ${bottomOffset}px))`,
+          transform: open ? "translateY(0%)" : "translateY(100%)",
           // 닫혔을 땐 그림자를 끈다: 시트 윗변이 화면 하단에 걸쳐 shadow-2xl 이
           // 화면 안쪽 하단 가장자리로 새어 올라오는 걸 막는다.
           boxShadow: open ? undefined : "none",
