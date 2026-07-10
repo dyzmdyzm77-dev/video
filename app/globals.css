@@ -374,12 +374,40 @@ body {
     letter-spacing: -0.02em;
   }
 
-  /* 패널 맨 하단: 치수 눈금자 표시 체크박스. */
-  .desktop-variant-nav .dvn-ruler-toggle {
+  /* 패널 맨 하단 그룹 첫 줄: 배율 1:1 고정 토글(치수 표시 위). */
+  .desktop-variant-nav .dvn-actual-toggle {
     display: flex;
     align-items: center;
     gap: 6px;
     margin-top: auto;
+    padding: 4px 2px;
+    border: none;
+    background: transparent;
+    color: #525252;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .desktop-variant-nav .dvn-actual-toggle:hover,
+  .desktop-variant-nav .dvn-actual-toggle[data-active="true"] {
+    color: #000000;
+  }
+  /* 접힘 상태용 짧은 토큰(1:1/↺)은 숫자라 폰트를 작게. 펼침 상태에선 숨긴다. */
+  .desktop-variant-nav .dvn-actual-toggle .dvn-icon {
+    font-size: 12px;
+    letter-spacing: -0.02em;
+  }
+  .desktop-variant-nav[data-open="true"] .dvn-actual-toggle .dvn-icon {
+    display: none;
+  }
+
+  /* 치수 눈금자 표시 체크박스. */
+  .desktop-variant-nav .dvn-ruler-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     padding: 4px 2px;
     color: #525252;
     font-size: 14px;

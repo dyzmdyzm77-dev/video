@@ -16,10 +16,10 @@ const MAX_W = 1080;
 // m = 베젤과 화면 사이 사방 간격(px). 1080 만 30, 나머지는 10.
 const BREAKS = [
   { min: 360, h: 780, r: 45, m: 10 },
-  { min: 480, h: 860, r: 29, m: 10 },
-  { min: 620, h: 900, r: 29, m: 10 },
-  { min: 750, h: 840, r: 13, m: 10 },
-  { min: 1080, h: 900, r: 13, m: 30 },
+  { min: 480, h: 780, r: 29, m: 10 },
+  { min: 620, h: 780, r: 29, m: 10 },
+  { min: 750, h: 832, r: 13, m: 10 },
+  { min: 1080, h: 792, r: 13, m: 30 },
 ];
 
 // 폭이 속한 해상도 범위(BREAKS/DEVICES) 인덱스.
@@ -72,6 +72,7 @@ export default function DeviceResizer() {
       el.style.left = `${x}px`;
     }
     // 상단 치수 눈금자: 화면 폭만큼 span, 베젤 위쪽에 배치, 라벨은 현재 폭(px).
+    // 실제 사이즈 모드에선 기기 몸체(베젤 포함) 폭을 mm 로 표시한다.
     const ruler = rulerRef.current;
     const label = labelRef.current;
     if (ruler && label) {
@@ -79,11 +80,20 @@ export default function DeviceResizer() {
       const margin = parseFloat(cs.getPropertyValue("--device-margin")) || 10;
       const scale = parseFloat(cs.getPropertyValue("--device-scale")) || 1;
       const w = Math.round(parseFloat(cs.getPropertyValue("--device-w")) || 360);
-      ruler.style.left = `${box.left}px`;
-      ruler.style.width = `${box.width}px`;
+      const actual = document.documentElement.dataset.actualSize === "true";
+      if (actual) {
+        // 몸체 물리 폭(mm)은 DeviceScaler 가 --device-phys-mm 로 노출한다.
+        const mm = parseFloat(cs.getPropertyValue("--device-phys-mm")) || 0;
+        ruler.style.left = `${box.left - margin * scale}px`;
+        ruler.style.width = `${box.width + margin * scale * 2}px`;
+        label.textContent = `${mm.toFixed(1)}mm`;
+      } else {
+        ruler.style.left = `${box.left}px`;
+        ruler.style.width = `${box.width}px`;
+        label.textContent = `${w}px`;
+      }
       // 베젤 상단(화면 top 에서 margin·scale 위) 보다 RULER_GAP 만큼 더 위.
       ruler.style.top = `${box.top - margin * scale - RULER_GAP}px`;
-      label.textContent = `${w}px`;
     }
   };
 

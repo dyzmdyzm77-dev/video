@@ -18,10 +18,10 @@ const VARIANTS = [
 // m = 베젤과 화면 사이 사방 간격(px). 1080 만 30, 나머지는 10.
 const DEVICES = [
   { w: 360, h: 780, r: 45, m: 10, label: "360px", sub: "Galaxy S25" },
-  { w: 480, h: 860, r: 29, m: 10, label: "480px", sub: "" },
-  { w: 620, h: 900, r: 29, m: 10, label: "620px", sub: "" },
-  { w: 750, h: 840, r: 13, m: 10, label: "750px", sub: "Z Fold 7" },
-  { w: 1080, h: 900, r: 13, m: 30, label: "1080px", sub: "Z TriFold" },
+  { w: 480, h: 780, r: 29, m: 10, label: "480px", sub: "" },
+  { w: 620, h: 780, r: 29, m: 10, label: "620px", sub: "" },
+  { w: 750, h: 832, r: 13, m: 10, label: "750px", sub: "Z Fold 7" },
+  { w: 1080, h: 792, r: 13, m: 30, label: "1080px", sub: "Z TriFold" },
 ];
 
 export default function DesktopVariantNav() {
@@ -30,11 +30,18 @@ export default function DesktopVariantNav() {
   const [open, setOpen] = useState(true);
   const [active, setActive] = useState(0); // 강조 표시할 DEVICES 인덱스(범위)
   const [showRuler, setShowRuler] = useState(true); // 목업 위 치수 눈금자 표시 여부
+  const [actualSize, setActualSize] = useState(false); // 배율 1:1 고정 여부
 
   // 치수 눈금자 표시를 문서 루트에 반영한다(CSS 가 data-show-ruler 로 숨김 처리).
   useEffect(() => {
     document.documentElement.dataset.showRuler = showRuler ? "true" : "false";
   }, [showRuler]);
+
+  // 실제 사이즈(1:1) 여부를 문서 루트에 반영하고 배율을 다시 계산하게 한다.
+  useEffect(() => {
+    document.documentElement.dataset.actualSize = actualSize ? "true" : "false";
+    window.dispatchEvent(new Event("devicechange"));
+  }, [actualSize]);
 
   // 프리셋 크기를 문서 루트에 반영하고 강조 인덱스를 맞춘다.
   const applyPreset = (i: number) => {
@@ -146,7 +153,23 @@ export default function DesktopVariantNav() {
         ))}
       </ul>
 
-      {/* 맨 하단: 목업 위 치수 눈금자 표시 온/오프. */}
+      {/* 맨 하단: 배율 1:1 고정 토글. 누르면 실제 사이즈, 다시 누르면 자동 맞춤. */}
+      <button
+        type="button"
+        className="dvn-actual-toggle"
+        data-active={actualSize}
+        title={actualSize ? "되돌리기" : "실제 사이즈로 보기"}
+        onClick={() => setActualSize((v) => !v)}
+      >
+        <span className="dvn-icon" aria-hidden>
+          {actualSize ? "↺" : "1:1"}
+        </span>
+        <span className="dvn-label">
+          {actualSize ? "되돌리기" : "실제 사이즈로 보기"}
+        </span>
+      </button>
+
+      {/* 목업 위 치수 눈금자 표시 온/오프. */}
       <label className="dvn-ruler-toggle" title="치수 표시">
         <span className="dvn-icon">
           <input
