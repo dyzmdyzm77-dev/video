@@ -373,6 +373,29 @@ body {
     font-size: 12px;
     letter-spacing: -0.02em;
   }
+
+  /* 패널 맨 하단: 치수 눈금자 표시 체크박스. */
+  .desktop-variant-nav .dvn-ruler-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: auto;
+    padding: 4px 2px;
+    color: #525252;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .desktop-variant-nav .dvn-ruler-toggle input {
+    width: 15px;
+    height: 15px;
+    accent-color: #111111;
+    cursor: pointer;
+  }
+  /* 체크 해제 시 목업 위 치수 눈금자를 숨긴다. */
+  html[data-show-ruler="false"] .device-ruler {
+    display: none;
+  }
 }
 
 /* 안드로이드 네비 3버튼 그룹 폭 전환(<620 전체 ↔ 620+ CLUSTER). 같은 요소를

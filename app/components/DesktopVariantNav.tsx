@@ -29,6 +29,12 @@ export default function DesktopVariantNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(true);
   const [active, setActive] = useState(0); // 강조 표시할 DEVICES 인덱스(범위)
+  const [showRuler, setShowRuler] = useState(true); // 목업 위 치수 눈금자 표시 여부
+
+  // 치수 눈금자 표시를 문서 루트에 반영한다(CSS 가 data-show-ruler 로 숨김 처리).
+  useEffect(() => {
+    document.documentElement.dataset.showRuler = showRuler ? "true" : "false";
+  }, [showRuler]);
 
   // 프리셋 크기를 문서 루트에 반영하고 강조 인덱스를 맞춘다.
   const applyPreset = (i: number) => {
@@ -139,6 +145,18 @@ export default function DesktopVariantNav() {
           </li>
         ))}
       </ul>
+
+      {/* 맨 하단: 목업 위 치수 눈금자 표시 온/오프. */}
+      <label className="dvn-ruler-toggle" title="치수 표시">
+        <span className="dvn-icon">
+          <input
+            type="checkbox"
+            checked={showRuler}
+            onChange={(e) => setShowRuler(e.target.checked)}
+          />
+        </span>
+        <span className="dvn-label">치수 표시</span>
+      </label>
     </nav>
   );
 }
