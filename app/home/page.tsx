@@ -173,8 +173,13 @@ function ZoneCard({
           에스원 본사 · N1234567
         </p>
 
-        {/* 상태 + 액션 버튼 줄 */}
-        <div className="mt-4 flex items-end justify-between">
+        {/* 상태 + 액션 버튼 줄 — 버튼 유무와 무관하게 높이 40px 고정, 세로 중앙
+            정렬로 세 카드의 상태 아이콘·텍스트 위치를 동일하게 맞춘다(시안 기준
+            아이콘 중심 = 카드 상단에서 86dp). */}
+        <div
+          className="mt-4 flex items-center justify-between"
+          style={{ height: "40px" }}
+        >
           <span className="flex items-center gap-2">
             {status === "armed" && <Icon name="icon-shield" w={20} h={26} />}
             {status === "disarmed" && <Icon name="icon-door" w={20} h={29} />}
