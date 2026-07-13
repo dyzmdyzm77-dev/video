@@ -337,6 +337,7 @@ export default function VariantB({
           onTogglePlay={() => setIsPlaying((p) => !p)}
           onPlay={() => setIsPlaying(true)}
           onCapture={showCaptureToast}
+          captureToast={captureToast}
           onSpeedChange={setPlaybackRate}
         />
       )}
@@ -386,26 +387,6 @@ export default function VariantB({
         </ul>
       </nav>
 
-      {/* 화면 캡처 토스트 — 하단탭/시스템 네비게이션 바 위로 20px 띄워 노출. */}
-      {captureToast && (
-        <div
-          className="toast-slide-up pointer-events-none absolute left-1/2 z-50 flex items-center justify-center"
-          style={{
-            bottom: `${60 + 20}px`,
-            transform: "translateX(-50%)",
-            width: "320px",
-            height: "48px",
-            borderRadius: "48px",
-            backgroundColor: "rgba(34, 34, 34, 0.9)",
-          }}
-        >
-          <span
-            style={{ color: "#FFFFFF", fontSize: "14px", fontWeight: 500 }}
-          >
-            현재 화면이 캡처 되었어요
-          </span>
-        </div>
-      )}
     </div>
 
       {/* 하단 안드로이드 네비 — 디바이스 전체 폭(콘텐츠 620 컬럼 밖). 해상도별 형태. */}
@@ -667,13 +648,13 @@ function GridView({
           onGallery={onOpenSheet}
         />
         <SectionSkeleton visible={gridLoading} cols={cols} rows={rows} />
-        {/* 탐색 토스트 — 영상 영역 기준 하단 중앙 */}
+        {/* 탐색 토스트 — 영상 그리드 하단에서 20px 위(토스트 공통 규칙). */}
         {seekToast && (
           <div
             key={seekToast}
             className="toast-slide-up pointer-events-none absolute left-1/2 z-20 flex items-center justify-center"
             style={{
-              bottom: "16px",
+              bottom: "20px",
               transform: "translateX(-50%)",
               height: "32px",
               padding: "0 16px",
@@ -798,6 +779,7 @@ function ExpandedView({
   onTogglePlay,
   onPlay,
   onCapture,
+  captureToast = false,
   onSpeedChange,
 }: {
   index: number;
@@ -822,6 +804,7 @@ function ExpandedView({
   onTogglePlay?: () => void;
   onPlay?: () => void;
   onCapture?: () => void;
+  captureToast?: boolean;
   onSpeedChange?: (rate: number) => void;
 }) {
   // 끊김 방지: 녹화 재생은 항상 캔버스 경로(프레임 단위 디코딩·캐시)로 그린다.
@@ -1127,6 +1110,26 @@ function ExpandedView({
                 style={{ color: "#FFFFFF", fontSize: "14px", fontWeight: 500 }}
               >
                 {seekToast}
+              </span>
+            </div>
+          )}
+          {/* 화면 캡처 토스트 — 영상 영역 하단에서 20px 위(토스트 공통 규칙). */}
+          {captureToast && (
+            <div
+              className="toast-slide-up pointer-events-none absolute left-1/2 z-20 flex items-center justify-center"
+              style={{
+                bottom: "20px",
+                transform: "translateX(-50%)",
+                width: "320px",
+                height: "48px",
+                borderRadius: "48px",
+                backgroundColor: "rgba(34, 34, 34, 0.9)",
+              }}
+            >
+              <span
+                style={{ color: "#FFFFFF", fontSize: "14px", fontWeight: 500 }}
+              >
+                현재 화면이 캡처 되었어요
               </span>
             </div>
           )}

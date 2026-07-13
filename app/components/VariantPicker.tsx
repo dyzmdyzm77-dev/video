@@ -2,14 +2,14 @@
 
 import { BASE } from "../basePath";
 
-// 상단 위치명("8층 사무실 A/B/C")을 누르면 뜨는 바텀시트.
-// A안·B안·C안 사이를 전환한다. 현재 보고 있는 안에는 체크 표시.
-type VariantKey = "a" | "b" | "c";
+// 상단 위치명("8층 사무실 A/B")을 누르면 뜨는 바텀시트.
+// A안·B안 사이를 전환한다. 현재 보고 있는 안에는 체크 표시.
+type VariantKey = "a" | "a1" | "b";
 
 const OPTIONS: { key: VariantKey; label: string; href: string }[] = [
   { key: "a", label: "A안", href: "/a" },
+  { key: "a1", label: "A-1안", href: "/a1" },
   { key: "b", label: "B안", href: "/b" },
-  { key: "c", label: "C안", href: "/c" },
 ];
 
 export default function VariantPicker({

@@ -335,6 +335,7 @@ export default function VariantA({
           onTogglePlay={() => setIsPlaying((p) => !p)}
           onPlay={() => setIsPlaying(true)}
           onCapture={showCaptureToast}
+          captureToast={captureToast}
           onSpeedChange={setPlaybackRate}
         />
       )}
@@ -385,26 +386,6 @@ export default function VariantA({
         </ul>
       </nav>
 
-      {/* 화면 캡처 토스트 — 하단탭/시스템 네비게이션 바 위로 20px 띄워 노출. */}
-      {captureToast && (
-        <div
-          className="toast-slide-up pointer-events-none absolute left-1/2 z-50 flex items-center justify-center"
-          style={{
-            bottom: `${(mode === "live" ? 60 : 0) + 20}px`,
-            transform: "translateX(-50%)",
-            width: "320px",
-            height: "48px",
-            borderRadius: "48px",
-            backgroundColor: "rgba(34, 34, 34, 0.9)",
-          }}
-        >
-          <span
-            style={{ color: "#FFFFFF", fontSize: "14px", fontWeight: 500 }}
-          >
-            현재 화면이 캡처 되었어요
-          </span>
-        </div>
-      )}
     </div>
 
       {/* 하단 안드로이드 네비 — 디바이스 전체 폭(콘텐츠 620 컬럼 밖). 해상도별 형태. */}
@@ -738,6 +719,7 @@ function ExpandedView({
   onTogglePlay,
   onPlay,
   onCapture,
+  captureToast = false,
   onSpeedChange,
 }: {
   index: number;
@@ -761,6 +743,7 @@ function ExpandedView({
   onTogglePlay?: () => void;
   onPlay?: () => void;
   onCapture?: () => void;
+  captureToast?: boolean;
   onSpeedChange?: (rate: number) => void;
 }) {
   const cam = CAMERAS[index];
@@ -1033,6 +1016,26 @@ function ExpandedView({
                 style={{ color: "#FFFFFF", fontSize: "14px", fontWeight: 500 }}
               >
                 {seekToast}
+              </span>
+            </div>
+          )}
+          {/* 화면 캡처 토스트 — 영상 영역 하단에서 20px 위(토스트 공통 규칙). */}
+          {captureToast && (
+            <div
+              className="toast-slide-up pointer-events-none absolute left-1/2 z-20 flex items-center justify-center"
+              style={{
+                bottom: "20px",
+                transform: "translateX(-50%)",
+                width: "320px",
+                height: "48px",
+                borderRadius: "48px",
+                backgroundColor: "rgba(34, 34, 34, 0.9)",
+              }}
+            >
+              <span
+                style={{ color: "#FFFFFF", fontSize: "14px", fontWeight: 500 }}
+              >
+                현재 화면이 캡처 되었어요
               </span>
             </div>
           )}
@@ -2520,7 +2523,7 @@ function RecordingControls({
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="relative flex flex-col">
       {/* 녹화 + 날짜 */}
       <div
         className="relative flex items-center px-5"
@@ -2700,12 +2703,16 @@ function RecordingControls({
           }}
         />
       </div>
+      <TimelineSkeleton visible={rowLoading} />
+      </div>
+      {/* 탐색 토스트 — 이 블록은 영상 그리드 바로 아래에 붙으므로, 블록 상단(100%)
+          기준 +20px = 영상 그리드 하단에서 20px 위(토스트 공통 규칙). */}
       {seekToast && (
         <div
           key={seekToast}
           className="toast-slide-up pointer-events-none absolute left-1/2 z-20 flex items-center justify-center"
           style={{
-            bottom: "68px",
+            bottom: "calc(100% + 20px)",
             transform: "translateX(-50%)",
             height: "32px",
             padding: "0 16px",
@@ -2721,8 +2728,6 @@ function RecordingControls({
           </span>
         </div>
       )}
-      <TimelineSkeleton visible={rowLoading} />
-      </div>
     </div>
   );
 }

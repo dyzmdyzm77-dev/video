@@ -154,7 +154,7 @@ function MenuIcon({ className }: { className?: string }) {
   );
 }
 
-export default function VariantC({
+export default function VariantA1({
   platform = "android",
   initialChrome = false,
   onHome,
@@ -170,8 +170,8 @@ export default function VariantC({
   const [vertLayout, setVertLayout] = useState<LayoutKey>("2x4");
   const [horzLayout, setHorzLayout] = useState<LayoutKey>("2x2");
   const [mode, setMode] = useState<"live" | "recording">("live");
-  // 기본 진입 시 위아래 시스템 바를 숨긴 몰입 상태로 시작 (LIVE 칩을 누르면 토글).
-  // 데스크톱 진입(initialChrome)이면 가짜 시스템 바를 켠 채로 시작.
+  // 위아래 가짜 시스템 바 표시 여부. 기본은 숨긴 몰입 상태(LIVE 칩으로 토글).
+  // 단 데스크톱 진입(initialChrome)이면 켠 채로 시작한다.
   const [chromeVisible, setChromeVisible] = useState(initialChrome);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [playbackMs, setPlaybackMs] = useState<number | null>(null);
@@ -259,8 +259,8 @@ export default function VariantC({
   return (
     <div className="app-safe-frame h-full w-full flex flex-col items-center bg-white">
     <div className="relative flex min-h-0 flex-1 w-full flex-col overflow-hidden bg-white">
-      {/* 펀치홀 카메라 점 — 시스템 바가 보일 때만 노출. 누르면 상태바/네비게이션바 토글.
-          숨김 상태에선 칩(LIVE/녹화)을 눌러 다시 켤 수 있다. */}
+      {/* 펀치홀 카메라 점 — Android 환경에서 시스템 바가 보일 때만. 누르면 토글.
+          iOS 환경에선 실제 상태바를 쓰므로 가짜 상단 바를 그리지 않는다. */}
       {platform === "android" && chromeVisible && (
         <button
           type="button"
@@ -270,7 +270,7 @@ export default function VariantC({
           style={{ left: "50%", top: "5.5px", width: "16px", height: "16px" }}
         />
       )}
-      {/* 안드로이드 상태바 */}
+      {/* 안드로이드 상태바 — Android 환경에서만 */}
       {platform === "android" && chromeVisible && (
         <div
           className="relative flex items-center justify-between bg-white px-5 text-[13px] font-semibold text-neutral-900"
@@ -335,6 +335,7 @@ export default function VariantC({
           onTogglePlay={() => setIsPlaying((p) => !p)}
           onPlay={() => setIsPlaying(true)}
           onCapture={showCaptureToast}
+          captureToast={captureToast}
           onSpeedChange={setPlaybackRate}
         />
       )}
@@ -367,45 +368,24 @@ export default function VariantC({
 
       <VariantPicker
         open={variantPickerOpen}
-        current="c"
+        current="a1"
         platform={platform}
         onClose={() => setVariantPickerOpen(false)}
       />
 
-      {mode === "live" && (
-        <nav className="mx-auto mt-auto w-full border-t border-neutral-200 bg-white">
-          <ul
-            className="mx-auto grid w-full max-w-[480px] grid-cols-4 items-center"
-            style={{ height: "60px" }}
-          >
-            <TabItem iconSrc={`${BASE}/nav/home.svg`} label="홈" onClick={onHome} />
-            <TabItem iconSrc={`${BASE}/nav/security.svg`} label="경비" />
-            <TabItem iconSrc={`${BASE}/nav/video.svg`} label="영상" active />
-            <TabItem iconSrc={`${BASE}/nav/menu.svg`} label="전체" />
-          </ul>
-        </nav>
-      )}
-
-      {/* 화면 캡처 토스트 — 하단탭/시스템 네비게이션 바 위로 20px 띄워 노출. */}
-      {captureToast && (
-        <div
-          className="toast-slide-up pointer-events-none absolute left-1/2 z-50 flex items-center justify-center"
-          style={{
-            bottom: `${(mode === "live" ? 60 : 0) + 20}px`,
-            transform: "translateX(-50%)",
-            width: "320px",
-            height: "48px",
-            borderRadius: "48px",
-            backgroundColor: "rgba(34, 34, 34, 0.9)",
-          }}
+      {/* 하단 탭바 — 라이브·녹화 모드 모두에서 표시. */}
+      <nav className="mx-auto mt-auto w-full border-t border-neutral-200 bg-white">
+        <ul
+          className="mx-auto grid w-full max-w-[480px] grid-cols-4 items-center"
+          style={{ height: "60px" }}
         >
-          <span
-            style={{ color: "#FFFFFF", fontSize: "14px", fontWeight: 500 }}
-          >
-            현재 화면이 캡처 되었어요
-          </span>
-        </div>
-      )}
+          <TabItem iconSrc={`${BASE}/nav/home.svg`} label="홈" onClick={onHome} />
+          <TabItem iconSrc={`${BASE}/nav/security.svg`} label="경비" />
+          <TabItem iconSrc={`${BASE}/nav/video.svg`} label="영상" active />
+          <TabItem iconSrc={`${BASE}/nav/menu.svg`} label="전체" />
+        </ul>
+      </nav>
+
     </div>
 
       {/* 하단 안드로이드 네비 — 디바이스 전체 폭(콘텐츠 620 컬럼 밖). 해상도별 형태. */}
@@ -523,34 +503,33 @@ function GridView({
 
   return (
     <>
-      {/* 상단 헤더(타이틀+실시간/녹화 탭) — 녹화 모드에서는 숨김 */}
-      {mode !== "recording" && (
-        <header
-          className="flex items-center px-5"
-          style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
-        >
-          <div className="flex w-full items-center justify-between">
-            <div className="flex flex-col gap-[2px]">
-              <button
-                type="button"
-                onClick={onOpenVariantPicker}
-                className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900"
-              >
-                8층 사무실 C
-                <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
-              </button>
-              <p
-                className="text-[12px] leading-none"
-                style={{ color: "#BFBFBF" }}
-              >
-                에스원 본사 · N1234567
-              </p>
-            </div>
-
-            <ModeToggle mode={mode} setMode={setMode} />
+      {/* 상단 헤더(타이틀+실시간/녹화 탭) — 녹화 모드에서도 항상 표시.
+          시스템 바를 끄는 몰입 모드에선 헤더 위 16px 여백도 함께 제거해 위로 붙인다. */}
+      <header
+        className="flex items-center px-5"
+        style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
+      >
+        <div className="flex w-full items-center justify-between">
+          <div className="flex flex-col gap-[2px]">
+            <button
+              type="button"
+              onClick={onOpenVariantPicker}
+              className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900"
+            >
+              8층 사무실 A
+              <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
+            </button>
+            <p
+              className="text-[12px] leading-none"
+              style={{ color: "#BFBFBF" }}
+            >
+              에스원 본사 · N1234567
+            </p>
           </div>
-        </header>
-      )}
+
+          <ModeToggle mode={mode} setMode={setMode} />
+        </div>
+      </header>
 
       <section
         className="relative min-h-0 flex-1 touch-pan-y select-none overflow-hidden"
@@ -618,9 +597,6 @@ function GridView({
           currentPage={currentPage}
           totalPages={totalPages}
           onGallery={onOpenSheet}
-          mode={mode}
-          onBack={() => setMode("live")}
-          title="8층 사무실 C"
         />
         <SectionSkeleton visible={gridLoading} cols={cols} rows={rows} />
       </section>
@@ -743,6 +719,7 @@ function ExpandedView({
   onTogglePlay,
   onPlay,
   onCapture,
+  captureToast = false,
   onSpeedChange,
 }: {
   index: number;
@@ -766,6 +743,7 @@ function ExpandedView({
   onTogglePlay?: () => void;
   onPlay?: () => void;
   onCapture?: () => void;
+  captureToast?: boolean;
   onSpeedChange?: (rate: number) => void;
 }) {
   const cam = CAMERAS[index];
@@ -878,35 +856,32 @@ function ExpandedView({
   }
   return (
     <>
-      {/* 확대뷰 헤더(타이틀+실시간/녹화 탭) — 녹화 모드에선 숨겨 영상을 더 크게 보여준다.
-          녹화 중 뒤로가기/위치는 영상 탭 시 뜨는 딤 컨트롤 좌측 상단에서 제공한다. */}
-      {mode === "live" && (
-        <header
-          className="flex items-center px-5"
-          style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
-        >
-          <div className="flex w-full items-center justify-between">
-            <div className="flex flex-col gap-[2px]">
-              <button
-                type="button"
-                onClick={onBack}
-                className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900"
-              >
-                8층 사무실 C
-                <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
-              </button>
-              <p
-                className="text-[12px] leading-none"
-                style={{ color: "#BFBFBF" }}
-              >
-                에스원 본사 · N1234567
-              </p>
-            </div>
-
-            <ModeToggle mode={mode} setMode={setMode} />
+      {/* 확대뷰 헤더 — 다채널 화면과 동일. 녹화 모드에서도 항상 표시 */}
+      <header
+        className="flex items-center px-5"
+        style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
+      >
+        <div className="flex w-full items-center justify-between">
+          <div className="flex flex-col gap-[2px]">
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900"
+            >
+              8층 사무실 A
+              <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
+            </button>
+            <p
+              className="text-[12px] leading-none"
+              style={{ color: "#BFBFBF" }}
+            >
+              에스원 본사 · N1234567
+            </p>
           </div>
-        </header>
-      )}
+
+          <ModeToggle mode={mode} setMode={setMode} />
+        </div>
+      </header>
 
       {/* 큰 영상 — 더블클릭 시 다채널로 복귀 */}
       <div className="px-0">
@@ -960,43 +935,6 @@ function ExpandedView({
                   "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
               }}
             />
-            {/* 녹화 모드: 헤더가 숨겨지므로 딤 좌측 상단에 뒤로가기 + 위치명을 제공 */}
-            {mode === "recording" && (
-              <div
-                className="absolute flex items-center"
-                style={{
-                  top: "12px",
-                  left: "12px",
-                  gap: "8px",
-                  pointerEvents: showControls ? "auto" : "none",
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  type="button"
-                  aria-label="뒤로가기"
-                  onClick={onBack}
-                  className="flex h-8 w-8 items-center justify-center"
-                >
-                  <svg
-                    width="28"
-                    height="28"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#ffffff"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="M15 5l-7 7 7 7" />
-                  </svg>
-                </button>
-                <span className="text-[18px] font-bold leading-none text-white">
-                  8층 사무실 C
-                </span>
-              </div>
-            )}
             <div
               className="absolute flex items-center"
               style={{
@@ -1078,6 +1016,26 @@ function ExpandedView({
                 style={{ color: "#FFFFFF", fontSize: "14px", fontWeight: 500 }}
               >
                 {seekToast}
+              </span>
+            </div>
+          )}
+          {/* 화면 캡처 토스트 — 영상 영역 하단에서 20px 위(토스트 공통 규칙). */}
+          {captureToast && (
+            <div
+              className="toast-slide-up pointer-events-none absolute left-1/2 z-20 flex items-center justify-center"
+              style={{
+                bottom: "20px",
+                transform: "translateX(-50%)",
+                width: "320px",
+                height: "48px",
+                borderRadius: "48px",
+                backgroundColor: "rgba(34, 34, 34, 0.9)",
+              }}
+            >
+              <span
+                style={{ color: "#FFFFFF", fontSize: "14px", fontWeight: 500 }}
+              >
+                현재 화면이 캡처 되었어요
               </span>
             </div>
           )}
@@ -1633,7 +1591,7 @@ function RecordingEventTimeline({
             // 접힌 묶음 → 펼침.
             toggleCluster(clusterKey);
           } else if (playbackMs !== null && target.dataset.eventMs) {
-            const eventMs = Number(target.dataset.eventMs);
+            const ms = Number(target.dataset.eventMs);
             const ownerKey = target.dataset.clusterOwner;
             const occKey = target.dataset.occKey ?? null;
             // 파란 라인을 다크 막대의 아랫끝(이벤트 시작)에 맞춘다. 막대는 중앙 정렬이라
@@ -1646,7 +1604,7 @@ function RecordingEventTimeline({
             const contentY = Number(target.dataset.contentY);
             setAlignOffset(timeY - contentY - barH / 2);
             setSelectedOccKey(ownerKey ? occKey : null);
-            setPlaybackMs(clampMs(eventMs));
+            setPlaybackMs(clampMs(ms));
             // 선택 지점까지 부드럽게 이동(약 320ms) 후 transition 해제 → 이후 시간 흐름은 또렷하게.
             setAnimateScroll(true);
             if (animTimerRef.current) clearTimeout(animTimerRef.current);
@@ -2565,7 +2523,7 @@ function RecordingControls({
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="relative flex flex-col">
       {/* 녹화 + 날짜 */}
       <div
         className="relative flex items-center px-5"
@@ -2745,12 +2703,16 @@ function RecordingControls({
           }}
         />
       </div>
+      <TimelineSkeleton visible={rowLoading} />
+      </div>
+      {/* 탐색 토스트 — 이 블록은 영상 그리드 바로 아래에 붙으므로, 블록 상단(100%)
+          기준 +20px = 영상 그리드 하단에서 20px 위(토스트 공통 규칙). */}
       {seekToast && (
         <div
           key={seekToast}
           className="toast-slide-up pointer-events-none absolute left-1/2 z-20 flex items-center justify-center"
           style={{
-            bottom: "68px",
+            bottom: "calc(100% + 20px)",
             transform: "translateX(-50%)",
             height: "32px",
             padding: "0 16px",
@@ -2766,8 +2728,6 @@ function RecordingControls({
           </span>
         </div>
       )}
-      <TimelineSkeleton visible={rowLoading} />
-      </div>
     </div>
   );
 }

@@ -5,12 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 
 // 데스크톱 전용: 화면 왼쪽 가장자리에 붙는 LNB 패널(좌측 레일).
 // 접으면 각 메뉴의 아이콘만, 펼치면 아이콘+메뉴명이 보인다.
-// 두 그룹 — 화면안(A/B/C) + 해상도(디바이스 폭) 선택.
+// 두 그룹 — 화면안(A/B) + 해상도(디바이스 폭) 선택.
 // 모바일/터치에선 CSS(.desktop-variant-nav)로 숨긴다.
 const VARIANTS = [
   { href: "/a", icon: "A", label: "A안" },
+  { href: "/a1", icon: "A-1", label: "A-1안" },
   { href: "/b", icon: "B", label: "B안" },
-  { href: "/c", icon: "C", label: "C안" },
 ];
 
 // 선택 가능한 디바이스 폭. w/h 는 앱 프레임(px), 목업은 사방 10px 크게 잡힌다.
