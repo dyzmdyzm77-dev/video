@@ -96,102 +96,28 @@ function TabItem({
   );
 }
 
-/* ---------- 홈 화면 전용 아이콘 ---------- */
+/* ---------- 홈 화면 전용 아이콘 — 시안 SVG 에서 그대로 추출한 원본 에셋 ---------- */
 
-function ChevronRightIcon({ className, color = "#C6CBD2" }: { className?: string; color?: string }) {
+function Icon({
+  name,
+  w,
+  h,
+  className,
+}: {
+  name: string;
+  w: number;
+  h: number;
+  className?: string;
+}) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <path d="m9 5 7 7-7 7" />
-    </svg>
-  );
-}
-
-function ChevronUpDownIcon({ up, className }: { up: boolean; className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      {up ? <path d="m6 15 6-6 6 6" /> : <path d="m6 9 6 6 6-6" />}
-    </svg>
-  );
-}
-
-function BellIcon({ className }: { className?: string }) {
-  return (
-    <span className={`relative inline-block ${className ?? ""}`}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="#262626" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-full w-full" aria-hidden>
-        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8" />
-        <path d="M13.7 19a2 2 0 0 1-3.4 0" />
-      </svg>
-      <span className="absolute right-[1px] top-0 h-[6px] w-[6px] rounded-full" style={{ backgroundColor: "#FF4555" }} />
-    </span>
-  );
-}
-
-function RefreshIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#C6CBD2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-      <path d="M21 3v6h-6" />
-    </svg>
-  );
-}
-
-// 경비중 방패 — 하단탭 경비 아이콘을 흰색 마스크로 재사용.
-function ShieldMask({ size = 28, color = "white" }: { size?: number; color?: string }) {
-  return (
-    <span
+    <img
+      src={`${BASE}/home/${name}.svg`}
+      alt=""
       aria-hidden
-      className="inline-block"
-      style={{
-        width: `${size}px`,
-        height: `${size}px`,
-        backgroundColor: color,
-        WebkitMaskImage: `url(${BASE}/nav/security.svg)`,
-        maskImage: `url(${BASE}/nav/security.svg)`,
-        WebkitMaskRepeat: "no-repeat",
-        maskRepeat: "no-repeat",
-        WebkitMaskPosition: "center",
-        maskPosition: "center",
-        WebkitMaskSize: "contain",
-        maskSize: "contain",
-      }}
+      width={w}
+      height={h}
+      className={className}
     />
-  );
-}
-
-function DoorIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <path d="M13 4h5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" />
-      <path d="M13 20 5 22V2l8 2v16z" />
-      <circle cx="10.5" cy="12" r="1" fill="white" stroke="none" />
-    </svg>
-  );
-}
-
-function ToolsIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#FF4555" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.9 2.9-2.1-2.1 2.9-2.9z" />
-    </svg>
-  );
-}
-
-function WarnIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <circle cx="12" cy="12" r="10" fill="#FF4555" />
-      <rect x="11" y="6" width="2" height="8" rx="1" fill="white" />
-      <circle cx="12" cy="17" r="1.3" fill="white" />
-    </svg>
-  );
-}
-
-function GearIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="#767678" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.09a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z" />
-    </svg>
   );
 }
 
@@ -240,7 +166,7 @@ function ZoneCard({
             {zone.name}
           </span>
           {status !== "inspection" && (
-            <ChevronUpDownIcon up={expanded} className="h-5 w-5" />
+            <Icon name={expanded ? "icon-chevron-up-white" : "icon-chevron-down-white"} w={12} h={8} />
           )}
         </button>
         <p className="mt-[6px] text-[12px] leading-none" style={{ color: palette.sub }}>
@@ -250,12 +176,12 @@ function ZoneCard({
         {/* 상태 + 액션 버튼 줄 */}
         <div className="mt-4 flex items-end justify-between">
           <span className="flex items-center gap-2">
-            {status === "armed" && <ShieldMask size={26} />}
-            {status === "disarmed" && <DoorIcon className="h-[26px] w-[26px]" />}
-            {status === "inspection" && <ToolsIcon className="h-[26px] w-[26px]" />}
+            {status === "armed" && <Icon name="icon-shield" w={20} h={26} />}
+            {status === "disarmed" && <Icon name="icon-door" w={20} h={29} />}
+            {status === "inspection" && <Icon name="icon-tools" w={20} h={27} />}
             <span className="flex items-center gap-1.5 text-[22px] font-bold leading-none" style={{ color: palette.text }}>
               {status === "armed" ? "경비중" : status === "disarmed" ? "해제중" : "점검중"}
-              {status === "inspection" && <WarnIcon className="h-[18px] w-[18px]" />}
+              {status === "inspection" && <Icon name="icon-warn" w={16} h={16} />}
             </span>
           </span>
           {status === "armed" && (
@@ -306,7 +232,7 @@ function ZoneCard({
               <span className="text-[15px] font-semibold text-white">{row.label}</span>
               <span className="flex items-center gap-1 text-[14px] font-medium text-white">
                 {row.action}
-                <ChevronRightIcon className="h-4 w-4" color="white" />
+                <Icon name="icon-chevron-right-white" w={9} h={12} />
               </span>
             </div>
           ))}
@@ -315,7 +241,7 @@ function ZoneCard({
             <span className="text-[15px] font-semibold text-white">열쇠 지원</span>
             <span className="flex items-center gap-1 text-[14px] font-medium text-white">
               요청
-              <ChevronRightIcon className="h-4 w-4" color="white" />
+              <Icon name="icon-chevron-right-white" w={9} h={12} />
             </span>
           </div>
         </div>
@@ -410,10 +336,10 @@ function Inner() {
             <div className="flex items-center justify-between" style={{ paddingTop: "17.7px" }}>
               <button type="button" className="flex items-center gap-1">
                 <span className="text-[16px] font-bold leading-none text-[#111111]">홍길동</span>
-                <ChevronRightIcon className="h-4 w-4" color="#262626" />
+                <Icon name="icon-chevron-right-dark" w={9} h={12} />
               </button>
               <button type="button" aria-label="알림">
-                <BellIcon className="h-6 w-6" />
+                <Icon name="icon-bell" w={26} h={26} />
               </button>
             </div>
 
@@ -425,7 +351,7 @@ function Inner() {
                   {stamp}
                 </span>
                 <button type="button" aria-label="새로고침" onClick={() => setStamp(formatStamp(new Date()))}>
-                  <RefreshIcon className="h-4 w-4" />
+                  <Icon name="icon-refresh" w={17} h={18} />
                 </button>
               </span>
             </div>
@@ -443,7 +369,7 @@ function Inner() {
 
             {/* 내 경비 구역 편집 */}
             <button type="button" className="mx-auto mt-4 flex items-center gap-1.5 py-2" style={{ color: "#767678" }}>
-              <GearIcon className="h-4 w-4" />
+              <Icon name="icon-gear" w={19} h={18} />
               <span className="text-[14px] font-medium leading-none">내 경비 구역 편집</span>
             </button>
 
@@ -465,7 +391,7 @@ function Inner() {
                       {v.sub}
                     </span>
                   </span>
-                  <ChevronRightIcon className="h-4 w-4" />
+                  <Icon name="icon-chevron-right-dark" w={9} h={12} />
                 </button>
               ))}
             </div>
@@ -483,7 +409,7 @@ function Inner() {
                   </span>
                   <span className="flex items-center gap-1 text-[14px] font-medium leading-none" style={{ color: "#FF4555" }}>
                     승인대기
-                    <ChevronRightIcon className="h-4 w-4" />
+                    <Icon name="icon-chevron-right-dark" w={9} h={12} />
                   </span>
                 </div>
               ))}
