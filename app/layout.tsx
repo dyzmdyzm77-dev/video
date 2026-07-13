@@ -4,7 +4,6 @@ import { BASE } from "./basePath";
 import DesktopVariantNav from "./components/DesktopVariantNav";
 import DeviceScaler from "./components/DeviceScaler";
 import DeviceResizer from "./components/DeviceResizer";
-import MonitorCalibration from "./components/MonitorCalibration";
 
 export const metadata: Metadata = {
   title: "에스원 CCTV",
@@ -57,7 +56,6 @@ export default function RootLayout({
         {children}
         <DeviceScaler />
         <DesktopVariantNav />
-        <MonitorCalibration />
       </body>
     </html>
   );
