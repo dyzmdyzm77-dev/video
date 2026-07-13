@@ -333,20 +333,26 @@ function Inner() {
           </div>
         )}
 
+        {/* 고정 헤더 — "홍길동"은 화면안 타이틀과 같은 위치(상태바 아래 25dp).
+            스크롤 영역 밖이라 콘텐츠가 스크롤돼도 항상 상단에 남는다. */}
+        <div className="mx-auto w-full max-w-[480px] flex-none px-5">
+          <div
+            className="flex items-center justify-between"
+            style={{ paddingTop: "17.7px" }}
+          >
+            <button type="button" className="flex items-center gap-1">
+              <span className="text-[16px] font-bold leading-none text-[#111111]">홍길동</span>
+              <Icon name="icon-chevron-right-dark" w={9} h={12} />
+            </button>
+            <button type="button" aria-label="알림">
+              <Icon name="icon-bell" w={26} h={26} />
+            </button>
+          </div>
+        </div>
+
         {/* 스크롤 콘텐츠 — 넓은 프리셋에선 480px 컬럼으로 가운데 정렬. */}
         <div className="min-h-0 w-full flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="mx-auto w-full max-w-[480px] px-5 pb-10">
-            {/* 헤더 — "홍길동"은 화면안 타이틀과 같은 위치(상태바 아래 25dp). */}
-            <div className="flex items-center justify-between" style={{ paddingTop: "17.7px" }}>
-              <button type="button" className="flex items-center gap-1">
-                <span className="text-[16px] font-bold leading-none text-[#111111]">홍길동</span>
-                <Icon name="icon-chevron-right-dark" w={9} h={12} />
-              </button>
-              <button type="button" aria-label="알림">
-                <Icon name="icon-bell" w={26} h={26} />
-              </button>
-            </div>
-
             {/* 내 경비 구역 */}
             <div className="mt-8 flex items-center justify-between">
               <h2 className="text-[18px] font-bold leading-none text-[#111111]">내 경비 구역</h2>
