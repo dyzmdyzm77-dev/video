@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import VariantA from "../_variants/VariantA";
 
 // A안. ?platform= 으로 환경(iOS/Android)을, ?chrome=1 이면 가짜 시스템 바를
-// 기본 표시(데스크톱 진입 시). 홈 버튼은 선택 화면(/)으로 보낸다.
+// 기본 표시(데스크톱 진입 시). 홈 버튼은 홈 화면(/home)으로 보낸다.
 function Inner() {
   const router = useRouter();
   const params = useSearchParams();
@@ -15,7 +15,11 @@ function Inner() {
     <VariantA
       platform={platform}
       initialChrome={initialChrome}
-      onHome={() => router.push("/")}
+      onHome={() =>
+        router.push(
+          `/home?platform=${platform}${initialChrome ? "&chrome=1" : ""}&from=a`,
+        )
+      }
     />
   );
 }

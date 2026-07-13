@@ -16,14 +16,15 @@ const MAX_SCALE = 0.8;
 // 구간 안에서는 기준 기기의 밀도를 그대로 쓴다(= 기기를 옆으로만 늘린 것으로
 // 취급). 그래서 드래그로 폭을 바꿔도 세로 물리 크기는 구간 내에서 일정하고,
 // 다음 구간(1080 등)에 도달하는 순간에만 그 기기 기준으로 전환된다.
-// 모니터 쪽: 물리 폭은 브라우저가 알 수 없어 상수로 둔다. MacBook Pro 14" = 302.7mm.
-// 다른 모니터에서 보면 이 값을 그 모니터의 가로 mm 로 바꿔야 정확하다.
+// 모니터 쪽: 브라우저는 모니터의 실제 물리 크기를 알 수 없으므로, CSS 표준
+// 밀도(1in = 96px = 25.4mm → 1mm = 3.78px)로 고정한다. 어느 모니터에서든
+// 동일하게 나오지만, 모니터 실제 밀도에 따라 물리 크기는 다소 차이날 수 있다.
 const PHYS_ANCHORS = [
   { min: 360, outerDp: 380, mm: 70.5 },
   { min: 750, outerDp: 770, mm: 143.2 },
   { min: 1080, outerDp: 1140, mm: 214.1 },
 ];
-const MONITOR_WIDTH_MM = 302.7;
+const CSS_PX_PER_MM = 96 / 25.4;
 
 // 현재 폭이 속한 구간의 기준 기기 앵커.
 function anchorFor(dp: number) {
@@ -48,7 +49,7 @@ export default function DeviceScaler() {
       // 기기와 같은 물리 크기로 보이는 배율로 고정한다.
       // 현재 폭의 실기기 몸체 폭(mm)을 목업 바깥 윤곽(w + 2·margin)에 맞춘다.
       if (root.dataset.actualSize === "true") {
-        const cssPxPerMm = window.screen.width / MONITOR_WIDTH_MM;
+        const cssPxPerMm = CSS_PX_PER_MM;
         // 배율은 구간 기준 기기에서만 결정되므로 구간 내에서 상수다.
         const a = anchorFor(w);
         const scale = (a.mm * cssPxPerMm) / a.outerDp;
