@@ -169,6 +169,19 @@ export default function DesktopVariantNav() {
         </span>
       </button>
 
+      {/* 실제 사이즈를 이 모니터에 맞게 보정(신용카드 기준, 1회). */}
+      <button
+        type="button"
+        className="dvn-calib-toggle"
+        title="화면 보정"
+        onClick={() => window.dispatchEvent(new Event("opencalibration"))}
+      >
+        <span className="dvn-icon" aria-hidden>
+          ⊹
+        </span>
+        <span className="dvn-label">화면 보정</span>
+      </button>
+
       {/* 목업 위 치수 눈금자 표시 온/오프. */}
       <label className="dvn-ruler-toggle" title="치수 표시">
         <span className="dvn-icon">

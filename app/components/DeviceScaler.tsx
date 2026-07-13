@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { readCalibration } from "./MonitorCalibration";
+import { detectPxPerMm } from "./displayDensity";
 
 // 데스크톱 폰 목업/프레임을 창 크기에 맞춰 축소하기 위한 배율(--device-scale)을
 // 계산해 문서 루트에 설정한다. 기준 크기는 선택된 디바이스(--device-w/--device-h)
@@ -16,15 +18,14 @@ const MAX_SCALE = 0.8;
 // 구간 안에서는 기준 기기의 밀도를 그대로 쓴다(= 기기를 옆으로만 늘린 것으로
 // 취급). 그래서 드래그로 폭을 바꿔도 세로 물리 크기는 구간 내에서 일정하고,
 // 다음 구간(1080 등)에 도달하는 순간에만 그 기기 기준으로 전환된다.
-// 모니터 쪽: 브라우저는 모니터의 실제 물리 크기를 알 수 없으므로, CSS 표준
-// 밀도(1in = 96px = 25.4mm → 1mm = 3.78px)로 고정한다. 어느 모니터에서든
-// 동일하게 나오지만, 모니터 실제 밀도에 따라 물리 크기는 다소 차이날 수 있다.
+// 모니터 쪽: 접속하면 자동 추정한다(displayDensity — Apple 노트북은 패널 비율로
+// 모델을 식별해 정확, 그 외는 표준 96dpi 근사). 사용자가 신용카드로 보정
+// (MonitorCalibration)한 값이 있으면 그게 최우선.
 const PHYS_ANCHORS = [
   { min: 360, outerDp: 380, mm: 70.5 },
   { min: 750, outerDp: 770, mm: 143.2 },
   { min: 1080, outerDp: 1140, mm: 214.1 },
 ];
-const CSS_PX_PER_MM = 96 / 25.4;
 
 // 현재 폭이 속한 구간의 기준 기기 앵커.
 function anchorFor(dp: number) {
@@ -49,7 +50,8 @@ export default function DeviceScaler() {
       // 기기와 같은 물리 크기로 보이는 배율로 고정한다.
       // 현재 폭의 실기기 몸체 폭(mm)을 목업 바깥 윤곽(w + 2·margin)에 맞춘다.
       if (root.dataset.actualSize === "true") {
-        const cssPxPerMm = CSS_PX_PER_MM;
+        // 우선순위: 수동 보정값 > 자동 감지(Apple 패널 식별 또는 96dpi 근사).
+        const cssPxPerMm = readCalibration() ?? detectPxPerMm().pxPerMm;
         // 배율은 구간 기준 기기에서만 결정되므로 구간 내에서 상수다.
         const a = anchorFor(w);
         const scale = (a.mm * cssPxPerMm) / a.outerDp;
