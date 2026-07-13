@@ -414,18 +414,28 @@ function Inner() {
               ))}
             </div>
 
-            {/* 추천 · 혜택 */}
+            {/* 추천 · 혜택 — 다른 컴포넌트와 달리 폭이 넓어져도 여백이 늘어나지
+                않고, 320×108 기준 디자인이 통째로 비율 고정 확대된다.
+                (컨테이너 쿼리 단위 cqw: 1cqw = 배너 폭의 1%, 320px 기준 3.2px) */}
             <h2 className="mt-9 text-[18px] font-bold leading-none text-[#111111]">추천 · 혜택</h2>
-            <div className="mt-[18px] flex flex-col gap-2">
+            <div
+              className="mt-[18px] flex flex-col gap-2"
+              style={{ containerType: "inline-size" }}
+            >
               <div
-                className="relative flex items-center overflow-hidden rounded-[10px] px-[26px]"
-                style={{ backgroundColor: "#F0E3FF", height: "108px" }}
+                className="relative flex items-center overflow-hidden"
+                style={{
+                  backgroundColor: "#F0E3FF",
+                  aspectRatio: "320 / 108",
+                  borderRadius: "3.125cqw",
+                  paddingLeft: "8.125cqw",
+                }}
               >
-                <div className="flex flex-col gap-[7px]">
-                  <span className="text-[11px] leading-none" style={{ color: "#767678" }}>
+                <div className="flex flex-col" style={{ gap: "2.1875cqw" }}>
+                  <span className="leading-none" style={{ color: "#767678", fontSize: "3.4375cqw" }}>
                     지인을 소개하고 안심을 나누세요
                   </span>
-                  <span className="text-[16px] font-bold leading-[1.25] text-[#262626]">
+                  <span className="font-bold leading-[1.25] text-[#262626]" style={{ fontSize: "5cqw" }}>
                     에스원 서비스 소개하고
                     <br />
                     <span style={{ color: "#7C3AED" }}>상품권 받아가세요!</span>
@@ -436,18 +446,23 @@ function Inner() {
                   alt=""
                   aria-hidden
                   className="absolute"
-                  style={{ right: "-5px", top: "3px", width: "108px", height: "102px", objectFit: "contain" }}
+                  style={{ right: "-1.5625cqw", top: "0.9375cqw", width: "33.75cqw", height: "31.875cqw", objectFit: "contain" }}
                 />
               </div>
               <div
-                className="relative flex items-center overflow-hidden rounded-[10px] px-[26px]"
-                style={{ backgroundColor: "#E2EDFE", height: "108px" }}
+                className="relative flex items-center overflow-hidden"
+                style={{
+                  backgroundColor: "#E2EDFE",
+                  aspectRatio: "320 / 108",
+                  borderRadius: "3.125cqw",
+                  paddingLeft: "8.125cqw",
+                }}
               >
-                <div className="flex flex-col gap-[7px]">
-                  <span className="text-[11px] leading-none" style={{ color: "#565E6B" }}>
+                <div className="flex flex-col" style={{ gap: "2.1875cqw" }}>
+                  <span className="leading-none" style={{ color: "#565E6B", fontSize: "3.4375cqw" }}>
                     기업용 보안 클라우드 출시 기념 혜택
                   </span>
-                  <span className="text-[16px] font-bold leading-[1.25]" style={{ color: "#2F2170" }}>
+                  <span className="font-bold leading-[1.25]" style={{ color: "#2F2170", fontSize: "5cqw" }}>
                     클라우드로 더 안전하게!
                     <br />
                     <span style={{ color: "#3BB94F" }}>용량 20% UP!</span>
@@ -458,7 +473,7 @@ function Inner() {
                   alt=""
                   aria-hidden
                   className="absolute"
-                  style={{ right: "10px", top: "10px", width: "93px", height: "93px", objectFit: "contain" }}
+                  style={{ right: "3.125cqw", top: "3.125cqw", width: "29.0625cqw", height: "29.0625cqw", objectFit: "contain" }}
                 />
               </div>
             </div>
