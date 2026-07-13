@@ -52,6 +52,8 @@ export default function DesktopVariantNav() {
     root.style.setProperty("--device-radius", `${d.r}px`);
     root.style.setProperty("--device-margin", `${d.m}px`);
     root.dataset.deviceKind = d.w <= 360 ? "phone" : "wide";
+    // 트라이폴드(1080)에선 펀치홀 카메라 위치가 달라진다(CSS 가 참조).
+    root.dataset.trifold = d.w >= 1080 ? "true" : "false";
     setActive(i);
     window.dispatchEvent(new Event("devicechange"));
   };

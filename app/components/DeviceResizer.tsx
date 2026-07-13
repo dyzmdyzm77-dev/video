@@ -38,6 +38,8 @@ function applyWidth(w: number) {
   root.style.setProperty("--device-margin", `${b.m}px`);
   // 폰(360)에서만 SVG 목업, 그보다 크면 찌그러짐 방지로 CSS 베젤.
   root.dataset.deviceKind = w <= 360 ? "phone" : "wide";
+  // 트라이폴드(1080)에선 펀치홀 카메라 위치가 달라진다(CSS 가 참조).
+  root.dataset.trifold = w >= 1080 ? "true" : "false";
 }
 
 // 목업 위 치수 눈금자를 프레임 상단에서 띄우는 간격.

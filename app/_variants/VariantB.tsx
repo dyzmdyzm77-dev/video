@@ -266,8 +266,7 @@ export default function VariantB({
           type="button"
           aria-label="시스템 바 토글"
           onClick={toggleChrome}
-          className="absolute z-50 -translate-x-1/2 rounded-full bg-black"
-          style={{ left: "50%", top: "5.5px", width: "16px", height: "16px" }}
+          className="punch-hole"
         />
       )}
       {/* 안드로이드 상태바 */}

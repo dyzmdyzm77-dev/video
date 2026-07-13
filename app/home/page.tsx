@@ -309,8 +309,7 @@ function Inner() {
             type="button"
             aria-label="시스템 바 토글"
             onClick={() => setChromeVisible((v) => !v)}
-            className="absolute z-50 -translate-x-1/2 rounded-full bg-black"
-            style={{ left: "50%", top: "5.5px", width: "16px", height: "16px" }}
+            className="punch-hole"
           />
         )}
         {/* 안드로이드 상태바 — Android 환경에서만. 배경은 홈 화면과 동일 톤. */}

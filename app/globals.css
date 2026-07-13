@@ -528,3 +528,25 @@ body {
   animation: skeleton-shimmer 1.4s linear infinite;
 }
 
+
+/* 펀치홀 카메라 점 — 기본은 상단 중앙. 트라이폴드(1080 프리셋)에선 실기기처럼
+   화면 오른쪽에서 167dp 떨어진 지점으로 이동한다(html[data-trifold] 는 JS 가 설정). */
+.punch-hole {
+  position: absolute;
+  z-index: 50;
+  left: 50%;
+  top: 5.5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #000000;
+  transform: translateX(-50%);
+  transition:
+    left 0.15s ease-out,
+    right 0.15s ease-out;
+}
+html[data-trifold="true"] .punch-hole {
+  left: auto;
+  right: 167px;
+  transform: none;
+}
