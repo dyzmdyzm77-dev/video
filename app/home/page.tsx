@@ -231,13 +231,16 @@ function ZoneCard({
           type="button"
           className="flex w-full items-center justify-between text-left"
           onClick={status === "inspection" ? undefined : onToggle}
-          style={{ cursor: status === "inspection" ? "default" : "pointer" }}
+          style={{
+            cursor: status === "inspection" ? "default" : "pointer",
+            color: palette.text,
+          }}
         >
           <span className="text-[16px] font-semibold leading-none" style={{ color: palette.text }}>
             {zone.name}
           </span>
           {status !== "inspection" && (
-            <ChevronUpDownIcon up={expanded} className="h-5 w-5" aria-hidden style={undefined} />
+            <ChevronUpDownIcon up={expanded} className="h-5 w-5" />
           )}
         </button>
         <p className="mt-[6px] text-[12px] leading-none" style={{ color: palette.sub }}>
