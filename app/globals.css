@@ -43,8 +43,7 @@ body {
   padding-right: env(safe-area-inset-right);
 }
 
-/* 목업/데스크톱 네비는 데스크톱에서만 보인다(모바일/터치에선 숨김). */
-.device-mockup,
+/* 베젤/데스크톱 네비는 데스크톱에서만 보인다(모바일/터치에선 숨김). */
 .device-frame,
 .device-resizer,
 .desktop-variant-nav {
@@ -64,73 +63,58 @@ body {
   body {
     display: flex;
     align-items: center;
-    justify-content: center;
+    /* 왼쪽 정렬 — 기기 왼쪽 앵커(--device-left)는 "Z TriFold(1080)가 패널 오른쪽
+       영역 가운데 정렬됐을 때의 화면 왼쪽 x"(DeviceScaler 가 계산). 왼쪽 모서리가
+       고정 기준이라 프리셋/드래그로 폭이 커져도 오른쪽으로만 늘어난다. */
+    justify-content: flex-start;
     background: transparent;
-    /* 왼쪽 패널 폭만큼 왼쪽 여백을 줘, 앱이 "패널을 뺀 영역" 중앙에 오게 한다. */
-    padding-left: var(--panel-w, 200px);
+    padding-left: var(--device-left, calc(var(--panel-w, 200px) + 40px));
     transition: padding-left 0.22s ease;
   }
-  /* 화면 뒤 맨 뒤 레이어 폰 목업(380×800). 뷰포트 정중앙 고정 — 앱도 flex 로
-     정중앙에 오므로 화면과 겹치고, 앱보다 사방 10px 크게 뒤에 보인다.
-     z-index:-1 이라 앱 등 모든 콘텐츠 아래에 위치. */
-  /* 폰(360px) 프리셋에서만 보이는 SVG 폰 목업. 넓은 프리셋(폴더블 등)에선
-     아래 .device-frame(CSS 베젤)이 대신 보인다. */
-  .device-mockup {
-    display: block;
-    position: fixed;
-    top: 50%;
-    /* 앱과 동일하게 패널을 뺀 영역 중앙(반폭만큼 오른쪽으로) 정렬. */
-    left: calc(50% + var(--panel-w, 200px) / 2);
-    /* 창 높이에 맞춘 배율(--device-scale)로 목업·화면이 함께 축소된다. */
-    transform: translate(-50%, -50%) scale(var(--device-scale, 1));
-    width: calc(var(--device-w, 360px) + var(--device-margin, 10px) * 2);
-    height: calc(var(--device-h, 780px) + var(--device-margin, 10px) * 2);
-    z-index: -1;
-    pointer-events: none;
-    opacity: 1;
-    transition:
-      left 0.22s ease,
-      width 0.15s ease-out,
-      height 0.15s ease-out,
-      transform 0.15s ease-out,
-      opacity 0.15s ease-out;
-  }
-  /* 넓은 프리셋용 CSS 베젤(폴더블/트리폴드). 앱보다 사방 10px 큰 어두운 라운드 프레임. */
+  /* 모든 프리셋 공용 CSS 베젤 — 앱 화면보다 사방 margin 만큼 큰 라운드 프레임.
+     예전 SVG 목업(380×800 이미지)은 폭을 늘리면 두께·하이라이트가 함께 늘어나
+     어색했는데, CSS 는 폭이 어떻게 변해도 베젤 두께(4px)가 일정하다.
+     시안 목업의 레이어(몸체 #2A2A2A + 흰색 5~10% 안쪽 하이라이트 + inset 4px
+     검정 면)를 그대로 재현한다. */
   .device-frame {
     display: block;
     position: fixed;
     top: 50%;
-    left: calc(50% + var(--panel-w, 200px) / 2);
-    transform: translate(-50%, -50%) scale(var(--device-scale, 1));
+    /* 왼쪽 정렬 — 앱 화면 왼쪽 끝(--device-left, 트라이폴드 센터 기준 앵커)에
+       맞춘다. 베젤 여백(margin)은 스케일 좌표계 안(translate)이라 화면 왼쪽을
+       margin·scale 만큼 감싼다. 왼쪽 모서리 고정이므로 폭이 커져도 오른쪽으로만
+       늘어난다. */
+    left: var(--device-left, calc(var(--panel-w, 200px) + 40px));
+    transform-origin: 0 0;
+    transform: scale(var(--device-scale, 1))
+      translate(calc(-1 * var(--device-margin, 10px)), -50%);
     width: calc(var(--device-w, 360px) + var(--device-margin, 10px) * 2);
     height: calc(var(--device-h, 780px) + var(--device-margin, 10px) * 2);
     border-radius: var(--device-radius, 44px);
-    background: #111111;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    background: #2a2a2a;
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.25),
+      inset 0 4px 1px rgba(255, 255, 255, 0.05),
+      inset 4px 0 1px rgba(255, 255, 255, 0.05),
+      inset 0 -4px 1px rgba(255, 255, 255, 0.1),
+      inset -4px 0 1px rgba(255, 255, 255, 0.05);
     z-index: -1;
     pointer-events: none;
-    opacity: 0;
     transition:
       left 0.22s ease,
-      width 0.15s ease-out,
-      height 0.15s ease-out,
-      border-radius 0.15s ease-out,
-      transform 0.15s ease-out,
-      opacity 0.15s ease-out;
+      width 0.1s linear,
+      height 0.1s linear,
+      border-radius 0.1s linear,
+      transform 0.1s linear;
   }
-  /* 프리셋 종류에 따라 목업/베젤을 크로스페이드(둘 다 항상 렌더 → 크기가 함께 전환).
-     display 토글은 전환이 안 걸려 베젤이 툭 튀므로 opacity 로 처리. */
-  html[data-device-kind="phone"] .device-mockup {
-    opacity: 1;
-  }
-  html[data-device-kind="phone"] .device-frame {
-    opacity: 0;
-  }
-  html[data-device-kind="wide"] .device-mockup {
-    opacity: 0;
-  }
-  html[data-device-kind="wide"] .device-frame {
-    opacity: 1;
+  /* 베젤 안쪽 검정 면(시안 목업의 inset 4px 검정 레이어). */
+  .device-frame::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border-radius: calc(var(--device-radius, 44px) - 4px);
+    background: #000000;
+    transition: border-radius 0.1s linear;
   }
   .app-safe-frame {
     width: var(--device-w, 360px);
@@ -140,38 +124,32 @@ body {
     /* 검정 외곽선은 목업/프레임이 대신하므로 제거. 안쪽 화면은 베젤보다 7px 작은
        라운드로 베젤과 동심원을 이룬다(360: 45-7=38 로 기존과 동일). */
     border-radius: calc(var(--device-radius, 45px) - 7px);
-    /* 목업과 동일 배율로 축소(정중앙 기준). 레이아웃 박스는 원본 크기 유지, 시각만 축소. */
+    /* 목업과 동일 배율로 축소. 왼쪽 모서리 기준(origin left)이라 배율이 변해도
+       왼쪽 끝이 고정되고 오른쪽으로만 커진다. 레이아웃 박스는 원본 크기 유지. */
+    transform-origin: left center;
     transform: scale(var(--device-scale, 1));
     /* 폭·세로·라운드·배율 모두 부드럽게 전환(버튼 클릭 등). 단, 드래그 중엔
        아래 [data-resizing] 규칙으로 전환을 꺼 폭이 마우스를 즉시 따라오게 한다. */
     transition:
-      width 0.15s ease-out,
-      height 0.15s ease-out,
-      border-radius 0.15s ease-out,
-      transform 0.15s ease-out;
+      width 0.1s linear,
+      height 0.1s linear,
+      border-radius 0.1s linear,
+      transform 0.1s linear;
   }
   /* 드래그 중엔 '폭'만 전환을 꺼 마우스에 즉시 반응하게 한다(세로·라운드·크로스페이드는
      그대로 부드럽게). 각 요소의 전환 목록에서 width 만 뺀다. */
   html[data-resizing="true"] .app-safe-frame {
     transition:
-      height 0.15s ease-out,
-      border-radius 0.15s ease-out,
-      transform 0.15s ease-out;
-  }
-  html[data-resizing="true"] .device-mockup {
-    transition:
-      left 0.22s ease,
-      height 0.15s ease-out,
-      transform 0.15s ease-out,
-      opacity 0.15s ease-out;
+      height 0.1s linear,
+      border-radius 0.1s linear,
+      transform 0.1s linear;
   }
   html[data-resizing="true"] .device-frame {
     transition:
       left 0.22s ease,
-      height 0.15s ease-out,
-      border-radius 0.15s ease-out,
-      transform 0.15s ease-out,
-      opacity 0.15s ease-out;
+      height 0.1s linear,
+      border-radius 0.1s linear,
+      transform 0.1s linear;
   }
   /* 기기 프레임의 좌·우 가장자리 드래그 영역(폭 조절). 보이는 핸들 없이 투명하며,
      hover 시에만 옅은 세로선으로 표시. 위치·높이는 프레임과 동일한 변수로 계산돼
@@ -433,12 +411,12 @@ body {
    드래그로 넘어도 이 애니메이션이 재생되도록 전환은 항상 켠다(360~618 은 컴포넌트에서
    전환 클래스를 안 붙여 즉시 처리 → 지연 없음). */
 .android-nav-taskbar {
-  transition: transform 0.15s ease-out;
+  transition: transform 0.1s linear;
 }
 .android-nav-buttons {
   transition:
-    width 0.15s ease-out,
-    right 0.15s ease-out;
+    width 0.1s linear,
+    right 0.1s linear;
 }
 
 @keyframes timeline-scroll {
@@ -542,8 +520,8 @@ body {
   background: #000000;
   transform: translateX(-50%);
   transition:
-    left 0.15s ease-out,
-    right 0.15s ease-out;
+    left 0.1s linear,
+    right 0.1s linear;
 }
 html[data-trifold="true"] .punch-hole {
   left: auto;

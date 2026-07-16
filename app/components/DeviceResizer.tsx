@@ -2,12 +2,12 @@
 
 import { useEffect, useRef } from "react";
 
-// 데스크톱 전용: 기기 화면(.app-safe-frame)의 좌·우 가장자리에 드래그 영역을 얹어
+// 데스크톱 전용: 기기 화면(.app-safe-frame)의 오른쪽 가장자리에 드래그 영역을 얹어
 // 마우스로 "폭"을 조절한다. 위치는 실제 렌더된 프레임의 getBoundingClientRect 로
 // 매번 맞추므로 배율·패널 오프셋과 무관하게 정확히 가장자리에 붙는다.
 //
-// 프레임은 중앙(패널 제외) 기준 좌우 대칭 확대 → 마우스 이동량 dx 에 대해
-// 폭 변화 = ±2·dx/scale(오른쪽 +, 왼쪽 −). 드래그 중엔 배율을 고정한다.
+// 기기는 왼쪽 정렬(왼쪽 모서리 고정)이라 오른쪽으로만 늘어난다 → 마우스 이동량
+// dx 에 대해 폭 변화 = dx/scale. 드래그 중엔 배율을 고정한다.
 // 폭 360~1080. 폭이 구간(좌측탭 해상도)에 들어오면 세로값·라운드도 그 프리셋으로.
 const MIN_W = 360;
 const MAX_W = 1080;
@@ -36,8 +36,6 @@ function applyWidth(w: number) {
   root.style.setProperty("--device-h", `${b.h}px`);
   root.style.setProperty("--device-radius", `${b.r}px`);
   root.style.setProperty("--device-margin", `${b.m}px`);
-  // 폰(360)에서만 SVG 목업, 그보다 크면 찌그러짐 방지로 CSS 베젤.
-  root.dataset.deviceKind = w <= 360 ? "phone" : "wide";
   // 트라이폴드(1080)에선 펀치홀 카메라 위치가 달라진다(CSS 가 참조).
   root.dataset.trifold = w >= 1080 ? "true" : "false";
 }
@@ -46,33 +44,25 @@ function applyWidth(w: number) {
 const RULER_GAP = 20;
 
 export default function DeviceResizer() {
-  const leftRef = useRef<HTMLSpanElement>(null);
   const rightRef = useRef<HTMLSpanElement>(null);
   const rulerRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLSpanElement>(null);
   const drag = useRef<{
-    side: "left" | "right";
     startX: number;
     startW: number;
     scale: number;
     lastIdx: number;
   } | null>(null);
 
-  // 두 드래그 영역과 상단 치수 눈금자를 현재 기기 화면 위치에 맞춰 배치한다.
+  // 오른쪽 드래그 영역과 상단 치수 눈금자를 현재 기기 화면 위치에 맞춰 배치한다.
   const position = () => {
     const frame = document.querySelector(".app-safe-frame");
-    const l = leftRef.current;
     const r = rightRef.current;
-    if (!frame || !l || !r) return;
+    if (!frame || !r) return;
     const box = frame.getBoundingClientRect();
-    for (const [el, x] of [
-      [l, box.left],
-      [r, box.right],
-    ] as const) {
-      el.style.top = `${box.top}px`;
-      el.style.height = `${box.height}px`;
-      el.style.left = `${x}px`;
-    }
+    r.style.top = `${box.top}px`;
+    r.style.height = `${box.height}px`;
+    r.style.left = `${box.right}px`;
     // 상단 치수 눈금자: 화면 폭만큼 span, 베젤 위쪽에 배치, 라벨은 현재 폭(px).
     // 실제 사이즈 모드에선 기기 몸체(베젤 포함) 폭을 mm 로 표시한다.
     const ruler = rulerRef.current;
@@ -130,12 +120,11 @@ export default function DeviceResizer() {
     return Number.isFinite(v) ? v : fallback;
   };
 
-  const onPointerDown = (side: "left" | "right") => (e: React.PointerEvent) => {
+  const onPointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
     const startW = readVar("--device-w", 360);
     drag.current = {
-      side,
       startX: e.clientX,
       startW,
       scale: readVar("--device-scale", 1) || 1,
@@ -149,10 +138,8 @@ export default function DeviceResizer() {
     const d = drag.current;
     if (!d) return;
     const dx = e.clientX - d.startX;
-    const raw =
-      d.side === "right"
-        ? d.startW + (2 * dx) / d.scale
-        : d.startW - (2 * dx) / d.scale;
+    // 왼쪽 모서리 고정 → 오른쪽 가장자리가 마우스를 1:1 로 따라온다.
+    const raw = d.startW + dx / d.scale;
     const w = Math.min(MAX_W, Math.max(MIN_W, Math.round(raw)));
     applyWidth(w);
     // 드래그 중 폭 변화를 구독자(안드로이드 네비 등)에 실시간 전달.
@@ -189,16 +176,9 @@ export default function DeviceResizer() {
         </div>
       </div>
       <span
-        ref={leftRef}
-        className="device-resize-edge dre-left"
-        onPointerDown={onPointerDown("left")}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-      />
-      <span
         ref={rightRef}
         className="device-resize-edge dre-right"
-        onPointerDown={onPointerDown("right")}
+        onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
       />

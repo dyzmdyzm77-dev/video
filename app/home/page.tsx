@@ -1,9 +1,20 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BASE } from "../basePath";
 import AndroidNav from "../components/AndroidNav";
+
+// SSR 경고 없이 페인트 직전 실행되는 레이아웃 이펙트를 쓰기 위한 동형 훅.
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+// 전환 지속시간/이징 — 기기 프레임 리사이즈(globals.css 의 width 0.1s linear)와
+// 동일한 값. 가감속 없이 일정한 속도(linear)로 움직여야 프레임·헤더·콘텐츠가
+// 중간에 어긋나 보이지 않는다.
+const MOVE_MS = 100;
+const MOVE_EASE = "linear";
+const WIDEN = `max-width ${MOVE_MS}ms ${MOVE_EASE}`;
 
 // 홈 화면 — "내 경비 구역" 시안을 실제 코드로 구현한 화면.
 // 하단탭의 홈 버튼으로 진입하며, 영상 탭·최근 본 영상 항목을 누르면 진입 전
@@ -289,6 +300,192 @@ function Inner() {
     setStamp(formatStamp(new Date()));
   }, []);
 
+  // 폭이 620 경계를 넘으면 1↔2단 전환. 스크롤 영역(=프레임) 폭을 ResizeObserver 로
+  // 감시한다(배율 transform 영향 없는 레이아웃 폭). 컬럼 폭 자체는 grid 트랙(minmax
+  // 280~320)이 해상도에 맞게 잡고(리플로우/2단계 없음), 전환 시 위치만 아래 FLIP 이
+  // translate 로 헤더와 함께 미끄러지게 한다.
+  const [twoCol, setTwoCol] = useState(false);
+  const twoColRef = useRef(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const leftColRef = useRef<HTMLDivElement>(null);
+  const rightColRef = useRef<HTMLDivElement>(null);
+  // 전환 직전 두 컬럼의 위치(뷰포트 좌표). setTwoCol 직전 캡처해 FLIP First 로 쓴다.
+  const flipFromRef = useRef<{ left?: DOMRect; right?: DOMRect } | null>(null);
+  // 전환 세대 — 끊긴 전환의 인라인 스타일이 남지 않도록 타임아웃 정리에 쓴다.
+  const flipGenRef = useRef(0);
+
+  useEffect(() => {
+    const BP = 620;
+    const el = contentRef.current;
+    const target = el?.parentElement; // 스크롤 영역 — 폭 = 기기 프레임 폭
+    if (!el || !target) return;
+    let armed = false; // 초기 settle 전(첫 판정)에는 애니메이션 없이 상태만 반영
+    const evaluate = (observed?: number) => {
+      // 목표 폭(--device-w) 기준으로 판정 — 프리셋 클릭/드래그 순간 즉시 바뀌는 값이라
+      // 프레임이 0.1s 동안 자라는 것과 같은 시점에 전환을 시작할 수 있다.
+      // 변수 없는 실기기에선 관측 폭(observed)으로 폴백.
+      const varW = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue("--device-w"),
+      );
+      const w =
+        Number.isFinite(varW) && varW > 0
+          ? varW
+          : (observed ?? target.getBoundingClientRect().width);
+      const want = w >= BP;
+      if (want !== twoColRef.current) {
+        twoColRef.current = want;
+        if (armed) {
+          flipFromRef.current = {
+            left: leftColRef.current?.getBoundingClientRect(),
+            right: rightColRef.current?.getBoundingClientRect(),
+          };
+        }
+        setTwoCol(want);
+      }
+      armed = true;
+    };
+    // 프리셋 클릭(devicechange)·드래그(deviceresize)가 --device-w 갱신 직후 동기로
+    // 쏘는 이벤트를 직접 듣는다 → 프레임 CSS 전환과 '같은 프레임'에 전환 시작.
+    // (RO 는 폭이 실제로 변한 다음 프레임에야 발화해 100ms 중 16~33ms 늦는다.)
+    const onDevice = () => evaluate();
+    window.addEventListener("devicechange", onDevice);
+    window.addEventListener("deviceresize", onDevice);
+    // ResizeObserver 는 초기 settle + 이벤트 없는 환경(실기기 회전 등) 폴백.
+    const ro = new ResizeObserver((entries) => {
+      evaluate(entries[entries.length - 1].contentRect.width);
+    });
+    ro.observe(target);
+    return () => {
+      window.removeEventListener("devicechange", onDevice);
+      window.removeEventListener("deviceresize", onDevice);
+      ro.disconnect();
+    };
+  }, []);
+
+  // 전환 연출 — 원칙:
+  // · 모든 위치 보정은 margin(레이아웃 속성) — 프레임 폭(width)과 같은 레이아웃
+  //   패스에서 계산돼 매 프레임 정확히 상쇄된다(transform 은 컴포지터 스레드라 떨림).
+  // · '최종 폭'은 커밋 시점 측정값이 아니라 목표 해상도(--device-w)에서 계산 —
+  //   측정값은 프레임이 아직 옛 폭이라 스테일해서, 620→360 에서 440 으로 커졌다가
+  //   320 으로 스냅되는(호들갑) 원인이었다.
+  // · 오른쪽 컬럼은 슬라이드 동안 폭을 인라인으로 '고정' — margin 이 grid/block 의
+  //   자동 폭을 왜곡해(마진만큼 늘어남) 커졌다 줄어드는 걸 막는다. 순수 이동만.
+  useIsoLayoutEffect(() => {
+    const from = flipFromRef.current;
+    flipFromRef.current = null;
+    if (!from) return;
+    const rootCS = getComputedStyle(document.documentElement);
+    const ds = parseFloat(rootCS.getPropertyValue("--device-scale")) || 1;
+    const wrap = contentRef.current;
+    const left = leftColRef.current;
+    const right = rightColRef.current;
+    if (!wrap) return;
+    // 목표 프레임 폭 — 프리셋/드래그가 --device-w 를 즉시 갱신하므로 이것이 진짜
+    // 최종값이다. 없으면(실기기) 스크롤 영역 관측 폭으로 폴백.
+    const varW = parseFloat(rootCS.getPropertyValue("--device-w"));
+    const targetW =
+      Number.isFinite(varW) && varW > 0
+        ? varW
+        : (wrap.parentElement?.getBoundingClientRect().width ?? 360) / ds;
+    // 목표 해상도에서의 진짜 최종 컬럼 폭.
+    const finalColW = twoCol
+      ? Math.min(320, Math.max(280, (Math.min(targetW, 700) - 60) / 2))
+      : Math.min(targetW, 480) - 40;
+    // 래퍼 폭도 시작→최종을 명시적으로 애니메이션한다. max-width 클램프가 전환
+    // 중간에 걸렸다 풀리면(예: 620→360 에서 480 캡) 컬럼 기준 위치가 꺾여(비선형)
+    // 선형 margin 보정과 어긋나 좌우가 새는데, 명시 폭은 처음부터 끝까지 선형이라
+    // 중심(mx-auto) 위치도 선형 → 보정이 정확히 상쇄된다.
+    // 정리(cleanup) — 인라인 스타일을 모두 걷어 자연 레이아웃(프레임 폭을 따라감)으로
+    // 되돌린다. transitionend 에 의존하면 전환이 끊길 때(빠른 프리셋 연타) 안 불려
+    // 폭이 인라인에 박히고, 그 뒤 단일→단일(480→360)에선 이 이펙트가 안 돌아 못 치운다.
+    // → 아래에서 '세대(gen) 가드 + 타임아웃'으로 항상 지운다.
+    const gen = ++flipGenRef.current;
+    const clearAll = () => {
+      for (const el of [wrap, left, right]) {
+        if (!el) continue;
+        el.style.transition = "";
+        el.style.marginLeft = "";
+        el.style.marginTop = "";
+        el.style.width = "";
+        el.style.maxWidth = "";
+      }
+    };
+    // 직전 전환이 끊겨 남은 인라인 스타일부터 청소(정확한 측정 + 잔재 방지).
+    clearAll();
+    void wrap.offsetWidth;
+
+    const wrapFrom = wrap.getBoundingClientRect().width / ds;
+    const wrapTo = twoCol ? Math.min(targetW, 700) : Math.min(targetW, 480);
+    const plays: (() => void)[] = [];
+
+    // 래퍼 폭: 시작→최종 명시(선형 → mx-auto 중심도 선형이라 margin 보정과 정확히 상쇄).
+    wrap.style.transition = "none";
+    wrap.style.width = `${wrapFrom}px`;
+    wrap.style.maxWidth = "none";
+    plays.push(() => {
+      wrap.style.transition = `width ${MOVE_MS}ms ${MOVE_EASE}`;
+      wrap.style.width = `${wrapTo}px`;
+    });
+
+    // 왼쪽 컬럼(내 경비 구역): 위치(margin) + 폭을 시작→진짜 최종으로.
+    if (left && from.left && from.left.width > 0) {
+      const last = left.getBoundingClientRect();
+      if (last.width > 0) {
+        const dx = (from.left.left - last.left) / ds;
+        const fromW = from.left.width / ds;
+        left.style.transition = "none";
+        left.style.marginLeft = `${dx}px`;
+        left.style.width = `${fromW}px`;
+        plays.push(() => {
+          left.style.transition = `margin-left ${MOVE_MS}ms ${MOVE_EASE}, width ${MOVE_MS}ms ${MOVE_EASE}`;
+          left.style.marginLeft = "0px";
+          left.style.width = `${finalColW}px`;
+        });
+      }
+    }
+
+    // 오른쪽 컬럼: 폭 고정(인라인) + 가로 margin 이동만. 디바이스 '오른쪽 바깥'에서
+    // 왼쪽으로 슥 들어오고(진입), 반대로 오른쪽 바깥으로 슥 나간다(해제). 오른쪽으로
+    // 넘친 부분은 스크롤 영역의 overflow-x:hidden 이 잘라 가려준다.
+    if (right && from.right && from.right.width > 0 && from.left) {
+      const last = right.getBoundingClientRect();
+      if (last.width > 0) {
+        if (twoCol) {
+          // 2단 진입: 오른쪽 밖에서 시작 → 최종 자리로 왼쪽으로 슥. 폭은 최종 트랙 폭.
+          right.style.transition = "none";
+          right.style.marginLeft = `${finalColW + 60}px`;
+          right.style.width = `${finalColW}px`;
+          plays.push(() => {
+            right.style.transition = `margin-left ${MOVE_MS}ms ${MOVE_EASE}`;
+            right.style.marginLeft = "0px";
+          });
+        } else {
+          // 2단 해제: 옆자리(2단 위치)에서 오른쪽 밖으로 슥. 다 나간 뒤 정리에서 원래
+          // 아래(단일) 자리로 복귀 — 화면 밖이라 스냅이 안 보인다.
+          const dx = (from.right.left - last.left) / ds;
+          const dy = (from.right.top - last.top) / ds;
+          const colW = from.right.width / ds;
+          right.style.transition = "none";
+          right.style.marginLeft = `${dx}px`;
+          right.style.marginTop = `${dy}px`;
+          right.style.width = `${colW}px`;
+          plays.push(() => {
+            right.style.transition = `margin-left ${MOVE_MS}ms ${MOVE_EASE}`;
+            right.style.marginLeft = `${dx + colW + 60}px`; // 오른쪽 밖으로
+          });
+        }
+      }
+    }
+
+    // rAF 대신 강제 리플로우로 시작 상태를 커밋 → 같은 페인트에서 전환 시작(프레임과
+    // 동시 출발). 그 뒤 gen 가드 타임아웃으로 정리(끊겨도 항상 지워짐).
+    void document.body.offsetWidth;
+    plays.forEach((run) => run());
+    window.setTimeout(() => {
+      if (flipGenRef.current === gen) clearAll();
+    }, MOVE_MS + 80);
+  }, [twoCol]);
+
   const goVideo = () => {
     router.push(
       `/${from}?platform=${platform}${chromeVisible ? "&chrome=1" : ""}`,
@@ -334,11 +531,17 @@ function Inner() {
         )}
 
         {/* 고정 헤더 — "홍길동"은 화면안 타이틀과 같은 위치(상태바 아래 25dp).
-            스크롤 영역 밖이라 콘텐츠가 스크롤돼도 항상 상단에 남는다. */}
-        <div className="mx-auto w-full max-w-[480px] flex-none px-5">
+            스크롤 영역 밖이라 콘텐츠가 스크롤돼도 항상 상단에 남는다.
+            시안처럼 텍스트 아래에도 여백을 둔 띠 영역(하단 12dp).
+            단일(480)/2단(700) 상한을 아래 콘텐츠와 맞춰 홍길동·종 아이콘이 항상
+            콘텐츠 좌우 끝과 정렬된다. 전환 시 view-transition 으로 함께 모핑. */}
+        <div
+          className={`mx-auto w-full flex-none px-5 ${twoCol ? "max-w-[700px]" : "max-w-[480px]"}`}
+          style={{ transition: WIDEN }}
+        >
           <div
             className="flex items-center justify-between"
-            style={{ paddingTop: "17.7px" }}
+            style={{ paddingTop: "17.7px", paddingBottom: "12px" }}
           >
             <button type="button" className="flex items-center gap-1">
               <span className="text-[16px] font-bold leading-none text-[#111111]">홍길동</span>
@@ -350,11 +553,24 @@ function Inner() {
           </div>
         </div>
 
-        {/* 스크롤 콘텐츠 — 넓은 프리셋에선 480px 컬럼으로 가운데 정렬. */}
-        <div className="min-h-0 w-full flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <div className="mx-auto w-full max-w-[480px] px-5 pb-10">
-            {/* 내 경비 구역 */}
-            <div className="mt-8 flex items-center justify-between">
+        {/* 스크롤 콘텐츠 — 좁은 프리셋(~480px)은 480px 단일 컬럼으로 가운데 정렬,
+            620px 이상에선 2단(왼쪽=내 경비 구역, 오른쪽=나머지) 구성. 스크롤 영역
+            폭 = 프레임 폭(--device-w)이라 컨테이너 쿼리(@container)로 프레임 폭 기준
+            분기한다(데스크톱 미리보기는 뷰포트≠프레임이라 미디어쿼리로는 못 잡음). */}
+        <div className="@container min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {/* 480~619(단일)에선 콘텐츠 폭 480 고정 — 폭이 넓어져도 콘텐츠는 그대로,
+              양옆 여백만 늘어난다. 620px 이상에서 2단(각 280~320, 간격 20, 가운데 정렬).
+              전환은 위 useEffect 의 View Transition 으로 각 컬럼이 부드럽게 모핑된다. */}
+          <div
+            ref={contentRef}
+            className={`mx-auto w-full px-5 pb-10 ${twoCol ? "max-w-[700px] grid grid-cols-[minmax(280px,320px)_minmax(280px,320px)] items-start justify-center gap-x-5" : "max-w-[480px]"}`}
+          >
+            {/* ── 왼쪽 단(620px+): 내 경비 구역 — 전환 중 오른쪽 콘텐츠가 슬라이드로
+                겹칠 때 그 아래 레이어로 지나가도록 왼쪽을 위 레이어에 둔다. 배경은
+                페이지와 같은 색으로 채워 카드 사이 틈으로 밑이 비치지 않게 한다. */}
+            <div ref={leftColRef} className="relative z-[1] bg-[#EDF0F5]">
+            {/* 내 경비 구역 — 헤더 하단 여백(12dp)과 합쳐 시안 간격(32dp) 유지. */}
+            <div className="mt-5 flex items-center justify-between">
               <h2 className="text-[18px] font-bold leading-none text-[#111111]">내 경비 구역</h2>
               <span className="flex items-center gap-1.5">
                 <span suppressHydrationWarning className="text-[12px] leading-none" style={{ color: "#B0B5BC" }}>
@@ -382,9 +598,12 @@ function Inner() {
               <Icon name="icon-gear" w={19} h={18} />
               <span className="text-[14px] font-medium leading-none">내 경비 구역 편집</span>
             </button>
+            </div>
 
-            {/* 최근 본 영상 */}
-            <h2 className="mt-9 text-[18px] font-bold leading-none text-[#111111]">최근 본 영상</h2>
+            {/* ── 오른쪽 단(620px+): 최근 본 영상 · 권한 신청 현황 · 추천·혜택 ── */}
+            <div ref={rightColRef}>
+            {/* 최근 본 영상 — 2단일 땐 왼쪽 헤더(mt-5)와 상단을 맞춘다. */}
+            <h2 className="mt-9 text-[18px] font-bold leading-none text-[#111111] @[620px]:mt-5">최근 본 영상</h2>
             <div className="mt-[18px] overflow-hidden rounded-[10px] bg-white">
               {RECENT_VIDEOS.map((v) => (
                 <button
@@ -488,15 +707,18 @@ function Inner() {
                 />
               </div>
             </div>
+            </div>
           </div>
         </div>
 
         {/* 채팅 플로팅 버튼(56×56) — 스크롤과 무관하게 하단탭 위 20dp·우측 20dp 고정.
             fab-chat.svg 는 그림자 여유 포함 90×90(원 좌우 17·상 13·하 21 여백)이라
-            원 기준 20dp 가 되도록 오프셋을 보정한다. */}
+            원 기준 20dp 가 되도록 오프셋을 보정한다.
+            단일(480)/2단(700) 상한을 헤더·콘텐츠와 맞춰 콘텐츠 오른쪽 끝(종 아이콘
+            라인)을 따라간다. */}
         <div
-          className="pointer-events-none absolute inset-x-0 z-10 mx-auto w-full max-w-[480px]"
-          style={{ bottom: "60px", height: 0 }}
+          className={`pointer-events-none absolute inset-x-0 z-10 mx-auto w-full ${twoCol ? "max-w-[700px]" : "max-w-[480px]"}`}
+          style={{ bottom: "60px", height: 0, transition: WIDEN }}
         >
           <img
             src={`${BASE}/home/fab-chat.svg`}

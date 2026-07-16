@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { BASE } from "./basePath";
 import DesktopVariantNav from "./components/DesktopVariantNav";
 import DeviceScaler from "./components/DeviceScaler";
 import DeviceResizer from "./components/DeviceResizer";
@@ -41,15 +40,8 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full bg-neutral-100">
-        {/* 데스크톱 전용: 화면 뒤에 깔리는 폰 목업(380×800). 앱(360×780)보다
-            사방 10px 크게 뒤에서 베젤처럼 보인다. 모바일/터치에선 CSS로 숨김. */}
-        <img
-          src={`${BASE}/mockup.svg`}
-          alt=""
-          aria-hidden
-          className="device-mockup"
-        />
-        {/* 넓은 프리셋(폴더블/트리폴드)용 CSS 베젤. 폰 프리셋에선 CSS로 숨김. */}
+        {/* 데스크톱 전용: 모든 프리셋 공용 CSS 베젤(시안 목업 레이어 재현).
+            모바일/터치에선 CSS로 숨김. */}
         <div aria-hidden className="device-frame" />
         {/* 기기 가장자리 드래그 핸들(폭·높이 조절). */}
         <DeviceResizer />

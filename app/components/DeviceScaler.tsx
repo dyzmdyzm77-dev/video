@@ -44,6 +44,27 @@ export default function DeviceScaler() {
       const margin = parseFloat(cs.getPropertyValue("--device-margin")) || 10;
       // 왼쪽 패널 폭을 뺀 가용 폭 기준으로 맞춘다(패널과 겹치지 않게).
       const panel = parseFloat(cs.getPropertyValue("--panel-w")) || 0;
+      // 모든 프리셋이 공유하는 고정 왼쪽 앵커(--device-left) — "Z TriFold(1080)가
+      // 패널 오른쪽 영역 가운데 정렬됐을 때의 화면 왼쪽 x". 트라이폴드는 정확히
+      // 그 센터 자리에 앉고, 작은 프리셋들은 같은 왼쪽에서 시작해 오른쪽으로만
+      // 커진다. 현재 기기가 오른쪽으로 넘치지 않게 클램프한다.
+      const setAnchor = (curScale: number) => {
+        const TF_W = 1080;
+        const TF_H = 792;
+        const TF_M = 30;
+        const sTF = Math.min(
+          MAX_SCALE,
+          (window.innerHeight - 32) / (TF_H + TF_M * 2),
+          (window.innerWidth - panel - 72) / (TF_W + TF_M * 2),
+        );
+        const tfOuter = (TF_W + TF_M * 2) * sTF;
+        let anchor =
+          panel + (window.innerWidth - panel - tfOuter) / 2 + TF_M * sTF;
+        const maxAnchor =
+          window.innerWidth - 16 - (w + margin) * curScale;
+        anchor = Math.max(panel + 40, Math.min(anchor, maxAnchor));
+        root.style.setProperty("--device-left", `${Math.round(anchor)}px`);
+      };
       // "실제 사이즈로 보기" 상태면 창 크기와 무관하게, 모니터 위에서 실제
       // 기기와 같은 물리 크기로 보이는 배율로 고정한다.
       // 현재 폭의 실기기 몸체 폭(mm)을 목업 바깥 윤곽(w + 2·margin)에 맞춘다.
@@ -59,15 +80,20 @@ export default function DeviceScaler() {
           "--device-phys-mm",
           String(((w + margin * 2) * scale) / cssPxPerMm),
         );
+        setAnchor(scale);
         return;
       }
-      // 목업/프레임 외곽(사방 margin) + 창 여백 32px 기준으로 맞춘다.
-      const s = Math.min(
-        MAX_SCALE,
-        (window.innerHeight - 32) / (h + margin * 2),
-        (window.innerWidth - panel - 32) / (w + margin * 2),
+      // 목업/프레임 외곽(사방 margin) + 창 여백 기준으로 맞춘다.
+      const s = Math.max(
+        0.1,
+        Math.min(
+          MAX_SCALE,
+          (window.innerHeight - 32) / (h + margin * 2),
+          (window.innerWidth - panel - 72) / (w + margin * 2),
+        ),
       );
-      root.style.setProperty("--device-scale", String(Math.max(0.1, s)));
+      root.style.setProperty("--device-scale", String(s));
+      setAnchor(s);
     };
     // 드래그 중(deviceresize)에는 자동 맞춤 배율을 고정해 두는 게 원래 동작이지만,
     // 실제 사이즈 모드에선 폭에 따라 물리 배율·mm 라벨이 달라지므로 실시간 갱신한다.
