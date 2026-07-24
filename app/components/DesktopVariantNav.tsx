@@ -21,6 +21,7 @@ const DEVICES = [
   { w: 480, h: 780, r: 29, m: 10, label: "480px", sub: "" },
   { w: 620, h: 780, r: 29, m: 10, label: "620px", sub: "" },
   { w: 750, h: 832, r: 13, m: 10, label: "750px", sub: "Z Fold 7" },
+  { w: 823, h: 590, r: 13, m: 10, label: "823px", sub: "Z Fold 8" },
   { w: 1080, h: 792, r: 13, m: 30, label: "1080px", sub: "Z TriFold" },
 ];
 
@@ -31,6 +32,7 @@ export default function DesktopVariantNav() {
   const [active, setActive] = useState(0); // 강조 표시할 DEVICES 인덱스(범위)
   const [showRuler, setShowRuler] = useState(true); // 목업 위 치수 눈금자 표시 여부
   const [actualSize, setActualSize] = useState(false); // 배율 1:1 고정 여부
+  const [compare, setCompare] = useState(false); // As Is(현재 앱) 나란히 비교 여부
 
   // 치수 눈금자 표시를 문서 루트에 반영한다(CSS 가 data-show-ruler 로 숨김 처리).
   useEffect(() => {
@@ -42,6 +44,19 @@ export default function DesktopVariantNav() {
     document.documentElement.dataset.actualSize = actualSize ? "true" : "false";
     window.dispatchEvent(new Event("devicechange"));
   }, [actualSize]);
+
+  // ?compare=1 이면 처음부터 비교 모드로 연다(platform·chrome 과 같은 방식).
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("compare") === "1") {
+      setCompare(true);
+    }
+  }, []);
+
+  // 비교하기(As Is 나란히) 여부를 문서 루트에 반영한다(AsIsPanel 이 구독).
+  useEffect(() => {
+    document.documentElement.dataset.compare = compare ? "true" : "false";
+    window.dispatchEvent(new Event("comparechange"));
+  }, [compare]);
 
   // 프리셋 크기를 문서 루트에 반영하고 강조 인덱스를 맞춘다.
   const applyPreset = (i: number) => {
@@ -168,6 +183,20 @@ export default function DesktopVariantNav() {
         <span className="dvn-label">
           {actualSize ? "되돌리기" : "실제 사이즈로 보기"}
         </span>
+      </button>
+
+      {/* 비교하기: 시안 왼쪽에 As Is(현재 앱) 영상 화면을 나란히. */}
+      <button
+        type="button"
+        className="dvn-compare-toggle"
+        data-active={compare}
+        title={compare ? "비교 닫기" : "비교하기"}
+        onClick={() => setCompare((v) => !v)}
+      >
+        <span className="dvn-icon" aria-hidden>
+          ⇆
+        </span>
+        <span className="dvn-label">비교하기</span>
       </button>
 
       {/* 목업 위 치수 눈금자 표시 온/오프. */}

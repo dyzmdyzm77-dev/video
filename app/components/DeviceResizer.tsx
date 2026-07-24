@@ -19,6 +19,7 @@ const BREAKS = [
   { min: 480, h: 780, r: 29, m: 10 },
   { min: 620, h: 780, r: 29, m: 10 },
   { min: 750, h: 832, r: 13, m: 10 },
+  { min: 823, h: 590, r: 13, m: 10 },
   { min: 1080, h: 792, r: 13, m: 30 },
 ];
 
@@ -56,7 +57,12 @@ export default function DeviceResizer() {
 
   // 오른쪽 드래그 영역과 상단 치수 눈금자를 현재 기기 화면 위치에 맞춰 배치한다.
   const position = () => {
-    const frame = document.querySelector(".app-safe-frame");
+    // 시안(메인) 프레임만 잡는다. 홈 화면(/home)에선 As Is 패널도 같은 홈
+    // 컴포넌트를 재사용해 .app-safe-frame 이 하나 더 생기는데, 그건 .asis-frame
+    // 안에 있으므로 건너뛴다(안 그러면 눈금자가 As Is 쪽으로 튄다).
+    const frame = Array.from(
+      document.querySelectorAll(".app-safe-frame"),
+    ).find((el) => !el.closest(".asis-frame"));
     const r = rightRef.current;
     if (!frame || !r) return;
     const box = frame.getBoundingClientRect();
@@ -105,10 +111,12 @@ export default function DeviceResizer() {
     window.addEventListener("resize", onEvt);
     window.addEventListener("devicechange", onEvt);
     window.addEventListener("devicecustom", onEvt);
+    window.addEventListener("comparechange", onEvt);
     return () => {
       window.removeEventListener("resize", onEvt);
       window.removeEventListener("devicechange", onEvt);
       window.removeEventListener("devicecustom", onEvt);
+      window.removeEventListener("comparechange", onEvt);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

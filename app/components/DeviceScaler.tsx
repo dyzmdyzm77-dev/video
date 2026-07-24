@@ -10,6 +10,10 @@ import { detectPxPerMm } from "./displayDensity";
 // 큰 창에서의 최대 배율. 1 이면 원본 크기, 낮출수록 작게.
 const MAX_SCALE = 0.8;
 
+// 비교하기(As Is 나란히) 시 두 기기 바깥(베젤) 사이 간격(px).
+// CSS 의 .asis-frame left 계산과 반드시 같은 값을 써야 한다.
+const COMPARE_GAP = 50;
+
 // "실제 사이즈" 환산용 상수.
 // 기기 쪽: 폭 구간별 기준 실기기의 목업 윤곽(dp + 2·margin) ↔ 몸체 물리 폭(mm).
 //   360~ = Galaxy S25(70.5mm), 750~ = Z Fold 7 펼침(143.2mm),
@@ -49,6 +53,21 @@ export default function DeviceScaler() {
       // 그 센터 자리에 앉고, 작은 프리셋들은 같은 왼쪽에서 시작해 오른쪽으로만
       // 커진다. 현재 기기가 오른쪽으로 넘치지 않게 클램프한다.
       const setAnchor = (curScale: number) => {
+        // 비교하기: As Is + 시안을 '한 쌍'으로 묶어 패널 오른쪽 영역 가운데에 놓는다.
+        // 두 기기의 바깥(베젤) 사이 간격이 정확히 COMPARE_GAP 이 되도록 계산한다.
+        // As Is 는 시안과 같은 크기라 바깥 폭도 동일하다.
+        if (root.dataset.compare === "true") {
+          const outerW = (w + margin * 2) * curScale;
+          const pairW = outerW * 2 + COMPARE_GAP;
+          const pairLeft = Math.max(
+            panel + 16,
+            panel + (window.innerWidth - panel - pairW) / 2,
+          );
+          // --device-left 는 시안 '화면' 왼쪽 = 시안 베젤 왼쪽 + margin·scale
+          const anchor = pairLeft + outerW + COMPARE_GAP + margin * curScale;
+          root.style.setProperty("--device-left", `${Math.round(anchor)}px`);
+          return;
+        }
         const TF_W = 1080;
         const TF_H = 792;
         const TF_M = 30;
@@ -84,12 +103,17 @@ export default function DeviceScaler() {
         return;
       }
       // 목업/프레임 외곽(사방 margin) + 창 여백 기준으로 맞춘다.
+      // 비교하기 중엔 같은 크기의 As Is 가 왼쪽에 하나 더 붙으므로, 가로 기준을
+      // "기기 2대 + 갭"으로 잡아야 둘 다 창 안에 들어온다.
+      const compare = root.dataset.compare === "true";
+      const cols = compare ? 2 : 1;
+      const gap = compare ? COMPARE_GAP : 0;
       const s = Math.max(
         0.1,
         Math.min(
           MAX_SCALE,
           (window.innerHeight - 32) / (h + margin * 2),
-          (window.innerWidth - panel - 72) / (w + margin * 2),
+          (window.innerWidth - panel - 72 - gap) / ((w + margin * 2) * cols),
         ),
       );
       root.style.setProperty("--device-scale", String(s));
@@ -103,10 +127,12 @@ export default function DeviceScaler() {
     apply();
     window.addEventListener("resize", apply);
     window.addEventListener("devicechange", apply);
+    window.addEventListener("comparechange", apply);
     window.addEventListener("deviceresize", onDragResize);
     return () => {
       window.removeEventListener("resize", apply);
       window.removeEventListener("devicechange", apply);
+      window.removeEventListener("comparechange", apply);
       window.removeEventListener("deviceresize", onDragResize);
     };
   }, []);

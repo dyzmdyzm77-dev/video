@@ -223,6 +223,41 @@ export default function VariantA({
     setTimeout(() => setGridLoading(false), 600);
   };
 
+  // 비교하기(As Is) 연동 — 다채널/단일 상태가 바뀔 때마다 알리고, comparechange
+  // (비교하기 토글) 시에도 현재 상태를 다시 알려 As Is 가 즉시 맞춰지게 한다.
+  useEffect(() => {
+    const broadcast = () => {
+      window.dispatchEvent(
+        new CustomEvent("channel-sync", {
+          detail: {
+            source: "variant",
+            mode: expandedIndex === null ? "grid" : "single",
+            index: expandedIndex ?? 0,
+          },
+        }),
+      );
+    };
+    broadcast();
+    window.addEventListener("comparechange", broadcast);
+    return () => window.removeEventListener("comparechange", broadcast);
+  }, [expandedIndex]);
+
+  // As Is 쪽에서 온 다채널/단일 전환을 그대로 반영.
+  useEffect(() => {
+    const onSync = (e: Event) => {
+      const d = (e as CustomEvent).detail;
+      if (!d || d.source !== "asis") return;
+      if (d.mode === "grid") {
+        if (expandedIndex !== null) handleBack();
+      } else if (expandedIndex !== d.index) {
+        handleExpand(d.index);
+      }
+    };
+    window.addEventListener("channel-sync", onSync);
+    return () => window.removeEventListener("channel-sync", onSync);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandedIndex]);
+
   const triggerTransitionSkeleton = () => {
     if (expandedIndex === null) {
       setGridLoading(true);

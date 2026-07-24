@@ -278,7 +278,8 @@ const RECENT_VIDEOS = [
   { thumb: "cam-thumb-3.svg", name: "카메라 02", sub: "1층 사무실 · 3시간 전" },
 ];
 
-function Inner() {
+// As Is 비교 패널에서도 재사용(홈은 시안과 동일). named export.
+export function Inner() {
   const router = useRouter();
   const params = useSearchParams();
   const platform = params.get("platform") === "ios" ? "ios" : "android";
