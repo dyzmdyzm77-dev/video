@@ -30,6 +30,30 @@ function rangeIndex(w: number) {
   return idx;
 }
 
+const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+
+// 가로:세로를 '작은 정수비'로 표기한다. 약분해서 두 수가 20 이하면 그대로 정수비
+// (예: 1080×792 → 15:11), 아니면 분모 20 이하에서 가장 가까운 근사비(≈)로 준다
+// (예: 823×590 → ≈7:5, 620×780 → ≈4:5). 이 기기 치수들이 3:4 처럼 딱 안
+// 떨어져서, 정확한 값은 정수비로 근사한 값은 ≈ 로 구분한다.
+function simpleRatio(w: number, h: number): string {
+  if (!w || !h) return "";
+  const g = gcd(w, h);
+  const ew = w / g;
+  const eh = h / g;
+  if (ew <= 20 && eh <= 20) return `${ew} : ${eh}`;
+  const target = w / h;
+  let best = { a: 1, b: 1, err: Infinity };
+  for (let b = 1; b <= 20; b++) {
+    for (let a = 1; a <= 20; a++) {
+      if (gcd(a, b) !== 1) continue;
+      const err = Math.abs(a / b - target);
+      if (err < best.err - 1e-9) best = { a, b, err };
+    }
+  }
+  return `≈ ${best.a} : ${best.b}`;
+}
+
 function applyWidth(w: number) {
   const root = document.documentElement;
   const b = BREAKS[rangeIndex(w)];
@@ -37,8 +61,9 @@ function applyWidth(w: number) {
   root.style.setProperty("--device-h", `${b.h}px`);
   root.style.setProperty("--device-radius", `${b.r}px`);
   root.style.setProperty("--device-margin", `${b.m}px`);
-  // 트라이폴드(1080)에선 펀치홀 카메라 위치가 달라진다(CSS 가 참조).
-  root.dataset.trifold = w >= 1080 ? "true" : "false";
+  // 펀치홀 카메라 위치 — 실기기처럼 기기별로 다르다(CSS 가 참조).
+  // 트라이폴드(1080): 오른쪽 / Fold 8(823): 왼쪽 열 영상 중앙 / 그 외: 상단 중앙.
+  root.dataset.punch = w >= 1080 ? "trifold" : w >= 823 ? "fold8" : "center";
 }
 
 // 목업 위 치수 눈금자를 프레임 상단에서 띄우는 간격.
@@ -78,17 +103,22 @@ export default function DeviceResizer() {
       const margin = parseFloat(cs.getPropertyValue("--device-margin")) || 10;
       const scale = parseFloat(cs.getPropertyValue("--device-scale")) || 1;
       const w = Math.round(parseFloat(cs.getPropertyValue("--device-w")) || 360);
+      const h = Math.round(parseFloat(cs.getPropertyValue("--device-h")) || 0);
+      // 가로:세로 비율 — 작은 정수비(딱 안 떨어지면 근사 ≈).
+      const ratio = simpleRatio(w, h);
       const actual = document.documentElement.dataset.actualSize === "true";
       if (actual) {
         // 몸체 물리 폭(mm)은 DeviceScaler 가 --device-phys-mm 로 노출한다.
         const mm = parseFloat(cs.getPropertyValue("--device-phys-mm")) || 0;
         ruler.style.left = `${box.left - margin * scale}px`;
         ruler.style.width = `${box.width + margin * scale * 2}px`;
-        label.textContent = `${mm.toFixed(1)}mm`;
+        label.textContent = ratio
+          ? `${mm.toFixed(1)}mm · ${ratio}`
+          : `${mm.toFixed(1)}mm`;
       } else {
         ruler.style.left = `${box.left}px`;
         ruler.style.width = `${box.width}px`;
-        label.textContent = `${w}px`;
+        label.textContent = ratio ? `${w}px · ${ratio}` : `${w}px`;
       }
       // 베젤 상단(화면 top 에서 margin·scale 위) 보다 RULER_GAP 만큼 더 위.
       ruler.style.top = `${box.top - margin * scale - RULER_GAP}px`;

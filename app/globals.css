@@ -502,6 +502,9 @@ body {
     position: relative;
     /* 베젤 안쪽 검정 면(::after) 위에 화면이 오도록. */
     z-index: 1;
+    /* 폭(=기기 폭 --device-w)을 컨테이너 쿼리로 질의(헤더의 날짜 배치 등
+       해상도 분기용). 폭 전환 애니메이션 중에도 JS 측정 없이 항상 정확. */
+    container: asis-device / inline-size;
     display: flex;
     flex-direction: column;
     width: var(--device-w, 360px);
@@ -537,7 +540,9 @@ body {
      line-height:1 로 두고 여백을 잡아 ink 위치가 원본과 맞도록 계산했다. */
   .asis-header {
     flex: none;
-    padding: 22px 20px 0;
+    /* 하단 16px — 원래 날짜(.asis-timestamp) 아래 여백이 담당하던 큰 영상/목록
+       과의 간격을, 날짜를 헤더 안으로 옮기며 여기로 옮겼다. */
+    padding: 22px 20px 16px;
     background: #ffffff;
   }
   .asis-title {
@@ -564,7 +569,11 @@ body {
   }
   .asis-pills {
     display: flex;
-    gap: 4px;
+    flex-wrap: wrap;
+    align-items: center;
+    /* 알약 사이 4px, 알약 줄과 날짜 줄 사이 32px(원본 날짜 위 여백). */
+    column-gap: 4px;
+    row-gap: 32px;
     margin-top: 24px;
   }
   .asis-pill {
@@ -612,17 +621,24 @@ body {
   .asis-scroll::-webkit-scrollbar {
     display: none;
   }
-  /* 알약 아래 32 → 시각(ink 176) → 16 → 큰 영상/목록(204). '카메라 목록' 타이틀
-     영역은 없음 — 다채널(그리드) 모드에선 이 16px 뒤에 바로 목록이 온다. */
+  /* 날짜 — 알약 행(.asis-pills)의 flex 아이템. 기본(<620px)은 flex-basis:100%
+     로 알약 아래 줄로 내려가 왼쪽 정렬(줄 간격은 .asis-pills 의 row-gap:32px).
+     620px 이상은 아래 @container 에서 같은 줄 오른쪽 끝으로 붙인다. */
   .asis-timestamp {
-    flex: none;
-    margin-top: 32px;
-    margin-bottom: 16px;
-    padding: 0 20px;
+    flex: 0 0 100%;
+    /* Pretendard 14 Medium — 폰트는 var(--font-sans)로 상속(Pretendard). */
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1;
     color: #353535;
+  }
+  /* 620px 이상: 날짜를 알약과 같은 줄 오른쪽 끝으로. flex-basis:auto 로 줄바꿈을
+     풀고 margin-left:auto 로 오른쪽 끝까지 민다(수직은 align-items:center). */
+  @container asis-device (min-width: 620px) {
+    .asis-timestamp {
+      flex: 0 0 auto;
+      margin-left: auto;
+    }
   }
   /* '카메라 목록' 타이틀 — 원본 SVG 실측값. 큰 영상 아래 25 → 타이틀(ink 433.2)
      → 15 → 목록(462). 단일채널 모드에서만 렌더된다(큰 영상이 있을 때만). */
@@ -637,6 +653,91 @@ body {
     color: #353535;
   }
 
+  /* ===== 620px+ 단일채널 '카메라 목록' 바텀시트 ===== */
+  /* 큰 영상 아래 남는 공간(region). 이 안에서 패널(타이틀 바 + 목록)이 통째로
+     위/아래로 슬라이드한다. 아래쪽 넘침은 잘라내(접힐 때 목록이 하단 탭바를
+     덮지 않게) 위쪽은 그대로 둬(패널 상단 그림자가 안 잘리게) — clip-path 로
+     위만 20px 여유를 준다. */
+  .asis-sheet-region {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    clip-path: inset(-20px 0 0 0);
+    background: #ffffff;
+    /* .asis-frame 이 pointer-events:none 이라 여기서 다시 켠다(토글·타일 클릭). */
+    pointer-events: auto;
+  }
+  /* 슬라이드 패널 — 타이틀 바 + 목록 한 덩어리. 바텀시트처럼 상단 라운드 8px +
+     위쪽 가벼운 그림자. */
+  .asis-sheet-panel {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease;
+  }
+  /* 접힘 — 패널 전체를 아래로 내려 타이틀 바(64px)만 남기고 목록은 숨긴다. */
+  .asis-sheet-panel.is-closed {
+    transform: translateY(calc(100% - 64px));
+  }
+  /* 타이틀 바 — '카메라 목록' + 오른쪽 끝 토글 화살표. 위아래 18px(화살표 28px
+     포함 높이 = 18+28+18 = 64px, 접힘 계산과 일치). */
+  .asis-sheet-bar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+  }
+  .asis-sheet-bar .asis-section {
+    flex: none;
+    margin: 0;
+    padding: 0;
+  }
+  .asis-sheet-toggle {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: #353535;
+    cursor: pointer;
+  }
+  /* 목록 본문 — 가로 목록을 담는다. 패널 하단이라 라운드 영향 없음. */
+  .asis-sheet-body {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  /* 가로 목록 — 한 줄, 가로 스크롤, 세로는 본문 높이에 꽉. 영상 사이 8px·양끝
+     20px 간격은 흰색(배경이 그대로 비침). */
+  .asis-hlist {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    gap: 8px;
+    padding: 0 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #ffffff;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .asis-hlist::-webkit-scrollbar {
+    display: none;
+  }
+  /* 타일 — 본문 높이에 맞추고 폭은 16:9 로. 세로 스크롤 없이 가로로만 넘긴다. */
+  .asis-hlist .asis-tile {
+    flex: none;
+    height: 100%;
+    aspect-ratio: 16 / 9;
+  }
+
   /* 타일은 항상 16:9(폭 늘면 높이도 같이). */
   .asis-tile {
     position: relative;
@@ -644,12 +745,11 @@ body {
     overflow: hidden;
     background: #111111;
   }
-  /* 큰 영상: 16:9 유지하되 '남은 세로 공간'에 맞춰 줄어든다(하단탭은 항상 보이게).
-     - 폰~폴드7: 자리가 넉넉해 폭 기준 16:9 그대로 꽉 참.
-     - 폴드8·트라이폴드: 세로가 짧아 flex-shrink 로 줄고, 영상은 16:9 유지한 채
-       가장 큰 크기로 가운데 정렬(좌우 여백). */
-  /* 스크롤 영역 안의 평범한 블록 — 폭 100%, 항상 16:9(찌그러지지 않는다). */
+  /* 큰 영상 — 단일채널 모드에서 스크롤 영역 밖에 두어 '고정'한다(폭 100%,
+     항상 16:9). 세로가 짧아도 줄지 않고, 대신 아래 카메라 목록(.asis-scroll)이
+     남는 공간에서 스크롤된다. 하단 탭바는 flex:none 이라 항상 보인다. */
   .asis-hero {
+    flex: none;
     position: relative;
     /* 여백은 뒤따르는 '카메라 목록' 타이틀의 margin-top(25px) 이 담당한다 —
        큰 영상은 항상 이 타이틀과 함께만 나온다(단일채널 모드). */
@@ -691,6 +791,18 @@ body {
       max-width: 100%;
       max-height: 100%;
     }
+    /* 레터박스가 생기면 좌우 열 영상을 가운데(2px gap)로 모은다 — 왼쪽 열
+       (asis-tile--left)은 오른쪽으로, 오른쪽 열(asis-tile--right)은 왼쪽으로
+       붙이고 검정 여백은 바깥쪽으로. 세로는 그대로 가운데(margin-top/bottom:
+       auto 유지). */
+    .asis-scroll--grid .asis-grid .asis-tile--left .asis-feed {
+      margin-left: auto;
+      margin-right: 0;
+    }
+    .asis-scroll--grid .asis-grid .asis-tile--right .asis-feed {
+      margin-left: 0;
+      margin-right: auto;
+    }
   }
   /* 타일은 더블클릭 대상 — 커서/선택 방지. */
   .asis-tile {
@@ -717,8 +829,9 @@ body {
   /* 영상 라벨 — 실측 12px. 큰 영상은 x=20/ink y=17.5, 타일은 x=12/ink y=12.5. */
   .asis-cam-label {
     position: absolute;
+    /* Pretendard 12 Medium — 폰트는 var(--font-sans)로 상속(Pretendard). */
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1;
     color: #ffffff;
   }
@@ -758,7 +871,9 @@ body {
   }
 
   /* 화면 전환 로딩(다채널↔단일) — 시안은 스켈레톤 UI, As Is 는 스피너. 화면
-     전체를 덮는 검정 50% 스크림 위, 90×90 스피너를 정중앙에. */
+     전체를 덮는 검정 50% 스크림 위, 원형 링 스피너를 정중앙에. 링 전체는 흐린
+     흰색, 한 구간(top)만 브랜드 블루 — 회전하면 표준 로딩 스피너로 읽힌다.
+     한 바퀴(0.8s) = 로딩 1회이며, JS 의 화면 전환 지연과 맞춰 '다 돌면 전환'. */
   .asis-loading {
     position: absolute;
     inset: 0;
@@ -769,21 +884,12 @@ body {
     background: rgba(0, 0, 0, 0.5);
   }
   .asis-loading-spinner {
-    position: relative;
-    width: 90px;
-    height: 90px;
-    animation: asis-spin 0.9s linear infinite;
-  }
-  .asis-loading-spinner::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 50%;
-    width: 18px;
-    height: 18px;
-    margin-left: -9px;
+    width: 64px;
+    height: 64px;
+    border: 6px solid rgba(255, 255, 255, 0.28);
+    border-top-color: #1d6ceb;
     border-radius: 50%;
-    background: #1d6ceb;
+    animation: asis-spin 0.8s linear infinite;
   }
   @keyframes asis-spin {
     to {
@@ -912,8 +1018,8 @@ body {
 }
 
 
-/* 펀치홀 카메라 점 — 기본은 상단 중앙. 트라이폴드(1080 프리셋)에선 실기기처럼
-   화면 오른쪽에서 167dp 떨어진 지점으로 이동한다(html[data-trifold] 는 JS 가 설정). */
+/* 펀치홀 카메라 점 — 기본은 상단 중앙. 기기별로 실기기처럼 위치가 다르다
+   (html[data-punch] 는 JS 가 설정: trifold=1080 / fold8=823 / center=그 외). */
 .punch-hole {
   position: absolute;
   z-index: 50;
@@ -928,8 +1034,15 @@ body {
     left 0.1s linear,
     right 0.1s linear;
 }
-html[data-trifold="true"] .punch-hole {
+/* 트라이폴드(1080) — 화면 오른쪽에서 167dp. */
+html[data-punch="trifold"] .punch-hole {
   left: auto;
   right: 167px;
   transform: none;
+}
+/* Fold 8(823) — 오른쪽 열 영상의 가로 중앙(폭 823 기준, 우열 [412,823]의 중앙 ≈618px). */
+html[data-punch="fold8"] .punch-hole {
+  left: 618px;
+  right: auto;
+  transform: translateX(-50%);
 }

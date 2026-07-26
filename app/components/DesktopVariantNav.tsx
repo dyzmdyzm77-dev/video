@@ -66,8 +66,10 @@ export default function DesktopVariantNav() {
     root.style.setProperty("--device-h", `${d.h}px`);
     root.style.setProperty("--device-radius", `${d.r}px`);
     root.style.setProperty("--device-margin", `${d.m}px`);
-    // 트라이폴드(1080)에선 펀치홀 카메라 위치가 달라진다(CSS 가 참조).
-    root.dataset.trifold = d.w >= 1080 ? "true" : "false";
+    // 펀치홀 카메라 위치 — 실기기처럼 기기별로 다르다(CSS 가 참조).
+    // 트라이폴드(1080): 오른쪽 / Fold 8(823): 왼쪽 열 영상 중앙 / 그 외: 상단 중앙.
+    root.dataset.punch =
+      d.w >= 1080 ? "trifold" : d.w >= 823 ? "fold8" : "center";
     setActive(i);
     window.dispatchEvent(new Event("devicechange"));
   };

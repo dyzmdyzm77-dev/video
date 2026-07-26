@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { BASE } from "../basePath";
 import AndroidNav from "./AndroidNav";
 import { CameraFeed } from "./CameraFeed";
+import { useDeviceWidth } from "./useDeviceWidth";
 import { Inner as HomeScreen } from "../home/page";
 
 // 데스크톱 전용: "비교하기"를 켜면 현재 시안(가운데 기기) 왼쪽에 As Is(현재 앱)
@@ -30,6 +31,18 @@ const CAMS = [
   "cam3",
   "cam4",
 ];
+
+// 실시간 날짜/시각 — As Is 고유 포맷("YYYY.MM.DD  HH:MM:SS", 요일 없음, 날짜와
+// 시각 사이 공백 2칸). 시안(To Be)은 요일 포함 포맷을 쓰지만 As Is 는 원본 그대로.
+// 화면 전환(다채널↔단일) 로딩 지속시간 — 스피너 한 바퀴(globals.css asis-spin
+// 0.8s)와 맞춘다. 이 시간 동안 '현재 화면' 위에 스피너를 돌린 뒤 다음 화면으로
+// 전환한다(로딩이 다 돌면 그때 전환).
+const LOADING_MS = 800;
+
+const pad = (n: number) => String(n).padStart(2, "0");
+function formatAsIsClock(d: Date) {
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}  ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
 
 // ---- 시안(VariantA)과 동일한 하단 탭 아이템 ----
 function TabItem({
@@ -94,6 +107,29 @@ function ChevronDownIcon({ className }: { className?: string }) {
   );
 }
 
+// 바텀시트 토글 화살표 — 펼침(open)이면 ▼(눌러서 내림), 접힘이면 회전해 ▲(눌러서 올림).
+function SheetArrow({ open }: { open: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      style={{
+        transition: "transform 0.2s",
+        transform: open ? "rotate(0deg)" : "rotate(180deg)",
+      }}
+    >
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  );
+}
+
 // ---- 시안(VariantA)과 동일한 상태바 아이콘 ----
 function MuteIcon({ className }: { className?: string }) {
   return (
@@ -142,7 +178,29 @@ export default function AsIsPanel() {
   // 그냥 로딩 스피너가 뜬다(사양 차이). 600ms 로 시안 스켈레톤과 지속시간을
   // 맞춘다(VariantA 의 handleExpand/handleBack setTimeout 600).
   const [loading, setLoading] = useState(false);
-  const mountedRef = useRef(false);
+  // 현재 mode/featured 를 이벤트 콜백(빈 deps)에서 최신값으로 읽기 위한 미러.
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
+  const featuredRef = useRef(featured);
+  featuredRef.current = featured;
+  // 전환 대기 목표와 타이머 — 로딩이 다 돌면 이 목표를 커밋한다.
+  const pendingRef = useRef<{ mode: "grid" | "single"; featured: number } | null>(
+    null,
+  );
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 비교하기 켠 직후 '첫 동기화'는 스피너 없이 즉시 맞춘다(초기 상태 세팅이지
+  // 사용자 전환이 아니므로). 비교하기가 꺼지면 다시 초기화.
+  const syncedOnceRef = useRef(false);
+  // 620px 이상에서만 단일채널 카메라 목록을 바텀시트(가로 목록)로 바꾼다.
+  const wide = useDeviceWidth() >= 620;
+  // 바텀시트 펼침/접힘 — 기본 펼침(들어가면 가로 목록이 바로 보임).
+  const [sheetOpen, setSheetOpen] = useState(true);
+  // 실시간 시계 — 매초 갱신(시안 To Be 와 동일). 패널은 클라이언트에서만
+  // 렌더되므로(비교하기 on 이 useEffect 로 켜짐) 초기값을 즉시 현재 시각으로
+  // 둬도 하이드레이션 불일치가 없다.
+  const [now, setNow] = useState<Date | null>(() =>
+    typeof window === "undefined" ? null : new Date(),
+  );
 
   const router = useRouter();
   const pathname = usePathname();
@@ -158,12 +216,67 @@ export default function AsIsPanel() {
     : "a";
 
   useEffect(() => {
-    const read = () =>
-      setOn(document.documentElement.dataset.compare === "true");
+    const read = () => {
+      const isOn = document.documentElement.dataset.compare === "true";
+      setOn(isOn);
+      // 비교하기가 꺼지면 '첫 동기화 즉시' 플래그를 되돌려, 다시 켰을 때
+      // 초기 상태를 스피너 없이 맞춘다.
+      if (!isOn) syncedOnceRef.current = false;
+    };
     read();
     window.addEventListener("comparechange", read);
     return () => window.removeEventListener("comparechange", read);
   }, []);
+
+  // 실시간 시계 — 매초 갱신.
+  useEffect(() => {
+    setNow(new Date());
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // 화면 전환 — '현재 화면' 위에 스피너를 LOADING_MS 만큼(한 바퀴) 돌린 뒤
+  // 목표 화면으로 커밋한다. instant=true 면(비교하기 켠 직후 첫 동기화) 즉시.
+  // 전환 중 새 목표가 오면 마지막 목표로 갱신하고 타이머를 다시 건다.
+  const commit = (m: "grid" | "single", f: number | null) => {
+    if (f != null) setFeatured(f);
+    setMode(m);
+  };
+  const transitionTo = (
+    m: "grid" | "single",
+    f: number | null,
+    instant = false,
+  ) => {
+    // 이미 그 상태면 아무것도 하지 않는다(불필요한 스피너 방지).
+    if (
+      m === modeRef.current &&
+      (m === "grid" || f == null || f === featuredRef.current)
+    ) {
+      return;
+    }
+    if (instant) {
+      commit(m, f);
+      return;
+    }
+    pendingRef.current = { mode: m, featured: f ?? featuredRef.current };
+    setLoading(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      const t = pendingRef.current;
+      if (t) commit(t.mode, t.featured);
+      setLoading(false);
+      pendingRef.current = null;
+      timerRef.current = null;
+    }, LOADING_MS);
+  };
+
+  // 언마운트 시 타이머 정리.
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    },
+    [],
+  );
 
   // 시안 쪽 다채널/단일 전환을 그대로 반영 — 비교하기가 꺼져 있어도 구독은
   // 계속 켜둬서(컴포넌트는 항상 마운트돼 있다), 나중에 켰을 때 최신 상태로
@@ -172,14 +285,16 @@ export default function AsIsPanel() {
     const onSync = (e: Event) => {
       const d = (e as CustomEvent).detail;
       if (!d || d.source !== "variant") return;
-      if (d.mode === "grid") setMode("grid");
-      else {
-        setFeatured(d.index);
-        setMode("single");
-      }
+      // 첫 동기화(비교하기 켠 직후)는 즉시, 이후 전환은 로딩 후.
+      const instant = !syncedOnceRef.current;
+      syncedOnceRef.current = true;
+      if (d.mode === "grid") transitionTo("grid", null, instant);
+      else transitionTo("single", d.index, instant);
     };
     window.addEventListener("channel-sync", onSync);
     return () => window.removeEventListener("channel-sync", onSync);
+    // transitionTo 는 refs/세터만 쓰므로 첫 렌더 클로저로 충분(의도적으로 빈 deps).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // As Is 쪽 전환도 시안에 알린다(양방향). 비교하기 켜져 있을 때만 — 꺼진 동안의
@@ -193,18 +308,40 @@ export default function AsIsPanel() {
     );
   }, [on, mode, featured]);
 
-  // 다채널↔단일 전환(내 클릭이든 시안에서 넘어온 동기화든) 때마다 잠깐 로딩.
-  useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      return;
-    }
-    setLoading(true);
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, [mode]);
-
   if (!on) return null;
+
+  // 카메라 목록 타일 하나 — 세로 2열 그리드와 620px+ 가로 바텀시트에서 공용.
+  const renderTile = (cam: string, i: number) => (
+    <div
+      key={i}
+      className={`asis-tile ${i % 2 === 0 ? "asis-tile--left" : "asis-tile--right"}`}
+      onClick={() => {
+        // 이미 단일 모드면 큰 영상만 즉시 교체(화면 전환 아님, 로딩 없음).
+        // 다채널→단일은 로딩을 한 바퀴 돌린 뒤 전환한다.
+        if (mode === "single") setFeatured(i);
+        else transitionTo("single", i);
+      }}
+    >
+      {/* 스크림·라벨·선택 오버레이는 타일(칸)이 아니라 실제 영상 영역(.asis-feed)
+          기준으로 얹는다 — 레터박스(검정 여백)가 생겨도 라벨이 영상 위에 붙는다. */}
+      <span className="asis-feed">
+        <CameraFeed
+          label={`사무실 ${String(i + 1).padStart(2, "0")}`}
+          src={`${BASE}/cameras/${cam}.gif`}
+          paused={mode === "single"}
+        />
+        <span className="asis-scrim" />
+        <span className="asis-cam-label">
+          사무실 {String(i + 1).padStart(2, "0")}
+        </span>
+        {mode === "single" && i === featured && (
+          <span className="asis-tile-selected">
+            <CheckIcon className="asis-check" />
+          </span>
+        )}
+      </span>
+    </div>
+  );
 
   // 홈 화면은 시안과 동일 — 같은 홈 컴포넌트를 그대로 재사용한다.
   // (자체 상태바·하단탭·안드로이드 네비 포함. 중첩 .app-safe-frame 는 CSS 로 무력화)
@@ -251,81 +388,80 @@ export default function AsIsPanel() {
             <ChevronDownIcon className="asis-chevron" />
           </div>
           <p className="asis-subtitle">에스원 본사 · N1234567</p>
+          {/* 알약(실시간/녹화영상) 행에 날짜를 함께 둔다. 좁은 폭(<620)에선
+              날짜가 알약 아래 줄로 내려가 왼쪽 정렬(flex-wrap), 620px 이상에선
+              같은 줄 오른쪽 끝으로 붙는다(margin-left:auto). @container 로 판단. */}
           <div className="asis-pills">
             <span className="asis-pill asis-pill-on">실시간영상</span>
             <span className="asis-pill">녹화영상</span>
+            <p className="asis-timestamp">
+              {now ? formatAsIsClock(now) : " "}
+            </p>
           </div>
         </header>
 
-        {/* 여기까지는 고정 — 스크롤되지 않는다. */}
-        <p className="asis-timestamp">2022.08.24&nbsp;&nbsp;18:20:00</p>
-
-        {/* 큰 영상 + 카메라 목록을 한 스크롤 영역으로 묶는다. 자리가 넉넉하면
-            (폰~폴드7, 트라이폴드) 스크롤 없이 그대로 다 보이고, 세로가 아주
-            짧은 기기(폴드8 823×590 등)에서만 스크롤이 생겨 — 큰 영상·목록
-            어느 것도 잘리거나 안 보이는 슬라이버가 되지 않는다. */}
-        <div
-          className={`asis-scroll${mode === "grid" ? " asis-scroll--grid" : ""}`}
-        >
-          {/* 큰 영상 — 단일채널 모드에서만. 더블클릭하면 다채널(그리드)로 복귀. */}
-          {mode === "single" && (
-            <div className="asis-hero" onDoubleClick={() => setMode("grid")}>
-              <span className="asis-feed" key={featured}>
-                <CameraFeed
-                  label={`사무실 ${String(featured + 1).padStart(2, "0")}`}
-                  src={`${BASE}/cameras/${CAMS[featured]}.gif`}
-                />
-              </span>
-              <span className="asis-scrim" />
-              <span className="asis-cam-label">
-                사무실 {String(featured + 1).padStart(2, "0")}
-              </span>
-            </div>
-          )}
-
-          {/* '카메라 목록' 타이틀 — 원본 SVG 그대로, 큰 영상 아래에 있을 때만
-              (단일채널 모드). 그리드(다채널) 모드는 원본에 없던 화면이라
-              화면 전체가 이미 목록이므로 타이틀이 필요 없다. */}
-          {mode === "single" && <p className="asis-section">카메라 목록</p>}
-
-          {/* 카메라 목록 — 2열 고정. 다채널 모드에서 자연 크기(폭 기준 16:9,
-              타일 딱 붙여서)가 하단 탭 위 영역에 자연히 다 들어가면 그대로
-              패킹(여백 없음) — 넘칠 때만(823 등) 강제로 줄여서 맞춘다
-              (letterbox). '들어가는지'는 CSS 컨테이너 쿼리로 판단한다(JS
-              측정 없이 항상 정확 — globals.css 의 @container 참고). 단일채널
-              모드는 항상 자연 크기 + 필요하면 스크롤. 다채널은 8개 모두 재생,
-              단일채널은 스틸 + 타일 클릭으로 큰 영상만 바뀐다. */}
-          <div className="asis-grid">
-            {CAMS.map((cam, i) => (
-              <div
-                key={i}
-                className="asis-tile"
-                onClick={() => {
-                  setFeatured(i);
-                  setMode("single");
-                }}
-              >
-                <span className="asis-feed">
-                  <CameraFeed
-                    label={`사무실 ${String(i + 1).padStart(2, "0")}`}
-                    src={`${BASE}/cameras/${cam}.gif`}
-                    paused={mode === "single"}
-                  />
-                </span>
-                <span className="asis-scrim" />
-                <span className="asis-cam-label">
-                  사무실 {String(i + 1).padStart(2, "0")}
-                </span>
-                {/* 단일채널 모드에서, 현재 큰 영상에 떠 있는 카메라를 선택 상태(딤 + 체크)로. */}
-                {mode === "single" && i === featured && (
-                  <span className="asis-tile-selected">
-                    <CheckIcon className="asis-check" />
-                  </span>
-                )}
-              </div>
-            ))}
+        {/* 큰 영상 — 단일채널 모드에서만. 스크롤 영역 밖에 두어 고정한다
+            (카메라 목록만 스크롤). 더블클릭하면 다채널(그리드)로 복귀. */}
+        {mode === "single" && (
+          <div className="asis-hero" onDoubleClick={() => transitionTo("grid", null)}>
+            <span className="asis-feed" key={featured}>
+              <CameraFeed
+                label={`사무실 ${String(featured + 1).padStart(2, "0")}`}
+                src={`${BASE}/cameras/${CAMS[featured]}.gif`}
+              />
+            </span>
+            <span className="asis-scrim" />
+            <span className="asis-cam-label">
+              사무실 {String(featured + 1).padStart(2, "0")}
+            </span>
           </div>
-        </div>
+        )}
+
+        {mode === "single" && wide ? (
+          /* 620px 이상 단일채널 — 카메라 목록을 바텀시트로. 타이틀 행 오른쪽 끝
+             화살표로 펼침/접힘. 펼치면 영상들이 가로 한 줄로(가로 스크롤), 세로는
+             남은 영역 높이에 꽉 맞춘다. 접으면 목록이 아래로 슬라이드해 숨고(자리
+             비움), 큰 영상 크기는 그대로. */
+          <div className="asis-sheet-region">
+            {/* 패널(타이틀 바 + 목록)이 통째로 슬라이드한다. 접으면 아래로 내려가
+                타이틀 바만 하단에 남고 목록은 영역 밖으로 사라진다(자리 비움). */}
+            <div className={`asis-sheet-panel ${sheetOpen ? "is-open" : "is-closed"}`}>
+              <div className="asis-sheet-bar">
+                <span className="asis-section">카메라 목록</span>
+                <button
+                  type="button"
+                  className="asis-sheet-toggle"
+                  onClick={() => setSheetOpen((o) => !o)}
+                  aria-label={sheetOpen ? "카메라 목록 접기" : "카메라 목록 펼치기"}
+                >
+                  <SheetArrow open={sheetOpen} />
+                </button>
+              </div>
+              <div className="asis-sheet-body">
+                <div className="asis-hlist">
+                  {CAMS.map((cam, i) => renderTile(cam, i))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* '카메라 목록' 타이틀 — 단일채널(세로 목록)에서만. 큰 영상과 함께
+                고정되고 목록만 그 아래로 스크롤된다. 다채널은 화면 전체가 목록. */}
+            {mode === "single" && <p className="asis-section">카메라 목록</p>}
+
+            {/* 카메라 목록 스크롤 영역(세로 2열). 단일채널: 큰 영상·타이틀은 위에
+                고정되고 여기만 스크롤. 다채널: 화면 전체가 목록이며 컨테이너
+                쿼리로 레터박스 여부를 판단한다(.asis-scroll--grid). */}
+            <div
+              className={`asis-scroll${mode === "grid" ? " asis-scroll--grid" : ""}`}
+            >
+              <div className="asis-grid">
+                {CAMS.map((cam, i) => renderTile(cam, i))}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* 하단 탭바 — 시안과 동일한 마크업/아이콘(TabItem + nav/*.svg 마스크). */}
         <nav className="asis-tabbar mx-auto w-full border-t border-neutral-200 bg-white">
