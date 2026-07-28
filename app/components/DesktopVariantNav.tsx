@@ -33,6 +33,10 @@ export default function DesktopVariantNav() {
   const [showRuler, setShowRuler] = useState(true); // 목업 위 치수 눈금자 표시 여부
   const [actualSize, setActualSize] = useState(false); // 배율 1:1 고정 여부
   const [compare, setCompare] = useState(false); // As Is(현재 앱) 나란히 비교 여부
+  const [rotated, setRotated] = useState(false); // 디바이스 시각적 90° 회전(가로)
+  // 직접 입력(커스텀 해상도) — 가로·세로 px.
+  const [customW, setCustomW] = useState("");
+  const [customH, setCustomH] = useState("");
 
   // 치수 눈금자 표시를 문서 루트에 반영한다(CSS 가 data-show-ruler 로 숨김 처리).
   useEffect(() => {
@@ -73,6 +77,46 @@ export default function DesktopVariantNav() {
     setActive(i);
     window.dispatchEvent(new Event("devicechange"));
   };
+
+  // 직접 입력한 가로·세로(px)를 적용한다. 라운드/여백/펀치홀은 프리셋과 동일한
+  // '폭 구간' 규칙을 따르고, 세로는 입력값 그대로 쓴다. 프리셋 강조는 해제.
+  const applyCustom = () => {
+    const root = document.documentElement;
+    let w = Math.round(parseFloat(customW));
+    let h = Math.round(parseFloat(customH));
+    if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return;
+    // 최소 가로 300(드래그와 동일), 세로 240.
+    w = Math.min(3000, Math.max(300, w));
+    h = Math.min(3000, Math.max(240, h));
+    const r = w < 480 ? 45 : w < 750 ? 29 : 13;
+    const m = w >= 1080 ? 30 : 10;
+    root.style.setProperty("--device-w", `${w}px`);
+    root.style.setProperty("--device-h", `${h}px`);
+    root.style.setProperty("--device-radius", `${r}px`);
+    root.style.setProperty("--device-margin", `${m}px`);
+    root.dataset.punch =
+      w >= 1080 ? "trifold" : w >= 823 ? "fold8" : "center";
+    setActive(-1);
+    window.dispatchEvent(new Event("devicechange"));
+  };
+
+  // 왼쪽으로 회전 — 디바이스(베젤+화면)를 시계반대 90° 시각적으로 회전한다.
+  // 해상도(가로·세로)는 그대로 두고 화면만 눕힌다(가로 모드). 다시 누르면 원위치.
+  useEffect(() => {
+    document.documentElement.dataset.rotate = rotated ? "true" : "false";
+    window.dispatchEvent(new Event("devicechange"));
+  }, [rotated]);
+
+  // 입력한 가로:세로의 약분 비율(정수비 미리보기용).
+  const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+  const customRatio = (() => {
+    const w = Math.round(parseFloat(customW));
+    const h = Math.round(parseFloat(customH));
+    if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0)
+      return "";
+    const g = gcd(w, h);
+    return `${w / g} : ${h / g}`;
+  })();
 
   // 현재 패널 폭을 문서 루트에 노출한다. 데스크톱에서 기기를 "패널을 뺀 영역"
   // 기준 중앙에 배치하는 데 쓰인다(펼침 200px / 접힘 64px, CSS 와 동일).
@@ -170,6 +214,61 @@ export default function DesktopVariantNav() {
           </li>
         ))}
       </ul>
+
+      {/* 직접 입력 — 가로·세로(px)로 커스텀 해상도. 비율은 아래에 미리보기. */}
+      <div className="dvn-custom">
+        <div className="dvn-custom-row">
+          <input
+            type="number"
+            className="dvn-custom-input"
+            placeholder="가로"
+            aria-label="가로(px)"
+            value={customW}
+            onChange={(e) => setCustomW(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") applyCustom();
+            }}
+          />
+          <span className="dvn-custom-x" aria-hidden>
+            ×
+          </span>
+          <input
+            type="number"
+            className="dvn-custom-input"
+            placeholder="세로"
+            aria-label="세로(px)"
+            value={customH}
+            onChange={(e) => setCustomH(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") applyCustom();
+            }}
+          />
+          <button
+            type="button"
+            className="dvn-custom-apply"
+            onClick={applyCustom}
+          >
+            적용
+          </button>
+        </div>
+        <p className="dvn-custom-ratio">
+          {customRatio ? `비율 ${customRatio}` : "가로 × 세로 입력"}
+        </p>
+      </div>
+
+      {/* 왼쪽으로 회전 — 디바이스를 시계반대 90° 시각적으로 회전(가로). */}
+      <button
+        type="button"
+        className="dvn-rotate-toggle"
+        data-active={rotated}
+        title={rotated ? "세로로 되돌리기" : "왼쪽으로 회전"}
+        onClick={() => setRotated((v) => !v)}
+      >
+        <span className="dvn-icon" aria-hidden>
+          ⟲
+        </span>
+        <span className="dvn-label">왼쪽으로 회전</span>
+      </button>
 
       {/* 맨 하단: 배율 1:1 고정 토글. 누르면 실제 사이즈, 다시 누르면 자동 맞춤. */}
       <button

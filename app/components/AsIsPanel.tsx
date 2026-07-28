@@ -358,6 +358,23 @@ export default function AsIsPanel() {
     );
   }
 
+  // 큰 영상(단일채널) — 좁은 폭에선 고정 배치, 620+ 바텀시트 모드에선
+  // .asis-single-wide 안에서 원래 16:9 크기 그대로 두고 그 위로 시트가 뜬다.
+  const heroEl = (
+    <div className="asis-hero" onDoubleClick={() => transitionTo("grid", null)}>
+      <span className="asis-feed" key={featured}>
+        <CameraFeed
+          label={`사무실 ${String(featured + 1).padStart(2, "0")}`}
+          src={`${BASE}/cameras/${CAMS[featured]}.gif`}
+        />
+      </span>
+      <span className="asis-scrim" />
+      <span className="asis-cam-label">
+        사무실 {String(featured + 1).padStart(2, "0")}
+      </span>
+    </div>
+  );
+
   return (
     <div className="asis-frame" aria-hidden>
       <span className="asis-caption">As Is</span>
@@ -400,59 +417,41 @@ export default function AsIsPanel() {
           </div>
         </header>
 
-        {/* 큰 영상 — 단일채널 모드에서만. 스크롤 영역 밖에 두어 고정한다
-            (카메라 목록만 스크롤). 더블클릭하면 다채널(그리드)로 복귀. */}
-        {mode === "single" && (
-          <div className="asis-hero" onDoubleClick={() => transitionTo("grid", null)}>
-            <span className="asis-feed" key={featured}>
-              <CameraFeed
-                label={`사무실 ${String(featured + 1).padStart(2, "0")}`}
-                src={`${BASE}/cameras/${CAMS[featured]}.gif`}
-              />
-            </span>
-            <span className="asis-scrim" />
-            <span className="asis-cam-label">
-              사무실 {String(featured + 1).padStart(2, "0")}
-            </span>
-          </div>
-        )}
-
         {mode === "single" && wide ? (
-          /* 620px 이상 단일채널 — 카메라 목록을 바텀시트로. 타이틀 행 오른쪽 끝
-             화살표로 펼침/접힘. 펼치면 영상들이 가로 한 줄로(가로 스크롤), 세로는
-             남은 영역 높이에 꽉 맞춘다. 접으면 목록이 아래로 슬라이드해 숨고(자리
-             비움), 큰 영상 크기는 그대로. */
-          <div className="asis-sheet-region">
-            {/* 패널(타이틀 바 + 목록)이 통째로 슬라이드한다. 접으면 아래로 내려가
-                타이틀 바만 하단에 남고 목록은 영역 밖으로 사라진다(자리 비움). */}
-            <div className={`asis-sheet-panel ${sheetOpen ? "is-open" : "is-closed"}`}>
-              <div className="asis-sheet-bar">
-                <span className="asis-section">카메라 목록</span>
-                <button
-                  type="button"
-                  className="asis-sheet-toggle"
-                  onClick={() => setSheetOpen((o) => !o)}
-                  aria-label={sheetOpen ? "카메라 목록 접기" : "카메라 목록 펼치기"}
-                >
-                  <SheetArrow open={sheetOpen} />
-                </button>
-              </div>
-              <div className="asis-sheet-body">
-                <div className="asis-hlist">
-                  {CAMS.map((cam, i) => renderTile(cam, i))}
+          /* 620px 이상 단일채널 — 큰 영상은 원래 16:9 크기 그대로 두고, 그 위로
+             카메라 목록 바텀시트가 '떠오른다'(오버레이 — 영상을 밀어내지 않는다).
+             타이틀 행 오른쪽 끝 화살표로 펼침/접힘. */
+          <div className="asis-single-wide">
+            {heroEl}
+            {/* 바텀시트 — 영역 하단에 절대배치로 떠서 영상 위에 겹친다. 패널(타이틀
+                바 + 목록)이 통째로 슬라이드해 접히면 타이틀 바만 남는다. */}
+            <div className="asis-sheet-region">
+              <div className={`asis-sheet-panel ${sheetOpen ? "is-open" : "is-closed"}`}>
+                <div className="asis-sheet-bar">
+                  <span className="asis-section">카메라 목록</span>
+                  <button
+                    type="button"
+                    className="asis-sheet-toggle"
+                    onClick={() => setSheetOpen((o) => !o)}
+                    aria-label={sheetOpen ? "카메라 목록 접기" : "카메라 목록 펼치기"}
+                  >
+                    <SheetArrow open={sheetOpen} />
+                  </button>
+                </div>
+                <div className="asis-sheet-body">
+                  <div className="asis-sheet-grid">
+                    {CAMS.map((cam, i) => renderTile(cam, i))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         ) : (
           <>
-            {/* '카메라 목록' 타이틀 — 단일채널(세로 목록)에서만. 큰 영상과 함께
-                고정되고 목록만 그 아래로 스크롤된다. 다채널은 화면 전체가 목록. */}
+            {/* 좁은 폭 단일채널: 큰 영상(고정) 아래 세로 2열 목록만 스크롤.
+                다채널: 화면 전체가 목록(컨테이너 쿼리로 레터박스 판단). */}
+            {mode === "single" && heroEl}
             {mode === "single" && <p className="asis-section">카메라 목록</p>}
-
-            {/* 카메라 목록 스크롤 영역(세로 2열). 단일채널: 큰 영상·타이틀은 위에
-                고정되고 여기만 스크롤. 다채널: 화면 전체가 목록이며 컨테이너
-                쿼리로 레터박스 여부를 판단한다(.asis-scroll--grid). */}
             <div
               className={`asis-scroll${mode === "grid" ? " asis-scroll--grid" : ""}`}
             >
@@ -487,10 +486,15 @@ export default function AsIsPanel() {
           </div>
         )}
 
-        {/* 화면 전환 로딩 — 시안의 스켈레톤 UI 대신, As Is 는 그냥 스피너. */}
+        {/* 화면 전환 로딩 — 시안의 스켈레톤 UI 대신, As Is 는 로딩 GIF(loading_dots). */}
         {loading && (
           <div className="asis-loading">
-            <span className="asis-loading-spinner" />
+            <img
+              className="asis-loading-spinner"
+              src={`${BASE}/loading_dots.gif`}
+              alt=""
+              aria-hidden
+            />
           </div>
         )}
       </div>

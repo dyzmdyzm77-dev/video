@@ -84,6 +84,25 @@ export default function DeviceScaler() {
         anchor = Math.max(panel + 40, Math.min(anchor, maxAnchor));
         root.style.setProperty("--device-left", `${Math.round(anchor)}px`);
       };
+      // 시각적 90° 회전(가로 모드) — 앱 크기(w×h)는 그대로 두고 디바이스를 눕힌다.
+      // 회전 후 on-screen 폭 = (h+2m)·s, 높이 = (w+2m)·s 가 가용 영역에 들어가게
+      // 배율을 잡고, 가용 영역 가운데(--device-cx)에 놓는다(CSS 가 참조).
+      if (root.dataset.rotate === "true") {
+        const s = Math.max(
+          0.1,
+          Math.min(
+            MAX_SCALE,
+            (window.innerHeight - 32) / (w + margin * 2),
+            (window.innerWidth - panel - 72) / (h + margin * 2),
+          ),
+        );
+        root.style.setProperty("--device-scale", String(s));
+        root.style.setProperty(
+          "--device-cx",
+          `${Math.round(panel + (window.innerWidth - panel) / 2)}px`,
+        );
+        return;
+      }
       // "실제 사이즈로 보기" 상태면 창 크기와 무관하게, 모니터 위에서 실제
       // 기기와 같은 물리 크기로 보이는 배율로 고정한다.
       // 현재 폭의 실기기 몸체 폭(mm)을 목업 바깥 윤곽(w + 2·margin)에 맞춘다.

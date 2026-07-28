@@ -11,6 +11,7 @@ import {
 } from "../components/CameraFeed";
 import VariantPicker from "../components/VariantPicker";
 import AndroidNav from "../components/AndroidNav";
+import { useDeviceWidth } from "../components/useDeviceWidth";
 
 const CAMERAS = [
   { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
@@ -540,7 +541,7 @@ function GridView({
       {/* 상단 헤더(타이틀+실시간/녹화 탭) — 녹화 모드에서도 항상 표시.
           시스템 바를 끄는 몰입 모드에선 헤더 위 16px 여백도 함께 제거해 위로 붙인다. */}
       <header
-        className="flex items-center px-5"
+        className="flex flex-none items-center px-5"
         style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
       >
         <div className="flex w-full items-center justify-between">
@@ -637,7 +638,7 @@ function GridView({
 
       {mode === "live" ? (
         <div
-          className="relative flex items-center px-5"
+          className="relative flex flex-none items-center px-5"
           style={{ height: "48px", gap: "8px" }}
         >
           <LiveBadge onClick={onToggleChrome} />
@@ -805,6 +806,8 @@ function ExpandedView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지(세로 타임라인)
+  // 카메라 목록 — 620px 이상에서만 가로 스크롤, 미만은 세로 2열 그리드.
+  const listWide = useDeviceWidth() >= 620;
   const [recTab, setRecTab] = useState<"list" | "motion">("motion");
   // 실시간↔녹화 전환 시 되감기/빨리감기 배속을 0배(기본)로 원복.
   // ExpandedView는 모드가 바뀌어도 언마운트되지 않아 배속 인덱스가 남으므로 명시적으로 리셋.
@@ -892,7 +895,7 @@ function ExpandedView({
     <>
       {/* 확대뷰 헤더 — 다채널 화면과 동일. 녹화 모드에서도 항상 표시 */}
       <header
-        className="flex items-center px-5"
+        className="flex flex-none items-center px-5"
         style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
       >
         <div className="flex w-full items-center justify-between">
@@ -1076,9 +1079,9 @@ function ExpandedView({
         </div>
       </div>
 
-      {/* LIVE / 녹화 / 날짜 / 카메라 아이콘 */}
+      {/* LIVE / 녹화 / 날짜 / 카메라 아이콘 — 크기가 변해도 높이 고정. */}
       <div
-        className="relative flex items-center px-5"
+        className="relative flex flex-none items-center px-5"
         style={{ height: "48px" }}
       >
         {mode === "recording" ? (
@@ -1219,19 +1222,29 @@ function ExpandedView({
         />
       ) : (
       <div
-        className="flex flex-1 flex-col overflow-y-auto px-5 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className={
+          listWide
+            ? "flex min-h-0 flex-1 flex-col pb-4"
+            : "flex flex-1 flex-col overflow-y-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        }
       >
         {mode === "live" && (
           <h2
-            className="text-[16px] font-bold leading-none text-neutral-900"
+            className="flex-none px-5 text-[16px] font-bold leading-none text-neutral-900"
             style={{ marginTop: "12px", marginBottom: "12px" }}
           >
             카메라 목록
           </h2>
         )}
 
+        {/* 620px 이상: 가로 스크롤(좌우 여백은 스크롤 안쪽 패딩 — 첫/마지막만
+            띄우고 중간은 화면 끝까지). 미만: 세로 2열 그리드(px-5 여백). */}
         <div
-          className="grid grid-cols-2 gap-2"
+          className={
+            listWide
+              ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              : "grid grid-cols-2 gap-2 px-5"
+          }
           style={mode === "recording" ? { marginTop: "12px" } : undefined}
         >
           {CAMERAS.map((c, i) => (
@@ -1239,7 +1252,11 @@ function ExpandedView({
               key={i}
               type="button"
               onClick={() => onSelect(i)}
-              className="relative aspect-video overflow-hidden bg-neutral-900"
+              className={
+                listWide
+                  ? "relative h-full aspect-video flex-none overflow-hidden bg-neutral-900"
+                  : "relative aspect-video overflow-hidden bg-neutral-900"
+              }
               style={{ borderRadius: "4px" }}
             >
               <FrozenImage

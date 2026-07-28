@@ -137,21 +137,42 @@ body {
       border-radius 0.1s linear,
       transform 0.1s linear;
   }
-  /* 드래그 중엔 '폭'만 전환을 꺼 마우스에 즉시 반응하게 한다(세로·라운드·크로스페이드는
-     그대로 부드럽게). 각 요소의 전환 목록에서 width 만 뺀다. */
+  /* 드래그 중엔 '폭·세로'를 즉시 마우스에 반응하게 전환을 끈다(자유 리사이즈라
+     가로·세로가 같은 타이밍으로 따라와야 한다). 라운드·크로스페이드만 부드럽게
+     — 전환 목록에서 width·height 를 뺀다. */
   html[data-resizing="true"] .app-safe-frame {
     transition:
-      height 0.1s linear,
       border-radius 0.1s linear,
       transform 0.1s linear;
   }
   html[data-resizing="true"] .device-frame {
     transition:
       left 0.22s ease,
-      height 0.1s linear,
       border-radius 0.1s linear,
       transform 0.1s linear;
   }
+
+  /* ===== 시각적 90° 회전(가로 모드) ===== */
+  /* 앱 크기(w×h)는 그대로 두고 디바이스(베젤+화면)를 눕힌다. 두 프레임을 가용
+     영역 가운데(--device-cx, 세로 50%)에 고정 배치하고, 각자 자기 중심
+     (transform-origin:center)에서 scale 후 -90° 회전한다. 두 프레임 중심이
+     같은 점이라 화면이 베젤 안에 정확히 눕는다. */
+  html[data-rotate="true"] .app-safe-frame,
+  html[data-rotate="true"] .device-frame {
+    position: fixed;
+    top: 50%;
+    left: var(--device-cx, 50%);
+    transform-origin: center center;
+    transform: translate(-50%, -50%) scale(var(--device-scale, 1))
+      rotate(-90deg);
+  }
+  /* 회전 중엔 치수 눈금자·드래그 핸들·As Is 는 감춘다(회전 좌표와 얽히지 않게). */
+  html[data-rotate="true"] .device-ruler,
+  html[data-rotate="true"] .device-resizer,
+  html[data-rotate="true"] .asis-frame {
+    display: none;
+  }
+
   /* 기기 프레임의 좌·우 가장자리 드래그 영역(폭 조절). 보이는 핸들 없이 투명하며,
      hover 시에만 옅은 세로선으로 표시. 위치·높이는 프레임과 동일한 변수로 계산돼
      자동으로 프레임 가장자리에 붙는다. */
@@ -216,16 +237,35 @@ body {
     border-left: 6px solid #111111;
   }
 
-  /* top/left/height 는 JS(DeviceResizer)가 실제 프레임 위치에 맞춰 설정한다.
-     여기선 폭·커서만(시각 힌트 없이 투명, 커서로만 안내). */
+  /* 위치·크기는 JS(DeviceResizer)가 실제 프레임 가장자리에 맞춰 설정한다.
+     여기선 두께·커서만(시각 힌트 없이 투명, 커서로만 안내). 오른쪽=가로,
+     아래=세로, 모서리=둘 다 조절. */
   .device-resize-edge {
     position: fixed;
-    width: 40px;
-    transform: translateX(-50%);
     z-index: 15;
-    cursor: ew-resize;
     touch-action: none;
     background: transparent;
+  }
+  /* 오른쪽(가로) — 세로 스트립. top/left/height 는 JS 가 설정. */
+  .dre-right {
+    width: 40px;
+    transform: translateX(-50%);
+    cursor: ew-resize;
+  }
+  /* 아래(세로) — 가로 스트립. left/top/width 는 JS 가 설정. */
+  .dre-bottom {
+    height: 40px;
+    transform: translateY(-50%);
+    cursor: ns-resize;
+  }
+  /* 모서리(가로·세로 동시) — 우하단. 가장자리 핸들보다 위(z16)에서 넉넉한
+     크기로, 코너 근처를 잡으면 가로·세로가 함께 늘어난다. left/top 은 JS 가 설정. */
+  .dre-corner {
+    width: 72px;
+    height: 72px;
+    transform: translate(-50%, -50%);
+    cursor: nwse-resize;
+    z-index: 16;
   }
 
   /* 화면 왼쪽 가장자리에 붙는 LNB 패널(좌측 레일). 전체 높이, 흰 패널.
@@ -382,6 +422,33 @@ body {
     display: none;
   }
 
+  /* 왼쪽으로 회전 버튼 — 커스텀 입력 바로 아래(해상도 그룹). 스타일은
+     실제 사이즈 토글과 동일하되 하단으로 밀지 않는다(margin-top:auto 없음). */
+  .desktop-variant-nav .dvn-rotate-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 4px 2px;
+    border: none;
+    background: transparent;
+    color: #525252;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .desktop-variant-nav .dvn-rotate-toggle:hover {
+    color: #000000;
+  }
+  .desktop-variant-nav .dvn-rotate-toggle .dvn-icon {
+    font-size: 17px;
+  }
+  .desktop-variant-nav[data-open="true"] .dvn-rotate-toggle .dvn-icon {
+    display: none;
+  }
+
   /* 치수 눈금자 표시 체크박스. */
   .desktop-variant-nav .dvn-ruler-toggle {
     display: flex;
@@ -402,6 +469,71 @@ body {
   /* 체크 해제 시 목업 위 치수 눈금자를 숨긴다. */
   html[data-show-ruler="false"] .device-ruler {
     display: none;
+  }
+
+  /* 직접 입력(커스텀 해상도) — 펼침 상태에서만. 접히면 입력창은 숨긴다. */
+  .desktop-variant-nav .dvn-custom {
+    margin-top: 6px;
+    padding: 0 4px;
+  }
+  .desktop-variant-nav[data-open="false"] .dvn-custom {
+    display: none;
+  }
+  .desktop-variant-nav .dvn-custom-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .desktop-variant-nav .dvn-custom-input {
+    width: 100%;
+    min-width: 0;
+    height: 28px;
+    padding: 0 6px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: #fafafa;
+    color: #171717;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .desktop-variant-nav .dvn-custom-input::-webkit-outer-spin-button,
+  .desktop-variant-nav .dvn-custom-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .desktop-variant-nav .dvn-custom-input:focus {
+    outline: none;
+    border-color: #1d6ceb;
+    background: #ffffff;
+  }
+  .desktop-variant-nav .dvn-custom-x {
+    flex: none;
+    color: #9e9e9e;
+    font-size: 12px;
+  }
+  .desktop-variant-nav .dvn-custom-apply {
+    flex: none;
+    height: 28px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 6px;
+    background: #1d6ceb;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .desktop-variant-nav .dvn-custom-apply:hover {
+    background: #1a5fd0;
+  }
+  .desktop-variant-nav .dvn-custom-ratio {
+    margin: 5px 0 0;
+    color: #9e9e9e;
+    font-size: 11px;
+    font-weight: 600;
   }
 
   /* 비교하기 토글(치수 표시 바로 위). 실제 사이즈 토글과 같은 룩. */
@@ -528,9 +660,7 @@ body {
       transform 0.1s linear;
   }
   html[data-resizing="true"] .asis-screen {
-    transition:
-      height 0.1s linear,
-      border-radius 0.1s linear;
+    transition: border-radius 0.1s linear;
   }
 
   /* 헤더 — 폭이 늘어도 글자 크기는 그대로.
@@ -621,9 +751,9 @@ body {
   .asis-scroll::-webkit-scrollbar {
     display: none;
   }
-  /* 날짜 — 알약 행(.asis-pills)의 flex 아이템. 기본(<620px)은 flex-basis:100%
-     로 알약 아래 줄로 내려가 왼쪽 정렬(줄 간격은 .asis-pills 의 row-gap:32px).
-     620px 이상은 아래 @container 에서 같은 줄 오른쪽 끝으로 붙인다. */
+  /* 날짜 — 알약 행(.asis-pills)의 flex 아이템. flex-basis:100% 로 항상 알약
+     아래 줄로 내려가 왼쪽 정렬한다(줄 간격은 .asis-pills 의 row-gap:32px).
+     (620px+ 에서 알약 행 오른쪽으로 올리던 처리는 취소됨.) */
   .asis-timestamp {
     flex: 0 0 100%;
     /* Pretendard 14 Medium — 폰트는 var(--font-sans)로 상속(Pretendard). */
@@ -631,14 +761,6 @@ body {
     font-weight: 500;
     line-height: 1;
     color: #353535;
-  }
-  /* 620px 이상: 날짜를 알약과 같은 줄 오른쪽 끝으로. flex-basis:auto 로 줄바꿈을
-     풀고 margin-left:auto 로 오른쪽 끝까지 민다(수직은 align-items:center). */
-  @container asis-device (min-width: 620px) {
-    .asis-timestamp {
-      flex: 0 0 auto;
-      margin-left: auto;
-    }
   }
   /* '카메라 목록' 타이틀 — 원본 SVG 실측값. 큰 영상 아래 25 → 타이틀(ink 433.2)
      → 15 → 목록(462). 단일채널 모드에서만 렌더된다(큰 영상이 있을 때만). */
@@ -658,12 +780,17 @@ body {
      위/아래로 슬라이드한다. 아래쪽 넘침은 잘라내(접힐 때 목록이 하단 탭바를
      덮지 않게) 위쪽은 그대로 둬(패널 상단 그림자가 안 잘리게) — clip-path 로
      위만 20px 여유를 준다. */
+  /* 바텀시트 — 컨테이너(.asis-single-wide) 하단에 절대배치로 떠서 영상 위에
+     겹친다. 높이 = 타이틀 바(64) + 목록 2줄(각 타일 = (device-w-64)/4 폭의
+     16:9) + 행 간격 8 + 하단 12 → 8개(4×2)가 항상 다 보인다. 영상은 뒤에서
+     원래 크기 유지. */
   .asis-sheet-region {
-    flex: 1;
-    min-height: 0;
-    position: relative;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(84px + (var(--device-w, 620px) - 64px) * 9 / 32);
     clip-path: inset(-20px 0 0 0);
-    background: #ffffff;
     /* .asis-frame 이 pointer-events:none 이라 여기서 다시 켠다(토글·타일 클릭). */
     pointer-events: auto;
   }
@@ -679,9 +806,11 @@ body {
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
     transition: transform 0.3s ease;
   }
-  /* 접힘 — 패널 전체를 아래로 내려 타이틀 바(64px)만 남기고 목록은 숨긴다. */
+  /* 접힘 — 패널 전체를 아래로 내려 타이틀 바만 남기고 목록은 숨긴다. 62px(=64-2)
+     로 2px 더 내려, 0.8 배율에서 목록 윗줄이 서브픽셀로 삐죽 보이던 걸 확실히
+     가린다(타이틀 바는 2px 덜 보여도 티 안 남). */
   .asis-sheet-panel.is-closed {
-    transform: translateY(calc(100% - 64px));
+    transform: translateY(calc(100% - 62px));
   }
   /* 타이틀 바 — '카메라 목록' + 오른쪽 끝 토글 화살표. 위아래 18px(화살표 28px
      포함 높이 = 18+28+18 = 64px, 접힘 계산과 일치). */
@@ -707,34 +836,34 @@ body {
     color: #353535;
     cursor: pointer;
   }
-  /* 목록 본문 — 가로 목록을 담는다. 패널 하단이라 라운드 영향 없음. */
+  /* 목록 본문 — 4열 그리드를 담는다. 영상 높이는 폭(디바이스 가로/4)에서 16:9 로
+     자동 계산되므로, 남는 공간보다 커지면 세로로 스크롤(내용 안 잘림). */
   .asis-sheet-body {
     flex: 1;
     min-height: 0;
     position: relative;
-    overflow: hidden;
-  }
-  /* 가로 목록 — 한 줄, 가로 스크롤, 세로는 본문 높이에 꽉. 영상 사이 8px·양끝
-     20px 간격은 흰색(배경이 그대로 비침). */
-  .asis-hlist {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    gap: 8px;
-    padding: 0 20px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    background: #ffffff;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
-  .asis-hlist::-webkit-scrollbar {
+  .asis-sheet-body::-webkit-scrollbar {
     display: none;
   }
-  /* 타일 — 본문 높이에 맞추고 폭은 16:9 로. 세로 스크롤 없이 가로로만 넘긴다. */
-  .asis-hlist .asis-tile {
-    flex: none;
-    height: 100%;
+  /* 카메라 목록 — 가로 4열. 각 영상은 '열 너비(디바이스 가로/4)' 기준 16:9 로
+     크기가 정해지고(비율 그대로, 레터박스 없음), 8개면 자연히 2줄이 된다.
+     영상 사이 8px·양끝 20px 흰 여백. 가로 스크롤 없음. */
+  .asis-sheet-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 0 20px 12px;
+    background: #ffffff;
+  }
+  .asis-sheet-grid .asis-tile {
+    width: 100%;
+    height: auto;
     aspect-ratio: 16 / 9;
   }
 
@@ -757,6 +886,16 @@ body {
     overflow: hidden;
     background: #000000;
     cursor: pointer;
+  }
+  /* 620+ 단일채널 컨테이너 — 헤더와 하단 탭바 사이 공간을 채운다. 큰 영상은
+     이 안에서 원래 16:9 크기 그대로 위에 놓이고, 바텀시트가 아래에서 절대배치로
+     떠올라 영상 위에 겹친다(영상 크기 불변). 영상이 이 공간보다 크면 아래가
+     시트에 가려질 뿐 줄지 않는다. */
+  .asis-single-wide {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
   }
   .asis-grid {
     display: grid;
@@ -870,10 +1009,9 @@ body {
     flex: none;
   }
 
-  /* 화면 전환 로딩(다채널↔단일) — 시안은 스켈레톤 UI, As Is 는 스피너. 화면
-     전체를 덮는 검정 50% 스크림 위, 원형 링 스피너를 정중앙에. 링 전체는 흐린
-     흰색, 한 구간(top)만 브랜드 블루 — 회전하면 표준 로딩 스피너로 읽힌다.
-     한 바퀴(0.8s) = 로딩 1회이며, JS 의 화면 전환 지연과 맞춰 '다 돌면 전환'. */
+  /* 화면 전환 로딩(다채널↔단일) — 시안은 스켈레톤 UI, As Is 는 로딩 GIF.
+     화면 전체를 덮는 검정 50% 스크림 위, loading_dots.gif(90×90)를 정중앙에.
+     JS 의 화면 전환 지연과 맞춰 '다 돌면 전환'. */
   .asis-loading {
     position: absolute;
     inset: 0;
@@ -883,18 +1021,12 @@ body {
     justify-content: center;
     background: rgba(0, 0, 0, 0.5);
   }
+  /* 로딩 GIF(loading_dots) — 90×90, 가운데. GIF 가 자체 애니메이션이라 회전
+     처리 불필요. 화면 전환 지연(JS)과 맞춰 '다 돌면 전환'. */
   .asis-loading-spinner {
-    width: 64px;
-    height: 64px;
-    border: 6px solid rgba(255, 255, 255, 0.28);
-    border-top-color: #1d6ceb;
-    border-radius: 50%;
-    animation: asis-spin 0.8s linear infinite;
-  }
-  @keyframes asis-spin {
-    to {
-      transform: rotate(360deg);
-    }
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
   }
 
   /* 홈 화면 재사용 — 홈 컴포넌트의 최상위 .app-safe-frame 은 자체적으로
