@@ -921,11 +921,22 @@ function ExpandedView({
         </div>
       </header>
 
-      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 기본은 16:9(폭 기준) 높이지만, 공간이
-          모자라면(와이드·짧은 화면) 줄어들어 하단탭/타임라인을 밀어내지 않는다. */}
-      <div className="min-h-0 shrink px-0">
+      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 녹화 움직임감지에선 날짜·5버튼·탭·타임라인이
+          모두 고정 높이라, 영상이 남는 세로 공간을 채우며(flex-1) 화면이 짧아지면 영상만
+          줄어든다. 그 외(라이브·카메라목록)에선 16:9(폭 기준)이되 공간 모자라면 축소. */}
+      <div
+        className={`px-0 ${
+          mode === "recording" && recTab === "motion"
+            ? "min-h-0 flex-1"
+            : "min-h-0 shrink"
+        }`}
+      >
         <div
-          className="relative aspect-video max-h-full w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
+          className={`relative w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900 ${
+            mode === "recording" && recTab === "motion"
+              ? "h-full"
+              : "aspect-video max-h-full"
+          }`}
           onClick={handleVideoClick}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
@@ -1213,8 +1224,21 @@ function ExpandedView({
         </>
       )}
 
-      {/* 카메라 목록 OR 녹화 이벤트 타임라인 */}
-      <div className="relative flex min-h-0 flex-1 flex-col">
+      {/* 카메라 목록 OR 녹화 이벤트 타임라인. 움직임감지(타임라인)는 고정 높이(시간바
+          62 + 썸네일 영역 ≈ 152px)라 짧은 화면에서도 안 찌그러지고 하단탭에 안 가려진다.
+          카메라목록은 기존대로 남는 공간을 채우는 스크롤 영역(flex-1). */}
+      <div
+        className={`relative flex flex-col ${
+          mode === "recording" && recTab === "motion"
+            ? "flex-none"
+            : "min-h-0 flex-1"
+        }`}
+        style={
+          mode === "recording" && recTab === "motion"
+            ? { height: "152px" }
+            : undefined
+        }
+      >
       {mode === "recording" && recTab === "motion" ? (
         <RecordingEventTimeline
           playbackMs={playbackMs}
