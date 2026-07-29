@@ -3104,8 +3104,8 @@ function PlayerButton({
       onPointerCancel={() => setPressed(false)}
       className="flex items-center justify-center rounded-full"
       style={{
-        width: "48px",
-        height: "48px",
+        width: "40px",
+        height: "40px",
         border: "1px solid #D9D9D9",
         backgroundColor: active ? "#F2F2F2" : "#FFFFFF",
       }}
@@ -3207,7 +3207,7 @@ function TimelineSkeleton({ visible }: { visible: boolean }) {
           <div
             key={i}
             className="skeleton-shimmer rounded-full"
-            style={{ width: "48px", height: "48px" }}
+            style={{ width: "40px", height: "40px" }}
           />
         ))}
       </div>
