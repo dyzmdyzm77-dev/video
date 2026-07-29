@@ -1009,7 +1009,7 @@ function ExpandedView({
         <button
           type="button"
           onClick={onCapture}
-          className="ml-auto flex h-[30px] w-[30px] items-center justify-center rounded-full border border-neutral-300"
+          className="ml-auto flex h-[28px] w-[28px] items-center justify-center rounded-full border border-neutral-300"
         >
           <img src={`${BASE}/camera.svg`} alt="카메라" className="h-6 w-6" />
         </button>

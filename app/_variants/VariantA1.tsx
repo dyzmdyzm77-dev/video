@@ -1083,7 +1083,7 @@ function ExpandedView({
       {/* LIVE / 녹화 / 날짜 / 카메라 아이콘 — 크기가 변해도 높이 고정. */}
       <div
         className="relative flex flex-none items-center px-5"
-        style={{ height: "48px" }}
+        style={{ height: "44px" }}
       >
         {mode === "recording" ? (
           <RecBadge onClick={onToggleChrome} />
@@ -1110,7 +1110,7 @@ function ExpandedView({
         <button
           type="button"
           onClick={onCapture}
-          className="ml-auto flex h-[30px] w-[30px] items-center justify-center rounded-full border border-neutral-300"
+          className="ml-auto flex h-[28px] w-[28px] items-center justify-center rounded-full border border-neutral-300"
         >
           <img src={`${BASE}/camera.svg`} alt="카메라" className="h-6 w-6" />
         </button>
