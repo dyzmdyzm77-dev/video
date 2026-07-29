@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { BASE } from "../basePath";
 
 // 상단 위치명("8층 사무실 A/B")을 누르면 뜨는 바텀시트.
@@ -24,6 +25,7 @@ export default function VariantPicker({
   // 변형 전환 시에도 선택한 환경(iOS/Android)을 URL 쿼리로 이어준다.
   platform?: "android" | "ios";
 }) {
+  const router = useRouter();
   return (
     <div
       className="pointer-events-none absolute inset-0 z-40"
@@ -81,7 +83,9 @@ export default function VariantPicker({
                 onClick={() => {
                   if (selected) onClose();
                   else {
-                    // window.location 은 next 라우터가 아니라 basePath 가 자동으로 안 붙는다.
+                    // Next 라우터로 클라이언트 이동(basePath 자동 처리). window.location
+                    // 전체 새로고침을 쓰면 iOS 사파리 툴바(주소창)가 펼쳐진 상태로
+                    // 리셋돼 뜨므로, router.push 로 새로고침 없이 전환한다.
                     // 현재 URL 의 chrome(데스크톱 가짜 시스템 바) 플래그는 이어준다.
                     const chrome =
                       new URLSearchParams(window.location.search).get(
@@ -93,9 +97,7 @@ export default function VariantPicker({
                     ]
                       .filter(Boolean)
                       .join("&");
-                    window.location.assign(
-                      `${BASE}${o.href}${qs ? `?${qs}` : ""}`,
-                    );
+                    router.push(`${o.href}${qs ? `?${qs}` : ""}`);
                   }
                 }}
                 className="flex items-center justify-between border-b border-neutral-100 text-left"
