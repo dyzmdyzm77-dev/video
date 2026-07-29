@@ -705,7 +705,7 @@ function ExpandedSlide({
       <img
         src={c.src}
         alt={c.label}
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-fill"
         style={{ transform: zoom, opacity: driving ? 0 : paused ? 0 : 1 }}
       />
       <canvas
@@ -713,7 +713,7 @@ function ExpandedSlide({
         aria-hidden
         className="absolute inset-0 h-full w-full"
         style={{
-          objectFit: "cover",
+          objectFit: "fill",
           transform: zoom,
           opacity: driving ? 1 : paused ? 1 : 0,
         }}
@@ -921,12 +921,23 @@ function ExpandedView({
         </div>
       </header>
 
-      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 항상 16:9(폭 기준) 상한을 지키고
-          (aspect-video + max-h-full), 공간이 모자라면(짧은 화면) 그만큼만 줄어든다.
-          세로가 남아도 16:9 이상으로 자라 크롭되지 않는다. */}
-      <div className="min-h-0 shrink px-0">
+      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 녹화 움직임감지에선 날짜·버튼·탭·타임라인이
+          고정이라 영상이 남는 세로 공간을 '비율 무시하고 꽉 채운다'(object-fill 로 늘림,
+          크롭 없음). 그 외(라이브·카메라목록)에선 16:9(폭 기준) 상한을 지키되 공간
+          모자라면 축소. */}
+      <div
+        className={`px-0 ${
+          mode === "recording" && recTab === "motion"
+            ? "min-h-0 flex-1"
+            : "min-h-0 shrink"
+        }`}
+      >
         <div
-          className="relative aspect-video max-h-full w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
+          className={`relative w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900 ${
+            mode === "recording" && recTab === "motion"
+              ? "h-full"
+              : "aspect-video max-h-full"
+          }`}
           onClick={handleVideoClick}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
