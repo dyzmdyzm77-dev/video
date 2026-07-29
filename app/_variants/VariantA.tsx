@@ -921,22 +921,12 @@ function ExpandedView({
         </div>
       </header>
 
-      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 녹화 움직임감지에선 날짜·5버튼·탭·타임라인이
-          모두 고정 높이라, 영상이 남는 세로 공간을 채우며(flex-1) 화면이 짧아지면 영상만
-          줄어든다. 그 외(라이브·카메라목록)에선 16:9(폭 기준)이되 공간 모자라면 축소. */}
-      <div
-        className={`px-0 ${
-          mode === "recording" && recTab === "motion"
-            ? "min-h-0 flex-1"
-            : "min-h-0 shrink"
-        }`}
-      >
+      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 항상 16:9(폭 기준) 상한을 지키고
+          (aspect-video + max-h-full), 공간이 모자라면(짧은 화면) 그만큼만 줄어든다.
+          세로가 남아도 16:9 이상으로 자라 크롭되지 않는다. */}
+      <div className="min-h-0 shrink px-0">
         <div
-          className={`relative w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900 ${
-            mode === "recording" && recTab === "motion"
-              ? "h-full"
-              : "aspect-video max-h-full"
-          }`}
+          className="relative aspect-video max-h-full w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
           onClick={handleVideoClick}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
