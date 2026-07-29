@@ -1016,10 +1016,11 @@ function ExpandedView({
         <RowSkeleton visible={videoLoading} />
       </div>
 
-      {/* 큰 영상 — 더블클릭 시 다채널로 복귀 */}
-      <div className="px-0">
+      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 기본은 16:9(폭 기준) 높이지만, 공간이
+          모자라면(와이드·짧은 화면) 줄어들어 하단탭/타임라인을 밀어내지 않는다. */}
+      <div className="min-h-0 shrink px-0">
         <div
-          className="relative aspect-video w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
+          className="relative aspect-video max-h-full w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
           onClick={handleVideoClick}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}

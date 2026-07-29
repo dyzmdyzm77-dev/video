@@ -22,14 +22,47 @@ const DEVICES = [
   { w: 360, h: 780, r: 45, m: 10, label: "360px", sub: "" },
   { w: 480, h: 780, r: 29, m: 10, label: "480px", sub: "" },
   { w: 620, h: 780, r: 29, m: 10, label: "620px", sub: "" },
-  { w: 360, h: 780, r: 45, m: 10, label: "360px", sub: "Galaxy S25" },
-  { w: 750, h: 832, r: 13, m: 10, label: "750px", sub: "Z Fold 7" },
-  { w: 405, h: 648, r: 13, m: 10, label: "405px", sub: "Z Fold 8 접힘" },
-  { w: 864, h: 648, r: 13, m: 10, label: "864px", sub: "Z Fold 8" },
+  { w: 780, h: 780, r: 29, m: 10, label: "780px", sub: "" },
+  { w: 1080, h: 780, r: 29, m: 10, label: "1080px", sub: "" },
+  { w: 360, h: 780, r: 45, m: 10, label: "360px", sub: "Galaxy S26" },
+  { w: 405, h: 648, r: 13, m: 10, label: "405px", sub: "Z Fold 8(접힘)" },
+  { w: 864, h: 648, r: 13, m: 10, label: "864px", sub: "Z Fold 8(펼침)" },
+  { w: 750, h: 832, r: 13, m: 10, label: "750px", sub: "Z Fold 8 울트라" },
   { w: 1080, h: 792, r: 13, m: 30, label: "1080px", sub: "Z TriFold" },
 ];
-// 최초 표시 기본 프리셋(Galaxy S25 = 360px).
-const DEFAULT_PRESET = DEVICES.findIndex((d) => d.sub === "Galaxy S25");
+// 최초 표시 기본 프리셋(Galaxy S26 = 360px).
+const DEFAULT_PRESET = DEVICES.findIndex((d) => d.sub === "Galaxy S26");
+
+// 가로:세로 비율. 이름 없는 제너릭 폭 라벨에 "360px(6:13)"처럼 붙인다.
+// 흔한 비율에 아주 가까우면(≤0.8%) 그 예쁜 비율을 쓰고(620×780→4:5 등),
+// 아니면 약분한 정수비를 그대로 쓴다(360→6:13, 1080→18:13 등).
+const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+// 접힘 폰(405×648)은 5:8 대신 관용 표기 10:16 을, 울트라(750×832)는 9:10 을 쓴다.
+const PREFERRED_RATIOS: [number, number][] = [
+  [1, 1],
+  [4, 3],
+  [3, 4],
+  [3, 2],
+  [2, 3],
+  [16, 9],
+  [9, 16],
+  [16, 10],
+  [10, 16],
+  [9, 10],
+  [10, 9],
+  [4, 5],
+  [5, 4],
+  [2, 1],
+  [1, 2],
+];
+const ratioText = (w: number, h: number) => {
+  const t = w / h;
+  for (const [a, b] of PREFERRED_RATIOS) {
+    if (Math.abs(a / b - t) < t * 0.008) return `${a}:${b}`;
+  }
+  const g = gcd(w, h) || 1;
+  return `${w / g}:${h / g}`;
+};
 
 export default function DesktopVariantNav() {
   const router = useRouter();
@@ -80,6 +113,9 @@ export default function DesktopVariantNav() {
     // 트라이폴드(1080): 오른쪽 / Fold 8(864): 왼쪽 열 영상 중앙 / 그 외: 상단 중앙.
     root.dataset.punch =
       d.w >= 1080 ? "trifold" : d.w >= 864 ? "fold8" : "center";
+    // 이름 있는 실기기(sub)는 고정 규격이라 드래그 리사이즈를 잠근다. 이름 없는
+    // 제너릭 폭(360/480/620/780/1080)만 자유롭게 드래그할 수 있다(CSS 가 참조).
+    root.dataset.deviceLocked = d.sub ? "true" : "false";
     setActive(i);
     window.dispatchEvent(new Event("devicechange"));
   };
@@ -102,6 +138,8 @@ export default function DesktopVariantNav() {
     root.style.setProperty("--device-margin", `${m}px`);
     root.dataset.punch =
       w >= 1080 ? "trifold" : w >= 864 ? "fold8" : "center";
+    // 직접 입력(커스텀)은 자유 규격이라 드래그 허용.
+    root.dataset.deviceLocked = "false";
     setActive(-1);
     window.dispatchEvent(new Event("devicechange"));
   };
@@ -249,7 +287,7 @@ export default function DesktopVariantNav() {
                 {d.w}
               </span>
               <span className="dvn-label">
-                {d.label}
+                {d.label}({ratioText(d.w, d.h)})
                 {d.sub ? ` · ${d.sub}` : ""}
               </span>
             </button>

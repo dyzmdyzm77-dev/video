@@ -48,6 +48,23 @@ export default function DeviceScaler() {
       const margin = parseFloat(cs.getPropertyValue("--device-margin")) || 10;
       // 왼쪽 패널 폭을 뺀 가용 폭 기준으로 맞춘다(패널과 겹치지 않게).
       const panel = parseFloat(cs.getPropertyValue("--panel-w")) || 0;
+      // 아래쪽 앵커 — 세로가 커지면 위로만 자라도록 '바닥 기준선'을 고정한다.
+      // 기준선(=화면 바닥 y)은 왼쪽 앵커와 동일하게 Z TriFold(가장 큰 footprint)가
+      // 세로 가운데 정렬됐을 때의 바닥. --device-bottom-pad = 뷰포트 바닥에서 그
+      // 기준선까지의 거리(CSS 가 body padding-bottom·프레임 bottom 에 쓴다).
+      {
+        const TF_W = 1080,
+          TF_H = 792,
+          TF_M = 30;
+        const sTF = Math.min(
+          MAX_SCALE,
+          (window.innerHeight - 32) / (TF_H + TF_M * 2),
+          (window.innerWidth - panel - 72) / (TF_W + TF_M * 2),
+        );
+        const tfOuterH = (TF_H + TF_M * 2) * sTF;
+        const pad = Math.max(16, window.innerHeight / 2 - tfOuterH / 2);
+        root.style.setProperty("--device-bottom-pad", `${Math.round(pad)}px`);
+      }
       // 모든 프리셋이 공유하는 고정 왼쪽 앵커(--device-left) — "Z TriFold(1080)가
       // 패널 오른쪽 영역 가운데 정렬됐을 때의 화면 왼쪽 x". 트라이폴드는 정확히
       // 그 센터 자리에 앉고, 작은 프리셋들은 같은 왼쪽에서 시작해 오른쪽으로만
@@ -99,7 +116,30 @@ export default function DeviceScaler() {
           "--device-phys-mm",
           String(((w + margin * 2) * scale) / cssPxPerMm),
         );
-        setAnchor(scale);
+        // 실제 사이즈는 기기가 fit 배율보다 커질 수 있어 바닥앵커/왼쪽앵커(모두
+        // fit 기준 TriFold 로 계산)를 그대로 쓰면 큰 기기(TriFold 등)가 한쪽으로
+        // 밀려 잘린다. 그래서 이 모드에선 현재 기기를 '남은 영역(패널 제외) 가로·
+        // 세로 정중앙'에 직접 놓는다 → TriFold 도 화면 가운데 대칭으로 보인다.
+        // (창보다 크면 대칭으로 잘림. 세로는 body padding 이 음수로 못 가므로 최소 16.)
+        const outerH = (h + margin * 2) * scale;
+        const outerW = (w + margin * 2) * scale;
+        const padA = Math.max(16, (window.innerHeight - outerH) / 2);
+        root.style.setProperty("--device-bottom-pad", `${Math.round(padA)}px`);
+        if (root.dataset.compare === "true") {
+          // 비교하기: As Is+시안 한 쌍을 가운데(setAnchor 의 compare 분기가 처리).
+          setAnchor(scale);
+        } else {
+          // 목업 왼쪽 = 패널 오른쪽 영역 가운데. --device-left 는 '화면' 왼쪽이라
+          // 목업왼쪽 + margin·scale. 패널 밑으로 숨지 않게 최소 panel+16 로 클램프.
+          const mockLeft = Math.max(
+            panel + 16,
+            panel + (window.innerWidth - panel - outerW) / 2,
+          );
+          root.style.setProperty(
+            "--device-left",
+            `${Math.round(mockLeft + margin * scale)}px`,
+          );
+        }
         return;
       }
       // 목업/프레임 외곽(사방 margin) + 창 여백 기준으로 맞춘다.
@@ -108,14 +148,27 @@ export default function DeviceScaler() {
       const compare = root.dataset.compare === "true";
       const cols = compare ? 2 : 1;
       const gap = compare ? COMPARE_GAP : 0;
-      const s = Math.max(
-        0.1,
-        Math.min(
-          MAX_SCALE,
-          (window.innerHeight - 32) / (h + margin * 2),
-          (window.innerWidth - panel - 72 - gap) / ((w + margin * 2) * cols),
-        ),
+      // 현재 기기가 창에 들어오는 최대 배율(오버플로 방지 상한).
+      const sFit = Math.min(
+        MAX_SCALE,
+        (window.innerHeight - 32) / (h + margin * 2),
+        (window.innerWidth - panel - 72 - gap) / ((w + margin * 2) * cols),
       );
+      // 기본 모드도 '실제 사이즈 모드처럼' 기종 간 물리 크기 비례를 유지한다.
+      // 모든 기종이 공통 캔버스 밀도(px/mm)를 쓰도록: 가장 큰 프리셋(Z TriFold)이
+      // 창에 들어오는 배율(sTF)로 px/mm 를 정하고 → 각 기기 배율 = 그 기기 물리밀도
+      // (mm/dp) × px/mm. 그래서 작은 기기(S26)는 작게, 큰 기기(TriFold)는 크게 나온다.
+      // 단, 현재 기기가 창을 넘치면(수동 드래그로 아주 크게 등) sFit 로 클램프한다.
+      const TF_OUTER_W = 1080 + 30 * 2;
+      const sTF = Math.min(
+        MAX_SCALE,
+        (window.innerHeight - 32) / (792 + 30 * 2),
+        (window.innerWidth - panel - 72) / TF_OUTER_W,
+      );
+      const canvasPxPerMm = sTF / (214.1 / TF_OUTER_W);
+      const a = anchorFor(w);
+      const sPhys = (a.mm / a.outerDp) * canvasPxPerMm;
+      const s = Math.max(0.1, Math.min(sPhys, sFit));
       root.style.setProperty("--device-scale", String(s));
       setAnchor(s);
     };

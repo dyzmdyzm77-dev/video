@@ -63,14 +63,17 @@ body {
   }
   body {
     display: flex;
-    align-items: center;
-    /* 왼쪽 정렬 — 기기 왼쪽 앵커(--device-left)는 "Z TriFold(1080)가 패널 오른쪽
-       영역 가운데 정렬됐을 때의 화면 왼쪽 x"(DeviceScaler 가 계산). 왼쪽 모서리가
-       고정 기준이라 프리셋/드래그로 폭이 커져도 오른쪽으로만 늘어난다. */
+    /* 왼쪽·아래 모서리 고정 앵커. 왼쪽(--device-left)·바닥(--device-bottom-pad)이
+       고정이라 폭이 커지면 오른쪽으로, 세로가 커지면 위로만 늘어난다. 둘 다
+       "Z TriFold 가 가운데 정렬됐을 때"를 기준으로 DeviceScaler 가 계산한다. */
+    align-items: flex-end;
     justify-content: flex-start;
     background: transparent;
     padding-left: var(--device-left, calc(var(--panel-w, 200px) + 40px));
-    transition: padding-left 0.22s ease;
+    padding-bottom: var(--device-bottom-pad, 40px);
+    transition:
+      padding-left 0.22s ease,
+      padding-bottom 0.22s ease;
   }
   /* 모든 프리셋 공용 CSS 베젤 — 앱 화면보다 사방 margin 만큼 큰 라운드 프레임.
      예전 SVG 목업(380×800 이미지)은 폭을 늘리면 두께·하이라이트가 함께 늘어나
@@ -80,15 +83,19 @@ body {
   .device-frame {
     display: block;
     position: fixed;
-    top: 50%;
-    /* 왼쪽 정렬 — 앱 화면 왼쪽 끝(--device-left, 트라이폴드 센터 기준 앵커)에
-       맞춘다. 베젤 여백(margin)은 스케일 좌표계 안(translate)이라 화면 왼쪽을
-       margin·scale 만큼 감싼다. 왼쪽 모서리 고정이므로 폭이 커져도 오른쪽으로만
-       늘어난다. */
+    /* 왼쪽아래 정렬 — 화면 왼쪽 끝(--device-left)·바닥(--device-bottom-pad)에
+       맞춘다. 베젤은 화면보다 margin·scale 만큼 바깥으로 감싸므로, bottom 은
+       그만큼 더 내려(pad - margin·scale) 잡고 origin 도 좌하단(0 100%)으로 둔다.
+       왼쪽·바닥 고정이라 폭↑=오른쪽, 세로↑=위로만 늘어난다. */
+    top: auto;
+    bottom: calc(
+      var(--device-bottom-pad, 40px) - var(--device-margin, 10px) *
+        var(--device-scale, 1)
+    );
     left: var(--device-left, calc(var(--panel-w, 200px) + 40px));
-    transform-origin: 0 0;
+    transform-origin: 0 100%;
     transform: scale(var(--device-scale, 1))
-      translate(calc(-1 * var(--device-margin, 10px)), -50%);
+      translate(calc(-1 * var(--device-margin, 10px)), 0);
     width: calc(var(--device-w, 360px) + var(--device-margin, 10px) * 2);
     height: calc(var(--device-h, 780px) + var(--device-margin, 10px) * 2);
     border-radius: var(--device-radius, 44px);
@@ -101,12 +108,16 @@ body {
       inset -4px 0 1px rgba(255, 255, 255, 0.05);
     z-index: -1;
     pointer-events: none;
+    /* 화면(.app-safe-frame)은 body padding(0.22s ease)으로 세로·가로가 움직이는데,
+       목업은 별개 요소라 여기 bottom·transform 도 같은 0.22s ease 로 맞춰야 전환 중
+       화면과 어긋나지 않는다(특히 bottom 이 트랜지션에 없으면 세로로 즉시 튄다). */
     transition:
       left 0.22s ease,
-      width 0.1s linear,
-      height 0.1s linear,
-      border-radius 0.1s linear,
-      transform 0.1s linear;
+      bottom 0.22s ease,
+      width 0.22s ease,
+      height 0.22s ease,
+      border-radius 0.22s ease,
+      transform 0.22s ease;
   }
   /* 베젤 안쪽 검정 면(시안 목업의 inset 4px 검정 레이어). */
   .device-frame::after {
@@ -115,7 +126,7 @@ body {
     inset: 4px;
     border-radius: calc(var(--device-radius, 44px) - 4px);
     background: #000000;
-    transition: border-radius 0.1s linear;
+    transition: border-radius 0.22s ease;
   }
   .app-safe-frame {
     width: var(--device-w, 360px);
@@ -125,17 +136,19 @@ body {
     /* 검정 외곽선은 목업/프레임이 대신하므로 제거. 안쪽 화면은 베젤보다 7px 작은
        라운드로 베젤과 동심원을 이룬다(360: 45-7=38 로 기존과 동일). */
     border-radius: calc(var(--device-radius, 45px) - 7px);
-    /* 목업과 동일 배율로 축소. 왼쪽 모서리 기준(origin left)이라 배율이 변해도
-       왼쪽 끝이 고정되고 오른쪽으로만 커진다. 레이아웃 박스는 원본 크기 유지. */
-    transform-origin: left center;
+    /* 목업과 동일 배율로 축소. 왼쪽아래 모서리 기준(origin left bottom)이라 배율·
+       크기가 변해도 왼쪽·바닥이 고정되고 오른쪽/위로만 커진다. */
+    transform-origin: left bottom;
     transform: scale(var(--device-scale, 1));
-    /* 폭·세로·라운드·배율 모두 부드럽게 전환(버튼 클릭 등). 단, 드래그 중엔
-       아래 [data-resizing] 규칙으로 전환을 꺼 폭이 마우스를 즉시 따라오게 한다. */
+    /* 폭·세로·라운드·배율 모두 부드럽게 전환(버튼 클릭 등). 목업(.device-frame)·
+       body padding 과 같은 0.22s ease 로 맞춰 전환 중 화면과 목업이 함께 움직인다.
+       단, 드래그 중엔 아래 [data-resizing] 규칙으로 전환을 꺼 폭이 마우스를 즉시
+       따라오게 한다. */
     transition:
-      width 0.1s linear,
-      height 0.1s linear,
-      border-radius 0.1s linear,
-      transform 0.1s linear;
+      width 0.22s ease,
+      height 0.22s ease,
+      border-radius 0.22s ease,
+      transform 0.22s ease;
   }
   /* 드래그 중엔 '폭·세로'를 즉시 마우스에 반응하게 전환을 끈다(자유 리사이즈라
      가로·세로가 같은 타이밍으로 따라와야 한다). 라운드·크로스페이드만 부드럽게
@@ -161,7 +174,11 @@ body {
   html[data-rotate="true"] .app-safe-frame,
   html[data-rotate="true"] .device-frame {
     position: fixed;
-    top: 50%;
+    /* 세로 상태의 '중심'을 그대로 쓴다 — 바닥앵커라 중심 y = 바닥 - 화면높이·배율/2. */
+    top: calc(
+      100vh - var(--device-bottom-pad, 40px) - var(--device-h, 780px) *
+        var(--device-scale, 1) / 2
+    );
     left: calc(
       var(--device-left, 240px) + var(--device-w, 360px) *
         var(--device-scale, 1) / 2
@@ -256,6 +273,11 @@ body {
     z-index: 15;
     touch-action: none;
     background: transparent;
+  }
+  /* 이름 있는 실기기 프리셋(잠금)에선 드래그 핸들을 숨겨 크기 변경을 막는다.
+     제너릭 폭·커스텀 입력일 때만 드래그로 자유 리사이즈할 수 있다. */
+  html[data-device-locked="true"] .device-resize-edge {
+    display: none;
   }
   /* 오른쪽(가로) — 세로 스트립. top/left/height 는 JS 가 설정. */
   .dre-right {
@@ -577,7 +599,12 @@ body {
   .asis-frame {
     display: block;
     position: fixed;
-    top: 50%;
+    /* 바닥앵커 — 시안 베젤과 동일하게 바닥을 맞춘다(pad - margin·scale 만큼 더 내려). */
+    top: auto;
+    bottom: calc(
+      var(--device-bottom-pad, 40px) - var(--device-margin, 10px) *
+        var(--device-scale, 1)
+    );
     /* 시안 베젤 왼쪽(= --device-left - margin·scale)에서 50px 왼쪽에 As Is 의
        오른쪽 끝이 오도록. 50 은 DeviceScaler 의 COMPARE_GAP 과 같은 값이어야 한다. */
     left: calc(
@@ -586,8 +613,8 @@ body {
         (var(--device-w, 360px) + var(--device-margin, 10px) * 2) *
         var(--device-scale, 1)
     );
-    transform-origin: 0 0;
-    transform: scale(var(--device-scale, 1)) translate(0, -50%);
+    transform-origin: 0 100%;
+    transform: scale(var(--device-scale, 1));
     padding: var(--device-margin, 10px);
     border-radius: var(--device-radius, 45px);
     /* 목업(베젤)은 시안 .device-frame 과 완전히 동일하게 — 몸체 #2A2A2A +
@@ -607,9 +634,10 @@ body {
        [data-resizing] 규칙으로 left 전환을 꺼 마우스를 즉시 따라오게 한다. */
     transition:
       left 0.22s ease,
-      padding 0.1s linear,
-      border-radius 0.1s linear,
-      transform 0.1s linear;
+      bottom 0.22s ease,
+      padding 0.22s ease,
+      border-radius 0.22s ease,
+      transform 0.22s ease;
   }
   /* 베젤 안쪽 검정 면(시안 .device-frame::after 와 동일). 화면 뒤에 깔린다. */
   .asis-frame::after {
@@ -619,7 +647,7 @@ body {
     border-radius: calc(var(--device-radius, 45px) - 4px);
     background: #000000;
     z-index: 0;
-    transition: border-radius 0.1s linear;
+    transition: border-radius 0.22s ease;
   }
   /* As Is / To Be 라벨 — 두 기기 아래, 화면 폭 기준 가운데. 비교하기 켰을 때만. */
   .asis-caption,
@@ -1100,6 +1128,25 @@ body {
   }
 }
 
+/* 가로 타임라인용 부채 펼침 — 세로 버전을 X축으로 바꾼 것(움직임 감지 가로 뷰). */
+@keyframes cluster-card-fan-in-h {
+  from {
+    transform: translateX(calc(-50% - var(--fan)));
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes cluster-bar-fan-in-h {
+  from {
+    transform: translateX(calc(-1 * var(--fan)));
+  }
+  to {
+    transform: none;
+  }
+}
+
 /* 인라인 style 에서만 keyframes 를 참조하면 Lightning CSS 가 미사용으로 보고
    제거해버린다. CSS 규칙에서 직접 참조해 keyframes 가 보존되도록 클래스로 둔다.
    animation-delay 는 인라인 스태거(--fan 처럼 카드별로 다름)가 덮어쓰도록
@@ -1113,6 +1160,20 @@ body {
 
 .cluster-bar-fan-in {
   animation-name: cluster-bar-fan-in;
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+}
+
+.cluster-card-fan-in-h {
+  animation-name: cluster-card-fan-in-h;
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+}
+
+.cluster-bar-fan-in-h {
+  animation-name: cluster-bar-fan-in-h;
   animation-duration: 320ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   animation-fill-mode: both;
@@ -1183,9 +1244,10 @@ html[data-punch="trifold"] .punch-hole {
   right: 167px;
   transform: none;
 }
-/* Fold 8(864) — 오른쪽 열 영상의 가로 중앙(폭 864 기준, 우열 [432,864]의 중앙 =648px). */
+/* Fold 8 — 가로 사이즈의 3/4 지점(오른쪽). 폭이 바뀌어도(드래그 리사이즈 등)
+   항상 현재 가로의 3/4 를 따라가도록 고정 px 가 아닌 비율(75%)로 잡는다. */
 html[data-punch="fold8"] .punch-hole {
-  left: 648px;
+  left: 75%;
   right: auto;
   transform: translateX(-50%);
 }
