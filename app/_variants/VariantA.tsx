@@ -1882,7 +1882,7 @@ function RecordingEventTimeline({
               className="absolute flex items-start"
               style={{
                 left: `calc(50% + ${xOf(cluster.secOffset)}px)`,
-                top: "4px",
+                top: "10px",
                 bottom: "4px",
                 transform: "translateX(-50%)",
                 // 카드 위에서도 드래그가 통과하도록 stopPropagation 하지 않음.
