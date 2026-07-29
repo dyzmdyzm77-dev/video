@@ -1130,7 +1130,7 @@ function ExpandedView({
             className="flex flex-none items-center justify-center"
             style={{
               gap: "20px",
-              padding: "12px 0",
+              padding: "8px 0",
               backgroundColor: "#FFFFFF",
             }}
           >
@@ -2514,7 +2514,7 @@ function RecordingControls({
         className="flex items-center justify-center"
         style={{
           gap: "20px",
-          padding: "12px 0",
+          padding: "8px 0",
           backgroundColor: "#FFFFFF",
         }}
       >
@@ -3117,7 +3117,7 @@ function TimelineSkeleton({ visible }: { visible: boolean }) {
       />
       <div
         className="flex items-center justify-center"
-        style={{ gap: "20px", padding: "12px 0" }}
+        style={{ gap: "20px", padding: "8px 0" }}
       >
         {Array.from({ length: 5 }).map((_, i) => (
           <div
