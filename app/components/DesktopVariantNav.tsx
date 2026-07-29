@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 // 데스크톱 전용: 화면 왼쪽 가장자리에 붙는 LNB 패널(좌측 레일).
@@ -16,20 +16,26 @@ const VARIANTS = [
 // 선택 가능한 디바이스 폭. w/h 는 앱 프레임(px), 목업은 사방 10px 크게 잡힌다.
 // r = 바깥 베젤 라운드(px). 360 은 SVG 목업 rx=45 에 맞춘 값.
 // m = 베젤과 화면 사이 사방 간격(px). 1080 만 30, 나머지는 10.
+// 이름 없는 폭(480/620)은 위, 실기기 이름이 붙은 것들은 아래에 디바이스별로
+// 묶어서(같은 기기의 접힘/펼침은 인접) 배치한다.
 const DEVICES = [
-  { w: 360, h: 780, r: 45, m: 10, label: "360px", sub: "Galaxy S25" },
+  { w: 360, h: 780, r: 45, m: 10, label: "360px", sub: "" },
   { w: 480, h: 780, r: 29, m: 10, label: "480px", sub: "" },
   { w: 620, h: 780, r: 29, m: 10, label: "620px", sub: "" },
+  { w: 360, h: 780, r: 45, m: 10, label: "360px", sub: "Galaxy S25" },
   { w: 750, h: 832, r: 13, m: 10, label: "750px", sub: "Z Fold 7" },
-  { w: 823, h: 590, r: 13, m: 10, label: "823px", sub: "Z Fold 8" },
+  { w: 405, h: 648, r: 13, m: 10, label: "405px", sub: "Z Fold 8 접힘" },
+  { w: 864, h: 648, r: 13, m: 10, label: "864px", sub: "Z Fold 8" },
   { w: 1080, h: 792, r: 13, m: 30, label: "1080px", sub: "Z TriFold" },
 ];
+// 최초 표시 기본 프리셋(Galaxy S25 = 360px).
+const DEFAULT_PRESET = DEVICES.findIndex((d) => d.sub === "Galaxy S25");
 
 export default function DesktopVariantNav() {
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(true);
-  const [active, setActive] = useState(0); // 강조 표시할 DEVICES 인덱스(범위)
+  const [active, setActive] = useState(DEFAULT_PRESET); // 강조 표시할 DEVICES 인덱스
   const [showRuler, setShowRuler] = useState(true); // 목업 위 치수 눈금자 표시 여부
   const [actualSize, setActualSize] = useState(false); // 배율 1:1 고정 여부
   const [compare, setCompare] = useState(false); // As Is(현재 앱) 나란히 비교 여부
@@ -71,9 +77,9 @@ export default function DesktopVariantNav() {
     root.style.setProperty("--device-radius", `${d.r}px`);
     root.style.setProperty("--device-margin", `${d.m}px`);
     // 펀치홀 카메라 위치 — 실기기처럼 기기별로 다르다(CSS 가 참조).
-    // 트라이폴드(1080): 오른쪽 / Fold 8(823): 왼쪽 열 영상 중앙 / 그 외: 상단 중앙.
+    // 트라이폴드(1080): 오른쪽 / Fold 8(864): 왼쪽 열 영상 중앙 / 그 외: 상단 중앙.
     root.dataset.punch =
-      d.w >= 1080 ? "trifold" : d.w >= 823 ? "fold8" : "center";
+      d.w >= 1080 ? "trifold" : d.w >= 864 ? "fold8" : "center";
     setActive(i);
     window.dispatchEvent(new Event("devicechange"));
   };
@@ -95,16 +101,52 @@ export default function DesktopVariantNav() {
     root.style.setProperty("--device-radius", `${r}px`);
     root.style.setProperty("--device-margin", `${m}px`);
     root.dataset.punch =
-      w >= 1080 ? "trifold" : w >= 823 ? "fold8" : "center";
+      w >= 1080 ? "trifold" : w >= 864 ? "fold8" : "center";
     setActive(-1);
     window.dispatchEvent(new Event("devicechange"));
   };
 
-  // 왼쪽으로 회전 — 디바이스(베젤+화면)를 시계반대 90° 시각적으로 회전한다.
-  // 해상도(가로·세로)는 그대로 두고 화면만 눕힌다(가로 모드). 다시 누르면 원위치.
+  // 왼쪽으로 회전 — 디바이스(베젤+화면)를 시계반대 90°로 '제자리에서' 돌린다.
+  // 배치가 flex(세로)↔fixed(가로)로 바뀌는 순간은 트랜지션을 꺼서 무이동으로
+  // 스위치하고, 그 다음 각도(--device-rot)만 트랜지션해 그 자리에서 자연스럽게
+  // 돈다. 되돌릴 땐 각도를 0으로 트랜지션한 뒤 배치를 flex 로 스위치한다.
+  const rotFirst = useRef(true);
   useEffect(() => {
-    document.documentElement.dataset.rotate = rotated ? "true" : "false";
-    window.dispatchEvent(new Event("devicechange"));
+    const root = document.documentElement;
+    if (rotFirst.current) {
+      rotFirst.current = false;
+      root.dataset.rotate = "false";
+      root.style.setProperty("--device-rot", "0deg");
+      return;
+    }
+    if (rotated) {
+      // 무이동 스위치(트랜지션 꺼짐) → fixed·각도0(세로와 동일하게 보임)
+      root.dataset.rotating = "true";
+      root.dataset.rotate = "true";
+      root.style.setProperty("--device-rot", "0deg");
+      window.dispatchEvent(new Event("devicechange"));
+      // 다음 프레임: 트랜지션 켜고 각도만 -90° 로 → 제자리 회전
+      const id = requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          root.dataset.rotating = "false";
+          root.style.setProperty("--device-rot", "-90deg");
+        }),
+      );
+      return () => cancelAnimationFrame(id);
+    }
+    // 되돌리기: 각도 -90 → 0 트랜지션 후, 끝나면 배치를 flex 로 무이동 스위치
+    root.style.setProperty("--device-rot", "0deg");
+    const t = setTimeout(() => {
+      root.dataset.rotating = "true";
+      root.dataset.rotate = "false";
+      window.dispatchEvent(new Event("devicechange"));
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          root.dataset.rotating = "false";
+        }),
+      );
+    }, 360);
+    return () => clearTimeout(t);
   }, [rotated]);
 
   // 입력한 가로:세로의 약분 비율(정수비 미리보기용).
@@ -129,9 +171,9 @@ export default function DesktopVariantNav() {
     window.dispatchEvent(new Event("devicechange"));
   }, [open]);
 
-  // 최초 마운트 시 기본 프리셋(360) 적용.
+  // 최초 마운트 시 기본 프리셋(Galaxy S25 · 360) 적용.
   useEffect(() => {
-    applyPreset(0);
+    applyPreset(DEFAULT_PRESET);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -196,7 +238,7 @@ export default function DesktopVariantNav() {
       <p className="dvn-group-title dvn-label">해상도</p>
       <ul className="dvn-list">
         {DEVICES.map((d, i) => (
-          <li key={d.w}>
+          <li key={`${d.w}-${d.sub}`}>
             <button
               type="button"
               data-active={active === i}

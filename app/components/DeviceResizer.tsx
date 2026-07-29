@@ -23,15 +23,36 @@ const RULER_GAP = 20;
 
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
 
-// 가로:세로를 '작은 정수비'로 표기한다. 약분해서 두 수가 20 이하면 그대로 정수비
-// (예: 1080×792 → 15:11), 아니면 분모 20 이하에서 가장 가까운 근사비(≈)로 준다.
+// 관용 표기를 우선하는 가로:세로 비율. 예를 들어 405×648 은 약분하면 5:8 이지만
+// 흔히 쓰는 표기(16:10 = 세로:가로)로 10:16 을 보여주고 싶다. 아래 목록에 있는
+// 비율과 (오차 0.5% 이내로) 맞으면 그 표기를 그대로 쓴다(가로:세로 방향으로).
+const PREFERRED_RATIOS: [number, number][] = [
+  [4, 3],
+  [3, 4],
+  [16, 10],
+  [10, 16],
+  [16, 9],
+  [9, 16],
+  [3, 2],
+  [2, 3],
+  [5, 4],
+  [4, 5],
+  [2, 1],
+  [1, 2],
+];
+
+// 가로:세로를 정수비로 표기한다. 관용 비율(PREFERRED)에 맞으면 그걸 쓰고,
+// 아니면 약분(두 수 20 이하)하거나 근사비(≈)로 준다.
 function simpleRatio(w: number, h: number): string {
   if (!w || !h) return "";
+  const target = w / h;
+  for (const [a, b] of PREFERRED_RATIOS) {
+    if (Math.abs(a / b - target) < target * 0.005) return `${a} : ${b}`;
+  }
   const g = gcd(w, h);
   const ew = w / g;
   const eh = h / g;
   if (ew <= 20 && eh <= 20) return `${ew} : ${eh}`;
-  const target = w / h;
   let best = { a: 1, b: 1, err: Infinity };
   for (let b = 1; b <= 20; b++) {
     for (let a = 1; a <= 20; a++) {
