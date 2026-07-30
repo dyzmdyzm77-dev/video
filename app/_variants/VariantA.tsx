@@ -1226,7 +1226,7 @@ function ExpandedView({
           onScrubbingChange={onScrubbingChange}
         />
       ) : (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex min-h-0 flex-1 flex-col pb-4">
         {mode === "live" && (
           <h2
             className="flex-none px-5 text-[16px] font-bold leading-none text-neutral-900"
@@ -1236,11 +1236,11 @@ function ExpandedView({
           </h2>
         )}
 
-        {/* 타일 세로 60px 고정(가로 16:9). 남는 폭에 여러 개, 넘치면 다음 줄로
-            감싸(wrap) 남는 세로도 채운다 → 넓든 좁든 최대한 많이 보인다.
-            더 많으면 세로 스크롤. */}
+        {/* 한 줄 가로 스크롤(carousel). 타일 높이 = 영역 높이로 꽉 채우되 최소 60px
+            (짧은 화면에서도 60 밑으로는 안 줄어든다). 좌우 여백(px-5)은 스크롤 안쪽
+            패딩이라 첫/마지막만 20px 띄우고 중간은 화면 끝까지 흐른다. */}
         <div
-          className="flex flex-wrap content-start gap-2 px-5"
+          className="flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={mode === "recording" ? { marginTop: "12px" } : undefined}
         >
           {CAMERAS.map((c, i) => (
@@ -1248,8 +1248,8 @@ function ExpandedView({
               key={i}
               type="button"
               onClick={() => onSelect(i)}
-              className="relative h-[60px] aspect-video flex-none overflow-hidden bg-neutral-900"
-              style={{ borderRadius: "4px" }}
+              className="relative h-full aspect-video flex-none overflow-hidden bg-neutral-900"
+              style={{ borderRadius: "4px", minHeight: "60px" }}
             >
               <FrozenImage
                 src={c.src}
