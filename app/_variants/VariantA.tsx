@@ -804,9 +804,26 @@ function ExpandedView({
     return () => onSpeedChange?.(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // 카메라 목록 레이아웃 — 목록 영역 크기를 재서 '더 많이 보이는 쪽'을 자동 선택한다.
   // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지(세로 타임라인)
   const [recTab, setRecTab] = useState<"list" | "motion">("motion");
+  // 카메라 목록(한 줄 가로 스크롤) — 선택 카메라 타일을 가운데로 맞출 때 쓴다.
+  const listScrollRef = useRef<HTMLDivElement>(null);
+  // 목록이 보일 때(진입·탭 전환·선택 변경) 선택된 카메라 타일을 가로 스크롤 가운데로
+  // 맞춘다. 다채널에서 더블클릭해 단일로 들어오면 그 카메라가 가운데에 온다(맨 왼쪽 X).
+  useEffect(() => {
+    const listVisible = mode === "live" || recTab === "list";
+    if (!listVisible) return;
+    const el = listScrollRef.current;
+    if (!el) return;
+    const tile = el.children[index] as HTMLElement | undefined;
+    if (!tile) return;
+    const tr = tile.getBoundingClientRect();
+    const er = el.getBoundingClientRect();
+    // 타일의 콘텐츠 내 좌표(현재 스크롤 보정) − (뷰포트폭 − 타일폭)/2 = 가운데 정렬 스크롤값
+    const tileLeftInContent = tr.left - er.left + el.scrollLeft;
+    const target = tileLeftInContent - (el.clientWidth - tr.width) / 2;
+    el.scrollLeft = Math.max(0, target);
+  }, [index, mode, recTab]);
   // 실시간↔녹화 전환 시 되감기/빨리감기 배속을 0배(기본)로 원복.
   // ExpandedView는 모드가 바뀌어도 언마운트되지 않아 배속 인덱스가 남으므로 명시적으로 리셋.
   useEffect(() => {
@@ -1240,6 +1257,7 @@ function ExpandedView({
             (짧은 화면에서도 60 밑으로는 안 줄어든다). 좌우 여백(px-5)은 스크롤 안쪽
             패딩이라 첫/마지막만 20px 띄우고 중간은 화면 끝까지 흐른다. */}
         <div
+          ref={listScrollRef}
           className="flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={mode === "recording" ? { marginTop: "12px" } : undefined}
         >
