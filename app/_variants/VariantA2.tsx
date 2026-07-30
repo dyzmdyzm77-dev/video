@@ -817,8 +817,10 @@ function ExpandedView({
     return () => onSpeedChange?.(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지. 진입 시 '카메라 목록'이 기본.
-  const [recTab, setRecTab] = useState<"list" | "motion">("list");
+  // 카메라 선택 바텀시트 — 헤더의 카메라 이름(▾)으로 연다. 녹화 하단의
+  // 목록/감지 탭을 없애고 움직임 감지 타임라인이 하단을 상시 차지하므로,
+  // 녹화 중 카메라 전환은 이 시트(또는 영상 좌우 스와이프)로 한다.
+  const [camSheetOpen, setCamSheetOpen] = useState(false);
   // 목록 영역 크기를 재서 '가로 한 줄 / 세로 2열' 중 더 많이 보이는 쪽을 자동 선택.
   // 넓고 짧으면 가로, 좁고 길면 세로. (360 같은 좁은 폭에선 세로 2열이 더 많이 보인다.)
   const listAreaRef = useRef<HTMLDivElement>(null);
@@ -856,7 +858,7 @@ function ExpandedView({
   // 목록이 보일 때(진입·탭 전환·선택 변경·레이아웃 전환) 선택된 카메라 타일을 스크롤
   // 가운데로 맞춘다. 다채널에서 더블클릭해 단일로 들어오면 그 카메라가 가운데에 온다.
   useEffect(() => {
-    const listVisible = mode === "live" || recTab === "list";
+    const listVisible = mode === "live";
     if (!listVisible) return;
     const el = listScrollRef.current;
     if (!el) return;
@@ -891,7 +893,7 @@ function ExpandedView({
       clearTimeout(stop);
       ro.disconnect();
     };
-  }, [index, mode, recTab, listWide]);
+  }, [index, mode, listWide]);
   // 실시간↔녹화 전환 시 되감기/빨리감기 배속을 0배(기본)로 원복.
   // ExpandedView는 모드가 바뀌어도 언마운트되지 않아 배속 인덱스가 남으므로 명시적으로 리셋.
   useEffect(() => {
@@ -983,9 +985,10 @@ function ExpandedView({
       >
         <div className="flex w-full items-center justify-between">
           <div className="flex flex-col gap-[2px]">
+            {/* 카메라 이름(▾) — 누르면 카메라 선택 시트. 다채널 복귀는 영상 더블탭. */}
             <button
               type="button"
-              onClick={onBack}
+              onClick={() => setCamSheetOpen(true)}
               className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900"
             >
               8층 사무실 A-2
@@ -1267,44 +1270,15 @@ function ExpandedView({
         </>
       )}
 
-      {/* 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지 — 플레이어 버튼(5개) 아래. */}
-      {mode === "recording" && (
-        <>
-          <div className="flex items-center px-5" style={{ gap: "20px" }}>
-            {([
-              { key: "list", label: "카메라 목록" },
-              { key: "motion", label: "움직임 감지" },
-            ] as const).map((t) => {
-              const active = recTab === t.key;
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => setRecTab(t.key)}
-                  className="relative text-[15px] font-bold leading-none"
-                  style={{
-                    padding: "14px 0",
-                    color: active ? "#1D6CEB" : "#A6A6A6",
-                  }}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="h-px" style={{ backgroundColor: "#DBDBDB" }} />
-        </>
-      )}
-
-      {/* 카메라 목록 OR 녹화 이벤트 타임라인. 두 탭 모두 남는 공간을 채우는 영역(flex-1)
-          이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 최소 높이(≈138px =
-          시간바+썸네일)를 줘서 짧은 화면에서도 썸네일이 안 찌그러진다(영상이 대신 축소). */}
+      {/* 하단 영역 — 녹화: 움직임 감지 타임라인 상시 표시(탭 없음), 라이브: 카메라 목록.
+          남는 공간을 채우는 영역(flex-1). 최소 높이(≈138px = 시간바+썸네일)를 줘서
+          짧은 화면에서도 썸네일이 안 찌그러진다(영상이 대신 축소). */}
       <div
         ref={listAreaRef}
         className="relative flex flex-1 flex-col"
         style={{ minHeight: "138px" }}
       >
-      {mode === "recording" && recTab === "motion" ? (
+      {mode === "recording" ? (
         <RecordingEventTimeline
           playbackMs={playbackMs}
           setPlaybackMs={setPlaybackMs}
@@ -1339,7 +1313,6 @@ function ExpandedView({
               ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "grid grid-cols-2 gap-2 px-5"
           }
-          style={mode === "recording" ? { marginTop: "12px" } : undefined}
         >
           {CAMERAS.map((c, i) => (
             <button
@@ -1412,7 +1385,140 @@ function ExpandedView({
       )}
       <CameraListSkeleton visible={videoLoading} />
       </div>
+
+      {/* 카메라 선택 바텀시트 — 헤더 카메라 이름(▾)으로 연다. */}
+      <CameraPickerSheet
+        open={camSheetOpen}
+        index={index}
+        onSelect={(i) => {
+          setCamSheetOpen(false);
+          if (i !== index) onSelect(i);
+        }}
+        onClose={() => setCamSheetOpen(false)}
+      />
     </>
+  );
+}
+
+// 카메라 선택 바텀시트 — 시트 골격은 LayoutConfigSheet 와 동일. 2열 썸네일
+// 그리드에서 탭하면 즉시 그 카메라로 전환하고 닫힌다(적용 버튼 없음).
+function CameraPickerSheet({
+  open,
+  index,
+  onSelect,
+  onClose,
+}: {
+  open: boolean;
+  index: number;
+  onSelect: (i: number) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 z-30"
+      aria-hidden={!open}
+    >
+      {/* 배경 딤 */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-300 ease-out ${
+          open ? "pointer-events-auto" : ""
+        }`}
+        style={{
+          backgroundColor: "rgba(0,0,0,0.5)",
+          opacity: open ? 1 : 0,
+        }}
+        onClick={onClose}
+      />
+      {/* 시트 */}
+      <div
+        className={`absolute inset-x-0 mx-auto w-full max-w-[480px] flex max-h-[70%] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
+          open ? "pointer-events-auto" : ""
+        }`}
+        style={{
+          bottom: 0,
+          borderTopLeftRadius: "10px",
+          borderTopRightRadius: "10px",
+          transform: open ? "translateY(0%)" : "translateY(100%)",
+          boxShadow: open ? undefined : "none",
+        }}
+      >
+        {/* 헤더 */}
+        <div
+          className="flex flex-none items-center justify-between"
+          style={{ height: "74px", padding: "0 20px" }}
+        >
+          <h2 className="text-[20px] font-bold leading-none text-neutral-900">
+            카메라 목록
+          </h2>
+          <button
+            type="button"
+            aria-label="닫기"
+            onClick={onClose}
+            className="flex h-6 w-6 items-center justify-center"
+          >
+            <img src={`${BASE}/close.svg`} alt="" className="h-6 w-6" />
+          </button>
+        </div>
+
+        {/* 2열 썸네일 그리드 — 세로 스크롤 */}
+        <div className="grid min-h-0 grid-cols-2 gap-2 overflow-y-auto px-5 pb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {CAMERAS.map((c, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onSelect(i)}
+              className="relative aspect-video overflow-hidden bg-neutral-900"
+              style={{ borderRadius: "4px" }}
+            >
+              <FrozenImage
+                src={c.src}
+                alt={c.label}
+                className="absolute inset-0 h-full w-full"
+                style={
+                  c.zoom
+                    ? { transform: `scale(${c.zoom})`, objectFit: "cover" }
+                    : { objectFit: "cover" }
+                }
+              />
+              <div
+                className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
+                style={{
+                  top: "4px",
+                  left: "4px",
+                  height: "17px",
+                  padding: "0 4px",
+                  borderRadius: "2px",
+                }}
+              >
+                {c.label}
+              </div>
+              {i === index && (
+                <>
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+                  />
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                      boxShadow: "inset 0 0 0 2px #1D6CEB",
+                      borderRadius: "4px",
+                    }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <img
+                      src={`${BASE}/nav/playing.gif`}
+                      alt="재생 중"
+                      className="h-6 w-6"
+                    />
+                  </div>
+                </>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
