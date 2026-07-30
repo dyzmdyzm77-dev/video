@@ -306,6 +306,8 @@ export function Inner() {
   // 280~320)이 해상도에 맞게 잡고(리플로우/2단계 없음), 전환 시 위치만 아래 FLIP 이
   // translate 로 헤더와 함께 미끄러지게 한다.
   const [twoCol, setTwoCol] = useState(false);
+  // 폭 전환(max-width) 애니메이션 허용 여부. 첫 진입엔 꺼서 480→700 '펼침'이 안 보이게.
+  const [widenReady, setWidenReady] = useState(false);
   const twoColRef = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const leftColRef = useRef<HTMLDivElement>(null);
@@ -314,6 +316,28 @@ export function Inner() {
   const flipFromRef = useRef<{ left?: DOMRect; right?: DOMRect } | null>(null);
   // 전환 세대 — 끊긴 전환의 인라인 스타일이 남지 않도록 타임아웃 정리에 쓴다.
   const flipGenRef = useRef(0);
+
+  // 첫 페인트 전에 올바른 열 수(1단/2단)를 확정한다. 이게 없으면 첫 진입 때 480 상태로
+  // 한 프레임 그려졌다가 700 으로 CSS 전환이 돌아 홍길동·알림·플로팅 아이콘이 가운데서
+  // 양옆으로 '펼쳐지는' 연출이 보인다. 확정 뒤 다음 프레임부터 전환을 허용한다.
+  useIsoLayoutEffect(() => {
+    const desktopPreview =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    const varW = desktopPreview
+      ? parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--device-w",
+          ),
+        )
+      : NaN;
+    const w = Number.isFinite(varW) && varW > 0 ? varW : window.innerWidth || 360;
+    const want = w >= 620;
+    twoColRef.current = want;
+    setTwoCol(want);
+    const raf = requestAnimationFrame(() => setWidenReady(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   useEffect(() => {
     const BP = 620;
@@ -548,7 +572,7 @@ export function Inner() {
             콘텐츠 좌우 끝과 정렬된다. 전환 시 view-transition 으로 함께 모핑. */}
         <div
           className={`mx-auto w-full flex-none px-5 ${twoCol ? "max-w-[700px]" : "max-w-[480px]"}`}
-          style={{ transition: WIDEN }}
+          style={{ transition: widenReady ? WIDEN : "none" }}
         >
           <div
             className="flex items-center justify-between"
@@ -729,7 +753,7 @@ export function Inner() {
             라인)을 따라간다. */}
         <div
           className={`pointer-events-none absolute inset-x-0 z-10 mx-auto w-full ${twoCol ? "max-w-[700px]" : "max-w-[480px]"}`}
-          style={{ bottom: "60px", height: 0, transition: WIDEN }}
+          style={{ bottom: "60px", height: 0, transition: widenReady ? WIDEN : "none" }}
         >
           <img
             src={`${BASE}/home/fab-chat.svg`}
