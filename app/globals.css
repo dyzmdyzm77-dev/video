@@ -139,7 +139,11 @@ body {
     /* 목업과 동일 배율로 축소. 왼쪽아래 모서리 기준(origin left bottom)이라 배율·
        크기가 변해도 왼쪽·바닥이 고정되고 오른쪽/위로만 커진다. */
     transform-origin: left bottom;
-    transform: scale(var(--device-scale, 1));
+    /* translateZ(0) 로 자체 합성 레이어 승격 — 분수 배율(예: 0.79×) 하에서 자식(상태바)
+       위치가 아래 콘텐츠(단일/다채널)에 따라 서브픽셀 반올림이 달라져 상단바가 몇 px
+       움직이던 걸 안정화한다. */
+    transform: scale(var(--device-scale, 1)) translateZ(0);
+    will-change: transform;
     /* 폭·세로·라운드·배율 모두 부드럽게 전환(버튼 클릭 등). 목업(.device-frame)·
        body padding 과 같은 0.22s ease 로 맞춰 전환 중 화면과 목업이 함께 움직인다.
        단, 드래그 중엔 아래 [data-resizing] 규칙으로 전환을 꺼 폭이 마우스를 즉시
