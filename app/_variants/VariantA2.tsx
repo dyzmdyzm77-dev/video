@@ -11,6 +11,7 @@ import {
 } from "../components/CameraFeed";
 import VariantPicker from "../components/VariantPicker";
 import AndroidNav from "../components/AndroidNav";
+import { useDeviceWidth } from "../components/useDeviceWidth";
 
 const CAMERAS = [
   { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
@@ -32,11 +33,12 @@ const CAMERAS = [
 ];
 
 const LAYOUT_DIMS: Record<
-  "1x2" | "1x3" | "2x4" | "2x2" | "3x3" | "4x4",
+  "1x2" | "1x3" | "2x3" | "2x4" | "2x2" | "3x3" | "4x4",
   { cols: number; rows: number }
 > = {
   "1x2": { cols: 1, rows: 2 },
   "1x3": { cols: 1, rows: 3 },
+  "2x3": { cols: 2, rows: 3 },
   "2x4": { cols: 2, rows: 4 },
   "2x2": { cols: 2, rows: 2 },
   "3x3": { cols: 3, rows: 3 },
@@ -167,7 +169,11 @@ export default function VariantA2({
   const [currentPage, setCurrentPage] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
-  const [vertLayout, setVertLayout] = useState<LayoutKey>("2x4");
+  // 다채널 세로 레이아웃 — 사용자가 레이아웃 설정에서 직접 고르기 전엔 폭 기반
+  // 기본값을 쓴다(620 초과: 2×3, 이하: 2×4). 드래그로 폭이 바뀌면 즉시 따라간다.
+  const deviceW = useDeviceWidth();
+  const [userVertLayout, setUserVertLayout] = useState<LayoutKey | null>(null);
+  const vertLayout = userVertLayout ?? (deviceW > 620 ? "2x3" : "2x4");
   const [horzLayout, setHorzLayout] = useState<LayoutKey>("2x2");
   const [mode, setMode] = useState<"live" | "recording">("live");
   // 위아래 가짜 시스템 바 표시 여부. 기본은 숨긴 몰입 상태(LIVE 칩으로 토글).
@@ -285,6 +291,11 @@ export default function VariantA2({
   const pageSize = layoutDims.cols * layoutDims.rows;
   const totalPages = Math.ceil(CAMERAS.length / pageSize);
 
+  // 폭 경계(620)를 넘나들며 레이아웃이 바뀌어 페이지 수가 줄면 현재 페이지를 범위 안으로.
+  useEffect(() => {
+    setCurrentPage((p) => Math.min(p, totalPages - 1));
+  }, [totalPages]);
+
   useEffect(() => {
     setNow(new Date());
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -395,7 +406,7 @@ export default function VariantA2({
         initialHorz={horzLayout}
         onClose={() => setSheetOpen(false)}
         onApply={(vert, horz) => {
-          setVertLayout(vert);
+          setUserVertLayout(vert);
           setHorzLayout(horz);
           setCurrentPage(0);
           setSheetOpen(false);
@@ -2074,6 +2085,7 @@ function FrozenImage({
 type LayoutKey =
   | "1x2"
   | "1x3"
+  | "2x3"
   | "2x4"
   | "2x2"
   | "3x3"
