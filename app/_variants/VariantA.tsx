@@ -804,26 +804,81 @@ function ExpandedView({
     return () => onSpeedChange?.(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지(세로 타임라인)
-  const [recTab, setRecTab] = useState<"list" | "motion">("motion");
-  // 카메라 목록(한 줄 가로 스크롤) — 선택 카메라 타일을 가운데로 맞출 때 쓴다.
+  // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지. 진입 시 '카메라 목록'이 기본.
+  const [recTab, setRecTab] = useState<"list" | "motion">("list");
+  // 목록 영역 크기를 재서 '가로 한 줄 / 세로 2열' 중 더 많이 보이는 쪽을 자동 선택.
+  // 넓고 짧으면 가로, 좁고 길면 세로. (360 같은 좁은 폭에선 세로 2열이 더 많이 보인다.)
+  const listAreaRef = useRef<HTMLDivElement>(null);
+  const [listWide, setListWide] = useState(
+    () => (typeof window !== "undefined" ? window.innerWidth : 360) >= 620,
+  );
+  useEffect(() => {
+    const el = listAreaRef.current;
+    if (!el) return;
+    const GAP = 8;
+    const PAD_X = 40; // 좌우 px-5
+    const RATIO = 16 / 9;
+    const headerPad = (mode === "live" ? 52 : 24) + 16; // 목록 헤더/여백 + pb-4
+    const pick = () => {
+      const W = el.clientWidth - PAD_X;
+      const H = el.clientHeight - headerPad;
+      if (W <= 0 || H <= 0) return;
+      // 가로 한 줄: 타일 높이 = 영역 높이, 폭 = 높이 × 16/9
+      const tileWh = H * RATIO;
+      const countH = Math.max(1, Math.floor((W + GAP) / (tileWh + GAP)));
+      // 세로 2열: 타일 폭 = (영역폭 − 갭)/2, 높이 = 폭 × 9/16
+      const tileWv = (W - GAP) / 2;
+      const tileHv = tileWv / RATIO;
+      const rows = Math.max(1, Math.floor((H + GAP) / (tileHv + GAP)));
+      const countV = 2 * rows;
+      setListWide(countH >= countV);
+    };
+    pick();
+    const ro = new ResizeObserver(pick);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mode]);
+  // 카메라 목록 — 선택 카메라 타일을 가운데로 맞출 때 쓴다(가로면 좌우, 세로면 위아래).
   const listScrollRef = useRef<HTMLDivElement>(null);
-  // 목록이 보일 때(진입·탭 전환·선택 변경) 선택된 카메라 타일을 가로 스크롤 가운데로
-  // 맞춘다. 다채널에서 더블클릭해 단일로 들어오면 그 카메라가 가운데에 온다(맨 왼쪽 X).
+  // 목록이 보일 때(진입·탭 전환·선택 변경·레이아웃 전환) 선택된 카메라 타일을 스크롤
+  // 가운데로 맞춘다. 다채널에서 더블클릭해 단일로 들어오면 그 카메라가 가운데에 온다.
   useEffect(() => {
     const listVisible = mode === "live" || recTab === "list";
     if (!listVisible) return;
     const el = listScrollRef.current;
     if (!el) return;
-    const tile = el.children[index] as HTMLElement | undefined;
-    if (!tile) return;
-    const tr = tile.getBoundingClientRect();
-    const er = el.getBoundingClientRect();
-    // 타일의 콘텐츠 내 좌표(현재 스크롤 보정) − (뷰포트폭 − 타일폭)/2 = 가운데 정렬 스크롤값
-    const tileLeftInContent = tr.left - er.left + el.scrollLeft;
-    const target = tileLeftInContent - (el.clientWidth - tr.width) / 2;
-    el.scrollLeft = Math.max(0, target);
-  }, [index, mode, recTab]);
+    const center = () => {
+      const tile = el.querySelector<HTMLElement>('[data-selected="true"]');
+      if (!tile) return;
+      const tr = tile.getBoundingClientRect();
+      const er = el.getBoundingClientRect();
+      // 진입 직후엔 영상(16:9)·목록 높이가 아직 안 정해져 타일 폭이 0/부정확할 수 있다.
+      if (tr.width === 0 || er.width === 0) return;
+      if (el.scrollWidth > el.clientWidth + 1) {
+        // 가로 한 줄: 좌우 가운데
+        const left = tr.left - er.left + el.scrollLeft;
+        el.scrollLeft = Math.max(0, left - (el.clientWidth - tr.width) / 2);
+      } else if (el.scrollHeight > el.clientHeight + 1) {
+        // 세로 2열: 위아래 가운데
+        const top = tr.top - er.top + el.scrollTop;
+        el.scrollTop = Math.max(0, top - (el.clientHeight - tr.height) / 2);
+      }
+    };
+    // 다음 두 프레임에 걸쳐 맞추고(레이아웃/페인트 직후), 정착 중 크기 변화(영상 16:9
+    // 계산·툴바 접힘 등)에도 잠깐 동안 다시 맞춘다.
+    const raf1 = requestAnimationFrame(() => {
+      center();
+      requestAnimationFrame(center);
+    });
+    const ro = new ResizeObserver(center);
+    ro.observe(el);
+    const stop = setTimeout(() => ro.disconnect(), 1200);
+    return () => {
+      cancelAnimationFrame(raf1);
+      clearTimeout(stop);
+      ro.disconnect();
+    };
+  }, [index, mode, recTab, listWide]);
   // 실시간↔녹화 전환 시 되감기/빨리감기 배속을 0배(기본)로 원복.
   // ExpandedView는 모드가 바뀌어도 언마운트되지 않아 배속 인덱스가 남으므로 명시적으로 리셋.
   useEffect(() => {
@@ -1232,6 +1287,7 @@ function ExpandedView({
           이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 최소 높이(≈138px =
           시간바+썸네일)를 줘서 짧은 화면에서도 썸네일이 안 찌그러진다(영상이 대신 축소). */}
       <div
+        ref={listAreaRef}
         className="relative flex flex-1 flex-col"
         style={{ minHeight: "138px" }}
       >
@@ -1243,7 +1299,14 @@ function ExpandedView({
           onScrubbingChange={onScrubbingChange}
         />
       ) : (
-      <div className="flex min-h-0 flex-1 flex-col pb-4">
+      <div
+        ref={listWide ? undefined : listScrollRef}
+        className={
+          listWide
+            ? "flex min-h-0 flex-1 flex-col pb-4"
+            : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        }
+      >
         {mode === "live" && (
           <h2
             className="flex-none px-5 text-[16px] font-bold leading-none text-neutral-900"
@@ -1253,12 +1316,16 @@ function ExpandedView({
           </h2>
         )}
 
-        {/* 한 줄 가로 스크롤(carousel). 타일 높이 = 영역 높이로 꽉 채우되 최소 60px
-            (짧은 화면에서도 60 밑으로는 안 줄어든다). 좌우 여백(px-5)은 스크롤 안쪽
-            패딩이라 첫/마지막만 20px 띄우고 중간은 화면 끝까지 흐른다. */}
+        {/* 가로(listWide): 한 줄 가로 스크롤(carousel), 타일 높이 = 영역 높이·최소 60px.
+            세로: 2열 그리드(세로 스크롤). 어느 쪽이 더 많이 보이는지로 위에서 자동 선택.
+            좌우 여백(px-5)은 스크롤 안쪽 패딩이라 첫/마지막만 20px 띄운다. */}
         <div
-          ref={listScrollRef}
-          className="flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          ref={listWide ? listScrollRef : undefined}
+          className={
+            listWide
+              ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              : "grid grid-cols-2 gap-2 px-5"
+          }
           style={mode === "recording" ? { marginTop: "12px" } : undefined}
         >
           {CAMERAS.map((c, i) => (
@@ -1266,8 +1333,17 @@ function ExpandedView({
               key={i}
               type="button"
               onClick={() => onSelect(i)}
-              className="relative h-full aspect-video flex-none overflow-hidden bg-neutral-900"
-              style={{ borderRadius: "4px", minHeight: "60px" }}
+              data-selected={i === index ? "true" : undefined}
+              className={
+                listWide
+                  ? "relative h-full aspect-video flex-none overflow-hidden bg-neutral-900"
+                  : "relative aspect-video overflow-hidden bg-neutral-900"
+              }
+              style={
+                listWide
+                  ? { borderRadius: "4px", minHeight: "60px" }
+                  : { borderRadius: "4px" }
+              }
             >
               <FrozenImage
                 src={c.src}
