@@ -14,10 +14,10 @@ const useIsoLayoutEffect =
 // 상단 영역과 아래 콘텐츠가 중간에 어긋나 보이지 않는다.
 const MOVE_MS = 220;
 const MOVE_EASE = "ease";
-// 드래그(리사이즈) 중엔 짧게 + linear. globals.css 의 기기 스케일(transform) 전환이
-// data-resizing 중 0.1s linear 라, 콘텐츠 reflow(FLIP)도 '같은 100ms linear'로 맞춰야
-// 스케일로 커지는 것과 콘텐츠 마진/폭 재배치가 따로 놀지 않고 함께 움직인다.
-const DRAG_MS = 100;
+// 드래그(리사이즈) 중엔 짧게 + linear. deviceresize 마다 현재 폭으로 재조준하므로,
+// 이 값은 '마우스를 얼마나 바짝 따라오나'(트레일 지연)를 정한다. 100ms 는 느리게
+// 느껴져 60ms 로 — 즉시(틱틱)는 아니고 부드럽되 마우스에 훨씬 바짝 붙는다.
+const DRAG_MS = 60;
 const DRAG_EASE = "linear";
 
 // 홈 화면 — "내 경비 구역" 시안을 실제 코드로 구현한 화면.
