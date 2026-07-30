@@ -328,6 +328,25 @@ export function Inner() {
   const flipFromRef = useRef<{ left?: DOMRect; right?: DOMRect } | null>(null);
   // 전환 세대 — 끊긴 전환의 인라인 스타일이 남지 않도록 타임아웃 정리에 쓴다.
   const flipGenRef = useRef(0);
+  // 드래그 중 '실시간 따라가기' — deviceresize 마다 현재 --device-w 로 래퍼·컬럼 폭을
+  // 다시 잡는다(전환은 이미 걸려 있어 CSS 가 부드럽게 재조준). 스냅샷 목표에 잠기지
+  // 않아 '붙고→줄고→늘어남' 없이 마우스를 부드럽게 쫓아간다.
+  const retargetRef = useRef<((deviceW: number) => void) | null>(null);
+  // FLIP 인라인 스타일을 모두 걷어 자연 레이아웃(프레임 폭을 따라감)으로 되돌린다.
+  const clearFlipInline = () => {
+    for (const el of [
+      contentRef.current,
+      leftColRef.current,
+      rightColRef.current,
+    ]) {
+      if (!el) continue;
+      el.style.transition = "";
+      el.style.marginLeft = "";
+      el.style.marginTop = "";
+      el.style.width = "";
+      el.style.maxWidth = "";
+    }
+  };
 
   // 첫 페인트 전에 올바른 열 수(1단/2단)를 확정한다. 이게 없으면 첫 진입 때 480 상태로
   // 한 프레임 그려졌다가 700 으로 CSS 전환이 돌아 홍길동·알림·플로팅 아이콘이 가운데서
@@ -379,6 +398,7 @@ export function Inner() {
           ? varW
           : (observed ?? target.getBoundingClientRect().width);
       const want = w >= BP;
+      let changed = false;
       if (want !== twoColRef.current) {
         twoColRef.current = want;
         if (armed) {
@@ -388,20 +408,51 @@ export function Inner() {
           };
         }
         setTwoCol(want);
+        changed = true;
       }
       armed = true;
+      return changed;
     };
-    // 프리셋 클릭(devicechange)=부드러운 애니메이션, 드래그(deviceresize)=즉시 스냅
-    // (프레임이 드래그 중 전환을 꺼 마우스를 즉시 따라오는 것과 동일하게 맞춘다).
+    // 현재 기기 폭(px) — 재조준용. 데스크톱 미리보기면 --device-w, 실기기면 관측 폭.
+    const readW = () => {
+      const desktopPreview =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      const varW = desktopPreview
+        ? parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue(
+              "--device-w",
+            ),
+          )
+        : NaN;
+      return Number.isFinite(varW) && varW > 0
+        ? varW
+        : target.getBoundingClientRect().width;
+    };
+    // 프리셋 클릭(devicechange)=부드러운 애니메이션. 드래그 중이면 마무리 후 정리 예약.
     const onChange = () => {
       resizingRef.current = false;
       setResizing(false);
       evaluate();
+      // 드래그로 재조준하던 게 있으면, 최종 폭으로 한 번 더 맞추고 자연 레이아웃 복귀 예약.
+      if (retargetRef.current) {
+        retargetRef.current(readW());
+        const gen = flipGenRef.current;
+        window.setTimeout(() => {
+          if (flipGenRef.current === gen) {
+            clearFlipInline();
+            retargetRef.current = null;
+          }
+        }, MOVE_MS + 80);
+      }
     };
+    // 드래그(deviceresize) — 크로싱이면 FLIP(아래 이펙트)이 새로 돌고, 아니면 현재
+    // 폭으로 실시간 재조준해 마우스를 부드럽게 쫓아간다(스냅샷 잠금 X).
     const onResize = () => {
       resizingRef.current = true;
       setResizing(true);
-      evaluate();
+      const changed = evaluate();
+      if (!changed && retargetRef.current) retargetRef.current(readW());
     };
     window.addEventListener("devicechange", onChange);
     window.addEventListener("deviceresize", onResize);
@@ -458,18 +509,8 @@ export function Inner() {
     // 폭이 인라인에 박히고, 그 뒤 단일→단일(480→360)에선 이 이펙트가 안 돌아 못 치운다.
     // → 아래에서 '세대(gen) 가드 + 타임아웃'으로 항상 지운다.
     const gen = ++flipGenRef.current;
-    const clearAll = () => {
-      for (const el of [wrap, left, right]) {
-        if (!el) continue;
-        el.style.transition = "";
-        el.style.marginLeft = "";
-        el.style.marginTop = "";
-        el.style.width = "";
-        el.style.maxWidth = "";
-      }
-    };
     // 직전 전환이 끊겨 남은 인라인 스타일부터 청소(정확한 측정 + 잔재 방지).
-    clearAll();
+    clearFlipInline();
     void wrap.offsetWidth;
 
     const wrapFrom = wrap.getBoundingClientRect().width / ds;
@@ -514,7 +555,7 @@ export function Inner() {
           right.style.marginLeft = `${finalColW + 60}px`;
           right.style.width = `${finalColW}px`;
           plays.push(() => {
-            right.style.transition = `margin-left ${dur}ms ${eas}`;
+            right.style.transition = `margin-left ${dur}ms ${eas}, width ${dur}ms ${eas}`;
             right.style.marginLeft = "0px";
           });
         } else {
@@ -528,7 +569,7 @@ export function Inner() {
           right.style.marginTop = `${dy}px`;
           right.style.width = `${colW}px`;
           plays.push(() => {
-            right.style.transition = `margin-left ${dur}ms ${eas}`;
+            right.style.transition = `margin-left ${dur}ms ${eas}, width ${dur}ms ${eas}`;
             right.style.marginLeft = `${dx + colW + 60}px`; // 오른쪽 밖으로
           });
         }
@@ -539,9 +580,28 @@ export function Inner() {
     // 동시 출발). 그 뒤 gen 가드 타임아웃으로 정리(끊겨도 항상 지워짐).
     void document.body.offsetWidth;
     plays.forEach((run) => run());
-    window.setTimeout(() => {
-      if (flipGenRef.current === gen) clearAll();
-    }, dur + 80);
+
+    // 드래그 중 '실시간 재조준' — 현재 폭으로 래퍼·컬럼 폭을 다시 잡는다(전환은 이미
+    // 걸려 있어 CSS 가 부드럽게 재조준). 스냅샷 목표에 잠기지 않아 마우스를 쫓아간다.
+    retargetRef.current = (deviceW) => {
+      const fCol = twoCol
+        ? Math.min(320, Math.max(280, (Math.min(deviceW, 700) - 60) / 2))
+        : Math.min(deviceW, 480) - 40;
+      const wTo = twoCol ? Math.min(deviceW, 700) : Math.min(deviceW, 480);
+      wrap.style.width = `${wTo}px`;
+      if (left) left.style.width = `${fCol}px`;
+      if (right && twoCol) right.style.width = `${fCol}px`;
+    };
+    // 클릭이면 정해진 시간 뒤 인라인 걷어 자연 레이아웃 복귀. 드래그면 마우스를 계속
+    // 쫓다가 onChange(드래그 종료)에서 정리한다.
+    if (!resizingRef.current) {
+      window.setTimeout(() => {
+        if (flipGenRef.current === gen) {
+          clearFlipInline();
+          retargetRef.current = null;
+        }
+      }, dur + 80);
+    }
   }, [twoCol]);
 
   const goVideo = () => {
