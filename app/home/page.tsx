@@ -14,9 +14,10 @@ const useIsoLayoutEffect =
 // 상단 영역과 아래 콘텐츠가 중간에 어긋나 보이지 않는다.
 const MOVE_MS = 220;
 const MOVE_EASE = "ease";
-// 드래그(리사이즈) 중엔 짧게 + linear — 즉시 스냅은 '틱틱' 튀고, 220ms 는 드래그보다
-// 느려 뒤처진다. 짧은 등속(linear)으로 마우스에 가깝게 붙되 부드럽게 바뀐다.
-const DRAG_MS = 120;
+// 드래그(리사이즈) 중엔 짧게 + linear. globals.css 의 기기 스케일(transform) 전환이
+// data-resizing 중 0.1s linear 라, 콘텐츠 reflow(FLIP)도 '같은 100ms linear'로 맞춰야
+// 스케일로 커지는 것과 콘텐츠 마진/폭 재배치가 따로 놀지 않고 함께 움직인다.
+const DRAG_MS = 100;
 const DRAG_EASE = "linear";
 
 // 홈 화면 — "내 경비 구역" 시안을 실제 코드로 구현한 화면.
