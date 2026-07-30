@@ -92,6 +92,9 @@ export function useGifFrameCanvas(
   playbackMs: number | null,
 ): boolean {
   const reqRef = useRef(-1);
+  // 마지막으로 캔버스에 그린 프레임 키(src#idx). 틱마다 playbackMs 는 바뀌지만
+  // 프레임 인덱스가 같으면 비트맵 조회·drawImage 를 통째로 건너뛴다.
+  const drawnRef = useRef("");
   const [ok, setOk] = useState(false);
   useEffect(() => {
     if (playbackMs == null) return;
@@ -112,6 +115,8 @@ export function useGifFrameCanvas(
         if (idx < 0) idx = 0;
         if (idx >= info.frameCount) idx = info.frameCount - 1;
         reqRef.current = idx;
+        const frameKey = `${src}#${idx}`;
+        if (drawnRef.current === frameKey) return;
         const bmp = await getFrameBitmap(src, idx);
         if (cancelled || reqRef.current !== idx) return;
         const cv = canvasRef.current;
@@ -121,6 +126,7 @@ export function useGifFrameCanvas(
           cv.height = bmp.height;
         }
         cv.getContext("2d")?.drawImage(bmp, 0, 0);
+        drawnRef.current = frameKey;
         if (!cancelled) setOk(true);
       } catch {
         if (!cancelled) {

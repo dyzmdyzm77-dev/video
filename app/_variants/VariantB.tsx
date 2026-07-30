@@ -200,14 +200,16 @@ export default function VariantB({
     if (isScrubbing) return;
     if (!isPlaying) return; // 일시정지 상태면 시간 진행 멈춤
     let prev = performance.now();
+    // 다채널(그리드)은 타일 수만큼 프레임 드로잉·리렌더가 배가되므로 틱을
+    // 150ms 로 낮춘다(dt 기반이라 재생 속도는 동일). 단일 화면은 50ms 유지.
     const id = setInterval(() => {
       const t = performance.now();
       const dt = t - prev;
       prev = t;
       setPlaybackMs((p) => (p === null ? null : p + dt * playbackRate));
-    }, 50);
+    }, expandedIndex === null ? 150 : 50);
     return () => clearInterval(id);
-  }, [mode, playbackMs === null, isScrubbing, isPlaying, playbackRate]);
+  }, [mode, playbackMs === null, isScrubbing, isPlaying, playbackRate, expandedIndex === null]);
 
   // 다채널→단일 진입: 같은 렌더에서 setExpandedIndex와 함께 스켈레톤을 켜
   // 이미지 페인트 전에 스켈레톤이 위(z-20)에 즉시 깔리도록 한다.
