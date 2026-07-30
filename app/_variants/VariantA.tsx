@@ -805,38 +805,6 @@ function ExpandedView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // 카메라 목록 레이아웃 — 목록 영역 크기를 재서 '더 많이 보이는 쪽'을 자동 선택한다.
-  // 타일은 16:9. 가로 한 줄(타일 높이=영역 높이)로 몇 개, 세로 2열로 몇 줄×2개가
-  // 보이는지 계산해 큰 쪽을 쓴다. 넓고 짧은 영역이면 가로, 좁고 긴 영역이면 세로.
-  const listAreaRef = useRef<HTMLDivElement>(null);
-  const [listWide, setListWide] = useState(
-    () => (typeof window !== "undefined" ? window.innerWidth : 360) >= 620,
-  );
-  useEffect(() => {
-    const el = listAreaRef.current;
-    if (!el) return;
-    const GAP = 8;
-    const PAD_X = 40; // 좌우 px-5
-    const RATIO = 16 / 9;
-    const headerPad = (mode === "live" ? 52 : 24) + 16; // 목록 헤더/여백 + pb-4
-    const pick = () => {
-      const W = el.clientWidth - PAD_X;
-      const H = el.clientHeight - headerPad;
-      if (W <= 0 || H <= 0) return;
-      // 가로 한 줄: 타일 높이 = 영역 높이, 폭 = 높이 × 16/9
-      const tileWh = H * RATIO;
-      const countH = Math.max(1, Math.floor((W + GAP) / (tileWh + GAP)));
-      // 세로 2열: 타일 폭 = (영역폭 − 갭)/2, 높이 = 폭 × 9/16
-      const tileWv = (W - GAP) / 2;
-      const tileHv = tileWv / RATIO;
-      const rows = Math.max(1, Math.floor((H + GAP) / (tileHv + GAP)));
-      const countV = 2 * rows;
-      setListWide(countH >= countV);
-    };
-    pick();
-    const ro = new ResizeObserver(pick);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [mode]);
   // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지(세로 타임라인)
   const [recTab, setRecTab] = useState<"list" | "motion">("motion");
   // 실시간↔녹화 전환 시 되감기/빨리감기 배속을 0배(기본)로 원복.
@@ -1244,15 +1212,11 @@ function ExpandedView({
       )}
 
       {/* 카메라 목록 OR 녹화 이벤트 타임라인. 두 탭 모두 남는 공간을 채우는 영역(flex-1)
-          이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 움직임감지(타임라인)는
-          최소 138(시간바+썸네일)로 썸네일이 안 찌그러지게, 카메라 목록은 최소 60으로 둔다. */}
+          이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 최소 높이(≈138px =
+          시간바+썸네일)를 줘서 짧은 화면에서도 썸네일이 안 찌그러진다(영상이 대신 축소). */}
       <div
-        ref={listAreaRef}
         className="relative flex flex-1 flex-col"
-        style={{
-          minHeight:
-            mode === "recording" && recTab === "motion" ? "138px" : "60px",
-        }}
+        style={{ minHeight: "138px" }}
       >
       {mode === "recording" && recTab === "motion" ? (
         <RecordingEventTimeline
@@ -1262,13 +1226,7 @@ function ExpandedView({
           onScrubbingChange={onScrubbingChange}
         />
       ) : (
-      <div
-        className={
-          listWide
-            ? "flex min-h-0 flex-1 flex-col pb-4"
-            : "flex flex-1 flex-col overflow-y-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        }
-      >
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {mode === "live" && (
           <h2
             className="flex-none px-5 text-[16px] font-bold leading-none text-neutral-900"
@@ -1278,15 +1236,11 @@ function ExpandedView({
           </h2>
         )}
 
-        {/* 620px 이상: 가로 한 줄 + 가로 스크롤. 좌우 여백(px-5)은 스크롤 안쪽
-            패딩이라 첫/마지막 타일만 20px 띄우고, 중간 타일들은 화면 끝까지
-            꽉 차게 흐른다(carousel). 620px 미만: 원래 세로 2열 그리드(px-5 여백). */}
+        {/* 타일 세로 60px 고정(가로 16:9). 남는 폭에 여러 개, 넘치면 다음 줄로
+            감싸(wrap) 남는 세로도 채운다 → 넓든 좁든 최대한 많이 보인다.
+            더 많으면 세로 스크롤. */}
         <div
-          className={
-            listWide
-              ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              : "grid grid-cols-2 gap-2 px-5"
-          }
+          className="flex flex-wrap content-start gap-2 px-5"
           style={mode === "recording" ? { marginTop: "12px" } : undefined}
         >
           {CAMERAS.map((c, i) => (
@@ -1294,11 +1248,7 @@ function ExpandedView({
               key={i}
               type="button"
               onClick={() => onSelect(i)}
-              className={
-                listWide
-                  ? "relative h-full aspect-video flex-none overflow-hidden bg-neutral-900"
-                  : "relative aspect-video overflow-hidden bg-neutral-900"
-              }
+              className="relative h-[60px] aspect-video flex-none overflow-hidden bg-neutral-900"
               style={{ borderRadius: "4px" }}
             >
               <FrozenImage
