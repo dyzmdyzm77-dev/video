@@ -653,7 +653,7 @@ export function Inner() {
         {/* 안드로이드 상태바 — Android 환경에서만. 배경은 홈 화면과 동일 톤. */}
         {platform === "android" && chromeVisible && (
           <div
-            className="relative flex items-center justify-between px-5 text-[13px] font-semibold text-neutral-900"
+            className="relative flex flex-none items-center justify-between px-5 text-[13px] font-semibold text-neutral-900"
             style={{ height: "27px", backgroundColor: "#EDF0F5" }}
           >
             <span>5:14</span>

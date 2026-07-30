@@ -384,7 +384,7 @@ export default function AsIsPanel() {
           <>
             <span className="punch-hole" />
             <div
-              className="asis-statusbar flex items-center justify-between bg-white px-5 text-[13px] font-semibold text-neutral-900"
+              className="asis-statusbar flex flex-none items-center justify-between bg-white px-5 text-[13px] font-semibold text-neutral-900"
               style={{ height: "27px" }}
             >
               <span>5:14</span>

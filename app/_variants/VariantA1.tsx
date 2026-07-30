@@ -310,7 +310,7 @@ export default function VariantA1({
       {/* 안드로이드 상태바 — Android 환경에서만 */}
       {platform === "android" && chromeVisible && (
         <div
-          className="relative flex items-center justify-between bg-white px-5 text-[13px] font-semibold text-neutral-900"
+          className="relative flex flex-none items-center justify-between bg-white px-5 text-[13px] font-semibold text-neutral-900"
           style={{ height: "27px" }}
         >
           <span>5:14</span>
