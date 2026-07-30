@@ -576,7 +576,13 @@ export function Inner() {
         >
           <div
             className="flex items-center justify-between"
-            style={{ paddingTop: "17.7px", paddingBottom: "12px" }}
+            style={{
+              // 영상 헤더와 동일하게 chrome(가짜 상태바) 시 16px 내려 정렬.
+              marginTop: chromeVisible ? "16px" : "0px",
+              // 홍길동 텍스트 top 을 영상 "8층 사무실" 텍스트 top(≈12)에 맞춘다.
+              paddingTop: "8px",
+              paddingBottom: "12px",
+            }}
           >
             <button type="button" className="flex items-center gap-1">
               <span className="text-[18px] font-bold leading-none text-[#111111]">홍길동</span>
