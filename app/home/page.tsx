@@ -15,9 +15,9 @@ const useIsoLayoutEffect =
 const MOVE_MS = 220;
 const MOVE_EASE = "ease";
 // 드래그(리사이즈) 중엔 짧게 + linear. deviceresize 마다 현재 폭으로 재조준하므로,
-// 이 값은 '마우스를 얼마나 바짝 따라오나'(트레일 지연)를 정한다. 왔다갔다 할 때
-// 60ms 도 뒤처져 보여 30ms 로 — 즉시(0=틱틱)에 가깝게 바짝 붙되 전환은 살짝 부드럽게.
-const DRAG_MS = 30;
+// 이 값은 '마우스를 얼마나 바짝 따라오나'(트레일 지연)를 정한다. 거의 즉시에 가깝게
+// 10ms — 마우스에 최대한 바짝 붙되 전환만 아주 살짝 부드럽게.
+const DRAG_MS = 10;
 const DRAG_EASE = "linear";
 
 // 홈 화면 — "내 경비 구역" 시안을 실제 코드로 구현한 화면.
