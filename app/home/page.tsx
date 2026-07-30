@@ -14,10 +14,10 @@ const useIsoLayoutEffect =
 // 상단 영역과 아래 콘텐츠가 중간에 어긋나 보이지 않는다.
 const MOVE_MS = 220;
 const MOVE_EASE = "ease";
-// 드래그(리사이즈) 중엔 짧게 + linear. deviceresize 마다 현재 폭으로 재조준하므로,
-// 이 값은 '마우스를 얼마나 바짝 따라오나'(트레일 지연)를 정한다. 거의 즉시에 가깝게
-// 10ms — 마우스에 최대한 바짝 붙되 전환만 아주 살짝 부드럽게.
-const DRAG_MS = 10;
+// 드래그(리사이즈) 중엔 짧게 + linear. deviceresize 는 매 pointermove(~60fps)마다
+// 오므로, 이 값이 프레임 간격(16ms)보다 짧으면 '이동→멈춤' 반복이라 툭툭(stepped)
+// 보이고, 너무 길면 마우스보다 뒤처진다. 프레임보다 살짝 긴 20ms 로 부드럽되 바짝.
+const DRAG_MS = 20;
 const DRAG_EASE = "linear";
 
 // 홈 화면 — "내 경비 구역" 시안을 실제 코드로 구현한 화면.
