@@ -9,11 +9,11 @@ import AndroidNav from "../components/AndroidNav";
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-// 전환 지속시간/이징 — 기기 프레임 리사이즈(globals.css 의 width 0.1s linear)와
-// 동일한 값. 가감속 없이 일정한 속도(linear)로 움직여야 프레임·헤더·콘텐츠가
-// 중간에 어긋나 보이지 않는다.
-const MOVE_MS = 100;
-const MOVE_EASE = "linear";
+// 전환 지속시간/이징 — 기기 프레임 리사이즈(globals.css 의 width/transform 0.22s ease)와
+// 동일한 값으로 맞춘다. 프레임·헤더·콘텐츠가 모두 같은 시간·이징으로 움직여야
+// 상단 영역과 아래 콘텐츠가 중간에 어긋나 보이지 않는다.
+const MOVE_MS = 220;
+const MOVE_EASE = "ease";
 const WIDEN = `max-width ${MOVE_MS}ms ${MOVE_EASE}`;
 
 // 홈 화면 — "내 경비 구역" 시안을 실제 코드로 구현한 화면.

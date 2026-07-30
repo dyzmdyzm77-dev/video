@@ -30,8 +30,10 @@ const DEVICES = [
   { w: 750, h: 832, r: 13, m: 10, label: "750px", sub: "Z Fold 8 울트라" },
   { w: 1080, h: 792, r: 13, m: 30, label: "1080px", sub: "Z TriFold" },
 ];
-// 최초 표시 기본 프리셋(Galaxy S26 = 360px).
-const DEFAULT_PRESET = DEVICES.findIndex((d) => d.sub === "Galaxy S26");
+// 최초 표시 기본 프리셋 — 제너릭 360px(이름 없는 첫 항목).
+const DEFAULT_PRESET = DEVICES.findIndex(
+  (d) => d.label === "360px" && d.sub === "",
+);
 
 // 가로:세로 비율. 이름 없는 제너릭 폭 라벨에 "360px(6:13)"처럼 붙인다.
 // 흔한 비율에 아주 가까우면(≤0.8%) 그 예쁜 비율을 쓰고(620×780→4:5 등),
