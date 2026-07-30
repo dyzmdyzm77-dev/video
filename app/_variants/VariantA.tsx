@@ -1244,12 +1244,15 @@ function ExpandedView({
       )}
 
       {/* 카메라 목록 OR 녹화 이벤트 타임라인. 두 탭 모두 남는 공간을 채우는 영역(flex-1)
-          이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 최소 높이(≈150px =
-          시간바+썸네일)를 줘서 짧은 화면에서도 썸네일이 안 찌그러진다(영상이 대신 축소). */}
+          이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 움직임감지(타임라인)는
+          최소 138(시간바+썸네일)로 썸네일이 안 찌그러지게, 카메라 목록은 최소 60으로 둔다. */}
       <div
         ref={listAreaRef}
         className="relative flex flex-1 flex-col"
-        style={{ minHeight: "138px" }}
+        style={{
+          minHeight:
+            mode === "recording" && recTab === "motion" ? "138px" : "60px",
+        }}
       >
       {mode === "recording" && recTab === "motion" ? (
         <RecordingEventTimeline
