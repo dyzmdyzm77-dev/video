@@ -170,10 +170,12 @@ export default function VariantA2({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
   // 다채널 세로 레이아웃 — 사용자가 레이아웃 설정에서 직접 고르기 전엔 폭 기반
-  // 기본값을 쓴다(620 이상: 2×3, 미만: 2×4). 드래그로 폭이 바뀌면 즉시 따라간다.
+  // 기본값을 쓴다(1080 이상: 3×3, 620 이상: 2×3, 미만: 2×4). 드래그로 폭이
+  // 바뀌면 즉시 따라간다.
   const deviceW = useDeviceWidth();
   const [userVertLayout, setUserVertLayout] = useState<LayoutKey | null>(null);
-  const vertLayout = userVertLayout ?? (deviceW >= 620 ? "2x3" : "2x4");
+  const vertLayout =
+    userVertLayout ?? (deviceW >= 1080 ? "3x3" : deviceW >= 620 ? "2x3" : "2x4");
   const [horzLayout, setHorzLayout] = useState<LayoutKey>("2x2");
   const [mode, setMode] = useState<"live" | "recording">("live");
   // 위아래 가짜 시스템 바 표시 여부. 기본은 숨긴 몰입 상태(LIVE 칩으로 토글).
@@ -1307,14 +1309,14 @@ function ExpandedView({
         ref={listWide ? undefined : listScrollRef}
         className={
           listWide
-            ? "flex min-h-0 flex-1 flex-col pb-4"
-            : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            ? "flex min-h-0 flex-1 flex-col pb-2"
+            : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         }
       >
         {mode === "live" && (
           <h2
             className="flex-none px-5 text-[16px] font-bold leading-none text-neutral-900"
-            style={{ marginTop: "12px", marginBottom: "12px" }}
+            style={{ marginTop: "12px", marginBottom: "8px" }}
           >
             카메라 목록
           </h2>
@@ -1619,9 +1621,10 @@ function RecordingEventTimeline({
     const el = thumbAreaRef.current;
     if (!el) return;
     const update = () => {
-      // 남는 영역 높이에서 상하 여백(8)을 뺀 값에 맞춘다. 아주 짧으면 최소 24.
-      const avail = el.clientHeight - 8;
-      setThumbH(Math.max(24, Math.min(60, Math.round(avail))));
+      // 남는 영역 높이에서 상하 여백(8+8)을 뺀 만큼 꽉 채운다(고정 캡 없음 —
+      // 아래 여백이 항상 8 로 유지된다). 아주 짧으면 최소 24.
+      const avail = el.clientHeight - 16;
+      setThumbH(Math.max(24, Math.round(avail)));
     };
     update();
     const ro = new ResizeObserver(update);
@@ -1942,12 +1945,12 @@ function RecordingEventTimeline({
     };
   };
 
-  // 레이아웃(px) — 다채널 RecordingControls 시간바 블록과 완전히 동일한 치수로
-  // 시간바(라벨+눈금)를 그리고, 그 아래에 썸네일만 별도 레일로 붙인다.
-  const PAD_TOP = 12; // 시간바 위 여백(다채널과 동일)
-  const PAD_BOTTOM = 16; // 시간바 아래 여백(다채널과 동일)
-  const RAIL_H = 34; // 라벨+눈금 영역 높이(다채널과 동일)
-  const BAR_H = PAD_TOP + RAIL_H + PAD_BOTTOM; // 시간바 블록 전체 높이(=62)
+  // 레이아웃(px) — 시간바(라벨+눈금)를 그리고, 그 아래에 썸네일만 별도 레일로
+  // 붙인다. 위(현재 시각)·아래(썸네일) 여백은 8 로 통일.
+  const PAD_TOP = 8; // 시간바 위 여백(현재 시각 라벨 위 = 8)
+  const PAD_BOTTOM = 16; // 시간바 아래 여백
+  const RAIL_H = 34; // 라벨+눈금 영역 높이
+  const BAR_H = PAD_TOP + RAIL_H + PAD_BOTTOM; // 시간바 블록 전체 높이(=58)
   const CARD_TOP = 8; // 썸네일 레일 기준 카드 윗변(시간바 바로 아래 약간 띄움)
 
   const currentTimeLabel = playbackMs
@@ -2053,10 +2056,10 @@ function RecordingEventTimeline({
               "linear-gradient(to right, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
           }}
         />
-        {/* 중앙 고정 현재 시각 라벨(다채널과 동일 — 다크) */}
+        {/* 중앙 고정 현재 시각 라벨(다크) — 위 여백 8(썸네일 아래 여백과 통일) */}
         <div
           className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
-          style={{ top: "10px", lineHeight: 0 }}
+          style={{ top: "8px", lineHeight: 0 }}
         >
           <span
             suppressHydrationWarning
@@ -2104,8 +2107,8 @@ function RecordingEventTimeline({
               className="absolute flex items-start"
               style={{
                 left: `calc(50% + ${xOf(cluster.secOffset)}px)`,
-                top: "10px",
-                bottom: "4px",
+                top: "8px",
+                bottom: "8px",
                 transform: "translateX(-50%)",
                 // 카드 위에서도 드래그가 통과하도록 stopPropagation 하지 않음.
                 pointerEvents: "auto",
@@ -2115,7 +2118,8 @@ function RecordingEventTimeline({
               <div
                 className="overflow-hidden rounded-md bg-neutral-900"
                 style={{
-                  height: "min(60px, 100%)",
+                  // 위8/아래8 을 제외한 영역을 꽉 채운다 — 아래 여백이 항상 8.
+                  height: "100%",
                   aspectRatio: "16 / 9",
                 }}
               >
