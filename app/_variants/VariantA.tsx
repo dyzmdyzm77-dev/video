@@ -11,7 +11,6 @@ import {
 } from "../components/CameraFeed";
 import VariantPicker from "../components/VariantPicker";
 import AndroidNav from "../components/AndroidNav";
-import { useDeviceWidth } from "../components/useDeviceWidth";
 
 const CAMERAS = [
   { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
@@ -805,9 +804,39 @@ function ExpandedView({
     return () => onSpeedChange?.(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // 카메라 목록 레이아웃 — 620px 이상에서만 가로 스크롤 한 줄로. 그 미만은
-  // 원래의 세로 2열 그리드.
-  const listWide = useDeviceWidth() >= 620;
+  // 카메라 목록 레이아웃 — 목록 영역 크기를 재서 '더 많이 보이는 쪽'을 자동 선택한다.
+  // 타일은 16:9. 가로 한 줄(타일 높이=영역 높이)로 몇 개, 세로 2열로 몇 줄×2개가
+  // 보이는지 계산해 큰 쪽을 쓴다. 넓고 짧은 영역이면 가로, 좁고 긴 영역이면 세로.
+  const listAreaRef = useRef<HTMLDivElement>(null);
+  const [listWide, setListWide] = useState(
+    () => (typeof window !== "undefined" ? window.innerWidth : 360) >= 620,
+  );
+  useEffect(() => {
+    const el = listAreaRef.current;
+    if (!el) return;
+    const GAP = 8;
+    const PAD_X = 40; // 좌우 px-5
+    const RATIO = 16 / 9;
+    const headerPad = (mode === "live" ? 52 : 24) + 16; // 목록 헤더/여백 + pb-4
+    const pick = () => {
+      const W = el.clientWidth - PAD_X;
+      const H = el.clientHeight - headerPad;
+      if (W <= 0 || H <= 0) return;
+      // 가로 한 줄: 타일 높이 = 영역 높이, 폭 = 높이 × 16/9
+      const tileWh = H * RATIO;
+      const countH = Math.max(1, Math.floor((W + GAP) / (tileWh + GAP)));
+      // 세로 2열: 타일 폭 = (영역폭 − 갭)/2, 높이 = 폭 × 9/16
+      const tileWv = (W - GAP) / 2;
+      const tileHv = tileWv / RATIO;
+      const rows = Math.max(1, Math.floor((H + GAP) / (tileHv + GAP)));
+      const countV = 2 * rows;
+      setListWide(countH >= countV);
+    };
+    pick();
+    const ro = new ResizeObserver(pick);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mode]);
   // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지(세로 타임라인)
   const [recTab, setRecTab] = useState<"list" | "motion">("motion");
   // 실시간↔녹화 전환 시 되감기/빨리감기 배속을 0배(기본)로 원복.
@@ -1218,6 +1247,7 @@ function ExpandedView({
           이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 최소 높이(≈150px =
           시간바+썸네일)를 줘서 짧은 화면에서도 썸네일이 안 찌그러진다(영상이 대신 축소). */}
       <div
+        ref={listAreaRef}
         className="relative flex flex-1 flex-col"
         style={{ minHeight: "138px" }}
       >

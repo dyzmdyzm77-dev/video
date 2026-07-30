@@ -325,9 +325,19 @@ export function Inner() {
       // 목표 폭(--device-w) 기준으로 판정 — 프리셋 클릭/드래그 순간 즉시 바뀌는 값이라
       // 프레임이 0.1s 동안 자라는 것과 같은 시점에 전환을 시작할 수 있다.
       // 변수 없는 실기기에선 관측 폭(observed)으로 폴백.
-      const varW = parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue("--device-w"),
-      );
+      // 데스크톱 미리보기(마우스)에선 --device-w(프리셋/드래그 폭)로, 실제 터치
+      // 기기에선 실제 관측 폭으로 판정한다. 실기기는 --device-w 가 기본 360 이라
+      // 그걸 쓰면 넓은 화면에서도 2열로 안 바뀐다(카메라 목록과 같은 이슈).
+      const desktopPreview =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      const varW = desktopPreview
+        ? parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue(
+              "--device-w",
+            ),
+          )
+        : NaN;
       const w =
         Number.isFinite(varW) && varW > 0
           ? varW
