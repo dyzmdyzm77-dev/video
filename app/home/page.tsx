@@ -308,6 +308,9 @@ export function Inner() {
   const [twoCol, setTwoCol] = useState(false);
   // 폭 전환(max-width) 애니메이션 허용 여부. 첫 진입엔 꺼서 480→700 '펼침'이 안 보이게.
   const [widenReady, setWidenReady] = useState(false);
+  // 드래그(리사이즈) 중엔 전환을 꺼 프레임처럼 즉시 반응. 프리셋 클릭 땐 애니메이션.
+  const [resizing, setResizing] = useState(false);
+  const resizingRef = useRef(false);
   const twoColRef = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const leftColRef = useRef<HTMLDivElement>(null);
@@ -369,7 +372,9 @@ export function Inner() {
       const want = w >= BP;
       if (want !== twoColRef.current) {
         twoColRef.current = want;
-        if (armed) {
+        // 드래그 중(resizing)엔 FLIP 시작점을 잡지 않는다 → 아래 FLIP 이펙트가 즉시
+        // 반환해 컬럼이 프레임처럼 '즉시' 스냅한다. 프리셋 클릭 때만 부드럽게 애니메이션.
+        if (armed && !resizingRef.current) {
           flipFromRef.current = {
             left: leftColRef.current?.getBoundingClientRect(),
             right: rightColRef.current?.getBoundingClientRect(),
@@ -379,20 +384,28 @@ export function Inner() {
       }
       armed = true;
     };
-    // 프리셋 클릭(devicechange)·드래그(deviceresize)가 --device-w 갱신 직후 동기로
-    // 쏘는 이벤트를 직접 듣는다 → 프레임 CSS 전환과 '같은 프레임'에 전환 시작.
-    // (RO 는 폭이 실제로 변한 다음 프레임에야 발화해 100ms 중 16~33ms 늦는다.)
-    const onDevice = () => evaluate();
-    window.addEventListener("devicechange", onDevice);
-    window.addEventListener("deviceresize", onDevice);
+    // 프리셋 클릭(devicechange)=부드러운 애니메이션, 드래그(deviceresize)=즉시 스냅
+    // (프레임이 드래그 중 전환을 꺼 마우스를 즉시 따라오는 것과 동일하게 맞춘다).
+    const onChange = () => {
+      resizingRef.current = false;
+      setResizing(false);
+      evaluate();
+    };
+    const onResize = () => {
+      resizingRef.current = true;
+      setResizing(true);
+      evaluate();
+    };
+    window.addEventListener("devicechange", onChange);
+    window.addEventListener("deviceresize", onResize);
     // ResizeObserver 는 초기 settle + 이벤트 없는 환경(실기기 회전 등) 폴백.
     const ro = new ResizeObserver((entries) => {
       evaluate(entries[entries.length - 1].contentRect.width);
     });
     ro.observe(target);
     return () => {
-      window.removeEventListener("devicechange", onDevice);
-      window.removeEventListener("deviceresize", onDevice);
+      window.removeEventListener("devicechange", onChange);
+      window.removeEventListener("deviceresize", onResize);
       ro.disconnect();
     };
   }, []);
@@ -572,7 +585,7 @@ export function Inner() {
             콘텐츠 좌우 끝과 정렬된다. 전환 시 view-transition 으로 함께 모핑. */}
         <div
           className={`mx-auto w-full flex-none px-5 ${twoCol ? "max-w-[700px]" : "max-w-[480px]"}`}
-          style={{ transition: widenReady ? WIDEN : "none" }}
+          style={{ transition: widenReady && !resizing ? WIDEN : "none" }}
         >
           <div
             className="flex items-center justify-between"
@@ -759,7 +772,7 @@ export function Inner() {
             라인)을 따라간다. */}
         <div
           className={`pointer-events-none absolute inset-x-0 z-10 mx-auto w-full ${twoCol ? "max-w-[700px]" : "max-w-[480px]"}`}
-          style={{ bottom: "60px", height: 0, transition: widenReady ? WIDEN : "none" }}
+          style={{ bottom: "60px", height: 0, transition: widenReady && !resizing ? WIDEN : "none" }}
         >
           <img
             src={`${BASE}/home/fab-chat.svg`}
