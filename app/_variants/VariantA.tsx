@@ -170,10 +170,10 @@ export default function VariantA({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
   // 다채널 세로 레이아웃 — 사용자가 레이아웃 설정에서 직접 고르기 전엔 폭 기반
-  // 기본값을 쓴다(620 초과: 2×3, 이하: 2×4). 드래그로 폭이 바뀌면 즉시 따라간다.
+  // 기본값을 쓴다(620 이상: 2×3, 미만: 2×4). 드래그로 폭이 바뀌면 즉시 따라간다.
   const deviceW = useDeviceWidth();
   const [userVertLayout, setUserVertLayout] = useState<LayoutKey | null>(null);
-  const vertLayout = userVertLayout ?? (deviceW > 620 ? "2x3" : "2x4");
+  const vertLayout = userVertLayout ?? (deviceW >= 620 ? "2x3" : "2x4");
   const [horzLayout, setHorzLayout] = useState<LayoutKey>("2x2");
   const [mode, setMode] = useState<"live" | "recording">("live");
   // 위아래 가짜 시스템 바 표시 여부. 기본은 숨긴 몰입 상태(LIVE 칩으로 토글).
