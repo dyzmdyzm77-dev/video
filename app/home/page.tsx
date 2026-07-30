@@ -555,7 +555,7 @@ export function Inner() {
             style={{ paddingTop: "17.7px", paddingBottom: "12px" }}
           >
             <button type="button" className="flex items-center gap-1">
-              <span className="text-[16px] font-bold leading-none text-[#111111]">홍길동</span>
+              <span className="text-[18px] font-bold leading-none text-[#111111]">홍길동</span>
               <Icon name="icon-chevron-right-dark" w={9} h={12} />
             </button>
             <button type="button" aria-label="알림">
