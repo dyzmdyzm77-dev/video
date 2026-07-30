@@ -921,23 +921,12 @@ function ExpandedView({
         </div>
       </header>
 
-      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 녹화 움직임감지에선 날짜·버튼·탭·타임라인이
-          고정이라 영상이 남는 세로 공간을 '비율 무시하고 꽉 채운다'(object-fill 로 늘림,
-          크롭 없음). 그 외(라이브·카메라목록)에선 16:9(폭 기준) 상한을 지키되 공간
-          모자라면 축소. */}
-      <div
-        className={`px-0 ${
-          mode === "recording" && recTab === "motion"
-            ? "min-h-0 flex-1"
-            : "min-h-0 shrink"
-        }`}
-      >
+      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 항상 16:9(폭 기준) 상한을 지키고 공간이
+          모자라면 축소한다. 탭(카메라목록/움직임감지)에 상관없이 동일한 크기라, 탭
+          전환 시 위(날짜·버튼·탭) 위치가 안 움직인다. */}
+      <div className="min-h-0 shrink px-0">
         <div
-          className={`relative w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900 ${
-            mode === "recording" && recTab === "motion"
-              ? "h-full"
-              : "aspect-video max-h-full"
-          }`}
+          className="relative aspect-video max-h-full w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
           onClick={handleVideoClick}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
@@ -1225,21 +1214,9 @@ function ExpandedView({
         </>
       )}
 
-      {/* 카메라 목록 OR 녹화 이벤트 타임라인. 움직임감지(타임라인)는 고정 높이(시간바
-          62 + 썸네일 영역 ≈ 152px)라 짧은 화면에서도 안 찌그러지고 하단탭에 안 가려진다.
-          카메라목록은 기존대로 남는 공간을 채우는 스크롤 영역(flex-1). */}
-      <div
-        className={`relative flex flex-col ${
-          mode === "recording" && recTab === "motion"
-            ? "flex-none"
-            : "min-h-0 flex-1"
-        }`}
-        style={
-          mode === "recording" && recTab === "motion"
-            ? { height: "152px" }
-            : undefined
-        }
-      >
+      {/* 카메라 목록 OR 녹화 이벤트 타임라인. 두 탭 모두 남는 공간을 채우는 영역(flex-1)
+          이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. */}
+      <div className="relative flex min-h-0 flex-1 flex-col">
       {mode === "recording" && recTab === "motion" ? (
         <RecordingEventTimeline
           playbackMs={playbackMs}
