@@ -817,7 +817,7 @@ function ExpandedView({
     return () => onSpeedChange?.(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // 카메라 선택 바텀시트 — 헤더의 카메라 이름(▾)으로 연다. 녹화 하단의
+  // 카메라 선택 바텀시트 — REC·날짜 행 오른쪽의 목록 버튼으로 연다. 녹화 하단의
   // 목록/감지 탭을 없애고 움직임 감지 타임라인이 하단을 상시 차지하므로,
   // 녹화 중 카메라 전환은 이 시트(또는 영상 좌우 스와이프)로 한다.
   const [camSheetOpen, setCamSheetOpen] = useState(false);
@@ -985,10 +985,9 @@ function ExpandedView({
       >
         <div className="flex w-full items-center justify-between">
           <div className="flex flex-col gap-[2px]">
-            {/* 카메라 이름(▾) — 누르면 카메라 선택 시트. 다채널 복귀는 영상 더블탭. */}
             <button
               type="button"
-              onClick={() => setCamSheetOpen(true)}
+              onClick={onBack}
               className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900"
             >
               8층 사무실 A-2
@@ -1194,13 +1193,31 @@ function ExpandedView({
             {dateLabel}
           </span>
         )}
-        <button
-          type="button"
-          onClick={onCapture}
-          className="ml-auto flex h-[28px] w-[28px] items-center justify-center rounded-full border border-neutral-300"
-        >
-          <img src={`${BASE}/camera.svg`} alt="카메라" className="h-6 w-6" />
-        </button>
+        <div className="ml-auto flex items-center" style={{ gap: "8px" }}>
+          {/* 카메라 목록 버튼 — 녹화 모드에서만. 하단 탭을 없앤 대신 여기서 시트를 연다. */}
+          {mode === "recording" && (
+            <button
+              type="button"
+              aria-label="카메라 목록"
+              onClick={() => setCamSheetOpen(true)}
+              className="flex h-[28px] w-[28px] items-center justify-center rounded-full border border-neutral-300"
+            >
+              <img
+                src={`${BASE}/ic_list_gallery.svg`}
+                alt=""
+                className="h-5 w-5"
+                style={{ filter: "brightness(0)", opacity: 0.75 }}
+              />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onCapture}
+            className="flex h-[28px] w-[28px] items-center justify-center rounded-full border border-neutral-300"
+          >
+            <img src={`${BASE}/camera.svg`} alt="카메라" className="h-6 w-6" />
+          </button>
+        </div>
         <RowSkeleton visible={videoLoading} />
       </div>
 
@@ -1386,7 +1403,7 @@ function ExpandedView({
       <CameraListSkeleton visible={videoLoading} />
       </div>
 
-      {/* 카메라 선택 바텀시트 — 헤더 카메라 이름(▾)으로 연다. */}
+      {/* 카메라 선택 바텀시트 — REC·날짜 행의 목록 버튼으로 연다. */}
       <CameraPickerSheet
         open={camSheetOpen}
         index={index}
