@@ -14,11 +14,11 @@ const useIsoLayoutEffect =
 // 상단 영역과 아래 콘텐츠가 중간에 어긋나 보이지 않는다.
 const MOVE_MS = 220;
 const MOVE_EASE = "ease";
-// 드래그(리사이즈) 중엔 트레일 0 — 매 deviceresize(=pointermove)마다 현재 폭으로
-// 즉시(전환 없이) 재조준해, 프레임 폭이 마우스를 즉시 따라오는 것과 '한 몸'으로 움직인다.
-// (조금이라도 값이 있으면 그만큼 마우스보다 뒤처져 '타이밍이 안 맞게' 느껴진다.)
-const DRAG_MS = 0;
-const DRAG_EASE = "linear";
+// 드래그(리사이즈) 중 1↔2단 '경계(620)를 넘는 순간'만 이 시간만큼 부드럽게 재배치한다
+// (컬럼이 크게 줄어드는 툭 을 완화). 경계 직후 이 창(window)이 지나면 재조준은 '즉시(0)'로
+// 바뀌어 마우스와 딱 맞게 따라간다 → 경계는 부드럽고, 계속 드래그는 안 뒤처진다.
+const DRAG_MS = 150;
+const DRAG_EASE = "ease-out";
 
 // 홈 화면 — "내 경비 구역" 시안을 실제 코드로 구현한 화면.
 // 하단탭의 홈 버튼으로 진입하며, 영상 탭·최근 본 영상 항목을 누르면 진입 전
@@ -332,6 +332,9 @@ export function Inner() {
   // 다시 잡는다(전환은 이미 걸려 있어 CSS 가 부드럽게 재조준). 스냅샷 목표에 잠기지
   // 않아 '붙고→줄고→늘어남' 없이 마우스를 부드럽게 쫓아간다.
   const retargetRef = useRef<((deviceW: number) => void) | null>(null);
+  // 마지막으로 620 경계를 넘은 시각(ms). 이 시각 이후 DRAG_MS 동안만 재조준을 부드럽게,
+  // 그 뒤엔 즉시로 바꿔 '경계는 부드럽고 이후 드래그는 마우스와 딱 맞게' 한다.
+  const lastCrossRef = useRef(0);
   // FLIP 인라인 스타일을 모두 걷어 자연 레이아웃(프레임 폭을 따라감)으로 되돌린다.
   const clearFlipInline = () => {
     for (const el of [
@@ -480,9 +483,11 @@ export function Inner() {
     const from = flipFromRef.current;
     flipFromRef.current = null;
     if (!from) return;
-    // 드래그 중이면 짧은 linear, 프리셋 클릭이면 프레임과 같은 0.22s ease.
+    // 드래그로 경계를 넘는 순간이면 부드럽게(DRAG_MS ease-out), 프리셋 클릭이면 0.22s ease.
     const dur = resizingRef.current ? DRAG_MS : MOVE_MS;
     const eas = resizingRef.current ? DRAG_EASE : MOVE_EASE;
+    // 이 순간이 '경계 넘은 시각' — 이후 DRAG_MS 동안만 재조준을 부드럽게 한다.
+    if (resizingRef.current) lastCrossRef.current = performance.now();
     const rootCS = getComputedStyle(document.documentElement);
     const ds = parseFloat(rootCS.getPropertyValue("--device-scale")) || 1;
     const wrap = contentRef.current;
@@ -588,9 +593,22 @@ export function Inner() {
         ? Math.min(320, Math.max(280, (Math.min(deviceW, 700) - 60) / 2))
         : Math.min(deviceW, 480) - 40;
       const wTo = twoCol ? Math.min(deviceW, 700) : Math.min(deviceW, 480);
+      // 경계 넘은 직후 DRAG_MS 창 동안만 부드럽게, 그 뒤엔 즉시(전환 없음)로 마우스에 딱.
+      const smoothing = performance.now() - lastCrossRef.current < DRAG_MS;
+      const wt = smoothing ? `width ${DRAG_MS}ms ${DRAG_EASE}` : "none";
+      const ct = smoothing
+        ? `margin-left ${DRAG_MS}ms ${DRAG_EASE}, width ${DRAG_MS}ms ${DRAG_EASE}`
+        : "none";
+      wrap.style.transition = wt;
       wrap.style.width = `${wTo}px`;
-      if (left) left.style.width = `${fCol}px`;
-      if (right && twoCol) right.style.width = `${fCol}px`;
+      if (left) {
+        left.style.transition = ct;
+        left.style.width = `${fCol}px`;
+      }
+      if (right && twoCol) {
+        right.style.transition = ct;
+        right.style.width = `${fCol}px`;
+      }
     };
     // 클릭이면 정해진 시간 뒤 인라인 걷어 자연 레이아웃 복귀. 드래그면 마우스를 계속
     // 쫓다가 onChange(드래그 종료)에서 정리한다.
