@@ -1219,7 +1219,7 @@ function ExpandedView({
           시간바+썸네일)를 줘서 짧은 화면에서도 썸네일이 안 찌그러진다(영상이 대신 축소). */}
       <div
         className="relative flex flex-1 flex-col"
-        style={{ minHeight: "150px" }}
+        style={{ minHeight: "138px" }}
       >
       {mode === "recording" && recTab === "motion" ? (
         <RecordingEventTimeline
@@ -1405,7 +1405,7 @@ function RecordingEventTimeline({
     const update = () => {
       // 남는 영역 높이에서 상하 여백(8)을 뺀 값에 맞춘다. 아주 짧으면 최소 24.
       const avail = el.clientHeight - 8;
-      setThumbH(Math.max(24, Math.min(72, Math.round(avail))));
+      setThumbH(Math.max(24, Math.min(60, Math.round(avail))));
     };
     update();
     const ro = new ResizeObserver(update);
@@ -1866,7 +1866,7 @@ function RecordingEventTimeline({
         </div>
       </div>
 
-      {/* ── 썸네일 영역(시간바 아래 남는 세로 공간). 카드 높이는 CSS min(72px,100%)
+      {/* ── 썸네일 영역(시간바 아래 남는 세로 공간). 카드 높이는 CSS min(60px,100%)
           라 이 영역보다 절대 커지지 않는다(짧은 화면에서도 잘리지 않고 줄어든다). ── */}
       <div ref={thumbAreaRef} className="relative min-h-0 flex-1">
         {/* 레일 — 영역 전체 높이(top0 bottom0)를 갖고 시간바와 같은 translateX 로 흐른다 */}
@@ -1899,7 +1899,7 @@ function RecordingEventTimeline({
               <div
                 className="overflow-hidden rounded-md bg-neutral-900"
                 style={{
-                  height: "min(72px, 100%)",
+                  height: "min(60px, 100%)",
                   aspectRatio: "16 / 9",
                 }}
               >
