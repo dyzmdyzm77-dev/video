@@ -1477,8 +1477,10 @@ function CameraPickerSheet({
           </button>
         </div>
 
-        {/* 2열 썸네일 그리드 — 세로 스크롤 */}
-        <div className="grid min-h-0 grid-cols-2 gap-2 overflow-y-auto px-5 pb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* 2열 썸네일 그리드 — 스크롤은 래퍼가 담당(그리드에 높이 제약을 주면
+            행 높이가 무너져 타일이 겹친다). 라이브 목록과 동일한 구조. */}
+        <div className="min-h-0 overflow-y-auto pb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="grid grid-cols-2 gap-2 px-5">
           {CAMERAS.map((c, i) => (
             <button
               key={i}
@@ -1533,6 +1535,7 @@ function CameraPickerSheet({
               )}
             </button>
           ))}
+        </div>
         </div>
       </div>
     </div>
