@@ -14,7 +14,10 @@ const useIsoLayoutEffect =
 // 상단 영역과 아래 콘텐츠가 중간에 어긋나 보이지 않는다.
 const MOVE_MS = 220;
 const MOVE_EASE = "ease";
-const WIDEN = `max-width ${MOVE_MS}ms ${MOVE_EASE}`;
+// 드래그(리사이즈) 중엔 짧게 + linear — 즉시 스냅은 '틱틱' 튀고, 220ms 는 드래그보다
+// 느려 뒤처진다. 짧은 등속(linear)으로 마우스에 가깝게 붙되 부드럽게 바뀐다.
+const DRAG_MS = 120;
+const DRAG_EASE = "linear";
 
 // 홈 화면 — "내 경비 구역" 시안을 실제 코드로 구현한 화면.
 // 하단탭의 홈 버튼으로 진입하며, 영상 탭·최근 본 영상 항목을 누르면 진입 전
@@ -308,9 +311,14 @@ export function Inner() {
   const [twoCol, setTwoCol] = useState(false);
   // 폭 전환(max-width) 애니메이션 허용 여부. 첫 진입엔 꺼서 480→700 '펼침'이 안 보이게.
   const [widenReady, setWidenReady] = useState(false);
-  // 드래그(리사이즈) 중엔 전환을 꺼 프레임처럼 즉시 반응. 프리셋 클릭 땐 애니메이션.
+  // 드래그(리사이즈) 중엔 짧은 linear, 프리셋 클릭 땐 프레임과 같은 0.22s ease.
   const [resizing, setResizing] = useState(false);
   const resizingRef = useRef(false);
+  const moveMs = resizing ? DRAG_MS : MOVE_MS;
+  const moveEase = resizing ? DRAG_EASE : MOVE_EASE;
+  const widenTransition = widenReady
+    ? `max-width ${moveMs}ms ${moveEase}`
+    : "none";
   const twoColRef = useRef(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const leftColRef = useRef<HTMLDivElement>(null);
@@ -372,9 +380,7 @@ export function Inner() {
       const want = w >= BP;
       if (want !== twoColRef.current) {
         twoColRef.current = want;
-        // 드래그 중(resizing)엔 FLIP 시작점을 잡지 않는다 → 아래 FLIP 이펙트가 즉시
-        // 반환해 컬럼이 프레임처럼 '즉시' 스냅한다. 프리셋 클릭 때만 부드럽게 애니메이션.
-        if (armed && !resizingRef.current) {
+        if (armed) {
           flipFromRef.current = {
             left: leftColRef.current?.getBoundingClientRect(),
             right: rightColRef.current?.getBoundingClientRect(),
@@ -422,6 +428,9 @@ export function Inner() {
     const from = flipFromRef.current;
     flipFromRef.current = null;
     if (!from) return;
+    // 드래그 중이면 짧은 linear, 프리셋 클릭이면 프레임과 같은 0.22s ease.
+    const dur = resizingRef.current ? DRAG_MS : MOVE_MS;
+    const eas = resizingRef.current ? DRAG_EASE : MOVE_EASE;
     const rootCS = getComputedStyle(document.documentElement);
     const ds = parseFloat(rootCS.getPropertyValue("--device-scale")) || 1;
     const wrap = contentRef.current;
@@ -471,7 +480,7 @@ export function Inner() {
     wrap.style.width = `${wrapFrom}px`;
     wrap.style.maxWidth = "none";
     plays.push(() => {
-      wrap.style.transition = `width ${MOVE_MS}ms ${MOVE_EASE}`;
+      wrap.style.transition = `width ${dur}ms ${eas}`;
       wrap.style.width = `${wrapTo}px`;
     });
 
@@ -485,7 +494,7 @@ export function Inner() {
         left.style.marginLeft = `${dx}px`;
         left.style.width = `${fromW}px`;
         plays.push(() => {
-          left.style.transition = `margin-left ${MOVE_MS}ms ${MOVE_EASE}, width ${MOVE_MS}ms ${MOVE_EASE}`;
+          left.style.transition = `margin-left ${dur}ms ${eas}, width ${dur}ms ${eas}`;
           left.style.marginLeft = "0px";
           left.style.width = `${finalColW}px`;
         });
@@ -504,7 +513,7 @@ export function Inner() {
           right.style.marginLeft = `${finalColW + 60}px`;
           right.style.width = `${finalColW}px`;
           plays.push(() => {
-            right.style.transition = `margin-left ${MOVE_MS}ms ${MOVE_EASE}`;
+            right.style.transition = `margin-left ${dur}ms ${eas}`;
             right.style.marginLeft = "0px";
           });
         } else {
@@ -518,7 +527,7 @@ export function Inner() {
           right.style.marginTop = `${dy}px`;
           right.style.width = `${colW}px`;
           plays.push(() => {
-            right.style.transition = `margin-left ${MOVE_MS}ms ${MOVE_EASE}`;
+            right.style.transition = `margin-left ${dur}ms ${eas}`;
             right.style.marginLeft = `${dx + colW + 60}px`; // 오른쪽 밖으로
           });
         }
@@ -531,7 +540,7 @@ export function Inner() {
     plays.forEach((run) => run());
     window.setTimeout(() => {
       if (flipGenRef.current === gen) clearAll();
-    }, MOVE_MS + 80);
+    }, dur + 80);
   }, [twoCol]);
 
   const goVideo = () => {
@@ -585,7 +594,7 @@ export function Inner() {
             콘텐츠 좌우 끝과 정렬된다. 전환 시 view-transition 으로 함께 모핑. */}
         <div
           className={`mx-auto w-full flex-none px-5 ${twoCol ? "max-w-[700px]" : "max-w-[480px]"}`}
-          style={{ transition: widenReady && !resizing ? WIDEN : "none" }}
+          style={{ transition: widenTransition }}
         >
           <div
             className="flex items-center justify-between"
@@ -772,7 +781,7 @@ export function Inner() {
             라인)을 따라간다. */}
         <div
           className={`pointer-events-none absolute inset-x-0 z-10 mx-auto w-full ${twoCol ? "max-w-[700px]" : "max-w-[480px]"}`}
-          style={{ bottom: "60px", height: 0, transition: widenReady && !resizing ? WIDEN : "none" }}
+          style={{ bottom: "60px", height: 0, transition: widenTransition }}
         >
           <img
             src={`${BASE}/home/fab-chat.svg`}
