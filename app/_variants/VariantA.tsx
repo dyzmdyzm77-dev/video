@@ -2655,7 +2655,8 @@ function RecordingControls({
         style={{
           backgroundColor: "#FFFFFF",
           paddingTop: "12px",
-          paddingBottom: "16px",
+          // 하단 삼각형(화살표) 아래로 8px 여백을 두려고 16→24 (위8 + 화살표8 + 아래8)
+          paddingBottom: "24px",
           cursor: "grab",
         }}
         onPointerDown={handlePointerDown}
@@ -2746,10 +2747,10 @@ function RecordingControls({
             {centerLabel}
           </span>
         </div>
-        {/* 중앙 화살표 — 타임라인 영역 하단에 붙임 */}
+        {/* 중앙 화살표 — 타임라인 영역 하단. 아래로 8px 띄운다. */}
         <div
           className="pointer-events-none absolute left-1/2 -translate-x-1/2"
-          style={{ bottom: 0 }}
+          style={{ bottom: "8px" }}
         >
           <img src={`${BASE}/Polygon 1.svg`} alt="" width={9} height={8} />
         </div>
