@@ -10,6 +10,7 @@ import { usePathname, useRouter } from "next/navigation";
 const VARIANTS = [
   { href: "/a", icon: "A", label: "A안" },
   { href: "/a1", icon: "A-1", label: "A-1안" },
+  { href: "/a2", icon: "A-2", label: "A-2안" },
   { href: "/b", icon: "B", label: "B안" },
 ];
 
