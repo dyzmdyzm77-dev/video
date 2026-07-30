@@ -1193,35 +1193,6 @@ function ExpandedView({
         style={{ backgroundColor: "#DBDBDB" }}
       />
 
-      {/* 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지 — 플레이어 버튼 위로 올림. */}
-      {mode === "recording" && (
-        <>
-          <div className="flex items-center px-5" style={{ gap: "20px" }}>
-            {([
-              { key: "list", label: "카메라 목록" },
-              { key: "motion", label: "움직임 감지" },
-            ] as const).map((t) => {
-              const active = recTab === t.key;
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => setRecTab(t.key)}
-                  className="relative text-[15px] font-bold leading-none"
-                  style={{
-                    padding: "14px 0",
-                    color: active ? "#1D6CEB" : "#A6A6A6",
-                  }}
-                >
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="h-px" style={{ backgroundColor: "#DBDBDB" }} />
-        </>
-      )}
-
       {/* 녹화 모드일 때 플레이어 버튼 — 시간바(타임라인) 위 */}
       {mode === "recording" && (
         <>
@@ -1278,6 +1249,35 @@ function ExpandedView({
                 showSeekToast(speedToastText(next));
               }}
             />
+          </div>
+          <div className="h-px" style={{ backgroundColor: "#DBDBDB" }} />
+        </>
+      )}
+
+      {/* 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지 — 플레이어 버튼(5개) 아래. */}
+      {mode === "recording" && (
+        <>
+          <div className="flex items-center px-5" style={{ gap: "20px" }}>
+            {([
+              { key: "list", label: "카메라 목록" },
+              { key: "motion", label: "움직임 감지" },
+            ] as const).map((t) => {
+              const active = recTab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setRecTab(t.key)}
+                  className="relative text-[15px] font-bold leading-none"
+                  style={{
+                    padding: "14px 0",
+                    color: active ? "#1D6CEB" : "#A6A6A6",
+                  }}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
           </div>
           <div className="h-px" style={{ backgroundColor: "#DBDBDB" }} />
         </>
