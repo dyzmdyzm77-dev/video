@@ -821,12 +821,11 @@ function ExpandedView({
   }, []);
   // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지. 진입 시 '카메라 목록'이 기본.
   const [recTab, setRecTab] = useState<"list" | "motion">("list");
-  // 두 탭(카메라 목록/움직임 감지)이 '같이 가고 안 움직이도록' — 녹화에선 두 탭 모두
-  // 영상이 남는 공간을 채우고(영상 flex-1), 아래 콘텐츠는 짧게 통일(고정 104). 라이브는
-  // 목록이 넓게 보이도록 영상 16:9 + 목록 flex-1. (탭 전환 시 영상·높이 안 바뀜)
-  const videoFills = mode === "recording";
-  // 카메라 목록 배치: 폭 기준으로 좁으면(<620) 세로 2열, 넓으면(≥620) 가로 한 줄.
-  // (콘텐츠 영역이 짧아도 좁은 폭에선 세로 유지 — 짧은 영역에서 가로로 튀지 않게.)
+  // 실시간·녹화·모든 탭에서 영상은 항상 16:9 표준 크기(통일 — 채우기 X). 아래 콘텐츠
+  // (카메라 목록/타임라인)가 남는 공간을 넓게(flex-1) 채운다. 썸네일은 48 고정+위로.
+  const videoFills = false;
+  // 카메라 목록 배치: 목록 영역 크기를 재서 '가로 한 줄 / 세로 2열' 중 더 많이 보이는
+  // 쪽을 자동 선택. 넓고 짧으면 가로, 좁고 길면 세로(360 같은 좁은 폭은 세로가 더 많음).
   const listAreaRef = useRef<HTMLDivElement>(null);
   const [listWide, setListWide] = useState(
     () => (typeof window !== "undefined" ? window.innerWidth : 360) >= 620,
@@ -834,10 +833,23 @@ function ExpandedView({
   useEffect(() => {
     const el = listAreaRef.current;
     if (!el) return;
+    const GAP = 8;
+    const PAD_X = 40; // 좌우 px-5
+    const RATIO = 16 / 9;
+    const headerPad = (mode === "live" ? 52 : 24) + 16; // 목록 헤더/여백 + pb-4
     const pick = () => {
-      const W = el.clientWidth;
-      if (W <= 0) return;
-      setListWide(W >= 620);
+      const W = el.clientWidth - PAD_X;
+      const H = el.clientHeight - headerPad;
+      if (W <= 0 || H <= 0) return;
+      // 가로 한 줄: 타일 높이 = 영역 높이, 폭 = 높이 × 16/9
+      const tileWh = H * RATIO;
+      const countH = Math.max(1, Math.floor((W + GAP) / (tileWh + GAP)));
+      // 세로 2열: 타일 폭 = (영역폭 − 갭)/2, 높이 = 폭 × 9/16
+      const tileWv = (W - GAP) / 2;
+      const tileHv = tileWv / RATIO;
+      const rows = Math.max(1, Math.floor((H + GAP) / (tileHv + GAP)));
+      const countV = 2 * rows;
+      setListWide(countH >= countV);
     };
     pick();
     const ro = new ResizeObserver(pick);

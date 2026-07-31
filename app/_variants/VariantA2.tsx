@@ -797,9 +797,9 @@ function ExpandedView({
 }) {
   const cam = CAMERAS[index];
   const [showControls, setShowControls] = useState(false);
-  // 녹화(움직임감지 타임라인)에선 영상이 남는 공간을 채우고 콘텐츠는 짧게(고정 104),
-  // 라이브(카메라 목록)에선 영상 16:9 + 목록 flex-1. 썸네일은 48 고정(채우지 않음).
-  const videoFills = mode === "recording";
+  // 실시간·녹화 모두 영상은 항상 16:9 표준 크기(통일 — 채우기 X). 아래 콘텐츠가 남는
+  // 공간을 넓게(flex-1) 채운다. 썸네일은 48 고정+위로.
+  const videoFills = false;
   const [activityTick, setActivityTick] = useState(0);
   const [seekToast, setSeekToast] = useState<string | null>(null);
   const seekToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -826,8 +826,8 @@ function ExpandedView({
   // 목록/감지 탭을 없애고 움직임 감지 타임라인이 하단을 상시 차지하므로,
   // 녹화 중 카메라 전환은 이 시트(또는 영상 좌우 스와이프)로 한다.
   const [camSheetOpen, setCamSheetOpen] = useState(false);
-  // 카메라 목록 배치: 폭 기준으로 좁으면(<620) 세로 2열, 넓으면(≥620) 가로 한 줄.
-  // (콘텐츠 영역이 짧아도 좁은 폭에선 세로 유지 — 짧은 영역에서 가로로 튀지 않게.)
+  // 카메라 목록 배치: 목록 영역 크기를 재서 '가로 한 줄 / 세로 2열' 중 더 많이 보이는
+  // 쪽을 자동 선택. 넓고 짧으면 가로, 좁고 길면 세로(360 같은 좁은 폭은 세로가 더 많음).
   const listAreaRef = useRef<HTMLDivElement>(null);
   const [listWide, setListWide] = useState(
     () => (typeof window !== "undefined" ? window.innerWidth : 360) >= 620,
@@ -835,10 +835,23 @@ function ExpandedView({
   useEffect(() => {
     const el = listAreaRef.current;
     if (!el) return;
+    const GAP = 8;
+    const PAD_X = 40; // 좌우 px-5
+    const RATIO = 16 / 9;
+    const headerPad = (mode === "live" ? 52 : 24) + 16; // 목록 헤더/여백 + pb-4
     const pick = () => {
-      const W = el.clientWidth;
-      if (W <= 0) return;
-      setListWide(W >= 620);
+      const W = el.clientWidth - PAD_X;
+      const H = el.clientHeight - headerPad;
+      if (W <= 0 || H <= 0) return;
+      // 가로 한 줄: 타일 높이 = 영역 높이, 폭 = 높이 × 16/9
+      const tileWh = H * RATIO;
+      const countH = Math.max(1, Math.floor((W + GAP) / (tileWh + GAP)));
+      // 세로 2열: 타일 폭 = (영역폭 − 갭)/2, 높이 = 폭 × 9/16
+      const tileWv = (W - GAP) / 2;
+      const tileHv = tileWv / RATIO;
+      const rows = Math.max(1, Math.floor((H + GAP) / (tileHv + GAP)));
+      const countV = 2 * rows;
+      setListWide(countH >= countV);
     };
     pick();
     const ro = new ResizeObserver(pick);
