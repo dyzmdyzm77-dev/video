@@ -1303,7 +1303,7 @@ function ExpandedView({
       <div
         ref={listAreaRef}
         className="relative flex flex-none flex-col"
-        style={{ height: "138px" }}
+        style={{ height: "128px" }}
       >
       {mode === "recording" && recTab === "motion" ? (
         <RecordingEventTimeline
@@ -1503,8 +1503,8 @@ function RecordingEventTimeline({
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  // 줌 레벨: 픽셀/초 — 기본 6px/sec. 핀치/휠로 연속 조정.
-  const [pxPerSec, setPxPerSec] = useState(6);
+  // 줌 레벨: 픽셀/초 — 기본 5px/sec(눈금·시간 간격을 조금 더 촘촘하게). 핀치/휠로 조정.
+  const [pxPerSec, setPxPerSec] = useState(5);
   // 펼쳐진 이벤트 클러스터 (클러스터 첫 이벤트 key 기준)
   const [expandedClusters, setExpandedClusters] = useState<Set<string>>(
     () => new Set(),
@@ -1542,10 +1542,10 @@ function RecordingEventTimeline({
   // 가로 타임라인과 동일: ±2시간(VISIBLE_MINUTES) 윈도우
   const VISIBLE_MINUTES = TIMELINE_VISIBLE_MIN;
 
-  // 라벨 최소 세로 간격 = 60px 유지. 줌인 시 최소 라벨 간격은 5초(1초 미사용).
+  // 라벨 최소 세로 간격 = 50px(눈금·시간 간격을 조금 더 촘촘하게). 최소 라벨 간격 5초.
   const niceSeconds = [5, 10, 30, 60, 300, 600, 1800];
   const labelIntervalSec =
-    niceSeconds.find((s) => s * pxPerSec >= 60) ?? 3600;
+    niceSeconds.find((s) => s * pxPerSec >= 50) ?? 3600;
 
   // anchor: 라벨 영역의 기준 시각. 초기에는 playbackMs(분 단위 스냅),
   // playbackMs가 ±VISIBLE_MINUTES/2를 크게 벗어나면 재정렬.
