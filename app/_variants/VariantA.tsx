@@ -1495,9 +1495,9 @@ function RecordingEventTimeline({
     const el = thumbAreaRef.current;
     if (!el) return;
     const update = () => {
-      // 남는 영역 높이에서 상하 여백(8)을 뺀 값에 맞춘다. 아주 짧으면 최소 24.
+      // 남는 영역 높이에서 상하 여백(8)을 뺀 값에 맞춘다. 일반 사이즈 48 로 캡.
       const avail = el.clientHeight - 8;
-      setThumbH(Math.max(24, Math.min(60, Math.round(avail))));
+      setThumbH(Math.max(24, Math.min(48, Math.round(avail))));
     };
     update();
     const ro = new ResizeObserver(update);
@@ -1991,7 +1991,7 @@ function RecordingEventTimeline({
               <div
                 className="overflow-hidden rounded-md bg-neutral-900"
                 style={{
-                  height: "min(60px, 100%)",
+                  height: "min(48px, 100%)",
                   aspectRatio: "16 / 9",
                 }}
               >
