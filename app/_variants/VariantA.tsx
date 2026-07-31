@@ -821,8 +821,12 @@ function ExpandedView({
   }, []);
   // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지. 진입 시 '카메라 목록'이 기본.
   const [recTab, setRecTab] = useState<"list" | "motion">("list");
-  // 목록 영역 크기를 재서 '가로 한 줄 / 세로 2열' 중 더 많이 보이는 쪽을 자동 선택.
-  // 넓고 짧으면 가로, 좁고 길면 세로. (360 같은 좁은 폭에선 세로 2열이 더 많이 보인다.)
+  // 두 탭(카메라 목록/움직임 감지)이 '같이 가고 안 움직이도록' — 녹화에선 두 탭 모두
+  // 영상이 남는 공간을 채우고(영상 flex-1), 아래 콘텐츠는 짧게 통일(고정 104). 라이브는
+  // 목록이 넓게 보이도록 영상 16:9 + 목록 flex-1. (탭 전환 시 영상·높이 안 바뀜)
+  const videoFills = mode === "recording";
+  // 카메라 목록 배치: 폭 기준으로 좁으면(<620) 세로 2열, 넓으면(≥620) 가로 한 줄.
+  // (콘텐츠 영역이 짧아도 좁은 폭에선 세로 유지 — 짧은 영역에서 가로로 튀지 않게.)
   const listAreaRef = useRef<HTMLDivElement>(null);
   const [listWide, setListWide] = useState(
     () => (typeof window !== "undefined" ? window.innerWidth : 360) >= 620,
@@ -830,23 +834,10 @@ function ExpandedView({
   useEffect(() => {
     const el = listAreaRef.current;
     if (!el) return;
-    const GAP = 8;
-    const PAD_X = 40; // 좌우 px-5
-    const RATIO = 16 / 9;
-    const headerPad = (mode === "live" ? 52 : 24) + 16; // 목록 헤더/여백 + pb-4
     const pick = () => {
-      const W = el.clientWidth - PAD_X;
-      const H = el.clientHeight - headerPad;
-      if (W <= 0 || H <= 0) return;
-      // 가로 한 줄: 타일 높이 = 영역 높이, 폭 = 높이 × 16/9
-      const tileWh = H * RATIO;
-      const countH = Math.max(1, Math.floor((W + GAP) / (tileWh + GAP)));
-      // 세로 2열: 타일 폭 = (영역폭 − 갭)/2, 높이 = 폭 × 9/16
-      const tileWv = (W - GAP) / 2;
-      const tileHv = tileWv / RATIO;
-      const rows = Math.max(1, Math.floor((H + GAP) / (tileHv + GAP)));
-      const countV = 2 * rows;
-      setListWide(countH >= countV);
+      const W = el.clientWidth;
+      if (W <= 0) return;
+      setListWide(W >= 620);
     };
     pick();
     const ro = new ResizeObserver(pick);
@@ -1005,11 +996,11 @@ function ExpandedView({
         </div>
       </header>
 
-      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 남는 세로 공간을 영상이 채운다(flex-1).
-          아래 날짜·버튼·탭·타임라인은 고정 높이라, 영상이 그만큼 커진다. */}
-      <div className="min-h-0 flex-1 px-0">
+      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 움직임감지 탭에선 flex-1 로 남는 공간을
+          채우고, 카메라 목록/라이브에선 16:9(목록에 자리를 내준다). */}
+      <div className={`min-h-0 ${videoFills ? "flex-1" : "shrink"} px-0`}>
         <div
-          className="relative h-full w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
+          className={`relative ${videoFills ? "h-full" : "aspect-video max-h-full"} w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900`}
           onClick={handleVideoClick}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
@@ -1302,8 +1293,8 @@ function ExpandedView({
           시간바+썸네일)를 줘서 짧은 화면에서도 썸네일이 안 찌그러진다(영상이 대신 축소). */}
       <div
         ref={listAreaRef}
-        className="relative flex flex-none flex-col"
-        style={{ height: "128px" }}
+        className={`relative flex flex-col ${videoFills ? "flex-none" : "flex-1"}`}
+        style={videoFills ? { height: "104px" } : { minHeight: "138px" }}
       >
       {mode === "recording" && recTab === "motion" ? (
         <RecordingEventTimeline
@@ -1820,8 +1811,8 @@ function RecordingEventTimeline({
   // 레이아웃(px) — 다채널 RecordingControls 시간바 블록과 완전히 동일한 치수로
   // 시간바(라벨+눈금)를 그리고, 그 아래에 썸네일만 별도 레일로 붙인다.
   const PAD_TOP = 12; // 시간바 위 여백(다채널과 동일)
-  const PAD_BOTTOM = 16; // 시간바 아래 여백(다채널과 동일)
-  const RAIL_H = 34; // 라벨+눈금 영역 높이(다채널과 동일)
+  const PAD_BOTTOM = 4; // 시간바 아래 여백. 삼각형 제거로 줄여 썸네일을 위로 붙인다.
+  const RAIL_H = 28; // 라벨+눈금 영역 높이. 눈금 아래 빈 공간 줄여 썸네일을 위로.
   const BAR_H = PAD_TOP + RAIL_H + PAD_BOTTOM; // 시간바 블록 전체 높이(=62)
   const CARD_TOP = 8; // 썸네일 레일 기준 카드 윗변(시간바 바로 아래 약간 띄움)
 
@@ -1950,13 +1941,17 @@ function RecordingEventTimeline({
             {currentTimeLabel}
           </span>
         </div>
-        {/* 중앙 화살표(다채널과 동일) — 시간바 블록 하단 */}
+        {/* 중앙 고정 현재 시각 선 — 눈금(8px)보다 살짝 길고 검정. 세모 대신 현재 시각 표시.
+            눈금은 top 18(+PAD_TOP 12 = 30)~38, 이 선은 27~41 로 위아래 살짝 더 길다. */}
         <div
-          className="pointer-events-none absolute left-1/2 -translate-x-1/2"
-          style={{ bottom: 0 }}
-        >
-          <img src={`${BASE}/Polygon 1.svg`} alt="" width={9} height={8} />
-        </div>
+          className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-[1px]"
+          style={{
+            top: "27px",
+            width: "2px",
+            height: "14px",
+            backgroundColor: "#111111",
+          }}
+        />
       </div>
 
       {/* ── 썸네일 영역(시간바 아래 남는 세로 공간). 카드 높이는 CSS min(60px,100%)
@@ -1981,7 +1976,7 @@ function RecordingEventTimeline({
               className="absolute flex items-start"
               style={{
                 left: `calc(50% + ${xOf(cluster.secOffset)}px)`,
-                top: "10px",
+                top: "4px",
                 bottom: "4px",
                 transform: "translateX(-50%)",
                 // 카드 위에서도 드래그가 통과하도록 stopPropagation 하지 않음.
