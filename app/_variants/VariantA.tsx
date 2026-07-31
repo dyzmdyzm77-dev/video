@@ -1898,7 +1898,8 @@ function RecordingEventTimeline({
               style={{
                 left: `calc(50% + ${xOf(secOffset)}px)`,
                 // 대/소 눈금 길이를 짧은 것(8px)으로 통일. 소 눈금 색만 밝은 그레이.
-                top: "26px",
+                // 라벨(top 0~10)과 눈금 사이 간격을 좁히려 top 26→18.
+                top: "18px",
                 width: "2px",
                 height: "8px",
                 backgroundColor: isMajor ? "#797979" : "#C4C4C4",
@@ -2713,7 +2714,8 @@ function RecordingControls({
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
                 // 대/소 눈금 길이를 짧은 것(8px)으로 통일. 소 눈금 색만 밝은 그레이.
-                top: "26px",
+                // 라벨(top 0~10)과 눈금 사이 간격을 좁히려 top 26→18.
+                top: "18px",
                 width: "2px",
                 height: "8px",
                 backgroundColor: isMajor ? "#797979" : "#C4C4C4",
