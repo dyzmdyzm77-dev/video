@@ -1333,7 +1333,8 @@ function ExpandedView({
           </h2>
         )}
 
-        {/* 가로(listWide): 한 줄 가로 스크롤(carousel), 타일 높이 = 영역 높이·최소 60px.
+        {/* 가로(listWide): 한 줄 가로 스크롤(carousel), 타일 높이 = 영역 높이·최소 84px.
+            (움직임 감지 블록 '시간+눈금바+썸네일48'=84px 과 같은 최소 높이로 맞춤.)
             세로: 2열 그리드(세로 스크롤). 어느 쪽이 더 많이 보이는지로 위에서 자동 선택.
             좌우 여백(px-5)은 스크롤 안쪽 패딩이라 첫/마지막만 20px 띄운다. */}
         <div
@@ -1358,8 +1359,8 @@ function ExpandedView({
               }
               style={
                 listWide
-                  ? { borderRadius: "4px", minHeight: "60px" }
-                  : { borderRadius: "4px" }
+                  ? { borderRadius: "4px", minHeight: "84px" }
+                  : { borderRadius: "4px", minHeight: "84px" }
               }
             >
               <FrozenImage
