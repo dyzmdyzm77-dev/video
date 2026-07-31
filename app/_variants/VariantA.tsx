@@ -1005,12 +1005,11 @@ function ExpandedView({
         </div>
       </header>
 
-      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 항상 16:9(폭 기준) 상한을 지키고 공간이
-          모자라면 축소한다. 탭(카메라목록/움직임감지)에 상관없이 동일한 크기라, 탭
-          전환 시 위(날짜·버튼·탭) 위치가 안 움직인다. */}
-      <div className="min-h-0 shrink px-0">
+      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 남는 세로 공간을 영상이 채운다(flex-1).
+          아래 날짜·버튼·탭·타임라인은 고정 높이라, 영상이 그만큼 커진다. */}
+      <div className="min-h-0 flex-1 px-0">
         <div
-          className="relative aspect-video max-h-full w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
+          className="relative h-full w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
           onClick={handleVideoClick}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
@@ -1303,8 +1302,8 @@ function ExpandedView({
           시간바+썸네일)를 줘서 짧은 화면에서도 썸네일이 안 찌그러진다(영상이 대신 축소). */}
       <div
         ref={listAreaRef}
-        className="relative flex flex-1 flex-col"
-        style={{ minHeight: "138px" }}
+        className="relative flex flex-none flex-col"
+        style={{ height: "138px" }}
       >
       {mode === "recording" && recTab === "motion" ? (
         <RecordingEventTimeline
@@ -1898,10 +1897,11 @@ function RecordingEventTimeline({
               className="pointer-events-none absolute rounded-[1px]"
               style={{
                 left: `calc(50% + ${xOf(secOffset)}px)`,
-                top: isMajor ? "20px" : "26px",
+                // 대/소 눈금 길이를 짧은 것(8px)으로 통일. 소 눈금 색만 밝은 그레이.
+                top: "26px",
                 width: "2px",
-                height: isMajor ? "14px" : "8px",
-                backgroundColor: isMajor ? "#797979" : "rgba(0,0,0,0.4)",
+                height: "8px",
+                backgroundColor: isMajor ? "#797979" : "#C4C4C4",
               }}
             />
           ))}
@@ -2712,10 +2712,11 @@ function RecordingControls({
               className="absolute rounded-[1px]"
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                top: isMajor ? "20px" : "26px",
+                // 대/소 눈금 길이를 짧은 것(8px)으로 통일. 소 눈금 색만 밝은 그레이.
+                top: "26px",
                 width: "2px",
-                height: isMajor ? "14px" : "8px",
-                backgroundColor: isMajor ? "#797979" : "rgba(0,0,0,0.4)",
+                height: "8px",
+                backgroundColor: isMajor ? "#797979" : "#C4C4C4",
               }}
             />
           ))}
