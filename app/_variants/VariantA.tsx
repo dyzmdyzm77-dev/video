@@ -821,51 +821,10 @@ function ExpandedView({
   }, []);
   // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지. 진입 시 '카메라 목록'이 기본.
   const [recTab, setRecTab] = useState<"list" | "motion">("list");
-  // 단일 영상 크기: 화면 '방향' 기준 — 세로가 더 긴 화면(폰·세로)은 16:9(아래 콘텐츠가
-  // 남는 세로를 넓게 채움), 가로가 더 넓은 화면(가로·태블릿)은 영상이 남는 세로 공간까지
-  // 채움(flex-1)+콘텐츠 84 밴드 고정. 폭/높이는 홈과 동일 — 데스크톱 미리보기는
-  // --device-w/h, 실기기는 관측값. 시각적 90° 회전(data-rotate)도 방향에 XOR로 반영.
-  const rootRef = useRef<HTMLElement>(null);
-  const [landscape, setLandscape] = useState(false);
-  useEffect(() => {
-    const measure = () => {
-      const desktopPreview =
-        typeof window.matchMedia === "function" &&
-        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-      const cs = getComputedStyle(document.documentElement);
-      const varW = desktopPreview
-        ? parseFloat(cs.getPropertyValue("--device-w"))
-        : NaN;
-      const varH = desktopPreview
-        ? parseFloat(cs.getPropertyValue("--device-h"))
-        : NaN;
-      const w =
-        Number.isFinite(varW) && varW > 0
-          ? varW
-          : window.innerWidth || rootRef.current?.clientWidth || 360;
-      const h =
-        Number.isFinite(varH) && varH > 0 ? varH : window.innerHeight || 640;
-      const rotated = document.documentElement.dataset.rotate === "true";
-      // 실제(시각) 방향 = 레이아웃 방향 XOR 회전. 가로가 더 넓으면 채움.
-      setLandscape((w >= h) !== rotated);
-    };
-    measure();
-    const mo = new MutationObserver(measure);
-    mo.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["style", "data-rotate"],
-    });
-    window.addEventListener("resize", measure);
-    window.addEventListener("deviceresize", measure);
-    window.addEventListener("devicechange", measure);
-    return () => {
-      mo.disconnect();
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("deviceresize", measure);
-      window.removeEventListener("devicechange", measure);
-    };
-  }, []);
-  const videoFills = landscape;
+  // 단일 영상은 모든 화면·탭에서 16:9로 통일(채우기 X). 넓은/낮은 화면은 max-h로 자동
+  // 으로 남는 세로에 맞춰 꽉 차고, 세로 긴 화면은 16:9 + 아래 콘텐츠(목록/타임라인)가
+  // flex-1로 남는 세로를 채운다. (탭·실시간/녹화 모두 영상 크기 동일 — 통일.)
+  const videoFills = false;
   // 카메라 목록 배치: 목록 영역 크기를 재서 '가로 한 줄 / 세로 2열' 중 더 많이 보이는
   // 쪽을 자동 선택. 넓고 짧으면 가로, 좁고 길면 세로(360 같은 좁은 폭은 세로가 더 많음).
   const listAreaRef = useRef<HTMLDivElement>(null);
@@ -1024,7 +983,6 @@ function ExpandedView({
     <>
       {/* 확대뷰 헤더 — 다채널 화면과 동일. 녹화 모드에서도 항상 표시 */}
       <header
-        ref={rootRef}
         className="flex flex-none items-center px-5"
         style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
       >
