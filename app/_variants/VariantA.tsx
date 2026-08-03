@@ -1296,14 +1296,6 @@ function ExpandedView({
             : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         }
       >
-        {mode === "live" && (
-          <h2
-            className="flex-none px-5 text-[16px] font-bold leading-none text-neutral-900"
-            style={{ marginTop: "12px", marginBottom: "12px" }}
-          >
-            카메라 목록
-          </h2>
-        )}
 
         {/* 가로(620+): 한 줄 가로 스크롤(carousel), 타일 = 16:9(높이 = 영역 높이).
             세로(~619): 2열 그리드(세로 스크롤), 타일 = 16:9(폭 = (영역폭−갭)/2).
@@ -1318,7 +1310,7 @@ function ExpandedView({
               ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "grid grid-cols-2 gap-2 px-5"
           }
-          style={mode === "recording" ? { marginTop: "12px" } : undefined}
+          style={{ marginTop: "12px" }}
         >
           {CAMERAS.map((c, i) => (
             <button

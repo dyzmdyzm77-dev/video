@@ -1291,14 +1291,6 @@ function ExpandedView({
       ) : (
       <div className="flex min-h-0 flex-1 flex-col">
         {/* 카메라 목록 타이틀 — 고정 (목록만 스크롤) */}
-        {mode === "live" && (
-          <h2
-            className="px-5 text-[16px] font-bold leading-none text-neutral-900"
-            style={{ marginTop: "12px", marginBottom: "12px" }}
-          >
-            카메라 목록
-          </h2>
-        )}
 
         <div
           className={
@@ -1316,7 +1308,7 @@ function ExpandedView({
               ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "grid grid-cols-2 gap-2 px-5"
           }
-          style={mode === "recording" ? { marginTop: "12px" } : undefined}
+          style={{ marginTop: "12px" }}
         >
           {CAMERAS.map((c, i) => (
             <button
