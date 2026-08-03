@@ -797,42 +797,51 @@ function ExpandedView({
 }) {
   const cam = CAMERAS[index];
   const [showControls, setShowControls] = useState(false);
-  // 단일 영상 크기: 폭 480 미만은 16:9(아래 콘텐츠가 남는 공간을 넓게 채움). 폭 480
-  // 이상은 영상이 남는 세로 공간까지 채우고(flex-1) 콘텐츠는 84 밴드만(고정). 썸네일 48.
-  // 기기 폭 판정은 홈과 동일 — 데스크톱 미리보기는 --device-w(프리셋/드래그 목표 폭),
-  // 실기기는 관측 폭. clientWidth 만 쓰면 프리뷰 프레임 전환·측정 시점 때문에 480 밑에서도
-  // 채우기가 켜질 수 있어(관측 폭이 목표와 달라서) --device-w 를 우선으로 판정한다.
+  // 단일 영상 크기: 화면 '방향' 기준 — 세로가 더 긴 화면(폰·세로)은 16:9(아래 콘텐츠가
+  // 남는 세로를 넓게 채움), 가로가 더 넓은 화면(가로·태블릿)은 영상이 남는 세로 공간까지
+  // 채움(flex-1)+콘텐츠 84 밴드 고정. 폭/높이는 홈과 동일 — 데스크톱 미리보기는
+  // --device-w/h, 실기기는 관측값. 시각적 90° 회전(data-rotate)도 방향에 XOR로 반영.
   const rootRef = useRef<HTMLElement>(null);
-  const [wide480, setWide480] = useState(false);
+  const [landscape, setLandscape] = useState(false);
   useEffect(() => {
-    const readW = () => {
+    const measure = () => {
       const desktopPreview =
         typeof window.matchMedia === "function" &&
         window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      const cs = getComputedStyle(document.documentElement);
       const varW = desktopPreview
-        ? parseFloat(
-            getComputedStyle(document.documentElement).getPropertyValue(
-              "--device-w",
-            ),
-          )
+        ? parseFloat(cs.getPropertyValue("--device-w"))
         : NaN;
-      if (Number.isFinite(varW) && varW > 0) return varW;
-      return rootRef.current?.clientWidth || window.innerWidth || 360;
+      const varH = desktopPreview
+        ? parseFloat(cs.getPropertyValue("--device-h"))
+        : NaN;
+      const w =
+        Number.isFinite(varW) && varW > 0
+          ? varW
+          : window.innerWidth || rootRef.current?.clientWidth || 360;
+      const h =
+        Number.isFinite(varH) && varH > 0 ? varH : window.innerHeight || 640;
+      const rotated = document.documentElement.dataset.rotate === "true";
+      // 실제(시각) 방향 = 레이아웃 방향 XOR 회전. 가로가 더 넓으면 채움.
+      setLandscape((w >= h) !== rotated);
     };
-    const measure = () => setWide480(readW() >= 480);
     measure();
-    const el = rootRef.current;
-    const ro = el ? new ResizeObserver(measure) : null;
-    if (el && ro) ro.observe(el);
+    const mo = new MutationObserver(measure);
+    mo.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["style", "data-rotate"],
+    });
+    window.addEventListener("resize", measure);
     window.addEventListener("deviceresize", measure);
     window.addEventListener("devicechange", measure);
     return () => {
-      ro?.disconnect();
+      mo.disconnect();
+      window.removeEventListener("resize", measure);
       window.removeEventListener("deviceresize", measure);
       window.removeEventListener("devicechange", measure);
     };
   }, []);
-  const videoFills = wide480;
+  const videoFills = landscape;
   const [activityTick, setActivityTick] = useState(0);
   const [seekToast, setSeekToast] = useState<string | null>(null);
   const seekToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
