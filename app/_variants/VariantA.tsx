@@ -842,12 +842,13 @@ function ExpandedView({
       const W = el.clientWidth - PAD_X;
       const H = el.clientHeight - headerPad;
       if (W <= 0 || H <= 0) return;
-      // 타일 세로는 84 고정(움직임 감지 블록과 동일). 가로 한 줄: 폭 = 84 × 16/9,
-      // 세로 2열: 높이 84 기준 몇 줄 들어가는지로 '더 많이 보이는 쪽' 자동 선택.
-      const TILE_H = 84;
-      const tileWh = TILE_H * RATIO;
+      // 카메라 목록 타일은 늘 16:9. 가로 한 줄: 타일 높이 = 영역 높이, 폭 = 높이 × 16/9.
+      // 세로 2열: 타일 폭 = (영역폭 − 갭)/2, 높이 = 폭 × 9/16. 더 많이 보이는 쪽 자동 선택.
+      const tileWh = H * RATIO;
       const countH = Math.max(1, Math.floor((W + GAP) / (tileWh + GAP)));
-      const rows = Math.max(1, Math.floor((H + GAP) / (TILE_H + GAP)));
+      const tileWv = (W - GAP) / 2;
+      const tileHv = tileWv / RATIO;
+      const rows = Math.max(1, Math.floor((H + GAP) / (tileHv + GAP)));
       const countV = 2 * rows;
       setListWide(countH >= countV);
     };
@@ -1333,8 +1334,8 @@ function ExpandedView({
           </h2>
         )}
 
-        {/* 가로(listWide): 한 줄 가로 스크롤(carousel). 세로: 2열 그리드. 타일 높이는
-            84 고정 = 움직임 감지 블록('시간+눈금바+썸네일48'=84px)과 같은 밴드 높이.
+        {/* 가로(listWide): 한 줄 가로 스크롤(carousel), 타일 = 16:9(높이 = 영역 높이).
+            세로: 2열 그리드, 타일 = 16:9(폭 = (영역폭−갭)/2). 카메라 목록은 늘 16:9.
             세로: 2열 그리드(세로 스크롤). 어느 쪽이 더 많이 보이는지로 위에서 자동 선택.
             좌우 여백(px-5)은 스크롤 안쪽 패딩이라 첫/마지막만 20px 띄운다. */}
         <div
@@ -1354,14 +1355,10 @@ function ExpandedView({
               data-selected={i === index ? "true" : undefined}
               className={
                 listWide
-                  ? "relative aspect-video flex-none overflow-hidden bg-neutral-900"
-                  : "relative overflow-hidden bg-neutral-900"
+                  ? "relative h-full aspect-video flex-none overflow-hidden bg-neutral-900"
+                  : "relative aspect-video overflow-hidden bg-neutral-900"
               }
-              style={
-                listWide
-                  ? { borderRadius: "4px", height: "84px" }
-                  : { borderRadius: "4px", height: "84px" }
-              }
+              style={{ borderRadius: "4px" }}
             >
               <FrozenImage
                 src={c.src}
