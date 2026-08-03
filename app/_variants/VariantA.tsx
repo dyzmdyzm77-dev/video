@@ -823,18 +823,38 @@ function ExpandedView({
   const [recTab, setRecTab] = useState<"list" | "motion">("list");
   // 단일 영상 크기: 폭 480 미만은 16:9(아래 콘텐츠가 남는 공간을 넓게 채움). 폭 480
   // 이상은 영상이 남는 세로 공간까지 채우고(flex-1) 콘텐츠는 84 밴드만(고정). 썸네일 48.
+  // 기기 폭 판정은 홈과 동일 — 데스크톱 미리보기는 --device-w(프리셋/드래그 목표 폭),
+  // 실기기는 관측 폭. clientWidth 만 쓰면 프리뷰 프레임 전환·측정 시점 때문에 480 밑에서도
+  // 채우기가 켜질 수 있어(관측 폭이 목표와 달라서) --device-w 를 우선으로 판정한다.
   const rootRef = useRef<HTMLElement>(null);
-  const [wide480, setWide480] = useState(
-    () => (typeof window !== "undefined" ? window.innerWidth : 360) >= 480,
-  );
+  const [wide480, setWide480] = useState(false);
   useEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
-    const measure = () => setWide480(el.clientWidth >= 480);
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
+    const readW = () => {
+      const desktopPreview =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      const varW = desktopPreview
+        ? parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue(
+              "--device-w",
+            ),
+          )
+        : NaN;
+      if (Number.isFinite(varW) && varW > 0) return varW;
+      return rootRef.current?.clientWidth || window.innerWidth || 360;
+    };
+    const measure = () => setWide480(readW() >= 480);
     measure();
-    return () => ro.disconnect();
+    const el = rootRef.current;
+    const ro = el ? new ResizeObserver(measure) : null;
+    if (el && ro) ro.observe(el);
+    window.addEventListener("deviceresize", measure);
+    window.addEventListener("devicechange", measure);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("deviceresize", measure);
+      window.removeEventListener("devicechange", measure);
+    };
   }, []);
   const videoFills = wide480;
   // 카메라 목록 배치: 목록 영역 크기를 재서 '가로 한 줄 / 세로 2열' 중 더 많이 보이는
