@@ -12,7 +12,7 @@ import {
 import VariantPicker from "../components/VariantPicker";
 import AndroidNav from "../components/AndroidNav";
 import { useDeviceWidth } from "../components/useDeviceWidth";
-import { LIST_MIN_H } from "../components/layoutRules";
+import { TILE_MIN_H } from "../components/layoutRules";
 import { useListLayout } from "../components/useListLayout";
 
 const CAMERAS = [
@@ -826,9 +826,7 @@ function ExpandedView({
   // 레이아웃 기준은 app/components/layoutRules.ts 참고 — 단일 영상은 폭과 무관하게
   // 항상 16:9, 목록 방향은 4개 안이 공유하는 useListLayout 이 정한다.
   // headerPad = 목록 영역에서 타일이 못 쓰는 세로(제목 52 or 여백 24 + pb-4 16).
-  const [listAreaRef, listWide] = useListLayout(
-    (mode === "live" ? 52 : 24) + 16,
-  );
+  const [listAreaRef, listRowRef, listWide] = useListLayout();
   // 카메라 목록 — 선택 카메라 타일을 가운데로 맞출 때 쓴다(가로면 좌우, 세로면 위아래).
   const listScrollRef = useRef<HTMLDivElement>(null);
   // 목록이 보일 때(진입·탭 전환·선택 변경·레이아웃 전환) 선택된 카메라 타일을 스크롤
@@ -1276,12 +1274,12 @@ function ExpandedView({
       )}
 
       {/* 카메라 목록 OR 녹화 이벤트 타임라인. 두 탭 모두 남는 공간을 채우는 영역(flex-1)
-          이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 최소 높이(≈138px =
-          시간바+썸네일)를 줘서 짧은 화면에서도 썸네일이 안 찌그러진다(영상이 대신 축소). */}
+          이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 최소 높이는 이
+          영역이 아니라 아래 '타일 행'(TILE_MIN_H)에 건다 — 영역에 걸면 제목·여백이
+          모드마다 다르게 잡아먹어 실시간/녹화의 실제 타일 최소값이 갈린다. */}
       <div
         ref={listAreaRef}
-        className="relative flex flex-col flex-1"
-        style={{ minHeight: `${LIST_MIN_H}px` }}
+        className="relative flex min-h-0 flex-col flex-1"
       >
       {mode === "recording" && recTab === "motion" ? (
         <RecordingEventTimeline
@@ -1312,13 +1310,19 @@ function ExpandedView({
             세로(~619): 2열 그리드(세로 스크롤), 타일 = 16:9(폭 = (영역폭−갭)/2).
             좌우 여백(px-5)은 스크롤 안쪽 패딩이라 첫/마지막만 20px 띄운다. */}
         <div
-          ref={listWide ? listScrollRef : undefined}
+          ref={(el) => {
+            listRowRef.current = el;
+            if (listWide) listScrollRef.current = el;
+          }}
           className={
             listWide
               ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "grid grid-cols-2 gap-2 px-5"
           }
-          style={mode === "recording" ? { marginTop: "12px" } : undefined}
+          style={{
+            minHeight: `${TILE_MIN_H}px`,
+            ...(mode === "recording" ? { marginTop: "12px" } : null),
+          }}
         >
           {CAMERAS.map((c, i) => (
             <button

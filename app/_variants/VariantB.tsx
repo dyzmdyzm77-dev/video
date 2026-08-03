@@ -11,7 +11,7 @@ import {
 } from "../components/CameraFeed";
 import VariantPicker from "../components/VariantPicker";
 import AndroidNav from "../components/AndroidNav";
-import { LIST_MIN_H } from "../components/layoutRules";
+import { TILE_MIN_H } from "../components/layoutRules";
 import { useListLayout } from "../components/useListLayout";
 
 const CAMERAS = [
@@ -877,9 +877,7 @@ function ExpandedView({
   // 레이아웃 기준은 app/components/layoutRules.ts 참고 — 단일 영상은 폭과 무관하게
   // 항상 16:9, 목록 방향은 4개 안이 공유하는 useListLayout 이 정한다.
   // headerPad = 목록 영역에서 타일이 못 쓰는 세로(제목 52 or 여백 24 + pb-4 16).
-  const [listAreaRef, listWide] = useListLayout(
-    (mode === "live" ? 52 : 24) + 16,
-  );
+  const [listAreaRef, listRowRef, listWide] = useListLayout();
   const [recTab, setRecTab] = useState<"list" | "motion">("motion");
   // 실시간↔녹화 전환 시 되감기/빨리감기 배속을 0배(기본)로 원복.
   // ExpandedView는 모드가 바뀌어도 언마운트되지 않아 배속 인덱스가 남으므로 명시적으로 리셋.
@@ -1277,12 +1275,12 @@ function ExpandedView({
       )}
 
       {/* 카메라 목록 OR 녹화 이벤트 타임라인. 두 탭 모두 남는 공간을 채우는 영역(flex-1)
-          이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 최소 높이(LIST_MIN_H
-          = 시간바+썸네일)를 줘서 짧은 화면에서도 썸네일이 안 찌그러진다(영상이 대신 축소). */}
+          이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 최소 높이는 이
+          영역이 아니라 아래 '타일 행'(TILE_MIN_H)에 건다 — 영역에 걸면 제목·여백이
+          모드마다 다르게 잡아먹어 실시간/녹화의 실제 타일 최소값이 갈린다. */}
       <div
         ref={listAreaRef}
-        className="relative flex flex-col flex-1"
-        style={{ minHeight: `${LIST_MIN_H}px` }}
+        className="relative flex min-h-0 flex-col flex-1"
       >
       {mode === "recording" && recTab === "motion" ? (
         <RecordingEventTimeline
@@ -1313,12 +1311,16 @@ function ExpandedView({
         {/* 620px 이상: 가로 스크롤(좌우 여백은 스크롤 안쪽 패딩 — 첫/마지막만
             띄우고 중간은 화면 끝까지). 미만: 세로 2열 그리드(px-5 여백). */}
         <div
+          ref={listRowRef}
           className={
             listWide
               ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "grid grid-cols-2 gap-2 px-5"
           }
-          style={mode === "recording" ? { marginTop: "12px" } : undefined}
+          style={{
+            minHeight: `${TILE_MIN_H}px`,
+            ...(mode === "recording" ? { marginTop: "12px" } : null),
+          }}
         >
           {CAMERAS.map((c, i) => (
             <button

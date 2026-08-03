@@ -17,6 +17,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
   "넓은 화면에서 영상을 늘려 남는 공간을 채우는" 규칙은 쓰지 않는다(여러 번 시도했다가 되돌린 길).
 - **카메라 목록 방향(가로 1줄 ↔ 세로 2열)은 폭으로 정하지 않는다.** 남은 세로에 달려 있어서
   폭 기준선으로는 못 가른다. `app/components/useListLayout.ts` 훅 하나를 4개 안이 공유한다.
+- **목록 타일의 최소 세로는 `TILE_MIN_H`(48) 하나.** 영역이 아니라 타일에 거는 값이라
+  실시간/녹화 어느 모드든 최소값이 같다. 영역의 min-height 는 훅이 제목·여백을 실측해
+  더한다 — 모드별 상수를 새로 만들지 말 것.
 - **폭만 보는 분기는 `WIDE_BP`(620) 하나.** 현재는 홈 1단↔2단이 유일.
 - **기기 폭은 `useDeviceWidth()` / `readDeviceWidth()` 로만 읽는다.** 인라인으로 다시 만들지 말 것.
 - **적용 범위는 개선안 4개(A · A-1 · A-2 · B) + 홈.** `AsIsPanel`(현행 앱 재현)과
