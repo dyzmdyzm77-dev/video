@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LIST_MIN_H, TILE_MIN_H } from "./layoutRules";
+import { LIST_MIN_H, LIST_MIN_VISIBLE, TILE_MIN_H } from "./layoutRules";
 
 // 카메라 목록 배치(가로 한 줄 ↔ 세로 2열)를 정하는 단일 규칙 — 자세한 근거는
 // app/components/layoutRules.ts 참고. 요약하면: 목록 방향은 폭만으로 정할 수 없다.
@@ -27,6 +27,8 @@ export function useListLayout(noRowMinH?: number) {
   const rowRef = useRef<HTMLDivElement>(null);
   // 첫 렌더 기본값은 세로 2열 — 폰 세로가 가장 흔하고, 잘못 잡혀도 첫 측정에서 바로 고쳐진다.
   const [listWide, setListWide] = useState(false);
+  // 가로 한 줄일 때 타일 높이 상한(px) — LIST_MIN_VISIBLE 개가 보이도록.
+  const [tileMaxH, setTileMaxH] = useState(0);
   // 현재 배치를 pick() 안에서 읽기 위한 미러(min-height 기준이 배치마다 다름).
   const wideRef = useRef(false);
   wideRef.current = listWide;
@@ -64,8 +66,13 @@ export function useListLayout(noRowMinH?: number) {
       const W = el.clientWidth - PAD_X;
       const H = el.clientHeight - chrome;
       if (W <= 0 || H <= 0) return;
-      // 가로 한 줄: 타일 높이 = 남은 높이, 폭 = 높이 × 16/9 → 한 줄에 몇 개.
-      const tileWh = H * RATIO;
+      // 가로 한 줄: 타일 높이 = 남은 높이. 단 LIST_MIN_VISIBLE 개는 보여야 하므로
+      // 폭 (W − 갭×(n−1))/n 을 넘지 않게 상한을 둔다(높이는 16:9 로 역산).
+      const capW = (W - GAP * (LIST_MIN_VISIBLE - 1)) / LIST_MIN_VISIBLE;
+      const capH = Math.max(1, Math.floor(capW / RATIO));
+      setTileMaxH(capH);
+      const tileH = Math.min(H, capH);
+      const tileWh = tileH * RATIO;
       const countH = Math.max(1, Math.floor((W + GAP) / (tileWh + GAP)));
       // 세로 2열: 타일 폭 = (영역폭 − 갭)/2, 높이 = 폭 × 9/16 → 몇 줄 × 2개.
       const tileWv = (W - GAP) / 2;
@@ -89,5 +96,5 @@ export function useListLayout(noRowMinH?: number) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  return [areaRef, rowRef, listWide] as const;
+  return [areaRef, rowRef, listWide, tileMaxH] as const;
 }

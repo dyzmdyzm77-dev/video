@@ -831,7 +831,8 @@ function ExpandedView({
   // 항상 16:9, 목록 방향은 안들이 공유하는 useListLayout 이 정한다.
   // headerPad = 목록 영역에서 타일이 못 쓰는 세로(제목 52 or 여백 24 + pb-4 16).
   // 움직임 감지 탭엔 타일 행이 없으니, 그 탭일 때 지켜야 할 최소 높이를 넘겨준다.
-  const [listAreaRef, listRowRef, listWide] = useListLayout(MOTION_MIN_H);
+  const [listAreaRef, listRowRef, listWide, tileMaxH] =
+    useListLayout(MOTION_MIN_H);
   // 카메라 목록 — 선택 카메라 타일을 가운데로 맞출 때 쓴다(가로면 좌우, 세로면 위아래).
   const listScrollRef = useRef<HTMLDivElement>(null);
   // 목록이 보일 때(진입·탭 전환·선택 변경·레이아웃 전환) 선택된 카메라 타일을 스크롤
@@ -1329,7 +1330,11 @@ function ExpandedView({
                   ? "relative h-full aspect-video flex-none overflow-hidden bg-neutral-900"
                   : "relative aspect-video overflow-hidden bg-neutral-900"
               }
-              style={{ borderRadius: "4px" }}
+              style={{
+                borderRadius: "4px",
+                // 가로 한 줄: LIST_MIN_VISIBLE 개는 보이도록 타일 크기 상한(훅이 계산).
+                ...(listWide && tileMaxH ? { maxHeight: `${tileMaxH}px` } : null),
+              }}
             >
               <FrozenImage
                 src={c.src}
@@ -1461,21 +1466,27 @@ function RecordingEventTimeline({
   // 썸네일 영역(시간바 아래 남는 공간). 이 높이에 맞춰 썸네일 세로 크기를 유동
   // 조절한다(화면이 짧아지면 잘리지 않게 줄인다). 최대 72(원본), 폭은 16:9 로 연동.
   const thumbAreaRef = useRef<HTMLDivElement>(null);
-  const [thumbH, setThumbH] = useState(72);
+  const [thumbH, setThumbH] = useState(THUMB_MAX_H);
+  const updateThumbH = () => {
+    const el = thumbAreaRef.current;
+    if (!el || el.clientHeight <= 0) return;
+    // 남는 영역 높이에서 상하 여백(위 4 + 아래 PAD_TOP)을 뺀 값. 일반 48 로 캡.
+    const avail = el.clientHeight - (4 + PAD_TOP);
+    setThumbH(Math.max(THUMB_MIN_H, Math.min(THUMB_MAX_H, Math.round(avail))));
+  };
+  // 매 렌더 뒤 재계산 — 기기 폭/높이 전환처럼 ResizeObserver 만으로는 놓치는 경우가
+  // 있어서(관측 노드 교체·콜백 누락) 렌더 기준으로도 한 번 더 맞춘다. 값이 같으면
+  // setState 가 리렌더를 만들지 않으므로 루프가 되지 않는다.
+  useEffect(() => {
+    updateThumbH();
+  });
   useEffect(() => {
     const el = thumbAreaRef.current;
     if (!el) return;
-    const update = () => {
-      // 남는 영역 높이에서 상하 여백(위 4 + 아래 PAD_TOP)을 뺀 값. 일반 48 로 캡.
-      const avail = el.clientHeight - (4 + PAD_TOP);
-      setThumbH(
-        Math.max(THUMB_MIN_H, Math.min(THUMB_MAX_H, Math.round(avail))),
-      );
-    };
-    update();
-    const ro = new ResizeObserver(update);
+    const ro = new ResizeObserver(() => updateThumbH());
     ro.observe(el);
     return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // 줌 레벨: 픽셀/초 — 기본 5px/sec(눈금·시간 간격을 조금 더 촘촘하게). 핀치/휠로 조정.
   const [pxPerSec, setPxPerSec] = useState(5);
