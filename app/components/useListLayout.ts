@@ -39,8 +39,10 @@ export function useListLayout(noRowMinH?: number) {
       // 타일 행이 없는 상태(녹화의 '움직임 감지' 탭)에서는 목록 기준 높이가 의미 없다.
       // 이전 탭에서 걸어 둔 값이 남아 영역이 눌리거나 늘어나지 않도록 정리한다.
       if (!row) {
-        el.style.minHeight = noRowMinH ? `${noRowMinH}px` : "";
+        el.style.flex = "";
+        el.style.height = "";
         el.style.maxHeight = "";
+        el.style.minHeight = noRowMinH ? `${noRowMinH}px` : "";
         return;
       }
       // 타일 위(제목·여백)와 아래(패딩)로 빠지는 세로 — 안마다 pb-3/pb-2 처럼 값이
@@ -51,14 +53,32 @@ export function useListLayout(noRowMinH?: number) {
       const chrome = row.offsetTop + (Number.isFinite(padB) ? padB : 0);
 
       const W = el.clientWidth - PAD_X;
-      const availH = el.clientHeight - chrome;
-      if (W <= 0 || availH <= 0) {
-        // 아직 자리를 못 받은 상태(첫 렌더 등). 여기서 그냥 빠져나가면 영역이 0 인
-        // 채로 굳어 다시 잴 기회가 없다 — 바닥을 깔아 두면 그 리사이즈가 다음 측정을
-        // 부른다.
-        if (!el.style.minHeight) el.style.minHeight = `${LIST_MIN_H}px`;
-        return;
+      if (W <= 0) return;
+      // 배치 판정에 쓸 '목록이 쓸 수 있는 세로'.
+      // 영역의 현재 높이를 그대로 쓰면 안 된다 — 아래에서 가로 한 줄일 때 높이를
+      // 고정하는데, 그 값을 다시 재면 판정이 자기 결과에 갇혀(가로 → 높이 고정 →
+      // 계속 가로) 세로로 못 돌아온다. 그래서 컬럼 기하로 계산한다:
+      //   컬럼 높이 − (목록·영상 뺀 나머지 형제) − 영상의 제 크기(16:9) − 크롬
+      // 영상을 '현재 높이'가 아니라 '제 크기'로 넣는 게 핵심 — 목록이 얼마를
+      // 가져갔는지와 무관한 값이라 순환하지 않는다.
+      const col = el.parentElement;
+      if (!col) return;
+      const video = col.querySelector<HTMLElement>(".single-video-area");
+      let others = 0;
+      for (const c of Array.from(col.children)) {
+        if (c === el || c === video) continue;
+        // 절대배치(오버레이·토스트 등)는 flex 자리를 안 차지하므로 빼야 한다.
+        // 안 빼면 화면을 덮는 오버레이 높이까지 더해져 남는 세로가 음수가 되고,
+        // 폰에서도 늘 '가로 한 줄'로 잘못 넘어간다.
+        const pos = getComputedStyle(c).position;
+        if (pos === "absolute" || pos === "fixed") continue;
+        others += c.getBoundingClientRect().height;
       }
+      const videoIdeal = video
+        ? parseFloat(getComputedStyle(video).maxHeight) || 0
+        : 0;
+      const availH = col.clientHeight - others - videoIdeal - chrome;
+      if (!Number.isFinite(availH)) return;
 
       // 세로 2열 타일: 폭 = (영역폭 − 갭)/2, 높이 = 폭 × 9/16.
       const tileHv = (W - GAP) / 2 / RATIO;
@@ -77,17 +97,19 @@ export function useListLayout(noRowMinH?: number) {
 
       // ── 3) 영역 높이 ────────────────────────────────────────────────────────
       if (wide) {
-        // 가로 한 줄 — 바닥을 '타일 최소 + 크롬'으로 잡되, 감지 탭 높이(noRowMinH)가
-        // 더 크면 그쪽에 맞춘다. 두 탭 모두 flex-1 이라 바닥만 같으면 실제 높이도
-        // 같아져서 탭을 오갈 때 영상 크기가 안 튄다. 타일은 h-full 로 그 높이를
-        // 채우므로(상한 tileCapH 까지) 목록 아래에 빈 공간이 남지 않는다.
-        const floor = Math.max(TILE_MIN_H + chrome, noRowMinH ?? 0);
-        el.style.minHeight = `${floor}px`;
+        // 가로 한 줄 — 감지 탭과 같은 높이(noRowMinH)로 '고정'한다. flex 로 늘어나지
+        // 않으니 남는 세로는 목록 아래 빈 공간으로 남지 않고 전부 단일 영상으로 간다
+        // (영상은 grow 로 받되 16:9 에서 멈춘다). 타일은 h-full 로 이 높이를 채운다.
+        const h = Math.max(TILE_MIN_H + chrome, noRowMinH ?? 0);
+        el.style.flex = "none";
+        el.style.height = `${h}px`;
+        el.style.minHeight = "";
       } else {
         // 세로 2열 — 남는 세로를 목록이 채운다(스크롤). 바닥만 잡아 둔다.
+        el.style.flex = "";
+        el.style.height = "";
         el.style.minHeight = `${LIST_MIN_H}px`;
       }
-      el.style.maxHeight = "";
     };
   }
   // (1) 매 렌더 뒤 재계산 — 실시간↔녹화, 목록↔움직임감지 처럼 제목·여백이 바뀌면
