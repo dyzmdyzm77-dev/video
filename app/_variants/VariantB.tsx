@@ -11,7 +11,8 @@ import {
 } from "../components/CameraFeed";
 import VariantPicker from "../components/VariantPicker";
 import AndroidNav from "../components/AndroidNav";
-import { useDeviceWidth } from "../components/useDeviceWidth";
+import { LIST_MIN_H } from "../components/layoutRules";
+import { useListLayout } from "../components/useListLayout";
 
 const CAMERAS = [
   { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
@@ -873,7 +874,12 @@ function ExpandedView({
   }, []);
   // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지(세로 타임라인)
   // 카메라 목록 — 620px 이상에서만 가로 스크롤, 미만은 세로 2열 그리드.
-  const listWide = useDeviceWidth() >= 620;
+  // 레이아웃 기준은 app/components/layoutRules.ts 참고 — 단일 영상은 폭과 무관하게
+  // 항상 16:9, 목록 방향은 4개 안이 공유하는 useListLayout 이 정한다.
+  // headerPad = 목록 영역에서 타일이 못 쓰는 세로(제목 52 or 여백 24 + pb-4 16).
+  const [listAreaRef, listWide] = useListLayout(
+    (mode === "live" ? 52 : 24) + 16,
+  );
   const [recTab, setRecTab] = useState<"list" | "motion">("motion");
   // 실시간↔녹화 전환 시 되감기/빨리감기 배속을 0배(기본)로 원복.
   // ExpandedView는 모드가 바뀌어도 언마운트되지 않아 배속 인덱스가 남으므로 명시적으로 리셋.
@@ -1018,11 +1024,13 @@ function ExpandedView({
         <RowSkeleton visible={videoLoading} />
       </div>
 
-      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 기본은 16:9(폭 기준) 높이지만, 공간이
-          모자라면(와이드·짧은 화면) 줄어들어 하단탭/타임라인을 밀어내지 않는다. */}
-      <div className="min-h-0 shrink px-0">
+      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 폭과 무관하게 항상 정확히 16:9.
+          크기 규칙은 globals.css 의 .single-video-area/.single-video-box 에 있다:
+          넓은 화면에선 16:9 를 넘어 늘어나지 않고, 짧은 화면에선 비율을 지킨 채
+          줄어든다(좌우에 검은 여백). */}
+      <div className="single-video-area px-0">
         <div
-          className="relative aspect-video max-h-full w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
+          className="single-video-box relative cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
           onClick={handleVideoClick}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
@@ -1268,8 +1276,14 @@ function ExpandedView({
         </>
       )}
 
-      {/* 카메라 목록 OR 녹화 이벤트 타임라인 */}
-      <div className="relative flex min-h-0 flex-1 flex-col">
+      {/* 카메라 목록 OR 녹화 이벤트 타임라인. 두 탭 모두 남는 공간을 채우는 영역(flex-1)
+          이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 최소 높이(LIST_MIN_H
+          = 시간바+썸네일)를 줘서 짧은 화면에서도 썸네일이 안 찌그러진다(영상이 대신 축소). */}
+      <div
+        ref={listAreaRef}
+        className="relative flex flex-col flex-1"
+        style={{ minHeight: `${LIST_MIN_H}px` }}
+      >
       {mode === "recording" && recTab === "motion" ? (
         <RecordingEventTimeline
           playbackMs={playbackMs}

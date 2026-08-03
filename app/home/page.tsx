@@ -4,6 +4,8 @@ import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BASE } from "../basePath";
 import AndroidNav from "../components/AndroidNav";
+import { readDeviceWidth } from "../components/useDeviceWidth";
+import { WIDE_BP, HOME_W_1COL, HOME_W_2COL } from "../components/layoutRules";
 
 // SSR 경고 없이 페인트 직전 실행되는 레이아웃 이펙트를 쓰기 위한 동형 훅.
 const useIsoLayoutEffect =
@@ -355,18 +357,7 @@ export function Inner() {
   // 한 프레임 그려졌다가 700 으로 CSS 전환이 돌아 홍길동·알림·플로팅 아이콘이 가운데서
   // 양옆으로 '펼쳐지는' 연출이 보인다. 확정 뒤 다음 프레임부터 전환을 허용한다.
   useIsoLayoutEffect(() => {
-    const desktopPreview =
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    const varW = desktopPreview
-      ? parseFloat(
-          getComputedStyle(document.documentElement).getPropertyValue(
-            "--device-w",
-          ),
-        )
-      : NaN;
-    const w = Number.isFinite(varW) && varW > 0 ? varW : window.innerWidth || 360;
-    const want = w >= 620;
+    const want = readDeviceWidth() >= WIDE_BP;
     twoColRef.current = want;
     setTwoCol(want);
     const raf = requestAnimationFrame(() => setWidenReady(true));
@@ -374,33 +365,15 @@ export function Inner() {
   }, []);
 
   useEffect(() => {
-    const BP = 620;
     const el = contentRef.current;
     const target = el?.parentElement; // 스크롤 영역 — 폭 = 기기 프레임 폭
     if (!el || !target) return;
     let armed = false; // 초기 settle 전(첫 판정)에는 애니메이션 없이 상태만 반영
     const evaluate = (observed?: number) => {
       // 목표 폭(--device-w) 기준으로 판정 — 프리셋 클릭/드래그 순간 즉시 바뀌는 값이라
-      // 프레임이 0.1s 동안 자라는 것과 같은 시점에 전환을 시작할 수 있다.
-      // 변수 없는 실기기에선 관측 폭(observed)으로 폴백.
-      // 데스크톱 미리보기(마우스)에선 --device-w(프리셋/드래그 폭)로, 실제 터치
-      // 기기에선 실제 관측 폭으로 판정한다. 실기기는 --device-w 가 기본 360 이라
-      // 그걸 쓰면 넓은 화면에서도 2열로 안 바뀐다(카메라 목록과 같은 이슈).
-      const desktopPreview =
-        typeof window.matchMedia === "function" &&
-        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-      const varW = desktopPreview
-        ? parseFloat(
-            getComputedStyle(document.documentElement).getPropertyValue(
-              "--device-w",
-            ),
-          )
-        : NaN;
-      const w =
-        Number.isFinite(varW) && varW > 0
-          ? varW
-          : (observed ?? target.getBoundingClientRect().width);
-      const want = w >= BP;
+      // 프레임이 0.1s 동안 자라는 것과 같은 시점에 전환을 시작할 수 있다. 변수 없는
+      // 실기기에선 관측 폭(observed, 없으면 프레임)으로 폴백 — readDeviceWidth 참고.
+      const want = readDeviceWidth(observed ?? target) >= WIDE_BP;
       let changed = false;
       if (want !== twoColRef.current) {
         twoColRef.current = want;
@@ -417,21 +390,7 @@ export function Inner() {
       return changed;
     };
     // 현재 기기 폭(px) — 재조준용. 데스크톱 미리보기면 --device-w, 실기기면 관측 폭.
-    const readW = () => {
-      const desktopPreview =
-        typeof window.matchMedia === "function" &&
-        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-      const varW = desktopPreview
-        ? parseFloat(
-            getComputedStyle(document.documentElement).getPropertyValue(
-              "--device-w",
-            ),
-          )
-        : NaN;
-      return Number.isFinite(varW) && varW > 0
-        ? varW
-        : target.getBoundingClientRect().width;
-    };
+    const readW = () => readDeviceWidth(target);
     // 프리셋 클릭(devicechange)=부드러운 애니메이션. 드래그 중이면 마무리 후 정리 예약.
     const onChange = () => {
       resizingRef.current = false;
@@ -503,8 +462,8 @@ export function Inner() {
         : (wrap.parentElement?.getBoundingClientRect().width ?? 360) / ds;
     // 목표 해상도에서의 진짜 최종 컬럼 폭.
     const finalColW = twoCol
-      ? Math.min(320, Math.max(280, (Math.min(targetW, 700) - 60) / 2))
-      : Math.min(targetW, 480) - 40;
+      ? Math.min(320, Math.max(280, (Math.min(targetW, HOME_W_2COL) - 60) / 2))
+      : Math.min(targetW, HOME_W_1COL) - 40;
     // 래퍼 폭도 시작→최종을 명시적으로 애니메이션한다. max-width 클램프가 전환
     // 중간에 걸렸다 풀리면(예: 620→360 에서 480 캡) 컬럼 기준 위치가 꺾여(비선형)
     // 선형 margin 보정과 어긋나 좌우가 새는데, 명시 폭은 처음부터 끝까지 선형이라
@@ -519,7 +478,7 @@ export function Inner() {
     void wrap.offsetWidth;
 
     const wrapFrom = wrap.getBoundingClientRect().width / ds;
-    const wrapTo = twoCol ? Math.min(targetW, 700) : Math.min(targetW, 480);
+    const wrapTo = twoCol ? Math.min(targetW, HOME_W_2COL) : Math.min(targetW, HOME_W_1COL);
     const plays: (() => void)[] = [];
 
     // 래퍼 폭: 시작→최종 명시(선형 → mx-auto 중심도 선형이라 margin 보정과 정확히 상쇄).
@@ -590,9 +549,9 @@ export function Inner() {
     // 걸려 있어 CSS 가 부드럽게 재조준). 스냅샷 목표에 잠기지 않아 마우스를 쫓아간다.
     retargetRef.current = (deviceW) => {
       const fCol = twoCol
-        ? Math.min(320, Math.max(280, (Math.min(deviceW, 700) - 60) / 2))
-        : Math.min(deviceW, 480) - 40;
-      const wTo = twoCol ? Math.min(deviceW, 700) : Math.min(deviceW, 480);
+        ? Math.min(320, Math.max(280, (Math.min(deviceW, HOME_W_2COL) - 60) / 2))
+        : Math.min(deviceW, HOME_W_1COL) - 40;
+      const wTo = twoCol ? Math.min(deviceW, HOME_W_2COL) : Math.min(deviceW, HOME_W_1COL);
       // 경계 넘은 직후 DRAG_MS 창 동안만 부드럽게, 그 뒤엔 즉시(전환 없음)로 마우스에 딱.
       const smoothing = performance.now() - lastCrossRef.current < DRAG_MS;
       const wt = smoothing ? `width ${DRAG_MS}ms ${DRAG_EASE}` : "none";

@@ -12,6 +12,8 @@ import {
 import VariantPicker from "../components/VariantPicker";
 import AndroidNav from "../components/AndroidNav";
 import { useDeviceWidth } from "../components/useDeviceWidth";
+import { LIST_MIN_H } from "../components/layoutRules";
+import { useListLayout } from "../components/useListLayout";
 
 const CAMERAS = [
   { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
@@ -797,41 +799,12 @@ function ExpandedView({
 }) {
   const cam = CAMERAS[index];
   const [showControls, setShowControls] = useState(false);
-  // 단일 영상 크기: 폭 480 미만(폰 세로)은 16:9 + 아래 콘텐츠(카메라 목록 2열 그리드 등)
-  // 가 남는 세로를 채움. 폭 480 이상(넓은 화면)은 영상이 남는 세로를 채워(flex-1) 커지고
-  // 콘텐츠는 컴팩트(고정) — 넓은 화면에서 목록 타일이 커지는 대신 영상을 늘린다.
-  // 폭 판정은 홈과 동일: 데스크톱 미리보기는 --device-w, 실기기는 관측 폭.
-  const rootRef = useRef<HTMLElement>(null);
-  const [wide480, setWide480] = useState(false);
-  useEffect(() => {
-    const readW = () => {
-      const desktopPreview =
-        typeof window.matchMedia === "function" &&
-        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-      const varW = desktopPreview
-        ? parseFloat(
-            getComputedStyle(document.documentElement).getPropertyValue(
-              "--device-w",
-            ),
-          )
-        : NaN;
-      if (Number.isFinite(varW) && varW > 0) return varW;
-      return rootRef.current?.clientWidth || window.innerWidth || 360;
-    };
-    const measure = () => setWide480(readW() >= 480);
-    measure();
-    const el = rootRef.current;
-    const ro = el ? new ResizeObserver(measure) : null;
-    if (el && ro) ro.observe(el);
-    window.addEventListener("deviceresize", measure);
-    window.addEventListener("devicechange", measure);
-    return () => {
-      ro?.disconnect();
-      window.removeEventListener("deviceresize", measure);
-      window.removeEventListener("devicechange", measure);
-    };
-  }, []);
-  const videoFills = wide480;
+  // 레이아웃 기준은 app/components/layoutRules.ts 참고 — 단일 영상은 폭과 무관하게
+  // 항상 16:9, 목록 방향은 4개 안이 공유하는 useListLayout 이 정한다.
+  // headerPad = 목록 영역에서 타일이 못 쓰는 세로(제목 52 or 여백 24 + pb-4 16).
+  const [listAreaRef, listWide] = useListLayout(
+    (mode === "live" ? 52 : 24) + 16,
+  );
   const [activityTick, setActivityTick] = useState(0);
   const [seekToast, setSeekToast] = useState<string | null>(null);
   const seekToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -858,38 +831,6 @@ function ExpandedView({
   // 목록/감지 탭을 없애고 움직임 감지 타임라인이 하단을 상시 차지하므로,
   // 녹화 중 카메라 전환은 이 시트(또는 영상 좌우 스와이프)로 한다.
   const [camSheetOpen, setCamSheetOpen] = useState(false);
-  // 카메라 목록 배치: 목록 영역 크기를 재서 '가로 한 줄 / 세로 2열' 중 더 많이 보이는
-  // 쪽을 자동 선택. 넓고 짧으면 가로, 좁고 길면 세로(360 같은 좁은 폭은 세로가 더 많음).
-  const listAreaRef = useRef<HTMLDivElement>(null);
-  const [listWide, setListWide] = useState(
-    () => (typeof window !== "undefined" ? window.innerWidth : 360) >= 620,
-  );
-  useEffect(() => {
-    const el = listAreaRef.current;
-    if (!el) return;
-    const GAP = 8;
-    const PAD_X = 40; // 좌우 px-5
-    const RATIO = 16 / 9;
-    const headerPad = (mode === "live" ? 52 : 24) + 16; // 목록 헤더/여백 + pb-4
-    const pick = () => {
-      const W = el.clientWidth - PAD_X;
-      const H = el.clientHeight - headerPad;
-      if (W <= 0 || H <= 0) return;
-      // 카메라 목록 타일은 늘 16:9. 가로 한 줄: 타일 높이 = 영역 높이, 폭 = 높이 × 16/9.
-      // 세로 2열: 타일 폭 = (영역폭 − 갭)/2, 높이 = 폭 × 9/16. 더 많이 보이는 쪽 자동 선택.
-      const tileWh = H * RATIO;
-      const countH = Math.max(1, Math.floor((W + GAP) / (tileWh + GAP)));
-      const tileWv = (W - GAP) / 2;
-      const tileHv = tileWv / RATIO;
-      const rows = Math.max(1, Math.floor((H + GAP) / (tileHv + GAP)));
-      const countV = 2 * rows;
-      setListWide(countH >= countV);
-    };
-    pick();
-    const ro = new ResizeObserver(pick);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [mode]);
   // 카메라 목록 — 선택 카메라 타일을 가운데로 맞출 때 쓴다(가로면 좌우, 세로면 위아래).
   const listScrollRef = useRef<HTMLDivElement>(null);
   // 목록이 보일 때(진입·탭 전환·선택 변경·레이아웃 전환) 선택된 카메라 타일을 스크롤
@@ -1017,7 +958,6 @@ function ExpandedView({
     <>
       {/* 확대뷰 헤더 — 다채널 화면과 동일. 녹화 모드에서도 항상 표시 */}
       <header
-        ref={rootRef}
         className="flex flex-none items-center px-5"
         style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
       >
@@ -1043,11 +983,13 @@ function ExpandedView({
         </div>
       </header>
 
-      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 녹화(타임라인)에선 flex-1 로 남는 공간을
-          채우고, 라이브(카메라 목록)에선 16:9(목록에 자리를 내준다). */}
-      <div className={`min-h-0 ${videoFills ? "flex-1" : "shrink"} px-0`}>
+      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 폭과 무관하게 항상 정확히 16:9.
+          크기 규칙은 globals.css 의 .single-video-area/.single-video-box 에 있다:
+          넓은 화면에선 16:9 를 넘어 늘어나지 않고, 짧은 화면에선 비율을 지킨 채
+          줄어든다(좌우에 검은 여백). */}
+      <div className="single-video-area px-0">
         <div
-          className={`relative ${videoFills ? "h-full" : "aspect-video max-h-full"} w-full cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900`}
+          className="single-video-box relative cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
           onClick={handleVideoClick}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
@@ -1329,8 +1271,8 @@ function ExpandedView({
           짧은 화면에서도 썸네일이 안 찌그러진다(영상이 대신 축소). */}
       <div
         ref={listAreaRef}
-        className={`relative flex flex-col ${videoFills ? "flex-none" : "flex-1"}`}
-        style={videoFills ? { height: "104px" } : { minHeight: "138px" }}
+        className="relative flex flex-col flex-1"
+        style={{ minHeight: `${LIST_MIN_H}px` }}
       >
       {mode === "recording" ? (
         <RecordingEventTimeline

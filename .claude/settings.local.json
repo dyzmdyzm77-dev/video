@@ -76,7 +76,11 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/c)",
       "Bash(curl -s http://localhost:3000/c)",
       "mcp__plugin_figma_figma__use_figma",
-      "mcp__plugin_figma_figma__get_screenshot"
+      "mcp__plugin_figma_figma__get_screenshot",
+      "Bash(git rev-list *)",
+      "Bash(gh pr *)",
+      "Bash(npx next *)",
+      "Bash(npm run *)"
     ]
   }
 }

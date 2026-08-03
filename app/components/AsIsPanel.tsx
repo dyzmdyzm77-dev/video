@@ -192,6 +192,8 @@ export default function AsIsPanel() {
   // 사용자 전환이 아니므로). 비교하기가 꺼지면 다시 초기화.
   const syncedOnceRef = useRef(false);
   // 620px 이상에서만 단일채널 카메라 목록을 바텀시트(가로 목록)로 바꾼다.
+  // 값이 layoutRules.ts 의 WIDE_BP 와 같지만 일부러 상수를 안 쓴다 — As Is 는 현행 앱
+  // 재현(비교 기준)이라, 개선안 기준선을 옮겨도 여기는 따라오면 안 된다.
   const wide = useDeviceWidth() >= 620;
   // 바텀시트 펼침/접힘 — 기본 펼침(들어가면 가로 목록이 바로 보임).
   const [sheetOpen, setSheetOpen] = useState(true);

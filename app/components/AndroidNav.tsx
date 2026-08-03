@@ -34,6 +34,8 @@ function BackIcon({ className }: { className?: string }) {
   );
 }
 
+// 여기 620 은 안드로이드 태스크바가 뜨는 OS 쪽 경계라, 값이 같아도 layoutRules.ts 의
+// WIDE_BP(우리 앱 레이아웃 기준)와는 일부러 안 엮는다.
 const CLUSTER = 180; // 620+ 3버튼 그룹 폭
 const RIGHTPAD = 37; // 그룹 오른쪽 여백 → back 버튼이 화면 오른쪽에서 ≈67px
 const TB_GAP = 60; // 태스크바 오른쪽 끝 ↔ 3버튼 사이 간격

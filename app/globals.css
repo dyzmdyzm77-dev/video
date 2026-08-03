@@ -41,6 +41,36 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+  /* 폭(=기기 프레임 폭)을 컨테이너 쿼리 단위(cqw)로 쓸 수 있게 한다. 단일 영상이
+     '16:9 높이'를 JS 측정 없이 CSS 만으로 잡는 데 쓴다(.single-video-area 참고).
+     inline-size 라 높이 계산에는 영향이 없다. */
+  container: app-frame / inline-size;
+}
+
+/* ===== 단일 영상(큰 영상) — 항상 16:9 =====
+   레이아웃 기준은 app/components/layoutRules.ts 참고.
+   · 영역(.single-video-area): 남는 공간을 받되(flex:1) 16:9 높이(폭×9/16 =
+     56.25cqw)를 넘지 않는다 → 넓은 화면에서 영상이 세로로 늘어나지 않는다.
+     세로가 모자라면 min-height:0 이라 이 아래로 줄어든다(하단탭/타임라인 보호).
+   · 박스(.single-video-box): 그 높이를 꽉 채우되 폭은 비율로 따라간다 →
+     화면이 짧아 영역이 16:9 보다 낮아져도 박스 자체는 정확히 16:9 를 유지하고,
+     남는 좌우는 배경(검정)이 된다. 예전엔 폭 100% 고정이라 이 경우 박스가
+     2.25:1 로 찌그러지고 영상이 가로로 늘어났다(object-fill). */
+.single-video-area {
+  /* 기본 크기(flex-basis) = 16:9 높이(폭×9/16). 늘어나지는 않고(grow 0) 자리가
+     모자랄 때만 줄어든다(shrink 1) → 아래 목록이 flex-1 로 남는 세로를 다 가져가도
+     영상은 항상 제 16:9 크기를 먼저 확보한다. grow 1 로 두면 목록과 남는 공간을
+     반씩 나눠 가져 영상이 16:9 보다 작아진다. */
+  flex: 0 1 56.25cqw;
+  min-height: 0;
+  max-height: 56.25cqw;
+}
+.single-video-box {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  margin-inline: auto;
+  aspect-ratio: 16 / 9;
 }
 
 /* 베젤/데스크톱 네비는 데스크톱에서만 보인다(모바일/터치에선 숨김). */

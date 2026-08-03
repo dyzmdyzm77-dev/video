@@ -2,13 +2,20 @@
 
 import { useEffect, useState } from "react";
 
-// 현재 "기기 화면 폭"(px)을 반응형으로 읽는다.
+// 현재 "기기 화면 폭"(px)을 읽는다. 폭 기준 분기(app/components/layoutRules.ts 의
+// WIDE_BP)는 전부 이 함수 하나를 통해야 한다 — 예전엔 안·홈이 각자 인라인으로
+// 같은 로직을 복제해 두어 갱신 시점이 미묘하게 어긋났다.
 //  - 데스크톱 미리보기(hover+정밀 포인터): LNB 프리셋/드래그로 지정한 --device-w.
 //    'devicechange'/'devicerange'/'deviceresize' 로 갱신.
 //  - 실제 터치 기기(아이폰·태블릿 등에서 고정 링크 접속): 데스크톱 목업이 숨겨지고
 //    앱이 화면을 꽉 채우므로, --device-w(기본 360)가 아니라 실제 뷰포트 폭을 써야
 //    해상도 분기(예: 카메라 목록 620+ 가로 배열)가 올바로 동작한다.
-function readDeviceWidth(): number {
+//
+// fallback 을 주면 실기기 폴백에서 window.innerWidth 대신 그 값을 쓴다(홈처럼
+// 프레임 요소를 이미 들고 있는 쪽 — FLIP 애니메이션이 프레임 폭 기준이라
+// innerWidth 와 어긋나면 안 된다). 요소를 주면 관측 폭을, 숫자를 주면 그대로
+// 쓴다(ResizeObserver 콜백에서 contentRect 를 넘겨 강제 리플로우를 피한다).
+export function readDeviceWidth(fallback?: number | Element | null): number {
   if (typeof window === "undefined") return 360;
   const desktopPreview =
     typeof window.matchMedia === "function" &&
@@ -17,7 +24,13 @@ function readDeviceWidth(): number {
     const v = parseFloat(
       getComputedStyle(document.documentElement).getPropertyValue("--device-w"),
     );
-    if (Number.isFinite(v)) return v;
+    if (Number.isFinite(v) && v > 0) return v;
+  }
+  if (typeof fallback === "number") {
+    if (fallback > 0) return fallback;
+  } else if (fallback) {
+    const w = fallback.getBoundingClientRect().width;
+    if (w > 0) return w;
   }
   return window.innerWidth || 360;
 }
