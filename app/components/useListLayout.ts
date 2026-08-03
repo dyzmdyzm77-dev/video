@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LIST_MIN_H, LIST_MIN_VISIBLE, TILE_MIN_H } from "./layoutRules";
+import { LIST_MIN_H, TILE_MIN_H } from "./layoutRules";
 
 // 카메라 목록 배치(가로 한 줄 ↔ 세로 2열)를 정하는 단일 규칙 — 자세한 근거는
 // app/components/layoutRules.ts 참고.
@@ -27,8 +27,6 @@ export function useListLayout(noRowMinH?: number) {
   const rowRef = useRef<HTMLDivElement>(null);
   // 첫 렌더 기본값은 세로 2열 — 폰 세로가 가장 흔하고, 잘못 잡혀도 첫 측정에서 고쳐진다.
   const [listWide, setListWide] = useState(false);
-  // 가로 한 줄일 때 타일 높이 상한(px) — LIST_MIN_VISIBLE 개가 보이도록.
-  const [tileMaxH, setTileMaxH] = useState(0);
   const pickRef = useRef<() => void>(undefined);
   {
     pickRef.current = () => {
@@ -71,15 +69,6 @@ export function useListLayout(noRowMinH?: number) {
       const wide = availH < tileHv * KEEP_ROWS + GAP;
       setListWide(wide);
 
-      // ── 2) 타일 크기 상한 — 가로 한 줄에서 최소 LIST_MIN_VISIBLE 개는 보이게 ──
-      // 폭 (W − 갭×(n−1))/n 을 넘지 않게 하고 높이는 16:9 로 역산. 그리는 크기에만
-      // 쓰고 위 판정에는 넣지 않는다(넣으면 전환 시점이 앞당겨진다).
-      const tileCapH = Math.max(
-        1,
-        Math.floor((W - GAP * (LIST_MIN_VISIBLE - 1)) / LIST_MIN_VISIBLE / RATIO),
-      );
-      setTileMaxH(tileCapH);
-
       // ── 3) 영역 높이 ────────────────────────────────────────────────────────
       // 바닥(min-height)만 잡는다. 높이를 고정하면 그 값이 다시 판정에 들어가
       // 가로에 갇히므로 쓰지 않는다. 가로 한 줄은 애초에 '자리가 빡빡할 때' 켜지는
@@ -107,5 +96,5 @@ export function useListLayout(noRowMinH?: number) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  return [areaRef, rowRef, listWide, tileMaxH] as const;
+  return [areaRef, rowRef, listWide] as const;
 }
