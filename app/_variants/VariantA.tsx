@@ -2654,8 +2654,8 @@ function RecordingControls({
         style={{
           backgroundColor: "#FFFFFF",
           paddingTop: "12px",
-          // 하단 삼각형(화살표) 아래로 8px 여백을 두려고 16→24 (위8 + 화살표8 + 아래8)
-          paddingBottom: "24px",
+          // 삼각형을 없앤 만큼 줄여 단일채널 시간바(PAD_BOTTOM 4)와 같게 맞춘다.
+          paddingBottom: "4px",
           cursor: "grab",
         }}
         onPointerDown={handlePointerDown}
@@ -2663,10 +2663,11 @@ function RecordingControls({
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        {/* 스크롤 레일 (라벨 + 눈금) */}
+        {/* 스크롤 레일 (라벨 + 눈금) — 단일채널 RAIL_H 와 동일한 28px.
+            눈금은 top 18~26 이라 28 안에 다 들어간다(예전 34 는 아래가 빈 공간). */}
         <div
           className="relative"
-          style={{ height: "34px", transform: railTransform }}
+          style={{ height: "28px", transform: railTransform }}
         >
           {/* 라벨 */}
           {labels.map(({ text, secOffset }) => (
@@ -2748,13 +2749,18 @@ function RecordingControls({
             {centerLabel}
           </span>
         </div>
-        {/* 중앙 화살표 — 타임라인 영역 하단. 아래로 8px 띄운다. */}
+        {/* 중앙 고정 현재 시각 선 — 단일채널 RecordingEventTimeline 과 동일한 마커.
+            눈금(top 30~38)보다 위아래로 살짝 긴 27~41. 예전엔 삼각형(Polygon 1.svg)
+            이었는데 단일채널만 선으로 바꿔서 두 화면이 달라 보였다. */}
         <div
-          className="pointer-events-none absolute left-1/2 -translate-x-1/2"
-          style={{ bottom: "8px" }}
-        >
-          <img src={`${BASE}/Polygon 1.svg`} alt="" width={9} height={8} />
-        </div>
+          className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-[1px]"
+          style={{
+            top: "27px",
+            width: "2px",
+            height: "14px",
+            backgroundColor: "#111111",
+          }}
+        />
       </div>
       <TimelineSkeleton visible={rowLoading} />
       </div>
