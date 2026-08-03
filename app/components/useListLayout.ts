@@ -20,7 +20,9 @@ const GAP = 8; // 타일 간격 (gap-2)
 const PAD_X = 40; // 좌우 여백 (px-5)
 const RATIO = 16 / 9; // 타일은 항상 16:9
 
-export function useListLayout() {
+// noRowMinH: 타일 행이 없는 상태(녹화 '움직임 감지' 탭)에서 영역이 지켜야 할 최소
+// 높이. 안 주면 최소 높이를 해제한다.
+export function useListLayout(noRowMinH?: number) {
   const areaRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   // 첫 렌더 기본값은 세로 2열 — 폰 세로가 가장 흔하고, 잘못 잡혀도 첫 측정에서 바로 고쳐진다.
@@ -34,8 +36,14 @@ export function useListLayout() {
     pickRef.current = () => {
       // ref 는 호출 시점에 읽는다 — 첫 렌더 때 캡처하면 계속 null 을 붙들게 된다.
       const el = areaRef.current;
+      if (!el) return;
       const row = rowRef.current;
-      if (!el || !row) return;
+      // 타일 행이 없는 상태(녹화의 '움직임 감지' 탭 등)에서는 목록 기준 최소 높이가
+      // 의미 없다. 이전 탭에서 걸어 둔 값이 남아 영역이 계속 눌려 있지 않도록 지운다.
+      if (!row) {
+        el.style.minHeight = noRowMinH ? `${noRowMinH}px` : "";
+        return;
+      }
       // 타일 위(제목·여백)와 아래(패딩)로 빠지는 세로 — 안마다 pb-4/pb-2 처럼 값이
       // 달라서 상수로 못 박고 실측한다. offsetTop 은 area(position:relative) 기준.
       const padB = parseFloat(

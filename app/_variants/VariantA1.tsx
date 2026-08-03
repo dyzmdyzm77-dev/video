@@ -1238,8 +1238,8 @@ function ExpandedView({
       <div
         className={
           listWide
-            ? "flex min-h-0 flex-1 flex-col pb-4"
-            : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            ? "flex min-h-0 flex-1 flex-col pb-3"
+            : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         }
       >
 

@@ -13,6 +13,7 @@ import VariantPicker from "../components/VariantPicker";
 import AndroidNav from "../components/AndroidNav";
 import { useDeviceWidth } from "../components/useDeviceWidth";
 import { useListLayout } from "../components/useListLayout";
+import { MOTION_MIN_H } from "../components/layoutRules";
 
 const CAMERAS = [
   { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
@@ -825,7 +826,8 @@ function ExpandedView({
   // 레이아웃 기준은 app/components/layoutRules.ts 참고 — 단일 영상은 폭과 무관하게
   // 항상 16:9, 목록 방향은 4개 안이 공유하는 useListLayout 이 정한다.
   // headerPad = 목록 영역에서 타일이 못 쓰는 세로(제목 52 or 여백 24 + pb-4 16).
-  const [listAreaRef, listRowRef, listWide] = useListLayout();
+  // 움직임 감지 탭엔 타일 행이 없으니, 그 탭일 때 지켜야 할 최소 높이를 넘겨준다.
+  const [listAreaRef, listRowRef, listWide] = useListLayout(MOTION_MIN_H);
   // 카메라 목록 — 선택 카메라 타일을 가운데로 맞출 때 쓴다(가로면 좌우, 세로면 위아래).
   const listScrollRef = useRef<HTMLDivElement>(null);
   // 목록이 보일 때(진입·탭 전환·선택 변경·레이아웃 전환) 선택된 카메라 타일을 스크롤
@@ -1292,8 +1294,8 @@ function ExpandedView({
         ref={listWide ? undefined : listScrollRef}
         className={
           listWide
-            ? "flex min-h-0 flex-1 flex-col pb-4"
-            : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            ? "flex min-h-0 flex-1 flex-col pb-3"
+            : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         }
       >
 
@@ -1460,8 +1462,8 @@ function RecordingEventTimeline({
     const el = thumbAreaRef.current;
     if (!el) return;
     const update = () => {
-      // 남는 영역 높이에서 상하 여백(8)을 뺀 값에 맞춘다. 일반 사이즈 48 로 캡.
-      const avail = el.clientHeight - 8;
+      // 남는 영역 높이에서 상하 여백(위 4 + 아래 PAD_TOP)을 뺀 값. 일반 48 로 캡.
+      const avail = el.clientHeight - (4 + PAD_TOP);
       setThumbH(Math.max(24, Math.min(48, Math.round(avail))));
     };
     update();
@@ -1952,7 +1954,9 @@ function RecordingEventTimeline({
               style={{
                 left: `calc(50% + ${xOf(cluster.secOffset)}px)`,
                 top: "4px",
-                bottom: "4px",
+                // 아래 여백은 시간바 위 여백(PAD_TOP 12)과 같게 — 세로가 빡빡한
+                // 실기기에서 위는 12, 아래는 4로 붙어 보이던 걸 맞춘 값이다.
+                bottom: `${PAD_TOP}px`,
                 transform: "translateX(-50%)",
                 // 카드 위에서도 드래그가 통과하도록 stopPropagation 하지 않음.
                 pointerEvents: "auto",
