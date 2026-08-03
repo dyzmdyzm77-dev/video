@@ -797,10 +797,41 @@ function ExpandedView({
 }) {
   const cam = CAMERAS[index];
   const [showControls, setShowControls] = useState(false);
-  // 단일 영상은 모든 화면·탭에서 16:9로 통일(채우기 X). 넓은/낮은 화면은 max-h로 자동
-  // 으로 남는 세로에 맞춰 꽉 차고, 세로 긴 화면은 16:9 + 아래 콘텐츠(목록/타임라인)가
-  // flex-1로 남는 세로를 채운다. (탭·실시간/녹화 모두 영상 크기 동일 — 통일.)
-  const videoFills = false;
+  // 단일 영상 크기: 폭 480 미만(폰 세로)은 16:9 + 아래 콘텐츠(카메라 목록 2열 그리드 등)
+  // 가 남는 세로를 채움. 폭 480 이상(넓은 화면)은 영상이 남는 세로를 채워(flex-1) 커지고
+  // 콘텐츠는 컴팩트(고정) — 넓은 화면에서 목록 타일이 커지는 대신 영상을 늘린다.
+  // 폭 판정은 홈과 동일: 데스크톱 미리보기는 --device-w, 실기기는 관측 폭.
+  const rootRef = useRef<HTMLElement>(null);
+  const [wide480, setWide480] = useState(false);
+  useEffect(() => {
+    const readW = () => {
+      const desktopPreview =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      const varW = desktopPreview
+        ? parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue(
+              "--device-w",
+            ),
+          )
+        : NaN;
+      if (Number.isFinite(varW) && varW > 0) return varW;
+      return rootRef.current?.clientWidth || window.innerWidth || 360;
+    };
+    const measure = () => setWide480(readW() >= 480);
+    measure();
+    const el = rootRef.current;
+    const ro = el ? new ResizeObserver(measure) : null;
+    if (el && ro) ro.observe(el);
+    window.addEventListener("deviceresize", measure);
+    window.addEventListener("devicechange", measure);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("deviceresize", measure);
+      window.removeEventListener("devicechange", measure);
+    };
+  }, []);
+  const videoFills = wide480;
   const [activityTick, setActivityTick] = useState(0);
   const [seekToast, setSeekToast] = useState<string | null>(null);
   const seekToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -986,6 +1017,7 @@ function ExpandedView({
     <>
       {/* 확대뷰 헤더 — 다채널 화면과 동일. 녹화 모드에서도 항상 표시 */}
       <header
+        ref={rootRef}
         className="flex flex-none items-center px-5"
         style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
       >
