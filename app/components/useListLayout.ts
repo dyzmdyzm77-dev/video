@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { TILE_MIN_H } from "./layoutRules";
+import { LIST_MIN_H, TILE_MIN_H } from "./layoutRules";
 
 // 카메라 목록 배치(가로 한 줄 ↔ 세로 2열)를 정하는 단일 규칙 — 자세한 근거는
 // app/components/layoutRules.ts 참고. 요약하면: 목록 방향은 폭만으로 정할 수 없다.
@@ -25,6 +25,9 @@ export function useListLayout() {
   const rowRef = useRef<HTMLDivElement>(null);
   // 첫 렌더 기본값은 세로 2열 — 폰 세로가 가장 흔하고, 잘못 잡혀도 첫 측정에서 바로 고쳐진다.
   const [listWide, setListWide] = useState(false);
+  // 현재 배치를 pick() 안에서 읽기 위한 미러(min-height 기준이 배치마다 다름).
+  const wideRef = useRef(false);
+  wideRef.current = listWide;
   // pick 을 ref 에 담아 두 이펙트가 같은 최신 함수를 쓰게 한다.
   const pickRef = useRef<() => void>(undefined);
   {
@@ -39,10 +42,15 @@ export function useListLayout() {
         getComputedStyle(row.parentElement as Element).paddingBottom || "0",
       );
       const chrome = row.offsetTop + (Number.isFinite(padB) ? padB : 0);
-      // 목록 영역의 최소 높이 = 타일 최소 높이 + 그 크롬. 이걸 걸어야 세로가 짧아질
-      // 때 목록이 아니라 위의 단일 영상이 먼저 줄어든다. 크롬을 실측해 더하므로
-      // 실시간/녹화 어느 모드든 '타일' 최소값은 똑같이 TILE_MIN_H 가 된다.
-      el.style.minHeight = `${TILE_MIN_H + chrome}px`;
+      // 목록 영역의 최소 높이 — 세로가 짧아질 때 목록이 아니라 위의 단일 영상이 먼저
+      // 줄어들게 하는 바닥. 배치에 따라 기준이 다르다:
+      //  · 가로 한 줄 — 타일 세로를 직접 잡는다(TILE_MIN_H). 크롬을 실측해 더하므로
+      //    실시간/녹화 어느 모드·어느 안이든 '타일' 최소 세로가 똑같이 TILE_MIN_H.
+      //  · 세로 2열 — 타일 가로가 영역 폭에서 나오고 세로는 딸려오므로 타일을 잡을
+      //    이유가 없다. 기존처럼 영역 자체에 LIST_MIN_H 를 둔다.
+      el.style.minHeight = wideRef.current
+        ? `${TILE_MIN_H + chrome}px`
+        : `${LIST_MIN_H}px`;
       // clientWidth/offsetTop 은 레이아웃 px — 데스크톱 미리보기의 --device-scale
       // 확대/축소(transform)에 영향받지 않아 GAP 같은 상수와 단위가 맞는다.
       const W = el.clientWidth - PAD_X;

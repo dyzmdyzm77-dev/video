@@ -12,7 +12,6 @@ import {
 import VariantPicker from "../components/VariantPicker";
 import AndroidNav from "../components/AndroidNav";
 import { useDeviceWidth } from "../components/useDeviceWidth";
-import { TILE_MIN_H } from "../components/layoutRules";
 import { useListLayout } from "../components/useListLayout";
 
 const CAMERAS = [
@@ -1265,9 +1264,9 @@ function ExpandedView({
       )}
 
       {/* 하단 영역 — 녹화: 움직임 감지 타임라인 상시 표시(탭 없음), 라이브: 카메라 목록.
-          남는 공간을 채우는 영역(flex-1). 최소 높이는 이 영역이 아니라 아래 '타일
-          행'(TILE_MIN_H)에 건다 — 영역에 걸면 제목·여백이 모드마다 다르게 잡아먹어
-          실시간/녹화의 실제 타일 최소값이 갈린다. */}
+          남는 공간을 채우는 영역(flex-1). 최소 높이는 useListLayout 이 배치에 따라
+          잡는다 — 가로 한 줄이면 타일 세로 기준(TILE_MIN_H), 세로 2열이면 영역
+          기준(LIST_MIN_H). layoutRules.ts 참고. */}
       <div
         ref={listAreaRef}
         className="relative flex min-h-0 flex-col flex-1"
@@ -1311,7 +1310,6 @@ function ExpandedView({
               ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "grid grid-cols-2 gap-2 px-5"
           }
-          style={{ minHeight: `${TILE_MIN_H}px` }}
         >
           {CAMERAS.map((c, i) => (
             <button
