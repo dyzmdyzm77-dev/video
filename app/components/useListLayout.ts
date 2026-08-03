@@ -66,13 +66,15 @@ export function useListLayout(noRowMinH?: number) {
       const W = el.clientWidth - PAD_X;
       const H = el.clientHeight - chrome;
       if (W <= 0 || H <= 0) return;
-      // 가로 한 줄: 타일 높이 = 남은 높이. 단 LIST_MIN_VISIBLE 개는 보여야 하므로
-      // 폭 (W − 갭×(n−1))/n 을 넘지 않게 상한을 둔다(높이는 16:9 로 역산).
+      // 타일 크기 상한 — 가로 한 줄일 때 LIST_MIN_VISIBLE 개는 보이도록
+      // 폭 (W − 갭×(n−1))/n 을 넘지 않게 한다(높이는 16:9 로 역산).
+      // 이건 '그리는 크기'에만 쓰고 아래 배치 판정에는 넣지 않는다 — 판정은 어디까지나
+      // '두 배치를 제 크기로 깔았을 때 어느 쪽이 더 많이 보이나'이고, 여기에 상한을
+      // 끼우면 가로 쪽 개수가 부풀어 전환 시점이 앞당겨진다.
       const capW = (W - GAP * (LIST_MIN_VISIBLE - 1)) / LIST_MIN_VISIBLE;
-      const capH = Math.max(1, Math.floor(capW / RATIO));
-      setTileMaxH(capH);
-      const tileH = Math.min(H, capH);
-      const tileWh = tileH * RATIO;
+      setTileMaxH(Math.max(1, Math.floor(capW / RATIO)));
+      // 가로 한 줄: 타일 높이 = 남은 높이, 폭 = 높이 × 16/9 → 한 줄에 몇 개.
+      const tileWh = H * RATIO;
       const countH = Math.max(1, Math.floor((W + GAP) / (tileWh + GAP)));
       // 세로 2열: 타일 폭 = (영역폭 − 갭)/2, 높이 = 폭 × 9/16 → 몇 줄 × 2개.
       const tileWv = (W - GAP) / 2;
