@@ -797,9 +797,22 @@ function ExpandedView({
 }) {
   const cam = CAMERAS[index];
   const [showControls, setShowControls] = useState(false);
-  // 실시간·녹화 모두 영상은 항상 16:9 표준 크기(통일 — 채우기 X). 아래 콘텐츠가 남는
-  // 공간을 넓게(flex-1) 채운다. 썸네일은 48 고정+위로.
-  const videoFills = false;
+  // 단일 영상 크기: 폭 480 미만은 16:9(아래 콘텐츠가 남는 공간을 넓게 채움). 폭 480
+  // 이상은 영상이 남는 세로 공간까지 채우고(flex-1) 콘텐츠는 84 밴드만(고정). 썸네일 48.
+  const rootRef = useRef<HTMLElement>(null);
+  const [wide480, setWide480] = useState(
+    () => (typeof window !== "undefined" ? window.innerWidth : 360) >= 480,
+  );
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const measure = () => setWide480(el.clientWidth >= 480);
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    measure();
+    return () => ro.disconnect();
+  }, []);
+  const videoFills = wide480;
   const [activityTick, setActivityTick] = useState(0);
   const [seekToast, setSeekToast] = useState<string | null>(null);
   const seekToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -984,6 +997,7 @@ function ExpandedView({
     <>
       {/* 확대뷰 헤더 — 다채널 화면과 동일. 녹화 모드에서도 항상 표시 */}
       <header
+        ref={rootRef}
         className="flex flex-none items-center px-5"
         style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
       >

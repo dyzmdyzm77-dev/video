@@ -821,9 +821,22 @@ function ExpandedView({
   }, []);
   // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지. 진입 시 '카메라 목록'이 기본.
   const [recTab, setRecTab] = useState<"list" | "motion">("list");
-  // 실시간·녹화·모든 탭에서 영상은 항상 16:9 표준 크기(통일 — 채우기 X). 아래 콘텐츠
-  // (카메라 목록/타임라인)가 남는 공간을 넓게(flex-1) 채운다. 썸네일은 48 고정+위로.
-  const videoFills = false;
+  // 단일 영상 크기: 폭 480 미만은 16:9(아래 콘텐츠가 남는 공간을 넓게 채움). 폭 480
+  // 이상은 영상이 남는 세로 공간까지 채우고(flex-1) 콘텐츠는 84 밴드만(고정). 썸네일 48.
+  const rootRef = useRef<HTMLElement>(null);
+  const [wide480, setWide480] = useState(
+    () => (typeof window !== "undefined" ? window.innerWidth : 360) >= 480,
+  );
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const measure = () => setWide480(el.clientWidth >= 480);
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    measure();
+    return () => ro.disconnect();
+  }, []);
+  const videoFills = wide480;
   // 카메라 목록 배치: 목록 영역 크기를 재서 '가로 한 줄 / 세로 2열' 중 더 많이 보이는
   // 쪽을 자동 선택. 넓고 짧으면 가로, 좁고 길면 세로(360 같은 좁은 폭은 세로가 더 많음).
   const listAreaRef = useRef<HTMLDivElement>(null);
@@ -982,6 +995,7 @@ function ExpandedView({
     <>
       {/* 확대뷰 헤더 — 다채널 화면과 동일. 녹화 모드에서도 항상 표시 */}
       <header
+        ref={rootRef}
         className="flex flex-none items-center px-5"
         style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
       >
