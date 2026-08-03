@@ -63,12 +63,20 @@ export const WIDE_BP = 620;
  */
 export const TILE_MIN_H = 48;
 
+/** 타임라인 썸네일 카드 높이(px) 범위. 카드는 항상 16:9라 폭은 여기서 따라온다. */
+export const THUMB_MIN_H = 24;
+export const THUMB_MAX_H = 48;
+
 /**
  * 녹화 '움직임 감지' 탭(시간바 + 썸네일)일 때 영역의 최소 높이(px).
- * = 시간바 블록 44 + 썸네일 위 4 + 카드 최소 24 + 아래 12(TILE 위 여백과 동일).
  * 이 바닥이 없으면 세로가 짧은 화면에서 영상이 자리를 다 가져가 시간바가 잘린다.
+ *
+ * 구성: 시간바 블록(A안 = PAD_TOP 12 + RAIL_H 28 + PAD_BOTTOM 4 = 44)
+ *      + 썸네일 위 4 + THUMB_MIN_H + 썸네일 아래(= PAD_TOP 12).
+ * A-2 는 PAD_TOP 이 8 이라 실제로는 76 이면 되지만, 두 안이 같은 값을 쓰도록 큰 쪽인
+ * A안 기준으로 둔다(A-2 엔 8px 여유가 더 생길 뿐 레이아웃은 그대로).
  */
-export const MOTION_MIN_H = 84;
+export const MOTION_MIN_H = 44 + 4 + THUMB_MIN_H + 12;
 
 /**
  * 카메라 목록이 '세로 2열'일 때 목록 영역의 최소 높이(px) — 기존 값 그대로.

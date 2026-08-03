@@ -13,7 +13,11 @@ import VariantPicker from "../components/VariantPicker";
 import AndroidNav from "../components/AndroidNav";
 import { useDeviceWidth } from "../components/useDeviceWidth";
 import { useListLayout } from "../components/useListLayout";
-import { MOTION_MIN_H } from "../components/layoutRules";
+import {
+  MOTION_MIN_H,
+  THUMB_MAX_H,
+  THUMB_MIN_H,
+} from "../components/layoutRules";
 
 const CAMERAS = [
   { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
@@ -1464,7 +1468,9 @@ function RecordingEventTimeline({
     const update = () => {
       // 남는 영역 높이에서 상하 여백(위 4 + 아래 PAD_TOP)을 뺀 값. 일반 48 로 캡.
       const avail = el.clientHeight - (4 + PAD_TOP);
-      setThumbH(Math.max(24, Math.min(48, Math.round(avail))));
+      setThumbH(
+        Math.max(THUMB_MIN_H, Math.min(THUMB_MAX_H, Math.round(avail))),
+      );
     };
     update();
     const ro = new ResizeObserver(update);
@@ -1966,7 +1972,10 @@ function RecordingEventTimeline({
               <div
                 className="overflow-hidden rounded-md bg-neutral-900"
                 style={{
-                  height: "min(48px, 100%)",
+                  // 높이는 thumbH 하나만 본다 — 예전엔 CSS min(48px,100%) 로
+                  // 따로 정해서 폭 계산(thumbW)의 근거인 thumbH 와 어긋날 수
+                  // 있었다(THUMB_MIN_H 가 실제 높이엔 안 걸렸음).
+                  height: `${thumbH}px`,
                   aspectRatio: "16 / 9",
                 }}
               >
