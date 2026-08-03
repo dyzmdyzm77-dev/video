@@ -828,7 +828,7 @@ function ExpandedView({
   // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지. 진입 시 '카메라 목록'이 기본.
   const [recTab, setRecTab] = useState<"list" | "motion">("list");
   // 레이아웃 기준은 app/components/layoutRules.ts 참고 — 단일 영상은 폭과 무관하게
-  // 항상 16:9, 목록 방향은 4개 안이 공유하는 useListLayout 이 정한다.
+  // 항상 16:9, 목록 방향은 안들이 공유하는 useListLayout 이 정한다.
   // headerPad = 목록 영역에서 타일이 못 쓰는 세로(제목 52 or 여백 24 + pb-4 16).
   // 움직임 감지 탭엔 타일 행이 없으니, 그 탭일 때 지켜야 할 최소 높이를 넘겨준다.
   const [listAreaRef, listRowRef, listWide] = useListLayout(MOTION_MIN_H);
