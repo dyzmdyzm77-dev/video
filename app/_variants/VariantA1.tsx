@@ -2606,8 +2606,10 @@ function RecordingControls({
         className="relative flex flex-col overflow-hidden touch-pan-y select-none"
         style={{
           backgroundColor: "#FFFFFF",
+          // 위아래 같은 여백 — A안 다채널 시간바와 같은 값. 시간바 아래가 바로
+          // 하단 탭바라 위아래가 다르면 눈금이 한쪽으로 쏠려 보인다.
           paddingTop: "12px",
-          paddingBottom: "16px",
+          paddingBottom: "12px",
           cursor: "grab",
         }}
         onPointerDown={handlePointerDown}

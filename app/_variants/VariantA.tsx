@@ -2666,9 +2666,11 @@ function RecordingControls({
         className="relative flex flex-col overflow-hidden touch-pan-y select-none"
         style={{
           backgroundColor: "#FFFFFF",
+          // 위아래 같은 여백. 단일채널 감지 탭 시간바는 아래가 4 인데(PAD_BOTTOM),
+          // 거긴 바로 아래 썸네일이 이어져서 그런 거다. 다채널은 시간바 아래가 바로
+          // 하단 탭바라 그 4 를 그대로 가져오면 눈금이 탭바에 붙어 보인다.
           paddingTop: "12px",
-          // 삼각형을 없앤 만큼 줄여 단일채널 시간바(PAD_BOTTOM 4)와 같게 맞춘다.
-          paddingBottom: "4px",
+          paddingBottom: "12px",
           cursor: "grab",
         }}
         onPointerDown={handlePointerDown}
