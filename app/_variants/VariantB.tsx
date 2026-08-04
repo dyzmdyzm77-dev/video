@@ -876,7 +876,7 @@ function ExpandedView({
   // 레이아웃 기준은 app/components/layoutRules.ts 참고 — 단일 영상은 폭과 무관하게
   // 항상 16:9, 목록 방향은 안들이 공유하는 useListLayout 이 정한다.
   // headerPad = 목록 영역에서 타일이 못 쓰는 세로(제목 52 or 여백 24 + pb-4 16).
-  const [listAreaRef, listRowRef, listWide, tileMaxH] = useListLayout();
+  const [listAreaRef, listRowRef, listWide] = useListLayout();
   const [recTab, setRecTab] = useState<"list" | "motion">("motion");
   // 실시간↔녹화 전환 시 되감기/빨리감기 배속을 0배(기본)로 원복.
   // ExpandedView는 모드가 바뀌어도 언마운트되지 않아 배속 인덱스가 남으므로 명시적으로 리셋.
@@ -1320,12 +1320,7 @@ function ExpandedView({
                   ? "relative h-full aspect-video flex-none overflow-hidden bg-neutral-900"
                   : "relative aspect-video overflow-hidden bg-neutral-900"
               }
-              style={{
-                borderRadius: "4px",
-                // 가로 한 줄: LIST_MIN_VISIBLE 개가 보이도록 타일 상한(훅이 계산).
-                // 목록 영역도 같은 값으로 천장이 막혀 타일 아래가 비지 않는다.
-                ...(listWide && tileMaxH ? { maxHeight: `${tileMaxH}px` } : null),
-              }}
+              style={{ borderRadius: "4px" }}
             >
               <FrozenImage
                 src={c.src}

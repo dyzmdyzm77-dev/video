@@ -831,8 +831,7 @@ function ExpandedView({
   // 항상 16:9, 목록 방향은 안들이 공유하는 useListLayout 이 정한다.
   // headerPad = 목록 영역에서 타일이 못 쓰는 세로(제목 52 or 여백 24 + pb-4 16).
   // 움직임 감지 탭엔 타일 행이 없으니, 그 탭일 때 지켜야 할 최소 높이를 넘겨준다.
-  const [listAreaRef, listRowRef, listWide, tileMaxH] =
-    useListLayout(MOTION_MIN_H);
+  const [listAreaRef, listRowRef, listWide] = useListLayout(MOTION_MIN_H);
   // 카메라 목록 — 선택 카메라 타일을 가운데로 맞출 때 쓴다(가로면 좌우, 세로면 위아래).
   const listScrollRef = useRef<HTMLDivElement>(null);
   // 목록이 보일 때(진입·탭 전환·선택 변경·레이아웃 전환) 선택된 카메라 타일을 스크롤
@@ -1330,12 +1329,7 @@ function ExpandedView({
                   ? "relative h-full aspect-video flex-none overflow-hidden bg-neutral-900"
                   : "relative aspect-video overflow-hidden bg-neutral-900"
               }
-              style={{
-                borderRadius: "4px",
-                // 가로 한 줄: LIST_MIN_VISIBLE 개가 보이도록 타일 상한(훅이 계산).
-                // 목록 영역도 같은 값으로 천장이 막혀 타일 아래가 비지 않는다.
-                ...(listWide && tileMaxH ? { maxHeight: `${tileMaxH}px` } : null),
-              }}
+              style={{ borderRadius: "4px" }}
             >
               <FrozenImage
                 src={c.src}

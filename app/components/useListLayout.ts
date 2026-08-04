@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LIST_MIN_H, LIST_MIN_VISIBLE, TILE_MIN_H } from "./layoutRules";
+import { LIST_MIN_H, TILE_MIN_H } from "./layoutRules";
 
 // 카메라 목록 배치(가로 한 줄 ↔ 세로 2열)를 정하는 단일 규칙 — 자세한 근거는
 // app/components/layoutRules.ts 참고.
 //
-// 전환 기준: 세로 2열로 '완전히 보이는 2개 + 반쯤 보이는 2개'(= 1.5줄)에 못 미치면
-// 가로 한 줄로 넘어간다. 폭만으로는 못 가른다 — 620px 이라도 4:5 처럼 세로로 긴
-// 화면은 세로 2열이 넉넉히 들어간다.
+// 전환 기준: 두 배치를 '각자의 목록 높이'로 깔았을 때 더 많이 보이는 쪽을 고른다.
+// 세로 2열은 남는 세로를 다 쓰고, 가로 한 줄은 감지 탭과 같은 높이로 고정되므로
+// 높이가 서로 다르다 — 그래서 개수도 각자의 높이로 세야 한다.
+// 폭만으로는 못 가른다(620px 이라도 4:5 처럼 세로로 긴 화면은 세로 2열이 넉넉).
 //
 // 쓰는 법: areaRef 는 '목록 영역'(제목 + 타일 행을 감싸는 flex-1 박스, position:
 // relative)에, rowRef 는 그 안의 '타일 행'(가로 한 줄 flex / 세로 2열 grid 가 되는
@@ -18,7 +19,6 @@ import { LIST_MIN_H, LIST_MIN_VISIBLE, TILE_MIN_H } from "./layoutRules";
 const GAP = 8; // 타일 간격 (gap-2)
 const PAD_X = 40; // 좌우 여백 (px-5)
 const RATIO = 16 / 9; // 타일은 항상 16:9
-const KEEP_ROWS = 1.5; // 세로 유지 기준 — 2개 완전 + 2개 반쯤
 
 // noRowMinH: 타일 행이 없는 상태(녹화 '움직임 감지' 탭)에서 영역이 지켜야 할 높이.
 // 가로 한 줄일 때 목록 영역도 이 높이에 맞춰, 탭을 오가도 높이가 안 튀게 한다.
@@ -27,8 +27,6 @@ export function useListLayout(noRowMinH?: number) {
   const rowRef = useRef<HTMLDivElement>(null);
   // 첫 렌더 기본값은 세로 2열 — 폰 세로가 가장 흔하고, 잘못 잡혀도 첫 측정에서 고쳐진다.
   const [listWide, setListWide] = useState(false);
-  // 가로 한 줄일 때 타일 높이 상한(px) — LIST_MIN_VISIBLE 개가 보이도록.
-  const [tileMaxH, setTileMaxH] = useState(0);
   const pickRef = useRef<() => void>(undefined);
   {
     pickRef.current = () => {
@@ -52,19 +50,12 @@ export function useListLayout(noRowMinH?: number) {
       );
       const chrome = row.offsetTop + (Number.isFinite(padB) ? padB : 0);
 
-      // 판정은 '아무 제약 없이 flex 가 주는 높이'로 한다. 아래에서 가로 한 줄일 때
-      // 목록을 타일 크기에 맞춰 줄이는데, 줄인 결과를 그대로 다시 재면 판정이
-      // 거기 갇혀(가로 → 축소 → 계속 가로) 세로로 못 돌아온다. 그래서 인라인
-      // 높이를 잠깐 걷고 읽는다. (영상은 grow 가 없어 목록 몫을 뺏지 않으므로
-      // 이 읽기가 0 이 되지 않는다.)
-      const prevMin = el.style.minHeight;
-      const prevMax = el.style.maxHeight;
-      el.style.minHeight = "";
-      el.style.maxHeight = "";
+      // 판정에 쓰는 '목록이 쓸 수 있는 세로' — 실제로 렌더된 높이에서 크롬을 뺀 값.
+      // 컬럼 기하로 추정(컬럼 − 형제 − 영상 제 크기)해 봤지만, 영상이 이미 눌려 있는
+      // 상태에선 실제와 크게 어긋났다(162 로 계산 vs 실제 114). 화면에 보이는 양이
+      // 기준이므로 렌더 결과를 그대로 쓴다.
       const W = el.clientWidth - PAD_X;
       const availH = el.clientHeight - chrome;
-      el.style.minHeight = prevMin;
-      el.style.maxHeight = prevMax;
       if (W <= 0 || availH <= 0) {
         // 첫 렌더 등으로 아직 자리를 못 받은 상태. 그냥 빠져나가면 0 인 채로 굳으니
         // 바닥을 깔아 두고, 그 리사이즈가 다음 측정을 부르게 한다.
@@ -72,37 +63,35 @@ export function useListLayout(noRowMinH?: number) {
         return;
       }
 
-      // 세로 2열 타일: 폭 = (영역폭 − 갭)/2, 높이 = 폭 × 9/16.
-      const tileHv = (W - GAP) / 2 / RATIO;
-      // 1.5줄 = 첫 줄(tileHv) + 갭 + 둘째 줄 절반. 이만큼도 안 나오면 가로로.
-      const wide = availH < tileHv * KEEP_ROWS + GAP;
+      // ── 어느 배치가 실제로 더 많이 보이나 ──────────────────────────────────
+      // 중요: 두 배치는 '목록 영역 높이'가 서로 다르다.
+      //  · 세로 2열 — 남는 세로를 다 쓴다(availH).
+      //  · 가로 한 줄 — 감지 탭과 같은 높이로 고정된다(noRowMinH). 그래서 타일이
+      //    그 높이만큼 커지고, 오히려 적게 보일 수 있다.
+      // 각자 '자기 높이'로 개수를 낸 뒤 비교해야 한다. 예전엔 세로 기준 1.5줄이라는
+      // 고정선으로 갈랐는데, 그러면 가로가 더 적게 보이는데도 넘어가는 구간이 생겼다.
+      const tileHv = (W - GAP) / 2 / RATIO; // 세로 2열 타일 높이(폭에서 나옴)
+      const rowsV = Math.max(1, Math.floor((availH + GAP) / (tileHv + GAP)));
+      const countV = 2 * rowsV;
+
+      const hWide = Math.max(TILE_MIN_H, (noRowMinH ?? TILE_MIN_H + chrome) - chrome);
+      const tileWh = hWide * RATIO; // 가로 한 줄 타일 폭(높이에서 나옴)
+      const countH = Math.max(1, Math.floor((W + GAP) / (tileWh + GAP)));
+
+      // 같으면 세로를 남긴다 — 가로로 가서 얻는 게 없으면 굳이 안 바꾼다.
+      const wide = countH > countV;
       setListWide(wide);
 
-      // ── 2) 타일 크기 상한 — 가로 한 줄에서 LIST_MIN_VISIBLE 개는 보이게 ──
-      const tileCapH = Math.max(
-        TILE_MIN_H,
-        Math.floor((W - GAP * (LIST_MIN_VISIBLE - 1)) / LIST_MIN_VISIBLE / RATIO),
-      );
-      setTileMaxH(tileCapH);
-
       // ── 3) 영역 높이 ────────────────────────────────────────────────────────
+      // 바닥(min-height)만 잡는다. 높이를 고정하면 그 값이 다시 판정에 들어가
+      // 가로에 갇히므로 쓰지 않는다. 가로 한 줄은 애초에 '자리가 빡빡할 때' 켜지는
+      // 배치라 실제로 바닥에 붙고, 그래서 목록 아래에 빈 공간이 생기지 않는다.
       el.style.flex = "";
       el.style.height = "";
-      if (wide) {
-        // 가로 한 줄 — 천장을 '타일 상한 + 크롬'으로 막아, 타일이 상한에 걸려 작아진
-        // 만큼 목록도 같이 줄인다(타일 아래가 비지 않는다). 바닥은 감지 탭 높이에
-        // 맞추되 천장을 넘지 않게 한다 — min 이 max 를 이기므로 순서가 중요.
-        const ceil = tileCapH + chrome;
-        const floor = Math.min(
-          Math.max(TILE_MIN_H + chrome, noRowMinH ?? 0),
-          ceil,
-        );
-        el.style.minHeight = `${floor}px`;
-        el.style.maxHeight = `${ceil}px`;
-      } else {
-        el.style.minHeight = `${LIST_MIN_H}px`;
-        el.style.maxHeight = "";
-      }
+      el.style.minHeight = wide
+        ? // 감지 탭과 같은 높이로 맞춰 탭 전환 시 영상 크기가 안 튀게 한다.
+          `${Math.max(TILE_MIN_H + chrome, noRowMinH ?? 0)}px`
+        : `${LIST_MIN_H}px`;
     };
   }
   // (1) 매 렌더 뒤 재계산 — 실시간↔녹화, 목록↔움직임감지 처럼 제목·여백이 바뀌면
@@ -120,5 +109,5 @@ export function useListLayout(noRowMinH?: number) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  return [areaRef, rowRef, listWide, tileMaxH] as const;
+  return [areaRef, rowRef, listWide] as const;
 }
