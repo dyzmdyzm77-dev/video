@@ -829,9 +829,14 @@ function ExpandedView({
   const [recTab, setRecTab] = useState<"list" | "motion">("list");
   // 레이아웃 기준은 app/components/layoutRules.ts 참고 — 단일 영상은 폭과 무관하게
   // 항상 16:9, 목록 방향은 안들이 공유하는 useListLayout 이 정한다.
-  // headerPad = 목록 영역에서 타일이 못 쓰는 세로(제목 52 or 여백 24 + pb-4 16).
-  // 움직임 감지 탭엔 타일 행이 없으니, 그 탭일 때 지켜야 할 최소 높이를 넘겨준다.
-  const [listAreaRef, listRowRef, listWide] = useListLayout(MOTION_MIN_H);
+  // 가로 한 줄(가로 스크롤)일 때 목록 영역은 '움직임 감지' 탭 스트립 높이
+  // (MOTION_MIN_H)로 못 박고, 남는 세로는 아래 videoAreaRef(단일 영상)가 가져간다.
+  // 그래서 목록 탭·감지 탭 스트립 높이가 정확히 같고, 스트립 아래에 빈 공간도 없다.
+  // 이때 영상은 16:9 를 넘겨 세로로 늘어난다 — 가로 스크롤일 때는 허용하기로 했다.
+  const [listAreaRef, listRowRef, listWide, videoAreaRef] = useListLayout(
+    MOTION_MIN_H,
+    true,
+  );
   // 카메라 목록 — 선택 카메라 타일을 가운데로 맞출 때 쓴다(가로면 좌우, 세로면 위아래).
   const listScrollRef = useRef<HTMLDivElement>(null);
   // 목록이 보일 때(진입·탭 전환·선택 변경·레이아웃 전환) 선택된 카메라 타일을 스크롤
@@ -984,11 +989,12 @@ function ExpandedView({
         </div>
       </header>
 
-      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 폭과 무관하게 항상 정확히 16:9.
-          크기 규칙은 globals.css 의 .single-video-area/.single-video-box 에 있다:
-          넓은 화면에선 16:9 를 넘어 늘어나지 않고, 짧은 화면에선 비율을 지킨 채
-          줄어든다(좌우에 검은 여백). */}
-      <div className="single-video-area px-0">
+      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 크기 규칙은 globals.css 의
+          .single-video-area/.single-video-box: 기본은 정확히 16:9(짧은 화면에선
+          비율을 지킨 채 줄고 좌우에 검은 여백). 단 카메라 목록이 가로 스크롤일 땐
+          useListLayout 이 상한을 풀어, 목록 스트립(108) 아래로 남는 세로를 영상이
+          가져간다 — 이때만 16:9 를 넘겨 세로로 늘어난다. */}
+      <div ref={videoAreaRef} className="single-video-area px-0">
         <div
           className="single-video-box relative cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
           onClick={handleVideoClick}
