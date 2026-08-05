@@ -1,5 +1,5 @@
 import { BASE } from "../basePath";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 type CameraFeedProps = {
   label: string;
@@ -10,6 +10,12 @@ type CameraFeedProps = {
   // 배속/되감기/탐색이 영상에도 반영되게 한다.
   playbackMs?: number | null;
   driveByPlayback?: boolean;
+  // 애니메이션 GIF 를 실제로 돌릴지. 다채널은 스와이프를 위해 모든 페이지를 동시에
+  // 렌더하므로(2×4 면 16장 중 보이는 건 8장) 안 보이는 페이지까지 GIF 가 계속
+  // 디코딩된다. paused 로는 안 멈춘다 — opacity 0 은 '가리기'일 뿐 <img> 의 GIF
+  // 애니메이션은 계속 돈다. 그래서 비활성일 땐 <img> 를 아예 렌더하지 않고
+  // 캔버스(첫 프레임) 정지 화면만 남긴다.
+  animate?: boolean;
 };
 
 // ---- GIF 프레임 디코딩 ----
@@ -142,15 +148,24 @@ export function useGifFrameCanvas(
   return ok;
 }
 
-export function CameraFeed({
+// 다채널(그리드)은 타일이 16~18개 살아 있고, 녹화 모드 틱(150ms)마다 상위 트리가
+// 리렌더된다. 타일은 재생 중엔 playbackMs 를 쓰지 않으므로(driveByPlayback=false →
+// GIF 자체 재생) 호출부에서 그때 playbackMs 를 null 로 넘기고, 여기서 memo 로 막으면
+// 틱마다 타일 16~18개를 재조정하는 일이 아예 없어진다.
+function CameraFeedImpl({
   label,
   src,
   paused = false,
   playbackMs = null,
   driveByPlayback = false,
+  animate = true,
 }: CameraFeedProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const driving = driveByPlayback && playbackMs != null;
+  // 캔버스 구동 중엔 디코딩 실패 폴백용으로 <img> 가 필요하므로 그때는 항상 렌더한다.
+  const renderImg = animate || driving;
 
   // 일반(라이브) 모드: GIF의 첫 프레임을 캔버스에 미리 그려두고 paused일 때 표시
   useEffect(() => {
@@ -175,21 +190,21 @@ export function CameraFeed({
     driveByPlayback ? playbackMs : null,
   );
 
-  const driving = driveByPlayback && playbackMs != null;
-
   return (
     <div className="relative h-full w-full overflow-hidden bg-neutral-900">
-      <img
-        ref={imgRef}
-        src={src}
-        alt={label}
-        className="absolute inset-0 h-full w-full object-fill"
-        style={{
-          transform: "scale(1.1)",
-          // 녹화 구동 중엔 캔버스를 쓰지만, 디코딩 실패 시 GIF(<img>)로 폴백.
-          opacity: driving ? (decodeOk ? 0 : 1) : paused ? 0 : 1,
-        }}
-      />
+      {renderImg && (
+        <img
+          ref={imgRef}
+          src={src}
+          alt={label}
+          className="absolute inset-0 h-full w-full object-fill"
+          style={{
+            transform: "scale(1.1)",
+            // 녹화 구동 중엔 캔버스를 쓰지만, 디코딩 실패 시 GIF(<img>)로 폴백.
+            opacity: driving ? (decodeOk ? 0 : 1) : paused ? 0 : 1,
+          }}
+        />
+      )}
       <canvas
         ref={canvasRef}
         aria-hidden
@@ -197,7 +212,9 @@ export function CameraFeed({
         style={{
           objectFit: "fill",
           transform: "scale(1.1)",
-          opacity: driving ? (decodeOk ? 1 : 0) : paused ? 1 : 0,
+          // 정지(paused)거나 비활성 페이지(!animate)면 캔버스가 첫 프레임을 맡는다.
+          // 활성 페이지에선 위의 <img> 가 GIF 를 재생하므로 캔버스를 숨긴다.
+          opacity: driving ? (decodeOk ? 1 : 0) : paused || !animate ? 1 : 0,
         }}
       />
 
@@ -226,6 +243,8 @@ export function CameraFeed({
     </div>
   );
 }
+
+export const CameraFeed = memo(CameraFeedImpl);
 
 export function GridSelectionOverlay({
   visible,

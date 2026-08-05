@@ -177,6 +177,36 @@ export default function DeviceResizer() {
     return Number.isFinite(v) ? v : fallback;
   };
 
+  // 드래그 반영은 '프레임당 한 번'으로 묶는다. 포인터 이벤트는 주사율보다 자주
+  // 오는데, 한 번 반영할 때마다 --device-w 쓰기 → 구독자(useDeviceWidth 등)가
+  // getComputedStyle 로 되읽기 → 시안 트리 리렌더 → position() 이 다시 읽기가
+  // 이어진다. 이벤트마다 그걸 하면 한 프레임 안에서 쓰기·읽기가 여러 번 교차해
+  // 강제 리플로우가 쌓인다(저사양 PC 에서 드래그가 끊기던 원인).
+  const pending = useRef<{ x: number; y: number } | null>(null);
+  const raf = useRef(0);
+
+  // 드래그 중 페이지를 벗어나면 예약된 프레임이 남는다.
+  useEffect(() => () => {
+    if (raf.current) cancelAnimationFrame(raf.current);
+  }, []);
+
+  const flush = () => {
+    raf.current = 0;
+    const d = drag.current;
+    const p = pending.current;
+    if (!d || !p) return;
+    pending.current = null;
+    if (d.axis === "x" || d.axis === "xy") {
+      applyWidth(d.startW + (p.x - d.startX) / d.scale);
+    }
+    if (d.axis === "y" || d.axis === "xy") {
+      applyHeight(d.startH + (p.y - d.startY) / d.scale);
+    }
+    // 드래그 중 크기 변화를 구독자(안드로이드 네비 등)에 실시간 전달.
+    window.dispatchEvent(new Event("deviceresize"));
+    position();
+  };
+
   const startDrag = (axis: "x" | "y" | "xy") => (e: React.PointerEvent) => {
     e.preventDefault();
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
@@ -195,22 +225,22 @@ export default function DeviceResizer() {
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
-    const d = drag.current;
-    if (!d) return;
-    if (d.axis === "x" || d.axis === "xy") {
-      applyWidth(d.startW + (e.clientX - d.startX) / d.scale);
-    }
-    if (d.axis === "y" || d.axis === "xy") {
-      applyHeight(d.startH + (e.clientY - d.startY) / d.scale);
-    }
-    // 드래그 중 크기 변화를 구독자(안드로이드 네비 등)에 실시간 전달.
-    window.dispatchEvent(new Event("deviceresize"));
-    position();
+    if (!drag.current) return;
+    // 좌표만 적어두고 반영은 다음 프레임에 한 번. 같은 프레임에 이벤트가 더 와도
+    // 마지막 좌표로 덮어써지므로 중간값을 그리느라 낭비하지 않는다.
+    pending.current = { x: e.clientX, y: e.clientY };
+    if (!raf.current) raf.current = requestAnimationFrame(flush);
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
     if (!drag.current) return;
     (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+    // 마지막 좌표가 프레임을 못 타고 남아 있을 수 있다 — 놓는 순간 값으로 확정.
+    if (raf.current) {
+      cancelAnimationFrame(raf.current);
+      raf.current = 0;
+    }
+    flush();
     drag.current = null;
     // 드래그 종료 → 전환 다시 켬(버튼 클릭 등은 부드럽게).
     document.documentElement.dataset.resizing = "false";

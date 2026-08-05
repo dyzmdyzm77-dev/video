@@ -2,7 +2,7 @@
 
 import { BASE } from "../basePath";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import {
   CameraFeed,
@@ -13,12 +13,15 @@ import VariantPicker from "../components/VariantPicker";
 import AndroidNav from "../components/AndroidNav";
 import { useDeviceRatio, useDeviceWidth } from "../components/useDeviceWidth";
 import { useListLayout } from "../components/useListLayout";
+import { useGridAreaRatio } from "../components/useGridLayout";
 import {
   MOTION_MIN_H,
   SIDE_PANEL_RATIO,
   SIDE_PANEL_W,
   THUMB_MAX_H,
   THUMB_MIN_H,
+  autoGridCount,
+  bestGridForCount,
 } from "../components/layoutRules";
 
 const CAMERAS = [
@@ -40,18 +43,9 @@ const CAMERAS = [
   { label: "카메라 16", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
 ];
 
-const LAYOUT_DIMS: Record<
-  "1x2" | "1x3" | "2x3" | "2x4" | "2x2" | "3x3" | "4x4",
-  { cols: number; rows: number }
-> = {
-  "1x2": { cols: 1, rows: 2 },
-  "1x3": { cols: 1, rows: 3 },
-  "2x3": { cols: 2, rows: 3 },
-  "2x4": { cols: 2, rows: 4 },
-  "2x2": { cols: 2, rows: 2 },
-  "3x3": { cols: 3, rows: 3 },
-  "4x4": { cols: 4, rows: 4 },
-};
+// 화면 개수(1~16)에서 cols×rows 를 고르는 건 layoutRules.ts 의
+// bestGridForCount(count, ratio) 다 — 영상 영역 비율에 따라 같은 개수도
+// 모양이 달라질 수 있어 고정 표를 안 쓴다.
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -177,14 +171,14 @@ export default function VariantA({
   const [currentPage, setCurrentPage] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
-  // 다채널 세로 레이아웃 — 사용자가 레이아웃 설정에서 직접 고르기 전엔 폭 기반
-  // 기본값을 쓴다(780 이상: 3×3, 620 이상: 2×3, 미만: 2×4). 드래그로 폭이
-  // 바뀌면 즉시 따라간다.
-  const deviceW = useDeviceWidth();
-  const [userVertLayout, setUserVertLayout] = useState<LayoutKey | null>(null);
-  const vertLayout =
-    userVertLayout ?? (deviceW >= 780 ? "3x3" : deviceW >= 620 ? "2x3" : "2x4");
-  const [horzLayout, setHorzLayout] = useState<LayoutKey>("2x2");
+  // 다채널 화면 개수 — 사용자가 '화면 구성'에서 직접 고르기 전엔 영상 영역
+  // 비율(gridRatio) 기반 기본값을 쓴다(layoutRules.ts 의 autoGridCount). 그
+  // 비율에서 가장 16:9 에 가까운 cols×rows 는 bestGridForCount 가 고른다.
+  // videoAreaRef 는 GridView 의 슬라이드 섹션에 달아 실측한다 — 섹션 크기는
+  // cols×rows 선택과 무관해서(그 안을 나누기만 하므로) 순환 의존이 없다.
+  const [videoAreaRef, gridRatio] = useGridAreaRatio();
+  const [userGridCount, setUserGridCount] = useState<number | null>(null);
+  const gridCount = userGridCount ?? autoGridCount(gridRatio);
   const [mode, setMode] = useState<"live" | "recording">("live");
   // 위아래 가짜 시스템 바 표시 여부. 기본은 숨긴 몰입 상태(LIVE 칩으로 토글).
   // 단 데스크톱 진입(initialChrome)이면 켠 채로 시작한다.
@@ -297,7 +291,7 @@ export default function VariantA({
   };
   const [now, setNow] = useState<Date | null>(null);
 
-  const layoutDims = LAYOUT_DIMS[vertLayout];
+  const layoutDims = bestGridForCount(gridCount, gridRatio);
   const pageSize = layoutDims.cols * layoutDims.rows;
   const totalPages = Math.ceil(CAMERAS.length / pageSize);
 
@@ -370,6 +364,7 @@ export default function VariantA({
           onTogglePlay={() => setIsPlaying((p) => !p)}
           onPlay={() => setIsPlaying(true)}
           onSpeedChange={setPlaybackRate}
+          videoAreaRef={videoAreaRef}
         />
       ) : (
         <ExpandedView
@@ -412,14 +407,12 @@ export default function VariantA({
 
       <LayoutConfigSheet
         open={sheetOpen}
-        initialVert={vertLayout}
-        initialHorz={horzLayout}
+        selectedCount={userGridCount}
+        resolvedCount={gridCount}
         onClose={() => setSheetOpen(false)}
-        onApply={(vert, horz) => {
-          setUserVertLayout(vert);
-          setHorzLayout(horz);
+        onPreview={(count) => {
+          setUserGridCount(count);
           setCurrentPage(0);
-          setSheetOpen(false);
         }}
       />
 
@@ -477,6 +470,7 @@ function GridView({
   onTogglePlay,
   onPlay,
   onSpeedChange,
+  videoAreaRef,
 }: {
   onExpand: (i: number) => void;
   currentPage: number;
@@ -505,6 +499,10 @@ function GridView({
   onTogglePlay?: () => void;
   onPlay?: () => void;
   onSpeedChange?: (rate: number) => void;
+  // 화면 개수(1~16)에서 cols×rows 를 고르는 데 쓰는 '영상 영역 비율' 실측용.
+  // 이 섹션(헤더·하단 컨트롤 제외 나머지)에 단다 — 크기가 cols×rows 선택과
+  // 무관해서(그 안을 나누기만 하므로) 순환 의존이 없다.
+  videoAreaRef?: React.RefObject<HTMLElement | null>;
 }) {
   const [gridSelected, setGridSelected] = useState(false);
   const [activityTick, setActivityTick] = useState(0);
@@ -558,6 +556,11 @@ function GridView({
     }
   };
 
+  // 타일이 캔버스로 프레임을 직접 그리는 건 스크럽·일시정지 때뿐이다. 재생 중엔
+  // GIF 가 자체 재생되므로 playbackMs 가 쓰이지 않는다 — 그때 null 을 넘겨야
+  // memo 된 CameraFeed 가 150ms 틱마다 타일 전부를 재조정하지 않는다.
+  const gridDriven = mode === "recording" && (isScrubbing || !isPlaying);
+
   return (
     <>
       {/* 상단 헤더(타이틀+실시간/녹화 탭) — 녹화 모드에서도 항상 표시.
@@ -589,6 +592,7 @@ function GridView({
       </header>
 
       <section
+        ref={videoAreaRef}
         className="relative min-h-0 flex-1 touch-pan-y select-none overflow-hidden"
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
@@ -634,10 +638,11 @@ function GridView({
                           paused={
                             isScrubbing || (mode === "recording" && !isPlaying)
                           }
-                          playbackMs={playbackMs}
-                          driveByPlayback={
-                            mode === "recording" && (isScrubbing || !isPlaying)
-                          }
+                          playbackMs={gridDriven ? playbackMs : null}
+                          driveByPlayback={gridDriven}
+                          // 스와이프용으로 모든 페이지를 렌더하지만 GIF 는 보이는
+                          // 페이지에서만 돌린다(2×4 면 16→8, 3×3 이면 18→9).
+                          animate={pageIdx === currentPage}
                         />
                       ) : (
                         <NoCameraPlaceholder />
@@ -1630,17 +1635,23 @@ function SideEventTimeline({
   // 라벨 (labelIntervalSec 단위) — anchor 기준 ±VISIBLE_MINUTES
   const totalSpanSec = VISIBLE_MINUTES * 60;
   const labelStepCount = Math.ceil(totalSpanSec / labelIntervalSec);
-  const labels = anchor
-    ? Array.from({ length: labelStepCount * 2 + 1 }, (_, i) => {
-        const secOffset = (i - labelStepCount) * labelIntervalSec;
-        const t = new Date(anchor + secOffset * 1000);
-        const text =
-          labelIntervalSec >= 60
-            ? `${pad(t.getHours())}:${pad(t.getMinutes())}`
-            : `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
-        return { text, secOffset };
-      })
-    : [];
+  // playbackMs 는 매 틱마다 갱신되지만 라벨은 anchor·줌에만 의존한다. 메모이즈 없이는
+  // 재생 중 매 틱마다 최대 1,441개를 새로 만든다.
+  const labels = useMemo(
+    () =>
+      anchor
+        ? Array.from({ length: labelStepCount * 2 + 1 }, (_, i) => {
+            const secOffset = (i - labelStepCount) * labelIntervalSec;
+            const t = new Date(anchor + secOffset * 1000);
+            const text =
+              labelIntervalSec >= 60
+                ? `${pad(t.getHours())}:${pad(t.getMinutes())}`
+                : `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+            return { text, secOffset };
+          })
+        : [],
+    [anchor, labelStepCount, labelIntervalSec],
+  );
 
   // 이벤트 — anchor 기준 ±VISIBLE_MINUTES 범위에 들어오는 occurrence 만 렌더.
   // 매일 반복되므로 anchor 날짜 ±1일 내에서 검색.
@@ -2170,17 +2181,23 @@ function RecordingEventTimeline({
   // 라벨 (labelIntervalSec 단위) — anchor 기준 ±VISIBLE_MINUTES
   const totalSpanSec = VISIBLE_MINUTES * 60;
   const labelStepCount = Math.ceil(totalSpanSec / labelIntervalSec);
-  const labels = anchor
-    ? Array.from({ length: labelStepCount * 2 + 1 }, (_, i) => {
-        const secOffset = (i - labelStepCount) * labelIntervalSec;
-        const t = new Date(anchor + secOffset * 1000);
-        const text =
-          labelIntervalSec >= 60
-            ? `${pad(t.getHours())}:${pad(t.getMinutes())}`
-            : `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
-        return { text, secOffset };
-      })
-    : [];
+  // playbackMs 는 매 틱마다 갱신되지만 라벨은 anchor·줌에만 의존한다. 메모이즈 없이는
+  // 재생 중 매 틱마다 최대 1,441개를 새로 만든다.
+  const labels = useMemo(
+    () =>
+      anchor
+        ? Array.from({ length: labelStepCount * 2 + 1 }, (_, i) => {
+            const secOffset = (i - labelStepCount) * labelIntervalSec;
+            const t = new Date(anchor + secOffset * 1000);
+            const text =
+              labelIntervalSec >= 60
+                ? `${pad(t.getHours())}:${pad(t.getMinutes())}`
+                : `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+            return { text, secOffset };
+          })
+        : [],
+    [anchor, labelStepCount, labelIntervalSec],
+  );
 
   // 이벤트 — anchor 기준 ±VISIBLE_MINUTES 범위에 들어오는 occurrence 만 렌더.
   // 매일 반복되므로 anchor 날짜 ±1일 내에서 검색.
@@ -2388,13 +2405,20 @@ function RecordingEventTimeline({
   // 눈금(subInterval) — 녹화 시간바와 동일. 라벨 사이를 10등분한 간격의 눈금(대/소).
   const subIntervalSec = Math.max(1, Math.round(labelIntervalSec / 10));
   const subStepCount = Math.ceil(totalSpanSec / subIntervalSec);
-  const ticks = anchor
-    ? Array.from({ length: subStepCount * 2 + 1 }, (_, i) => {
-        const secOffset = (i - subStepCount) * subIntervalSec;
-        const isMajor = secOffset % labelIntervalSec === 0;
-        return { secOffset, isMajor };
-      })
-    : [];
+  // playbackMs 는 매 틱(50ms) 갱신되지만 눈금은 anchor·줌에만 의존한다. 기본 줌에서
+  // 4시간 범위를 1초 간격으로 찍으면 14,401개 — 메모이즈 없이는 재생 중 매 틱마다
+  // 그 개수를 통째로 새로 만들어 저사양 PC 에서 스크럽이 심하게 끊긴다.
+  const ticks = useMemo(
+    () =>
+      anchor
+        ? Array.from({ length: subStepCount * 2 + 1 }, (_, i) => {
+            const secOffset = (i - subStepCount) * subIntervalSec;
+            const isMajor = secOffset % labelIntervalSec === 0;
+            return { secOffset, isMajor };
+          })
+        : [],
+    [anchor, subStepCount, subIntervalSec, labelIntervalSec],
+  );
   // 중앙(현재 시각)에 가까운 라벨일수록 작아지고 사라짐 — 다채널 RecordingControls
   // 시간바와 동일. (라벨/눈금은 썸네일과 '다른 레일'에 있고 컬링으로 개수도 적어,
   // 매 틱 재계산해도 가볍다. 썸네일 레일은 정적이라 부드럽게 흐른다.)
@@ -2686,49 +2710,52 @@ function FrozenImage({
   return <canvas ref={canvasRef} aria-label={alt} className={className} style={style} />;
 }
 
-type LayoutKey =
-  | "1x2"
-  | "1x3"
-  | "2x3"
-  | "2x4"
-  | "2x2"
-  | "3x3"
-  | "4x4";
-
-const VERTICAL_LAYOUTS: { key: LayoutKey; label: string; iconSrc: string }[] = [
-  { key: "1x2", label: "1×2", iconSrc: `${BASE}/solid%2Bcontailner.svg` },
-  { key: "1x3", label: "1×3", iconSrc: `${BASE}/solid%2Bcontailner-1.svg` },
-  { key: "2x4", label: "2×4", iconSrc: `${BASE}/solid%2Bcontailner-2.svg` },
-];
-
-const HORIZONTAL_LAYOUTS: { key: LayoutKey; label: string; iconSrc: string }[] = [
-  { key: "2x2", label: "2×2", iconSrc: `${BASE}/4%20channel.svg` },
-  { key: "3x3", label: "3×3", iconSrc: `${BASE}/9%20channel.svg` },
-  { key: "4x4", label: "4×4", iconSrc: `${BASE}/16%20channel.svg` },
-];
-
+// '화면 구성' 시트 — 배치(2×4 같은 모양)가 아니라 '개수'(1~16)를 슬라이더로
+// 고른다. 몇 열인지보다 몇 개가 보이는지가 사용자에게 중요한 정보라서다. 고른
+// 개수의 cols×rows 는 layoutRules.ts 의 bestGridForCount(count, 영상영역비율)
+// 가 16:9 에 가장 가깝게 자동으로 고른다.
+//
+// '자동'은 개수를 직접 정하지 않고 영상 영역 비율에 맞춰(autoGridCount) 그때
+// 그때 최적 개수를 쓰겠다는 뜻 — 슬라이더를 만지면 자동은 즉시 꺼진다(그
+// 순간부터 사용자가 개수를 정한 것이므로).
+//
+// 슬라이더는 '적용'을 눌러야 반영되는 게 아니라 끄는 즉시(onPreview) 뒤 그리드가
+// 따라온다 — 몇 개가 어떻게 보이는지 드래그하면서 바로 눈으로 확인하며 고르는
+// 게 자연스럽다(밝기 슬라이더처럼). '취소'를 누르면 시트를 열었을 때 값으로
+// 되돌린다 — 그래서 미리보기 중 실제 상태가 바뀌어도 취소가 의미를 갖는다.
 function LayoutConfigSheet({
   open,
-  initialVert,
-  initialHorz,
+  selectedCount,
+  resolvedCount,
   onClose,
-  onApply,
+  onPreview,
 }: {
   open: boolean;
-  initialVert: LayoutKey;
-  initialHorz: LayoutKey;
+  /** 사용자가 직접 고른 개수. null 이면 '자동'. */
+  selectedCount: number | null;
+  /** 지금 실제로 쓰이는 개수(자동이면 autoGridCount 결과) — 슬라이더 위치·라벨용. */
+  resolvedCount: number;
   onClose: () => void;
-  onApply: (vert: LayoutKey, horz: LayoutKey) => void;
+  /** 값이 바뀔 때마다(자동 토글·슬라이더 드래그) 즉시 호출 — 그리드가 바로 따라온다. */
+  onPreview: (count: number | null) => void;
 }) {
-  const [vert, setVert] = useState<LayoutKey>(initialVert);
-  const [horz, setHorz] = useState<LayoutKey>(initialHorz);
+  const [auto, setAuto] = useState(selectedCount === null);
+  const [count, setCount] = useState(resolvedCount);
+  // 시트를 열었을 때의 선택값 — '취소' 누르면 이 값으로 되돌린다.
+  const originalRef = useRef<number | null>(selectedCount);
 
   useEffect(() => {
     if (open) {
-      setVert(initialVert);
-      setHorz(initialHorz);
+      setAuto(selectedCount === null);
+      setCount(resolvedCount);
+      originalRef.current = selectedCount;
     }
-  }, [open, initialVert, initialHorz]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const preview = (nextAuto: boolean, nextCount: number) => {
+    onPreview(nextAuto ? null : nextCount);
+  };
 
   return (
     <div
@@ -2781,41 +2808,68 @@ function LayoutConfigSheet({
           </button>
         </div>
 
-        <div className="px-5 pb-2">
-          <h3 className="text-[20px] font-bold leading-none text-neutral-900" style={{ marginBottom: "16px" }}>
-            세로방향
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
-            {VERTICAL_LAYOUTS.map((opt) => (
-              <LayoutOption
-                key={opt.key}
-                label={opt.label}
-                iconSrc={opt.iconSrc}
-                iconWidth={60}
-                iconHeight={85}
-                selected={vert === opt.key}
-                onClick={() => setVert(opt.key)}
-              />
-            ))}
+        <div className="px-5 pb-2 overflow-y-auto">
+          <div
+            className="flex items-center justify-between"
+            style={{ marginBottom: "16px" }}
+          >
+            <h3 className="text-[20px] font-bold leading-none text-neutral-900">
+              화면 개수
+            </h3>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !auto;
+                setAuto(next);
+                preview(next, count);
+              }}
+              className="inline-flex items-center justify-center text-[14px] font-semibold leading-none"
+              style={{
+                height: "32px",
+                padding: "0 14px",
+                borderRadius: "16px",
+                backgroundColor: auto ? "#1D6CEB" : "#F2F2F2",
+                color: auto ? "#FFFFFF" : "#7F7F7F",
+              }}
+            >
+              자동
+            </button>
           </div>
-        </div>
 
-        <div className="px-5" style={{ paddingTop: "20px" }}>
-          <h3 className="text-[20px] font-bold leading-none text-neutral-900" style={{ marginBottom: "16px" }}>
-            가로방향
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
-            {HORIZONTAL_LAYOUTS.map((opt) => (
-              <LayoutOption
-                key={opt.key}
-                label={opt.label}
-                iconSrc={opt.iconSrc}
-                iconWidth={85}
-                iconHeight={60}
-                selected={horz === opt.key}
-                onClick={() => setHorz(opt.key)}
-              />
-            ))}
+          <div
+            className="flex items-center justify-center text-[16px] font-semibold text-neutral-900"
+            style={{ marginBottom: "12px" }}
+          >
+            {count}개
+          </div>
+          {/* disabled 를 안 쓴다 — 자동일 때 슬라이더를 막으면 사용자가 자동을 먼저
+              꺼야만 드래그할 수 있어 한 단계가 더 든다. 항상 드래그 가능하게 두고
+              흐림(opacity)만 자동 상태를 알리는 용도로 쓴다 — 만지는 순간
+              onChange 이 자동을 꺼서 자연스럽게 넘어간다. */}
+          <input
+            type="range"
+            min={1}
+            max={16}
+            step={1}
+            value={count}
+            onChange={(e) => {
+              const next = Number(e.target.value);
+              setAuto(false);
+              setCount(next);
+              preview(false, next);
+            }}
+            className="w-full"
+            style={{
+              accentColor: "#1D6CEB",
+              opacity: auto ? 0.4 : 1,
+            }}
+          />
+          <div
+            className="flex items-center justify-between text-[12px]"
+            style={{ color: "#A4A4A4", marginTop: "4px" }}
+          >
+            <span>1</span>
+            <span>16</span>
           </div>
         </div>
 
@@ -2826,7 +2880,10 @@ function LayoutConfigSheet({
         >
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              onPreview(originalRef.current);
+              onClose();
+            }}
             className="flex-1 border border-neutral-300 bg-white text-[16px] font-semibold text-neutral-900"
             style={{ height: "50px", borderRadius: "4px" }}
           >
@@ -2834,7 +2891,7 @@ function LayoutConfigSheet({
           </button>
           <button
             type="button"
-            onClick={() => onApply(vert, horz)}
+            onClick={onClose}
             className="flex-1 bg-[#1D6CEB] text-[16px] font-semibold text-white"
             style={{ height: "50px", borderRadius: "4px" }}
           >
@@ -2843,64 +2900,6 @@ function LayoutConfigSheet({
         </div>
       </div>
     </div>
-  );
-}
-
-function LayoutOption({
-  label,
-  iconSrc,
-  iconWidth,
-  iconHeight,
-  selected,
-  onClick,
-}: {
-  label: string;
-  iconSrc: string;
-  iconWidth: number;
-  iconHeight: number;
-  selected: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex flex-col items-center"
-      style={{ gap: "8px" }}
-    >
-      <div
-        className="flex items-center justify-center"
-        style={{
-          padding: "8px",
-          borderRadius: "8px",
-          boxShadow: selected ? "inset 0 0 0 2px #1D6CEB" : "none",
-        }}
-      >
-        <span
-          aria-hidden
-          className="block"
-          style={{
-            width: `${iconWidth}px`,
-            height: `${iconHeight}px`,
-            backgroundColor: selected ? "#1D6CEB" : "#F2F2F2",
-            WebkitMaskImage: `url("${iconSrc}")`,
-            maskImage: `url("${iconSrc}")`,
-            WebkitMaskRepeat: "no-repeat",
-            maskRepeat: "no-repeat",
-            WebkitMaskPosition: "center",
-            maskPosition: "center",
-            WebkitMaskSize: "contain",
-            maskSize: "contain",
-          }}
-        />
-      </div>
-      <span
-        className="text-[14px] font-medium leading-none"
-        style={{ color: selected ? "#1D6CEB" : "#262626" }}
-      >
-        {label}
-      </span>
-    </button>
   );
 }
 
@@ -3146,29 +3145,6 @@ function RecordingControls({
     ? `${pad(centerDate.getHours())}:${pad(centerDate.getMinutes())}:${pad(centerDate.getSeconds())}`
     : "";
 
-  // 라벨 (labelIntervalSec 단위) 및 눈금 (subIntervalSec 단위) 생성
-  const totalSpanSec = VISIBLE_MINUTES * 60;
-  const labelStepCount = Math.ceil(totalSpanSec / labelIntervalSec);
-  const labels = anchor
-    ? Array.from({ length: labelStepCount * 2 + 1 }, (_, i) => {
-        const secOffset = (i - labelStepCount) * labelIntervalSec;
-        const t = new Date(anchor + secOffset * 1000);
-        const text =
-          labelIntervalSec >= 60
-            ? `${pad(t.getHours())}:${pad(t.getMinutes())}`
-            : `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
-        return { text, secOffset };
-      })
-    : [];
-  const subStepCount = Math.ceil(totalSpanSec / subIntervalSec);
-  const ticks = anchor
-    ? Array.from({ length: subStepCount * 2 + 1 }, (_, i) => {
-        const secOffset = (i - subStepCount) * subIntervalSec;
-        const isMajor = secOffset % labelIntervalSec === 0;
-        return { secOffset, isMajor };
-      })
-    : [];
-
   const playbackOffsetSec =
     playbackMs !== null && anchor !== null
       ? (playbackMs - anchor) / 1000
@@ -3177,6 +3153,72 @@ function RecordingControls({
     playbackMs !== null && anchor !== null
       ? `translateX(${-playbackOffsetSec * pxPerSec}px)`
       : undefined;
+
+  // 라벨(labelIntervalSec 단위)·눈금(subIntervalSec 단위)은 anchor 기준 ±2시간
+  // 전체가 아니라 '화면에 보이는 구간 + 스크럽 대비 여유'만 만든다. 기본 줌에서
+  // 전체 범위를 다 만들면 눈금만 14,401개라, useMemo 로 재계산 자체는 막아도
+  // .map() 이 만드는 15,000+ 개의 React 엘리먼트를 React 가 매 틱(그리드는
+  // 150ms)마다 다시 조정(reconcile)해야 해 저사양 PC 에서 다채널 녹화가 심하게
+  // 끊긴다. 개수를 뷰포트 폭에 비례하게(수백 개) 줄이면 그 비용이 사실상 사라진다.
+  //
+  // 중심(windowCenterSec)은 재생 위치가 바뀔 때마다 갱신하지 않고, 화면 절반
+  // 만큼 벗어났을 때만 갱신한다(히스테리시스) — 안 그러면 매 틱마다 중심이
+  // 따라 움직여 결국 매 틱 재계산과 같아진다.
+  const totalSpanSec = VISIBLE_MINUTES * 60;
+  const timelineViewportPx = timelineRef.current?.clientWidth || 360;
+  const viewportSec = timelineViewportPx / pxPerSec;
+  const WINDOW_SCREENS = 3;
+  const windowSpanSec = Math.min(totalSpanSec, viewportSec * WINDOW_SCREENS);
+  const [windowCenterSec, setWindowCenterSec] = useState(0);
+  useEffect(() => {
+    const threshold = viewportSec / 2;
+    setWindowCenterSec((prev) =>
+      Math.abs(playbackOffsetSec - prev) > threshold ? playbackOffsetSec : prev,
+    );
+  }, [playbackOffsetSec, viewportSec]);
+
+  const labelStepCount = Math.max(
+    1,
+    Math.min(
+      Math.ceil(totalSpanSec / labelIntervalSec),
+      Math.ceil(windowSpanSec / labelIntervalSec) + 1,
+    ),
+  );
+  const labelCenterIdx = Math.round(windowCenterSec / labelIntervalSec);
+  const labels = useMemo(
+    () =>
+      anchor
+        ? Array.from({ length: labelStepCount * 2 + 1 }, (_, i) => {
+            const secOffset = (labelCenterIdx - labelStepCount + i) * labelIntervalSec;
+            const t = new Date(anchor + secOffset * 1000);
+            const text =
+              labelIntervalSec >= 60
+                ? `${pad(t.getHours())}:${pad(t.getMinutes())}`
+                : `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+            return { text, secOffset };
+          })
+        : [],
+    [anchor, labelCenterIdx, labelStepCount, labelIntervalSec],
+  );
+  const subStepCount = Math.max(
+    1,
+    Math.min(
+      Math.ceil(totalSpanSec / subIntervalSec),
+      Math.ceil(windowSpanSec / subIntervalSec) + 1,
+    ),
+  );
+  const tickCenterIdx = Math.round(windowCenterSec / subIntervalSec);
+  const ticks = useMemo(
+    () =>
+      anchor
+        ? Array.from({ length: subStepCount * 2 + 1 }, (_, i) => {
+            const secOffset = (tickCenterIdx - subStepCount + i) * subIntervalSec;
+            const isMajor = secOffset % labelIntervalSec === 0;
+            return { secOffset, isMajor };
+          })
+        : [],
+    [anchor, tickCenterIdx, subStepCount, subIntervalSec, labelIntervalSec],
+  );
 
   // 라벨이 중앙(현재 시간 표시)에 가까울수록 작아지고 사라짐
   const labelVisualStyle = (secOffset: number) => {

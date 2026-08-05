@@ -180,3 +180,81 @@ export const HOME_W_1COL = 480;
 
 /** 홈 2단(WIDE_BP 이상) 콘텐츠 최대 폭(px) — 컬럼 280~320 두 개 + 간격 20. */
 export const HOME_W_2COL = 700;
+
+// ============================================================================
+// 다채널(그리드) 배치 — 영상 영역 '비율'로 정한다
+// ============================================================================
+// 타일은 항상 16:9 를 목표로 한다. 배치(cols×rows)를 폭 기준선으로 나누면 폭이
+// 늘어도 타일 비율은 계속 늘어나기만 하다가(16:9→18:9→20:9…) 어느 기준선에서
+// '뚝' 끊기는데, 그 기준선이 원칙이 아니라 프리셋에서 우연히 맞은 값이 되기
+// 쉽다(SIDE_PANEL_RATIO 를 폭 대신 비율로 바꾼 것과 같은 이유).
+//
+// 그래서 여기서도 폭이 아니라 '영상 영역 비율'(R = 가로/세로, useGridLayout.ts
+// 가 그리드 섹션을 실측)로 판정한다. 타일 비율 = R × rows/cols 이므로, 배치가
+// 바뀌는 경계는 두 배치의 cols/rows 값의 기하평균 지점이다 — 그 지점에서 두
+// 배치의 타일이 16:9 대비 정확히 같은 배수만큼 반대 방향으로 벗어난다.
+//
+// ── 자동 기본값(사용자가 화면 구성에서 직접 고르기 전) ─────────────────────
+// 후보를 cols/rows 사다리 전체(1x2, 2x3, 3x4, 4x5 …)로 다 쓰면 폭이 넓어질수록
+// 타일 '개수'가 오히려 줄어드는 구간이 생긴다(예: 620px 15개 → 700px 6개) —
+// cols/rows 가 같은 값을 갖는 배치가 그 사다리에 하나뿐이라 한 칸 오르면
+// 개수가 뚝 떨어지기 때문. 그래서 자동 기본값은 '개수가 폭에 따라 항상
+// 늘어나는' 사다리 2×4(8) → 3×4(12) → 4×4(16) 만 쓴다. 열만 2→3→4로 늘리고
+// 행은 4로 고정 — 타일 세로도 구간 내내 일정하게 유지된다.
+//
+// 경계(cols/rows 기하평균 × 16/9):
+//   2×4(0.5) ↔ 3×4(0.75) 경계  R ≈ 1.089  (그 지점 타일 비율 ≈ 19.6:9 / 13.1:9)
+//   3×4(0.75) ↔ 4×4(1.0) 경계  R ≈ 1.540  (그 지점 타일 비율 ≈ 18.5:9 / 13.9:9)
+// 즉 이 사다리에서 타일이 늘어나는 한도는 최대 약 19.6:9(≈2.18배)다. 더 좁게
+// 조이려면(예: 18:9) 중간 배치(2×5, 3×5 등)를 사다리에 더 넣어야 한다 — 사용자
+// 결정으로 지금은 19.6:9 를 한도로 둔다.
+//
+// ── 사용자가 직접 고르는 화면 개수(1~16) ─────────────────────────────────
+// '화면 구성' 시트는 배치(2×4 같은 모양)가 아니라 '개수'를 고르게 한다 —
+// 사용자에게 중요한 건 몇 개가 보이느냐지 몇 열인지가 아니다. 고른 개수 N 의
+// cols×rows 는 N 의 약수쌍 중 타일이 16:9 에 가장 가까운 것으로 자동 결정한다
+// (bestGridForCount). 소수(7, 11, 13 등)는 1×N/N×1 밖에 없어 많이 늘어나지만,
+// 사용자가 그 개수를 직접 골랐으니 감수하는 것으로 본다.
+export const GRID_TILE_RATIO = 16 / 9;
+
+const GRID_AUTO_LADDER: { count: number; cols: number; rows: number }[] = [
+  { count: 8, cols: 2, rows: 4 },
+  { count: 12, cols: 3, rows: 4 },
+  { count: 16, cols: 4, rows: 4 },
+];
+
+/** 자동 기본값 — 영상 영역 비율(R)에서 화면 개수(8/12/16)를 고른다. */
+export function autoGridCount(ratio: number): number {
+  for (let i = 0; i < GRID_AUTO_LADDER.length - 1; i++) {
+    const cur = GRID_AUTO_LADDER[i];
+    const next = GRID_AUTO_LADDER[i + 1];
+    const boundary =
+      Math.sqrt((cur.cols / cur.rows) * (next.cols / next.rows)) *
+      GRID_TILE_RATIO;
+    if (ratio < boundary) return cur.count;
+  }
+  return GRID_AUTO_LADDER[GRID_AUTO_LADDER.length - 1].count;
+}
+
+/**
+ * 화면 개수 N 과 영상 영역 비율(R)로 가장 16:9 에 가까운 cols×rows 를 고른다.
+ * N 의 약수쌍을 전부 시도해 타일 비율(R×rows/cols)이 16:9 에서 가장 덜
+ * 벗어나는(로그 거리 최소) 조합을 쓴다. 동률이면 더 정사각(가로 배치)에
+ * 가까운 쪽을 우선한다.
+ */
+export function bestGridForCount(
+  count: number,
+  ratio: number,
+): { cols: number; rows: number } {
+  let best = { cols: 1, rows: count, cost: Infinity };
+  for (let cols = 1; cols <= count; cols++) {
+    if (count % cols !== 0) continue;
+    const rows = count / cols;
+    const tileRatio = (ratio * rows) / cols;
+    const cost = Math.abs(Math.log(tileRatio / GRID_TILE_RATIO));
+    if (cost < best.cost - 1e-9 || (cost < best.cost + 1e-9 && cols >= rows)) {
+      best = { cols, rows, cost };
+    }
+  }
+  return { cols: best.cols, rows: best.rows };
+}
