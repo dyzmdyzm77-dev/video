@@ -83,22 +83,18 @@ body {
      · data-fill  — 카메라 목록이 가로 스크롤. useListLayout 이 배치를 정한 뒤 켠다.
      · data-side  — 오른쪽 세로 패널. VariantA 가 렌더할 때 켠다(훅이 관여 안 함).
 
-   max-height 는 '얼마나 눌려도 되는지'의 한도다(layoutRules 의 FILL_RATIO_MIN 1.5).
-   화면이 정사각에 가까울수록 남는 세로가 커져서, 상한 없이 다 먹이면 5:4 에서
-   1.34:1 까지 눌린다(16:9 대비 세로 +33%). 폭÷1.5 로 막고 남는 건 여백으로 둔다.
-   폭 기준: 스트립은 프레임 폭 전체(100cqw), 패널은 거기서 패널 폭을 뺀 값.
-
-   ※ 아래 220px·1.5 는 layoutRules 의 SIDE_PANEL_W·FILL_RATIO_MIN 을 숫자로 미러링한
-     것이다(calc 안에 상수를 못 넣는다 — 홈의 max-w-[480px] 와 같은 사정). 같이 고칠 것. */
+   단일 화면은 빈 공간을 남기지 않는다 — 두 경우 다 한도 없이 남는 세로를 전부
+   가져간다(사용자 결정). 예전엔 data-side 에 FILL_RATIO_MIN(1.5) 상한을 둬서
+   정사각에 가까운 화면은 세로를 다 못 채우고 여백이 남았는데, 다채널이 아니라
+   단일 화면 얘기라 "빈 공간 있으면 다 채우자"로 뒤집었다. */
 .single-video-area[data-fill="true"],
 .single-video-area[data-side="true"] {
   flex-grow: 1;
-}
-.single-video-area[data-fill="true"] {
-  max-height: calc(100cqw / 1.5);
-}
-.single-video-area[data-side="true"] {
-  max-height: calc((100cqw - 220px) / 1.5);
+  /* 기본 규칙(.single-video-area)의 max-height:56.25cqw(16:9) 가 속성 단위로
+     그대로 남아 있다 — flex-grow 만 켜고 max-height 를 명시적으로 안 풀면 여전히
+     16:9 에서 막혀 "빈 공간 있으면 다 채우자"가 실제로는 안 먹힌다(이 파일
+     교체 이력에서 실제로 겪은 회귀). none 으로 명시해야 진짜로 풀린다. */
+  max-height: none;
 }
 /* 위 규칙만으로는 세로만 채워진다 — 박스가 16:9 를 지키느라 폭이 모자라면 좌우에
    검은 여백이 남는다(780×780 에서 53px). 폭까지 100% 로 못 박으면 세로·가로가 둘 다

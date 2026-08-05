@@ -13,7 +13,12 @@ import VariantPicker from "../components/VariantPicker";
 import AndroidNav from "../components/AndroidNav";
 import { useListLayout } from "../components/useListLayout";
 import { useGridAreaRatio } from "../components/useGridLayout";
-import { autoGridCount, bestGridForCount } from "../components/layoutRules";
+import {
+  autoGridCount,
+  bestGridForCount,
+  GRID_COUNT_OPTIONS,
+  nearestGridCountIndex,
+} from "../components/layoutRules";
 
 const CAMERAS = [
   { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
@@ -746,11 +751,15 @@ function ExpandedSlide({
   paused,
   playbackMs = null,
   driveByPlayback = false,
+  fit = "cover",
 }: {
   c: (typeof CAMERAS)[number];
   paused: boolean;
   playbackMs?: number | null;
   driveByPlayback?: boolean;
+  // 딤 상태의 '화면 맞춤' 버튼이 고르는 값. fill=가득 채움(비율 무시),
+  // contain=원본 비율 유지·빈 공간 검정, cover=원본 비율 유지·크롭(이 안의 기본값).
+  fit?: "fill" | "contain" | "cover";
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -775,15 +784,19 @@ function ExpandedSlide({
       <img
         src={c.src}
         alt={c.label}
-        className="absolute inset-0 h-full w-full object-cover"
-        style={{ transform: zoom, opacity: driving ? 0 : paused ? 0 : 1 }}
+        className="absolute inset-0 h-full w-full"
+        style={{
+          objectFit: fit,
+          transform: zoom,
+          opacity: driving ? 0 : paused ? 0 : 1,
+        }}
       />
       <canvas
         ref={canvasRef}
         aria-hidden
         className="absolute inset-0 h-full w-full"
         style={{
-          objectFit: "cover",
+          objectFit: fit,
           transform: zoom,
           opacity: driving ? 1 : paused ? 1 : 0,
         }}
@@ -858,6 +871,16 @@ function ExpandedView({
     mode === "recording" && (isScrubbing || !isPlaying || playbackRate !== 1);
   const cam = CAMERAS[index];
   const [showControls, setShowControls] = useState(false);
+  // 영상 맞춤 모드 — 딤(showControls) 상태의 화면맞춤 버튼으로 돌린다.
+  //   fill    : 영상 뷰 영역을 가득 채운다(원본 비율 무시, 늘어남/찌그러짐).
+  //   contain : 원본 비율 그대로, 빈 공간은 검정으로 채운다(레터박스/필러박스).
+  //   cover   : 원본 비율 유지한 채 가로나 세로 중 짧은 쪽 기준으로 최대로 키워
+  //             넘치는 쪽을 자른다(크롭) — 이 안의 기존 기본값과 같다.
+  const [videoFit, setVideoFit] = useState<"fill" | "contain" | "cover">(
+    "cover",
+  );
+  const cycleVideoFit = () =>
+    setVideoFit((f) => (f === "fill" ? "contain" : f === "contain" ? "cover" : "fill"));
   const [activityTick, setActivityTick] = useState(0);
   const [seekToast, setSeekToast] = useState<string | null>(null);
   const seekToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1059,6 +1082,7 @@ function ExpandedView({
                   paused={(isScrubbing || !isPlaying) && mode === "recording"}
                   playbackMs={playbackMs}
                   driveByPlayback={canvasDriven}
+                  fit={videoFit}
                 />
               </div>
             ))}
@@ -1099,6 +1123,19 @@ function ExpandedView({
                   alt=""
                   className="h-8 w-8"
                   style={{ filter: "brightness(0) invert(1)" }}
+                />
+              </button>
+              {/* 화면 맞춤 — 누를 때마다 가득 채우기(fill) → 원본 비율(contain,
+                  빈 공간 검정) → 크롭(cover, 짧은 쪽 기준 확대) 순으로 돈다. */}
+              <button
+                type="button"
+                aria-label="화면 맞춤"
+                onClick={cycleVideoFit}
+              >
+                <img
+                  src={`${BASE}/nav/expand.svg`}
+                  alt=""
+                  className="h-8 w-8"
                 />
               </button>
               <button type="button" aria-label="회전">
@@ -2294,15 +2331,18 @@ function LayoutConfigSheet({
           {/* disabled 를 안 쓴다 — 자동일 때 슬라이더를 막으면 사용자가 자동을 먼저
               꺼야만 드래그할 수 있어 한 단계가 더 든다. 항상 드래그 가능하게 두고
               흐림(opacity)만 자동 상태를 알리는 용도로 쓴다 — 만지는 순간
-              onChange 이 자동을 꺼서 자연스럽게 넘어간다. */}
+              onChange 이 자동을 꺼서 자연스럽게 넘어간다.
+              슬라이더는 GRID_COUNT_OPTIONS 의 '인덱스'를 움직인다 — native range
+              의 step 은 균일 간격만 지원해 2,3,4,6,8,9,10,12,14,15,16 처럼
+              듬성듬성한 목록엔 못 쓴다. */}
           <input
             type="range"
-            min={1}
-            max={16}
+            min={0}
+            max={GRID_COUNT_OPTIONS.length - 1}
             step={1}
-            value={count}
+            value={nearestGridCountIndex(count)}
             onChange={(e) => {
-              const next = Number(e.target.value);
+              const next = GRID_COUNT_OPTIONS[Number(e.target.value)];
               setAuto(false);
               setCount(next);
               preview(false, next);
@@ -2317,8 +2357,8 @@ function LayoutConfigSheet({
             className="flex items-center justify-between text-[12px]"
             style={{ color: "#A4A4A4", marginTop: "4px" }}
           >
-            <span>1</span>
-            <span>16</span>
+            <span>{GRID_COUNT_OPTIONS[0]}</span>
+            <span>{GRID_COUNT_OPTIONS[GRID_COUNT_OPTIONS.length - 1]}</span>
           </div>
         </div>
 

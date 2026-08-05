@@ -80,7 +80,25 @@
       "Bash(git rev-list *)",
       "Bash(gh pr *)",
       "Bash(npx next *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "PowerShell(git stash pop)",
+      "PowerShell(git fetch --all --prune)",
+      "PowerShell(git stash drop)",
+      "PowerShell(git fetch origin main:main)",
+      "PowerShell(git fetch origin android-bottom-bar-updates:android-bottom-bar-updates)",
+      "Bash(gh run *)",
+      "Bash(gh api *)",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 20; \"tsc exit: $LASTEXITCODE\")",
+      "PowerShell(npx tsc --noEmit 2>&1 | Where-Object { $_ -notmatch '\\\\.next/types' } | Select-Object -First 20; \"---\"; \"tsc exit: $LASTEXITCODE\")",
+      "PowerShell(npx tsc --noEmit 2>&1)",
+      "PowerShell(foreach \\($p in @\\('/a','/a1','/b'\\)\\) { $r = Invoke-WebRequest -Uri \"http://localhost:3000$p\" -UseBasicParsing -TimeoutSec 60; \"$p -> $\\($r.StatusCode\\), bytes=$\\($r.RawContentLength\\)\" })",
+      "PowerShell(foreach \\($p in @\\('/a','/a1','/b','/home','/'\\)\\) { $r = Invoke-WebRequest -Uri \"http://localhost:3000$p\" -UseBasicParsing -TimeoutSec 90; $gifs = \\([regex]::Matches\\($r.Content, 'cameras/cam\\\\d\\\\.gif'\\)\\).Count; \"$p -> $\\($r.StatusCode\\), gif refs in SSR HTML=$gifs\" })",
+      "PowerShell(foreach \\($p in @\\('/a','/a1','/b','/home','/'\\)\\) { $r = Invoke-WebRequest -Uri \"http://localhost:3000$p\" -UseBasicParsing -TimeoutSec 90; \"$p -> $\\($r.StatusCode\\)\" })",
+      "PowerShell(foreach \\($p in @\\('/a','/a1','/b'\\)\\) { $r = Invoke-WebRequest -Uri \"http://localhost:3000$p\" -UseBasicParsing -TimeoutSec 90; $bad = $r.Content -match \"defined multiple times|imgReady is not defined|memo is not defined\"; \"$p -> $\\($r.StatusCode\\), errorInHTML=$bad\" })",
+      "PowerShell(foreach \\($p in @\\('/a','/a1','/b'\\)\\) { $r = Invoke-WebRequest -Uri \"http://localhost:3000$p\" -UseBasicParsing -TimeoutSec 90; \"$p -> $\\($r.StatusCode\\)\" })",
+      "Bash(git checkout *)",
+      "Bash(git merge *)",
+      "Bash(git push *)"
     ]
   }
 }

@@ -13,7 +13,12 @@ import VariantPicker from "../components/VariantPicker";
 import AndroidNav from "../components/AndroidNav";
 import { useListLayout } from "../components/useListLayout";
 import { useGridAreaRatio } from "../components/useGridLayout";
-import { autoGridCount, bestGridForCount } from "../components/layoutRules";
+import {
+  autoGridCount,
+  bestGridForCount,
+  GRID_COUNT_OPTIONS,
+  nearestGridCountIndex,
+} from "../components/layoutRules";
 
 const CAMERAS = [
   { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
@@ -171,6 +176,10 @@ export default function VariantA1({
   // 위아래 가짜 시스템 바 표시 여부. 기본은 숨긴 몰입 상태(LIVE 칩으로 토글).
   // 단 데스크톱 진입(initialChrome)이면 켠 채로 시작한다.
   const [chromeVisible, setChromeVisible] = useState(initialChrome);
+  // 녹화 모드 REC 칩 — 예전엔 가짜 시스템 바(chromeVisible)를 같이 토글했는데,
+  // 이제 시간바(플레이어 버튼+눈금 타임라인)만 숨긴다/보인다로 바뀐다. 기본은
+  // 보임. 헤더의 REC+날짜 행은 이 상태와 무관하게 항상 남아 다시 누를 수 있다.
+  const [timelineVisible, setTimelineVisible] = useState(true);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [playbackMs, setPlaybackMs] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -180,6 +189,7 @@ export default function VariantA1({
   const [gridLoading, setGridLoading] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
   const toggleChrome = () => setChromeVisible((v) => !v);
+  const toggleTimeline = () => setTimelineVisible((v) => !v);
 
   // 화면 캡처 토스트 — 카메라 버튼 누르면 잠깐 노출 후 자동 사라짐.
   const [captureToast, setCaptureToast] = useState(false);
@@ -343,6 +353,8 @@ export default function VariantA1({
           now={now}
           onToggleChrome={toggleChrome}
           chromeVisible={chromeVisible}
+          timelineVisible={timelineVisible}
+          onToggleTimeline={toggleTimeline}
           isScrubbing={isScrubbing}
           onScrubbingChange={setIsScrubbing}
           playbackMs={playbackMs}
@@ -366,6 +378,8 @@ export default function VariantA1({
           setMode={handleSetMode}
           onToggleChrome={toggleChrome}
           chromeVisible={chromeVisible}
+          timelineVisible={timelineVisible}
+          onToggleTimeline={toggleTimeline}
           onOpenDateTime={() => setDateTimeOpen(true)}
           videoLoading={videoLoading}
           playbackMs={playbackMs}
@@ -449,6 +463,8 @@ function GridView({
   now,
   onToggleChrome,
   chromeVisible = true,
+  timelineVisible = true,
+  onToggleTimeline,
   isScrubbing,
   onScrubbingChange,
   playbackMs,
@@ -476,6 +492,8 @@ function GridView({
   now: Date | null;
   onToggleChrome: () => void;
   chromeVisible?: boolean;
+  timelineVisible?: boolean;
+  onToggleTimeline?: () => void;
   isScrubbing: boolean;
   onScrubbingChange: (s: boolean) => void;
   playbackMs: number | null;
@@ -668,6 +686,8 @@ function GridView({
         <RecordingControls
           now={now}
           onToggleChrome={onToggleChrome}
+          timelineVisible={timelineVisible}
+          onToggleTimeline={onToggleTimeline}
           onScrubbingChange={onScrubbingChange}
           playbackMs={playbackMs}
           setPlaybackMs={setPlaybackMs}
@@ -690,11 +710,15 @@ function ExpandedSlide({
   paused,
   playbackMs = null,
   driveByPlayback = false,
+  fit = "cover",
 }: {
   c: (typeof CAMERAS)[number];
   paused: boolean;
   playbackMs?: number | null;
   driveByPlayback?: boolean;
+  // 딤 상태의 '화면 맞춤' 버튼이 고르는 값. fill=가득 채움(비율 무시),
+  // contain=원본 비율 유지·빈 공간 검정, cover=원본 비율 유지·크롭(이 안의 기본값).
+  fit?: "fill" | "contain" | "cover";
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -719,15 +743,19 @@ function ExpandedSlide({
       <img
         src={c.src}
         alt={c.label}
-        className="absolute inset-0 h-full w-full object-cover"
-        style={{ transform: zoom, opacity: driving ? 0 : paused ? 0 : 1 }}
+        className="absolute inset-0 h-full w-full"
+        style={{
+          objectFit: fit,
+          transform: zoom,
+          opacity: driving ? 0 : paused ? 0 : 1,
+        }}
       />
       <canvas
         ref={canvasRef}
         aria-hidden
         className="absolute inset-0 h-full w-full"
         style={{
-          objectFit: "cover",
+          objectFit: fit,
           transform: zoom,
           opacity: driving ? 1 : paused ? 1 : 0,
         }}
@@ -758,6 +786,8 @@ function ExpandedView({
   setMode,
   onToggleChrome,
   chromeVisible = true,
+  timelineVisible = true,
+  onToggleTimeline,
   onOpenDateTime,
   videoLoading,
   playbackMs,
@@ -780,6 +810,8 @@ function ExpandedView({
   setMode: (m: "live" | "recording") => void;
   onToggleChrome: () => void;
   chromeVisible?: boolean;
+  timelineVisible?: boolean;
+  onToggleTimeline?: () => void;
   onOpenDateTime: () => void;
   videoLoading: boolean;
   playbackMs: number | null;
@@ -797,6 +829,16 @@ function ExpandedView({
 }) {
   const cam = CAMERAS[index];
   const [showControls, setShowControls] = useState(false);
+  // 영상 맞춤 모드 — 딤(showControls) 상태의 화면맞춤 버튼으로 돌린다.
+  //   fill    : 영상 뷰 영역을 가득 채운다(원본 비율 무시, 늘어남/찌그러짐).
+  //   contain : 원본 비율 그대로, 빈 공간은 검정으로 채운다(레터박스/필러박스).
+  //   cover   : 원본 비율 유지한 채 가로나 세로 중 짧은 쪽 기준으로 최대로 키워
+  //             넘치는 쪽을 자른다(크롭) — 이 안의 기존 기본값과 같다.
+  const [videoFit, setVideoFit] = useState<"fill" | "contain" | "cover">(
+    "cover",
+  );
+  const cycleVideoFit = () =>
+    setVideoFit((f) => (f === "fill" ? "contain" : f === "contain" ? "cover" : "fill"));
   const [activityTick, setActivityTick] = useState(0);
   const [seekToast, setSeekToast] = useState<string | null>(null);
   const seekToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -968,6 +1010,7 @@ function ExpandedView({
                   driveByPlayback={
                     mode === "recording" && (isScrubbing || !isPlaying)
                   }
+                  fit={videoFit}
                 />
               </div>
             ))}
@@ -1008,6 +1051,19 @@ function ExpandedView({
                   alt=""
                   className="h-8 w-8"
                   style={{ filter: "brightness(0) invert(1)" }}
+                />
+              </button>
+              {/* 화면 맞춤 — 누를 때마다 가득 채우기(fill) → 원본 비율(contain,
+                  빈 공간 검정) → 크롭(cover, 짧은 쪽 기준 확대) 순으로 돈다. */}
+              <button
+                type="button"
+                aria-label="화면 맞춤"
+                onClick={cycleVideoFit}
+              >
+                <img
+                  src={`${BASE}/nav/expand.svg`}
+                  alt=""
+                  className="h-8 w-8"
                 />
               </button>
               <button type="button" aria-label="회전">
@@ -1105,7 +1161,7 @@ function ExpandedView({
         style={{ height: "44px" }}
       >
         {mode === "recording" ? (
-          <RecBadge onClick={onToggleChrome} />
+          <RecBadge onClick={onToggleTimeline} />
         ) : (
           <LiveBadge onClick={onToggleChrome} />
         )}
@@ -1141,8 +1197,10 @@ function ExpandedView({
         style={{ backgroundColor: "#EBEBEB" }}
       />
 
-      {/* 녹화 모드일 때 플레이어 버튼 */}
-      {mode === "recording" && (
+      {/* 녹화 모드일 때 플레이어 버튼 — REC 칩을 누르면 숨겨진다/보인다
+          (timelineVisible). 예전엔 이 칩이 가짜 시스템 바(chromeVisible)를
+          같이 토글했는데 무관한 기능이라 분리했다. */}
+      {mode === "recording" && timelineVisible && (
         <>
           <div
             className="flex items-center justify-center"
@@ -2230,15 +2288,18 @@ function LayoutConfigSheet({
           {/* disabled 를 안 쓴다 — 자동일 때 슬라이더를 막으면 사용자가 자동을 먼저
               꺼야만 드래그할 수 있어 한 단계가 더 든다. 항상 드래그 가능하게 두고
               흐림(opacity)만 자동 상태를 알리는 용도로 쓴다 — 만지는 순간
-              onChange 이 자동을 꺼서 자연스럽게 넘어간다. */}
+              onChange 이 자동을 꺼서 자연스럽게 넘어간다.
+              슬라이더는 GRID_COUNT_OPTIONS 의 '인덱스'를 움직인다 — native range
+              의 step 은 균일 간격만 지원해 2,3,4,6,8,9,10,12,14,15,16 처럼
+              듬성듬성한 목록엔 못 쓴다. */}
           <input
             type="range"
-            min={1}
-            max={16}
+            min={0}
+            max={GRID_COUNT_OPTIONS.length - 1}
             step={1}
-            value={count}
+            value={nearestGridCountIndex(count)}
             onChange={(e) => {
-              const next = Number(e.target.value);
+              const next = GRID_COUNT_OPTIONS[Number(e.target.value)];
               setAuto(false);
               setCount(next);
               preview(false, next);
@@ -2253,8 +2314,8 @@ function LayoutConfigSheet({
             className="flex items-center justify-between text-[12px]"
             style={{ color: "#A4A4A4", marginTop: "4px" }}
           >
-            <span>1</span>
-            <span>16</span>
+            <span>{GRID_COUNT_OPTIONS[0]}</span>
+            <span>{GRID_COUNT_OPTIONS[GRID_COUNT_OPTIONS.length - 1]}</span>
           </div>
         </div>
 
@@ -2354,6 +2415,8 @@ const TIMELINE_VISIBLE_MIN = 120; // ±2시간 = 총 4시간
 function RecordingControls({
   now,
   onToggleChrome,
+  timelineVisible = true,
+  onToggleTimeline,
   onScrubbingChange,
   playbackMs,
   setPlaybackMs,
@@ -2366,6 +2429,8 @@ function RecordingControls({
 }: {
   now: Date | null;
   onToggleChrome?: () => void;
+  timelineVisible?: boolean;
+  onToggleTimeline?: () => void;
   onScrubbingChange?: (scrubbing: boolean) => void;
   playbackMs: number | null;
   setPlaybackMs: (
@@ -2624,7 +2689,7 @@ function RecordingControls({
         className="relative flex items-center px-5"
         style={{ height: "48px", gap: "8px" }}
       >
-        <RecBadge onClick={onToggleChrome} />
+        <RecBadge onClick={onToggleTimeline} />
         <button
           type="button"
           onClick={onOpenDateTime}
@@ -2635,6 +2700,12 @@ function RecordingControls({
         </button>
         <RowSkeleton visible={rowLoading} />
       </div>
+      {/* REC 칩을 누르면 이 아래(타임라인 + 플레이어 버튼)만 숨겨진다 — 위 헤더
+          행(REC+날짜)은 남아서 다시 누르면 되돌릴 수 있다. 예전엔 이 칩이
+          가짜 시스템 바(chromeVisible)를 같이 토글했는데, 그 둘은 무관한
+          기능이라 분리했다(사용자 결정). */}
+      {timelineVisible && (
+      <>
       <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
       <div className="relative">
       {/* 타임라인 */}
@@ -2802,6 +2873,8 @@ function RecordingControls({
       </div>
       <TimelineSkeleton visible={rowLoading} />
       </div>
+      </>
+      )}
       {/* 탐색 토스트 — 이 블록은 영상 그리드 바로 아래에 붙으므로, 블록 상단(100%)
           기준 +20px = 영상 그리드 하단에서 20px 위(토스트 공통 규칙). */}
       {seekToast && (
