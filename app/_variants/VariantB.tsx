@@ -412,7 +412,7 @@ export default function VariantB({
         onClose={() => setVariantPickerOpen(false)}
       />
 
-      <nav className="mx-auto mt-auto w-full border-t border-neutral-200 bg-white">
+      <nav className="mx-auto mt-auto w-full border-t border-[#EBEBEB] bg-white">
         <ul
           className="mx-auto grid w-full max-w-[480px] grid-cols-4 items-center"
           style={{ height: "60px" }}
@@ -1240,7 +1240,7 @@ function ExpandedView({
               }}
             />
           </div>
-          <div className="h-px" style={{ backgroundColor: "#DBDBDB" }} />
+          <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
         </>
       )}
 
@@ -1269,7 +1269,7 @@ function ExpandedView({
               );
             })}
           </div>
-          <div className="h-px" style={{ backgroundColor: "#DBDBDB" }} />
+          <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
         </>
       )}
 

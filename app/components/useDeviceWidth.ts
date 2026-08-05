@@ -35,6 +35,36 @@ export function readDeviceWidth(fallback?: number | Element | null): number {
   return window.innerWidth || 360;
 }
 
+// 기기 화면 세로(px). 폭과 같은 규칙으로 읽는다 — 데스크톱 미리보기면 --device-h,
+// 실기기면 뷰포트 높이. 화면 비율(가로/세로)을 보는 분기(layoutRules 의
+// SIDE_PANEL_RATIO)에 쓴다. 여기 말고 딴 데서 --device-h 를 직접 읽지 말 것.
+export function readDeviceHeight(): number {
+  if (typeof window === "undefined") return 780;
+  const desktopPreview =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (desktopPreview) {
+    const v = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--device-h"),
+    );
+    if (Number.isFinite(v) && v > 0) return v;
+  }
+  return window.innerHeight || 780;
+}
+
+/** 화면 비율(가로/세로). 1 보다 크면 가로가 더 긴 화면. */
+export function useDeviceRatio() {
+  const [r, setR] = useState(() => readDeviceWidth() / readDeviceHeight());
+  useEffect(() => {
+    const read = () => setR(readDeviceWidth() / readDeviceHeight());
+    read();
+    const evts = ["devicechange", "devicerange", "deviceresize", "resize"];
+    evts.forEach((e) => window.addEventListener(e, read));
+    return () => evts.forEach((e) => window.removeEventListener(e, read));
+  }, []);
+  return r;
+}
+
 export function useDeviceWidth() {
   // 첫 렌더부터 실제 폭으로 시작한다. 360 고정으로 시작하면 페이지 전환 때마다
   // 하단바가 "360 상태 → 실제 폭"으로 재생돼 전환 애니메이션이 헛돌게 된다.

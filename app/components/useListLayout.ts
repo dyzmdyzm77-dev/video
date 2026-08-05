@@ -52,10 +52,13 @@ export function useListLayout(motionH?: number, pin = false) {
       const vid = videoRef.current;
       // 영상 영역: 기본은 globals.css 의 16:9 상한(flex-grow 0 / max-height 56.25cqw).
       // 가로 한 줄일 때만 상한을 풀어 남는 세로를 가져가게 한다.
+      // 상태만 켜고 끈다 — 실제 크기(flex-grow · 늘어남 한도 · 박스 폭 100%)는
+      // globals.css 의 [data-fill] 규칙이 잡는다. 인라인으로 잡으면 늘어남 한도를
+      // '영역 폭 ÷ 1.5' 로 줘야 하는데, 그 폭을 여기서 또 재야 해서 CSS 에 맡겼다.
       const videoFill = (on: boolean) => {
         if (!vid) return;
-        vid.style.flexGrow = on ? "1" : "";
-        vid.style.maxHeight = on ? "none" : "";
+        if (on) vid.dataset.fill = "true";
+        else delete vid.dataset.fill;
       };
 
       if (!row && !pinned) {
