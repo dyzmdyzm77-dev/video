@@ -390,7 +390,6 @@ export default function VariantA1({
           onBack={handleBack}
           onSelect={setExpandedIndex}
           dateLabel={dateLabel}
-          onOpenSheet={() => setSheetOpen(true)}
           mode={mode}
           setMode={handleSetMode}
           onToggleChrome={toggleChrome}
@@ -809,7 +808,6 @@ function ExpandedView({
   onBack,
   onSelect,
   dateLabel,
-  onOpenSheet,
   mode,
   setMode,
   onToggleChrome,
@@ -833,7 +831,6 @@ function ExpandedView({
   onBack: () => void;
   onSelect: (i: number) => void;
   dateLabel: string;
-  onOpenSheet: () => void;
   mode: "live" | "recording";
   setMode: (m: "live" | "recording") => void;
   onToggleChrome: () => void;
@@ -1224,14 +1221,6 @@ function ExpandedView({
                 controlsAuto.keepAlive();
               }}
             >
-              <button type="button" aria-label="목록" onClick={onOpenSheet}>
-                <img
-                  src={`${BASE}/ic_list_gallery.svg`}
-                  alt=""
-                  className="h-8 w-8"
-                  style={{ filter: "brightness(0) invert(1)" }}
-                />
-              </button>
               {/* 화면 맞춤 — 누를 때마다 가득 채우기(fill) → 원본 비율(contain,
                   빈 공간 검정) → 크롭(cover, 짧은 쪽 기준 확대) 순으로 돈다. */}
               <button
