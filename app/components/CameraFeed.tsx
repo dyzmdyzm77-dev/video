@@ -263,6 +263,8 @@ export function GridSelectionOverlay({
   onBack,
   title,
   topInset = 0,
+  dimAlpha = 0.6,
+  topHeight = "25%",
 }: {
   visible: boolean;
   currentPage?: number;
@@ -278,6 +280,12 @@ export function GridSelectionOverlay({
   /** 딤 상단 아이콘 줄을 아래로 내리는 여백(px). 딤 위에 헤더를 겹쳐 띄우는
    *  안(A-1)에서 헤더 높이만큼 밀어 두 줄로 만드는 용도. 기본 0 = 기존 그대로. */
   topInset?: number;
+  /** 위·아래 그라데이션이 '시작'하는 검정 농도(0~1). 끝은 항상 투명이다.
+   *  딤 위에 헤더까지 얹는 A-1 은 글자가 묻혀 더 진하게 쓴다. 기본 0.6 = 기존 그대로. */
+  dimAlpha?: number;
+  /** 상단 그라데이션 길이(CSS 높이). 헤더까지 얹혀 덮을 게 두 줄인 A-1 은 더 길다.
+   *  기본 "25%" = 기존 그대로. */
+  topHeight?: string;
 }) {
   return (
     <div
@@ -288,9 +296,8 @@ export function GridSelectionOverlay({
       <div
         className="absolute inset-x-0 top-0"
         style={{
-          height: "25%",
-          background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
+          height: topHeight,
+          background: `linear-gradient(to bottom, rgba(0,0,0,${dimAlpha}) 0%, rgba(0,0,0,0) 100%)`,
         }}
       />
       {/* 하단 딤 그라데이션 */}
@@ -298,8 +305,7 @@ export function GridSelectionOverlay({
         className="absolute inset-x-0 bottom-0"
         style={{
           height: "20%",
-          background:
-            "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
+          background: `linear-gradient(to top, rgba(0,0,0,${dimAlpha}) 0%, rgba(0,0,0,0) 100%)`,
         }}
       />
 

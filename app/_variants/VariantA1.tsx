@@ -191,13 +191,9 @@ export default function VariantA1({
   const [userGridCount, setUserGridCount] = useState<number | null>(null);
   const gridCount = userGridCount ?? autoGridCount(gridRatio);
   const [mode, setMode] = useState<"live" | "recording">("live");
-  // 위아래 가짜 시스템 바 표시 여부. 기본은 숨긴 몰입 상태(LIVE 칩으로 토글).
+  // 위아래 가짜 시스템 바 표시 여부. 가짜 바 자체를 눌러 토글한다.
   // 단 데스크톱 진입(initialChrome)이면 켠 채로 시작한다.
   const [chromeVisible, setChromeVisible] = useState(initialChrome);
-  // 녹화 모드 REC 칩 — 예전엔 가짜 시스템 바(chromeVisible)를 같이 토글했는데,
-  // 이제 시간바(플레이어 버튼+눈금 타임라인)만 숨긴다/보인다로 바뀐다. 기본은
-  // 보임. 헤더의 REC+날짜 행은 이 상태와 무관하게 항상 남아 다시 누를 수 있다.
-  const [timelineVisible, setTimelineVisible] = useState(true);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [playbackMs, setPlaybackMs] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -207,7 +203,6 @@ export default function VariantA1({
   const [gridLoading, setGridLoading] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
   const toggleChrome = () => setChromeVisible((v) => !v);
-  const toggleTimeline = () => setTimelineVisible((v) => !v);
 
   // 화면 캡처 토스트 — 카메라 버튼 누르면 잠깐 노출 후 자동 사라짐.
   const [captureToast, setCaptureToast] = useState(false);
@@ -368,10 +363,7 @@ export default function VariantA1({
           mode={mode}
           setMode={handleSetMode}
           now={now}
-          onToggleChrome={toggleChrome}
           chromeVisible={chromeVisible}
-          timelineVisible={timelineVisible}
-          onToggleTimeline={toggleTimeline}
           isScrubbing={isScrubbing}
           onScrubbingChange={setIsScrubbing}
           playbackMs={playbackMs}
@@ -392,10 +384,7 @@ export default function VariantA1({
           dateLabel={dateLabel}
           mode={mode}
           setMode={handleSetMode}
-          onToggleChrome={toggleChrome}
           chromeVisible={chromeVisible}
-          timelineVisible={timelineVisible}
-          onToggleTimeline={toggleTimeline}
           onOpenDateTime={() => setDateTimeOpen(true)}
           videoLoading={videoLoading}
           playbackMs={playbackMs}
@@ -477,9 +466,7 @@ function GridView({
   mode,
   setMode,
   now,
-  onToggleChrome,
-  timelineVisible = true,
-  onToggleTimeline,
+
   isScrubbing,
   onScrubbingChange,
   playbackMs,
@@ -505,10 +492,7 @@ function GridView({
   mode: "live" | "recording";
   setMode: (m: "live" | "recording") => void;
   now: Date | null;
-  onToggleChrome: () => void;
   chromeVisible?: boolean;
-  timelineVisible?: boolean;
-  onToggleTimeline?: () => void;
   isScrubbing: boolean;
   onScrubbingChange: (s: boolean) => void;
   playbackMs: number | null;
@@ -666,12 +650,12 @@ function GridView({
           fit={gridFit}
           // 딤 아이콘 줄을 헤더(OVERLAY_HEADER_H) 아래로 내려 두 줄로 만든다.
           topInset={OVERLAY_HEADER_H}
+          dimAlpha={DIM_ALPHA}
+          topHeight={DIM_TOP_H_GRID}
         />
         {/* 딤과 함께 뜨는 헤더 — 평소엔 없다. 버튼을 만지는 동안은 딤을 붙잡는다. */}
         <OverlayHeader
           visible={gridSelected}
-          mode={mode}
-          setMode={setMode}
           onTitleClick={onOpenVariantPicker}
           auto={gridAuto}
         />
@@ -684,7 +668,8 @@ function GridView({
           className="relative flex flex-none items-center px-5"
           style={{ height: "48px", gap: "8px" }}
         >
-          <LiveBadge onClick={onToggleChrome} />
+          {/* 실시간/녹화 토글 — 딤 헤더에 있던 걸 여기로 내렸다. */}
+          <ModeChipToggle mode={mode} setMode={setMode} />
           <span
             suppressHydrationWarning
             className="text-[14px] font-medium leading-none text-[#353535]"
@@ -696,9 +681,7 @@ function GridView({
       ) : (
         <RecordingControls
           now={now}
-          onToggleChrome={onToggleChrome}
-          timelineVisible={timelineVisible}
-          onToggleTimeline={onToggleTimeline}
+          setMode={setMode}
           onScrubbingChange={onScrubbingChange}
           playbackMs={playbackMs}
           setPlaybackMs={setPlaybackMs}
@@ -793,9 +776,7 @@ function ExpandedView({
   dateLabel,
   mode,
   setMode,
-  onToggleChrome,
-  timelineVisible = true,
-  onToggleTimeline,
+
   onOpenDateTime,
   videoLoading,
   playbackMs,
@@ -815,10 +796,7 @@ function ExpandedView({
   dateLabel: string;
   mode: "live" | "recording";
   setMode: (m: "live" | "recording") => void;
-  onToggleChrome: () => void;
   chromeVisible?: boolean;
-  timelineVisible?: boolean;
-  onToggleTimeline?: () => void;
   onOpenDateTime: () => void;
   videoLoading: boolean;
   playbackMs: number | null;
@@ -1147,25 +1125,21 @@ function ExpandedView({
             <div
               className="absolute inset-x-0 top-0"
               style={{
-                height: "33%",
-                background:
-                  "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
+                height: DIM_TOP_H_SINGLE,
+                background: `linear-gradient(to bottom, rgba(0,0,0,${DIM_ALPHA}) 0%, rgba(0,0,0,0) 100%)`,
               }}
             />
             <div
               className="absolute inset-x-0 bottom-0"
               style={{
                 height: "33%",
-                background:
-                  "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
+                background: `linear-gradient(to top, rgba(0,0,0,${DIM_ALPHA}) 0%, rgba(0,0,0,0) 100%)`,
               }}
             />
             {/* 딤과 함께 뜨는 헤더 — 평소엔 없다. 아래 아이콘 줄은 이 헤더
                 높이만큼 내려 두 줄이 된다. */}
             <OverlayHeader
               visible={showControls}
-              mode={mode}
-              setMode={setMode}
               onTitleClick={onBack}
               auto={controlsAuto}
             />
@@ -1296,11 +1270,9 @@ function ExpandedView({
         className="relative flex flex-none items-center px-5"
         style={{ height: "44px" }}
       >
-        {mode === "recording" ? (
-          <RecBadge onClick={onToggleTimeline} />
-        ) : (
-          <LiveBadge onClick={onToggleChrome} />
-        )}
+        {/* 실시간/녹화 토글 — 딤 헤더에 있던 걸 여기로 내렸다. 날짜 바는 항상
+            떠 있어 딤을 띄우지 않고도 전환할 수 있다. */}
+        <ModeChipToggle mode={mode} setMode={setMode} />
         {mode === "recording" ? (
           <button
             type="button"
@@ -1337,10 +1309,9 @@ function ExpandedView({
   );
   const playerBlock = (
     <>
-      {/* 녹화 모드일 때 플레이어 버튼 — 시간바(타임라인) 위. REC 칩을 누르면
-          이 블록이 숨겨진다/보인다(timelineVisible) — 예전엔 REC 칩이 가짜
-          시스템 바(chromeVisible)를 같이 토글했는데 무관한 기능이라 분리했다. */}
-      {mode === "recording" && timelineVisible && (
+      {/* 녹화 모드일 때 플레이어 버튼 — 시간바(타임라인) 위. 예전엔 REC 칩으로
+          이 블록을 접었다 폈는데, 칩이 모드 토글이 되면서 접기 기능은 뺐다. */}
+      {mode === "recording" && (
         <>
           <div
             className="flex flex-none items-center justify-center"
@@ -2705,25 +2676,6 @@ function RecordingEventTimeline({
   );
 }
 
-function LiveBadge({ onClick }: { onClick?: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center rounded-full bg-[#ff3b4a] text-[10px] font-bold leading-none tracking-wide text-white"
-      style={{
-        height: "18px",
-        paddingLeft: "8px",
-        paddingRight: "8px",
-        gap: "2px",
-      }}
-    >
-      <span className="h-1 w-1 rounded-full bg-white" />
-      LIVE
-    </button>
-  );
-}
-
 function MoreVerticalIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
@@ -2979,19 +2931,27 @@ function LayoutConfigSheet({
 // 내려 '헤더 한 줄 + 아이콘 한 줄' 두 줄이 되게 한다(GridSelectionOverlay topInset).
 const OVERLAY_HEADER_H = 56;
 
-// 딤과 함께 뜨는 헤더(타이틀 + 실시간/녹화 탭). A-1 은 이 헤더를 상시 노출하지
-// 않는다 — 영상 영역을 눌러 딤이 뜰 때만 영상 위에 겹쳐 나타나고, 딤이 사라질 때
-// 같이 사라진다. 그래서 글자·아이콘은 딤(검정 그라데이션) 위에 얹히는 흰색이다.
+// A-1 전용 — 딤 그라데이션이 '시작'하는 검정 농도(끝은 투명). 다른 안은 0.6 이지만
+// A-1 은 딤 위에 헤더까지 얹혀 글자가 묻혀서 더 진하게 쓴다.
+const DIM_ALPHA = 0.8;
+
+// A-1 전용 — 상단 그라데이션 길이. 다른 안은 헤더 없이 아이콘 한 줄만 덮으면 되지만
+// A-1 은 헤더 + 그 아래 아이콘 줄(합 100px 남짓) 두 줄을 덮어야 해서 더 길다.
+// 특히 확대 화면은 영상 박스가 16:9 라 세로가 짧다 — 33% 면 아이콘 줄이 딤 밖으로
+// 나간다(360폭에서 박스 202px → 33% = 67px, 아이콘 줄은 68~100px).
+const DIM_TOP_H_GRID = "40%";
+const DIM_TOP_H_SINGLE = "50%";
+
+// 딤과 함께 뜨는 헤더(장소명). A-1 은 이 헤더를 상시 노출하지 않는다 — 영상 영역을
+// 눌러 딤이 뜰 때만 영상 위에 겹쳐 나타나고, 딤이 사라질 때 같이 사라진다. 그래서
+// 글자·아이콘은 딤(검정 그라데이션) 위에 얹히는 흰색이다.
+// 실시간/녹화 토글은 여기 없다 — 항상 보이는 날짜 바의 LIVE·녹화 칩이 그 역할을 한다.
 function OverlayHeader({
   visible,
-  mode,
-  setMode,
   onTitleClick,
   auto,
 }: {
   visible: boolean;
-  mode: "live" | "recording";
-  setMode: (m: "live" | "recording") => void;
   onTitleClick?: () => void;
   /** 헤더를 만지는 동안 딤을 붙잡고, 떼는 순간부터 5초를 다시 세게 한다. */
   auto: ReturnType<typeof useAutoHide>;
@@ -3011,60 +2971,65 @@ function OverlayHeader({
         auto.keepAlive();
       }}
     >
-      <div className="flex w-full items-center justify-between">
-        <div className="flex flex-col gap-[2px]">
-          <button
-            type="button"
-            onClick={onTitleClick}
-            className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-white"
-          >
-            8층 사무실 A
-            <ChevronDownIcon className="h-6 w-6 text-white" />
-          </button>
-          <p
-            className="text-[12px] leading-none"
-            style={{ color: "rgba(255,255,255,0.75)" }}
-          >
-            에스원 본사 · N1234567
-          </p>
-        </div>
-
-        <ModeToggle mode={mode} setMode={setMode} />
+      <div className="flex flex-col gap-[2px]">
+        <button
+          type="button"
+          onClick={onTitleClick}
+          className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-white"
+        >
+          8층 사무실 A
+          <ChevronDownIcon className="h-6 w-6 text-white" />
+        </button>
+        <p
+          className="text-[12px] leading-none"
+          style={{ color: "rgba(255,255,255,0.75)" }}
+        >
+          에스원 본사 · N1234567
+        </p>
       </div>
     </div>
   );
 }
 
-function ModeToggle({
+// 실시간 ↔ 녹화 모드 토글 — 예전엔 상단 헤더의 큰 알약 두 개(ModeToggle)였는데,
+// 헤더가 딤 안으로 들어가면서 상시 노출되는 날짜 바로 내려왔다. 기존 LIVE·녹화 칩의
+// 생김새(빨강/회색, 앞의 점, 10px 볼드)를 그대로 쓰되 둘을 붙여 세그먼트로 만든다 —
+// 지금 어느 모드인지 보여주면서 반대쪽을 눌러 전환할 수 있다는 게 같이 읽히게.
+function ModeChipToggle({
   mode,
   setMode,
 }: {
   mode: "live" | "recording";
   setMode: (m: "live" | "recording") => void;
 }) {
+  // 예전 칩에 있던 앞의 점은 뺐다 — 세그먼트에선 채워진 쪽이 곧 현재 모드라
+  // 점이 같은 말을 두 번 하는 셈이었다. 점 자리만큼 좌우 여백을 늘려 폭을 맞춘다.
+  const seg = (active: boolean, activeBg: string) => ({
+    height: "20px",
+    paddingLeft: "10px",
+    paddingRight: "10px",
+    borderRadius: "9999px",
+    backgroundColor: active ? activeBg : "transparent",
+    color: active ? "#ffffff" : "#7F7F7F",
+  });
   return (
-    <div className="flex items-center gap-1">
+    <div
+      className="inline-flex items-center rounded-full"
+      style={{ backgroundColor: "#F2F2F2", padding: "2px", gap: "2px" }}
+    >
       <button
         type="button"
         onClick={() => setMode("live")}
-        className="inline-flex items-center justify-center rounded-full text-[14px] font-semibold leading-none transition-colors"
-        style={{
-          padding: "8px 16px",
-          backgroundColor: mode === "live" ? "#1D6CEB" : "#F2F2F2",
-          color: mode === "live" ? "#ffffff" : "#7F7F7F",
-        }}
+        className="inline-flex items-center text-[10px] font-bold leading-none tracking-wide transition-colors"
+        style={seg(mode === "live", "#ff3b4a")}
       >
-        실시간
+        LIVE
       </button>
       <button
         type="button"
         onClick={() => setMode("recording")}
-        className="inline-flex items-center justify-center rounded-full text-[14px] font-semibold leading-none transition-colors"
-        style={{
-          padding: "8px 16px",
-          backgroundColor: mode === "recording" ? "#1D6CEB" : "#F2F2F2",
-          color: mode === "recording" ? "#ffffff" : "#7F7F7F",
-        }}
+        className="inline-flex items-center text-[10px] font-bold leading-none tracking-wide transition-colors"
+        style={seg(mode === "recording", "#757575")}
       >
         녹화
       </button>
@@ -3072,37 +3037,11 @@ function ModeToggle({
   );
 }
 
-function RecBadge({ onClick }: { onClick?: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center rounded-full text-[10px] font-bold leading-none tracking-wide"
-      style={{
-        height: "18px",
-        paddingLeft: "8px",
-        paddingRight: "8px",
-        gap: "4px",
-        backgroundColor: "#757575",
-        color: "#ffffff",
-      }}
-    >
-      <span
-        className="rounded-full"
-        style={{ width: "4px", height: "4px", backgroundColor: "#ffffff" }}
-      />
-      녹화
-    </button>
-  );
-}
-
 const TIMELINE_VISIBLE_MIN = 120; // ±2시간 = 총 4시간
 
 function RecordingControls({
   now,
-  onToggleChrome,
-  timelineVisible = true,
-  onToggleTimeline,
+  setMode,
   onScrubbingChange,
   playbackMs,
   setPlaybackMs,
@@ -3114,9 +3053,7 @@ function RecordingControls({
   onSpeedChange,
 }: {
   now: Date | null;
-  onToggleChrome?: () => void;
-  timelineVisible?: boolean;
-  onToggleTimeline?: () => void;
+  setMode: (m: "live" | "recording") => void;
   onScrubbingChange?: (scrubbing: boolean) => void;
   playbackMs: number | null;
   setPlaybackMs: (
@@ -3375,7 +3312,8 @@ function RecordingControls({
         className="relative flex items-center px-5"
         style={{ height: "48px", gap: "8px" }}
       >
-        <RecBadge onClick={onToggleTimeline} />
+        {/* 실시간/녹화 토글 — 딤 헤더에 있던 걸 여기로 내렸다. */}
+        <ModeChipToggle mode="recording" setMode={setMode} />
         <button
           type="button"
           onClick={onOpenDateTime}
@@ -3386,12 +3324,6 @@ function RecordingControls({
         </button>
         <RowSkeleton visible={rowLoading} />
       </div>
-      {/* REC 칩을 누르면 이 아래(플레이어 버튼 + 시간바)만 숨겨진다 — 위 헤더
-          행(REC+날짜)은 남아서 다시 누르면 되돌릴 수 있다. 예전엔 이 칩이
-          가짜 시스템 바(chromeVisible)를 같이 토글했는데, 그 둘은 무관한
-          기능이라 분리했다(사용자 결정). */}
-      {timelineVisible && (
-      <>
       <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
       <div className="relative">
       {/* 플레이어 컨트롤 — 시간바(타임라인) 위 */}
@@ -3569,8 +3501,6 @@ function RecordingControls({
       </div>
       <TimelineSkeleton visible={rowLoading} />
       </div>
-      </>
-      )}
       {/* 탐색 토스트 — 이 블록은 영상 그리드 바로 아래에 붙으므로, 블록 상단(100%)
           기준 +20px = 영상 그리드 하단에서 20px 위(토스트 공통 규칙). */}
       {seekToast && (
