@@ -2956,21 +2956,27 @@ function OverlayHeader({
   auto: ReturnType<typeof useAutoHide>;
 }) {
   return (
+    // 껍데기는 가로 전체를 덮는 띠라 클릭을 통과시켜야 한다(pointer-events: none).
+    // 이걸 auto 로 두면 같은 줄 오른쪽 딤 아이콘(갤러리·화면 맞춤·회전·더보기)을
+    // 덮어 눌러도 반응하지 않는다 — 그리드에선 이 헤더가 딤보다 뒤에 그려진다.
+    // 실제로 받는 건 아래 글자 블록뿐이다.
     <div
-      className="absolute inset-x-0 top-0 flex items-center px-5 transition-opacity duration-300 ease-out"
+      className="pointer-events-none absolute inset-x-0 top-0 flex items-center px-5 transition-opacity duration-300 ease-out"
       style={{
         height: `${OVERLAY_HEADER_H}px`,
         opacity: visible ? 1 : 0,
-        pointerEvents: visible ? "auto" : "none",
-      }}
-      {...auto.holdProps}
-      onClick={(e) => {
-        // 영상 탭(딤 토글)으로 새어나가지 않게 막고, 타이머만 되돌린다.
-        e.stopPropagation();
-        auto.keepAlive();
       }}
     >
-      <div className="flex flex-col gap-[2px]">
+      <div
+        className="flex flex-col gap-[2px]"
+        style={{ pointerEvents: visible ? "auto" : "none" }}
+        {...auto.holdProps}
+        onClick={(e) => {
+          // 영상 탭(딤 토글)으로 새어나가지 않게 막고, 타이머만 되돌린다.
+          e.stopPropagation();
+          auto.keepAlive();
+        }}
+      >
         <button
           type="button"
           onClick={onTitleClick}
