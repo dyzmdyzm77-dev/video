@@ -599,7 +599,9 @@ function GridView({
             return (
               <div
                 key={pageIdx}
-                className="grid h-full gap-0.5 bg-neutral-300"
+                // 타일 사이 2px 구분선 — 선을 그리는 게 아니라 틈으로 이 배경색이
+                // 비치는 방식이다. A-1 은 흰색(다른 안은 회색 neutral-300).
+                className="grid h-full gap-0.5 bg-white"
                 style={{
                   width: `${100 / totalPages}%`,
                   flexShrink: 0,
