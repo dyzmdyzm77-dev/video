@@ -648,8 +648,8 @@ function GridView({
           onGallery={onOpenSheet}
           onFit={cycleGridFit}
           fit={gridFit}
-          // 딤 아이콘 줄을 헤더(OVERLAY_HEADER_H) 아래로 내려 두 줄로 만든다.
-          topInset={OVERLAY_HEADER_H}
+          // 아이콘 줄은 헤더와 같은 줄 오른쪽 — 실시간/녹화 토글이 있던 자리다.
+          // (topInset 은 기본 0 = 헤더와 같은 높이)
           dimAlpha={DIM_ALPHA}
           topHeight={DIM_TOP_H_GRID}
         />
@@ -1136,8 +1136,8 @@ function ExpandedView({
                 background: `linear-gradient(to top, rgba(0,0,0,${DIM_ALPHA}) 0%, rgba(0,0,0,0) 100%)`,
               }}
             />
-            {/* 딤과 함께 뜨는 헤더 — 평소엔 없다. 아래 아이콘 줄은 이 헤더
-                높이만큼 내려 두 줄이 된다. */}
+            {/* 딤과 함께 뜨는 헤더 — 평소엔 없다. 오른쪽 아이콘 줄과 같은 줄에
+                놓인다(실시간/녹화 토글이 있던 자리). */}
             <OverlayHeader
               visible={showControls}
               onTitleClick={onBack}
@@ -1146,7 +1146,8 @@ function ExpandedView({
             <div
               className="absolute flex items-center"
               style={{
-                top: `${12 + OVERLAY_HEADER_H}px`,
+                // 헤더(높이 56)와 같은 줄 — 32px 아이콘이 세로 중앙에 걸린다.
+                top: "12px",
                 right: "12px",
                 gap: "12px",
                 pointerEvents: showControls ? "auto" : "none",
@@ -2927,18 +2928,16 @@ function LayoutConfigSheet({
   );
 }
 
-// A-1 전용 — 딤 위에 겹쳐 뜨는 헤더의 높이. 딤 우상단 아이콘 줄을 이만큼 아래로
-// 내려 '헤더 한 줄 + 아이콘 한 줄' 두 줄이 되게 한다(GridSelectionOverlay topInset).
+// A-1 전용 — 딤 위에 겹쳐 뜨는 헤더의 높이. 딤 우상단 아이콘 줄(top 12, 32px)이
+// 이 높이의 세로 중앙에 오므로 헤더와 한 줄로 읽힌다 — 실시간/녹화 토글이 있던 자리.
 const OVERLAY_HEADER_H = 56;
 
 // A-1 전용 — 딤 그라데이션이 '시작'하는 검정 농도(끝은 투명). 다른 안은 0.6 이지만
 // A-1 은 딤 위에 헤더까지 얹혀 글자가 묻혀서 더 진하게 쓴다.
 const DIM_ALPHA = 0.8;
 
-// A-1 전용 — 상단 그라데이션 길이. 다른 안은 헤더 없이 아이콘 한 줄만 덮으면 되지만
-// A-1 은 헤더 + 그 아래 아이콘 줄(합 100px 남짓) 두 줄을 덮어야 해서 더 길다.
-// 특히 확대 화면은 영상 박스가 16:9 라 세로가 짧다 — 33% 면 아이콘 줄이 딤 밖으로
-// 나간다(360폭에서 박스 202px → 33% = 67px, 아이콘 줄은 68~100px).
+// A-1 전용 — 상단 그라데이션 길이. 덮을 건 헤더 한 줄(56)뿐이지만, 짧게 끊으면
+// 경계가 눈에 띄어 길게 빼 자연스럽게 사라지게 둔다(사용자 요청).
 const DIM_TOP_H_GRID = "40%";
 const DIM_TOP_H_SINGLE = "50%";
 
