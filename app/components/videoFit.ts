@@ -14,15 +14,17 @@
 // 다르게 보이면 비교 기준이 흔들린다. 원본이 320×214(≈3:2)라 16:9 뷰에서는 가로로
 // 19% 늘어나는데(1.778/1.495), 그건 원래 그런 화면이고 사용자가 버튼으로 바꿀 수 있다.
 //
-// 아이콘은 public/ 의 한글 파일명이라 경로에 공백·한글이 들어간다. 그대로 src 에
-// 넣으면 브라우저마다 인코딩이 갈리므로 videoFitIcon() 이 encodeURIComponent 를
-// 거쳐 만든다.
+// 아이콘 파일명은 ASCII 로 둔다. 처음엔 한글 파일명("영상_화면 늘리기.svg")을 그대로
+// 썼는데 배포에서 전부 404 가 났다 — macOS 파일시스템은 한글을 NFD(자모 분리)로
+// 저장하는데 소스 코드의 문자열은 NFC(완성형)라, encodeURIComponent 결과가 서버에
+// 있는 실제 경로와 안 맞았다. 눈에는 같은 글자로 보여 찾기 어려운 종류의 버그다.
+// 화면에 보이는 이름(VIDEO_FIT_LABEL)은 한글 그대로다.
 // ============================================================================
 
 export type VideoFit = "fill" | "contain" | "cover";
 
-/** 버튼을 누를 때 도는 순서. */
-export const VIDEO_FIT_ORDER: VideoFit[] = ["fill", "contain", "cover"];
+/** 버튼을 누를 때 도는 순서 — 원본 비율 유지 → 화면 늘리기 → 화면 채우기. */
+export const VIDEO_FIT_ORDER: VideoFit[] = ["contain", "fill", "cover"];
 
 /** 토스트에 띄우는 문구. 아이콘 파일명과 같은 표현을 쓴다. */
 export const VIDEO_FIT_LABEL: Record<VideoFit, string> = {
@@ -32,9 +34,9 @@ export const VIDEO_FIT_LABEL: Record<VideoFit, string> = {
 };
 
 const ICON_FILE: Record<VideoFit, string> = {
-  fill: "영상_화면 늘리기.svg",
-  contain: "영상_원본 비율 유지.svg",
-  cover: "영상_화면 채우기.svg",
+  fill: "video-fit-fill.svg",
+  contain: "video-fit-contain.svg",
+  cover: "video-fit-cover.svg",
 };
 
 /** 다음 상태. */
@@ -52,5 +54,5 @@ export function nextVideoFit(f: VideoFit): VideoFit {
  * 토스트는 방금 적용된 모드를 말하므로, 직전에 보고 누른 아이콘과 같은 뜻이 된다.
  */
 export function videoFitIcon(base: string, f: VideoFit): string {
-  return `${base}/${encodeURIComponent(ICON_FILE[f])}`;
+  return `${base}/${ICON_FILE[f]}`;
 }
