@@ -21,22 +21,22 @@ import {
 } from "../components/layoutRules";
 
 const CAMERAS = [
-  { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
+  { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.10 },
   { label: "카메라 02", src: `${BASE}/cameras/cam2.gif` },
   { label: "카메라 03", src: `${BASE}/cameras/cam3.gif` },
   { label: "카메라 04", src: `${BASE}/cameras/cam4.gif` },
-  { label: "카메라 05", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
+  { label: "카메라 05", src: `${BASE}/cameras/cam1.gif`, zoom: 1.10 },
   { label: "카메라 06", src: `${BASE}/cameras/cam2.gif` },
   { label: "카메라 07", src: `${BASE}/cameras/cam3.gif` },
   { label: "카메라 08", src: `${BASE}/cameras/cam4.gif` },
   { label: "카메라 09", src: `${BASE}/cameras/cam2.gif` },
   { label: "카메라 10", src: `${BASE}/cameras/cam4.gif` },
   { label: "카메라 11", src: `${BASE}/cameras/cam3.gif` },
-  { label: "카메라 12", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
+  { label: "카메라 12", src: `${BASE}/cameras/cam1.gif`, zoom: 1.10 },
   { label: "카메라 13", src: `${BASE}/cameras/cam4.gif` },
   { label: "카메라 14", src: `${BASE}/cameras/cam3.gif` },
   { label: "카메라 15", src: `${BASE}/cameras/cam2.gif` },
-  { label: "카메라 16", src: `${BASE}/cameras/cam1.gif`, zoom: 1.18 },
+  { label: "카메라 16", src: `${BASE}/cameras/cam1.gif`, zoom: 1.10 },
 ];
 
 // 화면 개수(1~16)에서 cols×rows 를 고르는 건 layoutRules.ts 의
@@ -510,6 +510,11 @@ function GridView({
   videoAreaRef?: React.RefObject<HTMLElement | null>;
 }) {
   const [gridSelected, setGridSelected] = useState(false);
+  // 다채널 타일 맞춤 모드 — 딤 상태의 '화면 맞춤' 버튼으로 돌린다. 단일 화면의
+  // videoFit 과 같은 순서(fill → contain → cover)이고, 기본은 단일과 같은 크롭이다.
+  const [gridFit, setGridFit] = useState<"fill" | "contain" | "cover">("cover");
+  const cycleGridFit = () =>
+    setGridFit((v) => (v === "fill" ? "contain" : v === "contain" ? "cover" : "fill"));
   const [activityTick, setActivityTick] = useState(0);
   const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const swipedRef = useRef(false);
@@ -645,6 +650,7 @@ function GridView({
                           }
                           playbackMs={gridDriven ? playbackMs : null}
                           driveByPlayback={gridDriven}
+                          fit={gridFit}
                           // 스와이프용으로 모든 페이지를 렌더하지만 GIF 는 보이는
                           // 페이지에서만 돌린다(2×4 면 16→8, 3×3 이면 18→9).
                           animate={pageIdx === currentPage}
@@ -664,6 +670,7 @@ function GridView({
           currentPage={currentPage}
           totalPages={totalPages}
           onGallery={onOpenSheet}
+          onFit={cycleGridFit}
         />
         <SectionSkeleton visible={gridLoading} cols={cols} rows={rows} />
       </section>
