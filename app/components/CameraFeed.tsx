@@ -1,17 +1,10 @@
 import { BASE } from "../basePath";
+import { nextVideoFit, videoFitIcon, type VideoFit } from "./videoFit";
 import { memo, useEffect, useRef, useState } from "react";
 
 type CameraFeedProps = {
   label: string;
   src: string;
-  // 원본에 박혀 있는 검은 띠를 잘라내는 보정 배율. cam1.gif 만 띠가 있다.
-  // 열별 평균 밝기로 재보면 좌우 8px 이 완전한 검정이고, 그 다음 1px(x=8, x=311)이
-  // 18~28 로 아직 어둡다 — 경계가 딱 떨어지지 않고 한 칸 번진다. 그래서 이론상
-  // 최소치인 320/304 = 1.053 이나 1.06 으로는 그 어두운 한 칸이 가장자리에 남는다.
-  // 1.10 이면 타일 왼쪽 끝이 원본 x=14.6 부터라 확실히 지나간다.
-  // 예전엔 이 값을 무시하고 모든 타일에 scale(1.1) 을 박아 뒀는데, 그게 우연히
-  // cam1 의 띠도 같이 가리고 있었다 — 크롭 모드에서 그 배율을 빼자 띠가 드러났다.
-  zoom?: number;
   paused?: boolean;
   // 녹화 모드: 타임라인 시각(playbackMs)에 해당하는 프레임을 직접 그려
   // 배속/되감기/탐색이 영상에도 반영되게 한다.
@@ -28,7 +21,7 @@ type CameraFeedProps = {
   //   contain = 원본 비율 유지, 남는 자리는 검정
   //   cover   = 원본 비율 유지한 채 넘치는 쪽을 자른다(크롭)
   // 원본이 320×214(≈3:2)라 16:9 타일에서는 셋이 눈에 띄게 다르다.
-  fit?: "fill" | "contain" | "cover";
+  fit?: VideoFit;
 };
 
 // ---- GIF 프레임 디코딩 ----
@@ -168,7 +161,6 @@ export function useGifFrameCanvas(
 function CameraFeedImpl({
   label,
   src,
-  zoom,
   paused = false,
   playbackMs = null,
   driveByPlayback = false,
@@ -215,7 +207,6 @@ function CameraFeedImpl({
           className="absolute inset-0 h-full w-full"
           style={{
             objectFit: fit,
-            transform: zoom && zoom !== 1 ? `scale(${zoom})` : undefined,
             // 녹화 구동 중엔 캔버스를 쓰지만, 디코딩 실패 시 GIF(<img>)로 폴백.
             opacity: driving ? (decodeOk ? 0 : 1) : paused ? 0 : 1,
           }}
@@ -227,7 +218,6 @@ function CameraFeedImpl({
         className="absolute inset-0 h-full w-full"
         style={{
           objectFit: fit,
-          transform: zoom && zoom !== 1 ? `scale(${zoom})` : undefined,
           // 정지(paused)거나 비활성 페이지(!animate)면 캔버스가 첫 프레임을 맡는다.
           // 활성 페이지에선 위의 <img> 가 GIF 를 재생하므로 캔버스를 숨긴다.
           opacity: driving ? (decodeOk ? 1 : 0) : paused || !animate ? 1 : 0,
@@ -268,6 +258,7 @@ export function GridSelectionOverlay({
   totalPages = 2,
   onGallery,
   onFit,
+  fit = "fill",
   mode,
   onBack,
   title,
@@ -278,6 +269,8 @@ export function GridSelectionOverlay({
   onGallery?: () => void;
   /** 화면 맞춤 — 누를 때마다 fill → contain → cover 로 돈다(단일 화면과 동일). */
   onFit?: () => void;
+  /** 지금 맞춤 상태. 버튼 아이콘이 이걸 그대로 보여준다. */
+  fit?: VideoFit;
   mode?: "live" | "recording";
   onBack?: () => void;
   title?: string;
@@ -365,7 +358,7 @@ export function GridSelectionOverlay({
           onClick={onFit}
           style={{ pointerEvents: visible ? "auto" : "none" }}
         >
-          <OverlayIcon src={`${BASE}/nav/expand.svg`} size={32} />
+          <OverlayIcon src={videoFitIcon(BASE, nextVideoFit(fit))} size={32} />
         </button>
         <OverlayIcon src={`${BASE}/nav/rotate.svg`} size={32} />
         <OverlayIcon src={`${BASE}/nav/etc.svg`} size={32} />

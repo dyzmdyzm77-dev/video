@@ -1,8 +1,14 @@
 "use client";
 
+// A-1안 — A안과 같은 화면이다(사용자 요청으로 A안에 맞춤).
+// 시안 식별(컴포넌트 이름·VariantPicker current)만 다르고 나머지는 VariantA.tsx 와
+// 같은 내용이다. 예전엔 감지 탭이 세로 타임라인이라는 차이가 있었는데, A안이
+// 1080+ 사이드 패널에서 세로 타임라인을 쓰게 되면서 그 차이가 사라졌다.
+// A안을 고치면 이 파일도 같이 맞춰야 한다.
+
 import { BASE } from "../basePath";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import {
   CameraFeed,
@@ -10,10 +16,19 @@ import {
   useGifFrameCanvas,
 } from "../components/CameraFeed";
 import VariantPicker from "../components/VariantPicker";
+import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
+import { nextVideoFit, videoFitIcon } from "../components/videoFit";
+import { useAutoHide } from "../components/useAutoHide";
 import AndroidNav from "../components/AndroidNav";
+import { useDeviceRatio, useDeviceWidth } from "../components/useDeviceWidth";
 import { useListLayout } from "../components/useListLayout";
 import { useGridAreaRatio } from "../components/useGridLayout";
 import {
+  MOTION_MIN_H,
+  SIDE_PANEL_RATIO,
+  SIDE_PANEL_W,
+  THUMB_MAX_H,
+  THUMB_MIN_H,
   autoGridCount,
   bestGridForCount,
   GRID_COUNT_OPTIONS,
@@ -21,22 +36,22 @@ import {
 } from "../components/layoutRules";
 
 const CAMERAS = [
-  { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.10 },
+  { label: "카메라 01", src: `${BASE}/cameras/cam1.gif` },
   { label: "카메라 02", src: `${BASE}/cameras/cam2.gif` },
   { label: "카메라 03", src: `${BASE}/cameras/cam3.gif` },
   { label: "카메라 04", src: `${BASE}/cameras/cam4.gif` },
-  { label: "카메라 05", src: `${BASE}/cameras/cam1.gif`, zoom: 1.10 },
+  { label: "카메라 05", src: `${BASE}/cameras/cam1.gif` },
   { label: "카메라 06", src: `${BASE}/cameras/cam2.gif` },
   { label: "카메라 07", src: `${BASE}/cameras/cam3.gif` },
   { label: "카메라 08", src: `${BASE}/cameras/cam4.gif` },
   { label: "카메라 09", src: `${BASE}/cameras/cam2.gif` },
   { label: "카메라 10", src: `${BASE}/cameras/cam4.gif` },
   { label: "카메라 11", src: `${BASE}/cameras/cam3.gif` },
-  { label: "카메라 12", src: `${BASE}/cameras/cam1.gif`, zoom: 1.10 },
+  { label: "카메라 12", src: `${BASE}/cameras/cam1.gif` },
   { label: "카메라 13", src: `${BASE}/cameras/cam4.gif` },
   { label: "카메라 14", src: `${BASE}/cameras/cam3.gif` },
   { label: "카메라 15", src: `${BASE}/cameras/cam2.gif` },
-  { label: "카메라 16", src: `${BASE}/cameras/cam1.gif`, zoom: 1.10 },
+  { label: "카메라 16", src: `${BASE}/cameras/cam1.gif` },
 ];
 
 // 화면 개수(1~16)에서 cols×rows 를 고르는 건 layoutRules.ts 의
@@ -167,8 +182,11 @@ export default function VariantA1({
   const [currentPage, setCurrentPage] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
-  // 다채널 화면 개수 — 사용자가 '화면 구성'에서 직접 고르기 전엔(또는 '자동'을
-  // 고르면) 영상 영역 비율(gridRatio) 기반 기본값을 쓴다(autoGridCount).
+  // 다채널 화면 개수 — 사용자가 '화면 구성'에서 직접 고르기 전엔 영상 영역
+  // 비율(gridRatio) 기반 기본값을 쓴다(layoutRules.ts 의 autoGridCount). 그
+  // 비율에서 가장 16:9 에 가까운 cols×rows 는 bestGridForCount 가 고른다.
+  // videoAreaRef 는 GridView 의 슬라이드 섹션에 달아 실측한다 — 섹션 크기는
+  // cols×rows 선택과 무관해서(그 안을 나누기만 하므로) 순환 의존이 없다.
   const [videoAreaRef, gridRatio] = useGridAreaRatio();
   const [userGridCount, setUserGridCount] = useState<number | null>(null);
   const gridCount = userGridCount ?? autoGridCount(gridRatio);
@@ -293,8 +311,7 @@ export default function VariantA1({
   const pageSize = layoutDims.cols * layoutDims.rows;
   const totalPages = Math.ceil(CAMERAS.length / pageSize);
 
-  // 영상 영역 비율이 바뀌며(드래그 리사이즈 등) 자동 개수가 바뀌어 페이지 수가
-  // 줄면 현재 페이지를 범위 안으로.
+  // 폭 경계(620)를 넘나들며 레이아웃이 바뀌어 페이지 수가 줄면 현재 페이지를 범위 안으로.
   useEffect(() => {
     setCurrentPage((p) => Math.min(p, totalPages - 1));
   }, [totalPages]);
@@ -507,24 +524,22 @@ function GridView({
   onPlay?: () => void;
   onSpeedChange?: (rate: number) => void;
   // 화면 개수(1~16)에서 cols×rows 를 고르는 데 쓰는 '영상 영역 비율' 실측용.
+  // 이 섹션(헤더·하단 컨트롤 제외 나머지)에 단다 — 크기가 cols×rows 선택과
+  // 무관해서(그 안을 나누기만 하므로) 순환 의존이 없다.
   videoAreaRef?: React.RefObject<HTMLElement | null>;
 }) {
   const [gridSelected, setGridSelected] = useState(false);
-  // 다채널 타일 맞춤 모드 — 딤 상태의 '화면 맞춤' 버튼으로 돌린다. 단일 화면의
-  // videoFit 과 같은 순서(fill → contain → cover)이고, 기본은 단일과 같은 크롭이다.
-  const [gridFit, setGridFit] = useState<"fill" | "contain" | "cover">("cover");
-  const cycleGridFit = () =>
-    setGridFit((v) => (v === "fill" ? "contain" : v === "contain" ? "cover" : "fill"));
-  const [activityTick, setActivityTick] = useState(0);
+  // 다채널 타일 맞춤 모드 — 딤 상태의 '화면 맞춤' 버튼으로 돌린다. 순서·아이콘·
+  // 문구·기본값은 단일 화면과 같은 곳(components/videoFit.ts)에서 온다.
+  const { fit: gridFit, cycle: cycleGridFit, toast: gridFitToast, toastKey: gridFitToastKey } =
+    useVideoFit("fill");
+  // 딤 자동 숨김 — 마지막 조작이 끝난 시점부터 5초. 규칙은 useAutoHide 참고.
+  const hideGrid = useCallback(() => setGridSelected(false), []);
+  const gridAuto = useAutoHide(gridSelected, hideGrid);
   const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const swipedRef = useRef(false);
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (!gridSelected) return;
-    const timer = setTimeout(() => setGridSelected(false), 4000);
-    return () => clearTimeout(timer);
-  }, [gridSelected, activityTick]);
 
   const handleCellClick = (idx: number) => {
     if (swipedRef.current) return; // 스와이프 직후 클릭 무시
@@ -542,9 +557,14 @@ function GridView({
 
   const handlePointerDown = (e: React.PointerEvent) => {
     swipeRef.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+    // 누르고 있는 동안 딤을 붙잡는다(길게 누르기·드래그 중 안 사라지게).
+    gridAuto.hold();
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    // 손을 뗀 시점부터 5초를 다시 센다. 아래 조기 반환들보다 먼저 놓아야
+    // 붙잡은 상태가 남아 딤이 영영 안 꺼지는 일이 없다.
+    gridAuto.release();
     const start = swipeRef.current;
     if (!start) return;
     swipeRef.current = null;
@@ -558,7 +578,7 @@ function GridView({
       swipedRef.current = false;
     }, 350);
     // 딤이 켜져있다면 타이머 리셋 + 그대로 유지
-    setActivityTick((t) => t + 1);
+    gridAuto.keepAlive();
     if (dx < 0) {
       setCurrentPage((p) => Math.min(p + 1, totalPages - 1));
     } else {
@@ -606,6 +626,7 @@ function GridView({
         className="relative min-h-0 flex-1 touch-pan-y select-none overflow-hidden"
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
       >
         <div
           className="flex h-full transition-transform duration-300 ease-out"
@@ -644,7 +665,6 @@ function GridView({
                         <CameraFeed
                           label={cam.label}
                           src={cam.src}
-                          zoom={cam.zoom}
                           paused={
                             isScrubbing || (mode === "recording" && !isPlaying)
                           }
@@ -671,7 +691,9 @@ function GridView({
           totalPages={totalPages}
           onGallery={onOpenSheet}
           onFit={cycleGridFit}
+          fit={gridFit}
         />
+        <VideoFitToast text={gridFitToast} toastKey={gridFitToastKey} />
         <SectionSkeleton visible={gridLoading} cols={cols} rows={rows} />
       </section>
 
@@ -717,14 +739,16 @@ function ExpandedSlide({
   paused,
   playbackMs = null,
   driveByPlayback = false,
-  fit = "cover",
+  fit = "fill",
 }: {
   c: (typeof CAMERAS)[number];
   paused: boolean;
   playbackMs?: number | null;
   driveByPlayback?: boolean;
   // 딤 상태의 '화면 맞춤' 버튼이 고르는 값. fill=가득 채움(비율 무시),
-  // contain=원본 비율 유지·빈 공간 검정, cover=원본 비율 유지·크롭(이 안의 기본값).
+  // contain=원본 비율 유지·빈 공간 검정, cover=원본 비율 유지·크롭.
+  // CameraFeed(그리드 타일)와 달리 이 컴포넌트는 원본 비율을 그대로 보여줄 일이
+  // 있어(contain) object-fit 을 상수로 안 두고 prop 으로 받는다.
   fit?: "fill" | "contain" | "cover";
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -744,7 +768,6 @@ function ExpandedSlide({
   useGifFrameCanvas(canvasRef, c.src, driveByPlayback ? playbackMs : null);
 
   const driving = driveByPlayback && playbackMs != null;
-  const zoom = c.zoom ? `scale(${c.zoom})` : undefined;
   return (
     <>
       <img
@@ -753,7 +776,6 @@ function ExpandedSlide({
         className="absolute inset-0 h-full w-full"
         style={{
           objectFit: fit,
-          transform: zoom,
           opacity: driving ? 0 : paused ? 0 : 1,
         }}
       />
@@ -763,7 +785,6 @@ function ExpandedSlide({
         className="absolute inset-0 h-full w-full"
         style={{
           objectFit: fit,
-          transform: zoom,
           opacity: driving ? 1 : paused ? 1 : 0,
         }}
       />
@@ -840,13 +861,13 @@ function ExpandedView({
   //   fill    : 영상 뷰 영역을 가득 채운다(원본 비율 무시, 늘어남/찌그러짐).
   //   contain : 원본 비율 그대로, 빈 공간은 검정으로 채운다(레터박스/필러박스).
   //   cover   : 원본 비율 유지한 채 가로나 세로 중 짧은 쪽 기준으로 최대로 키워
-  //             넘치는 쪽을 자른다(크롭) — 이 안의 기존 기본값과 같다.
-  const [videoFit, setVideoFit] = useState<"fill" | "contain" | "cover">(
-    "cover",
-  );
-  const cycleVideoFit = () =>
-    setVideoFit((f) => (f === "fill" ? "contain" : f === "contain" ? "cover" : "fill"));
-  const [activityTick, setActivityTick] = useState(0);
+  //             넘치는 쪽을 자른다(크롭) — object-fit: cover 와 같다.
+  // 순서·아이콘·문구는 components/videoFit.ts 한 곳에서 온다.
+  const { fit: videoFit, cycle: cycleVideoFit, toast: fitToast, toastKey: fitToastKey } =
+    useVideoFit("fill");
+  // 딤 자동 숨김 — 마지막 조작이 끝난 시점부터 5초. 규칙은 useAutoHide 참고.
+  const hideControls = useCallback(() => setShowControls(false), []);
+  const controlsAuto = useAutoHide(showControls, hideControls);
   const [seekToast, setSeekToast] = useState<string | null>(null);
   const seekToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showSeekToast = (text: string) => {
@@ -868,13 +889,146 @@ function ExpandedView({
     return () => onSpeedChange?.(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지(세로 타임라인)
-  // 카메라 목록 — 620px 이상에서만 가로 스크롤, 미만은 세로 2열 그리드.
+  // 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지. 진입 시 '카메라 목록'이 기본.
+  const [recTab, setRecTab] = useState<"list" | "motion">("list");
+  // 가로로 넓적한 화면(가로/세로 >= SIDE_PANEL_RATIO)이면 카메라 목록·움직임 감지가
+  // 화면 아래 가로 스트립이 아니라 오른쪽 끝 세로 패널로 간다(탭도 패널 안 위쪽).
+  // 그런 화면은 영상이 세로에 갇혀 있어서 하단 스트립이 영상 폭을 크게 깎는다 —
+  // 근거와 실측은 layoutRules.ts 의 SIDE_PANEL_RATIO 주석 참고.
+  const sidePanel = useDeviceRatio() >= SIDE_PANEL_RATIO;
   // 레이아웃 기준은 app/components/layoutRules.ts 참고 — 단일 영상은 폭과 무관하게
   // 항상 16:9, 목록 방향은 안들이 공유하는 useListLayout 이 정한다.
-  // headerPad = 목록 영역에서 타일이 못 쓰는 세로(제목 52 or 여백 24 + pb-4 16).
-  const [listAreaRef, listRowRef, listWide] = useListLayout();
-  const [recTab, setRecTab] = useState<"list" | "motion">("motion");
+  // 가로 한 줄(가로 스크롤)일 때 목록 영역은 '움직임 감지' 탭 스트립 높이
+  // (MOTION_MIN_H)로 못 박고, 남는 세로는 아래 videoAreaRef(단일 영상)가 가져간다.
+  // 그래서 목록 탭·감지 탭 스트립 높이가 정확히 같고, 스트립 아래에 빈 공간도 없다.
+  // 이때 영상은 16:9 를 넘겨 세로로 늘어난다 — 가로 스크롤일 때는 허용하기로 했다.
+  //
+  // 사이드 패널일 땐 이 훅이 할 일이 없다(가로/세로 스트립 자체가 없으니까). 인자를
+  // 빼서 넘기면 훅이 이전 배치에서 걸어 둔 인라인 값들을 걷어내고 손을 뗀다.
+  const [listAreaRef, listRowRef, listWide, videoAreaRef] = useListLayout(
+    sidePanel ? undefined : MOTION_MIN_H,
+    !sidePanel,
+  );
+  // 카메라 목록 — 선택 카메라 타일을 가운데로 맞출 때 쓴다(가로면 좌우, 세로면 위아래).
+  const listScrollRef = useRef<HTMLDivElement>(null);
+  // 목록 타일 하나. 아래 가로 스트립과 오른쪽 세로 패널이 같은 걸 쓴다 — 타일 자체는
+  // 어디 놓이든 같고(16:9 · 라벨 · 선택 표시), 크기를 어떻게 잡느냐만 다르다.
+  const cameraTile = (c: (typeof CAMERAS)[number], i: number, cls: string) => (
+    <button
+      key={i}
+      type="button"
+      onClick={() => onSelect(i)}
+      data-selected={i === index ? "true" : undefined}
+      className={cls}
+      style={{ borderRadius: "4px" }}
+    >
+      <FrozenImage
+        src={c.src}
+        alt={c.label}
+        className="absolute inset-0 h-full w-full"
+        style={
+          { objectFit: "cover" }
+        }
+      />
+      <div
+        className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
+        style={{
+          top: "4px",
+          left: "4px",
+          height: "17px",
+          padding: "0 4px",
+          borderRadius: "2px",
+        }}
+      >
+        {c.label}
+      </div>
+      {i === index && (
+        <>
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          />
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{ boxShadow: "inset 0 0 0 2px #1D6CEB", borderRadius: "4px" }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <img
+              src={`${BASE}/nav/playing.gif`}
+              alt="재생 중"
+              className="h-6 w-6"
+            />
+          </div>
+        </>
+      )}
+    </button>
+  );
+  // 목록이 보일 때(진입·탭 전환·선택 변경·레이아웃 전환) 선택된 카메라 타일을 스크롤
+  // 가운데로 맞춘다. 다채널에서 더블클릭해 단일로 들어오면 그 카메라가 가운데에 온다.
+  //
+  // 움직이는 방식이 두 가지다:
+  //   · 선택이 바뀐 경우 — 사용자가 방금 고른 결과라 눈으로 따라갈 수 있어야 한다.
+  //     부드럽게(smooth) 한 번만 움직인다. 위 큰 영상도 300ms 로 미끄러지므로 결이 같다.
+  //   · 그 외(진입·탭 전환·배치 전환) — 이미 가운데 있어야 하는 상태라 즉시 맞춘다.
+  //     이때는 레이아웃이 정착하는 동안(영상 16:9 계산 등) 여러 번 다시 맞춰야 한다.
+  //
+  // 예전엔 두 경우를 안 나누고 scrollLeft 를 직접 대입했다. 그래서 선택할 때마다
+  // 즉시 점프했고, 그 점프가 rAF 2회 + ResizeObserver 1.2초 동안 여러 번 겹쳐
+  // "띡 띡" 끊겨 보였다.
+  const prevIndexRef = useRef(index);
+  useEffect(() => {
+    const selectionChanged = prevIndexRef.current !== index;
+    prevIndexRef.current = index;
+    const listVisible = mode === "live" || recTab === "list";
+    if (!listVisible) return;
+    const el = listScrollRef.current;
+    if (!el) return;
+    const center = (behavior: ScrollBehavior) => {
+      const tile = el.querySelector<HTMLElement>('[data-selected="true"]');
+      if (!tile) return;
+      const tr = tile.getBoundingClientRect();
+      const er = el.getBoundingClientRect();
+      // 진입 직후엔 영상(16:9)·목록 높이가 아직 안 정해져 타일 폭이 0/부정확할 수 있다.
+      if (tr.width === 0 || er.width === 0) return;
+      if (el.scrollWidth > el.clientWidth + 1) {
+        // 가로 한 줄: 좌우 가운데
+        const left = tr.left - er.left + el.scrollLeft;
+        const target = Math.max(0, left - (el.clientWidth - tr.width) / 2);
+        // 이미 제자리면 건너뛴다 — 안 그러면 정착 중 재보정이 애니메이션을 끊는다.
+        if (Math.abs(el.scrollLeft - target) < 1) return;
+        el.scrollTo({ left: target, behavior });
+      } else if (el.scrollHeight > el.clientHeight + 1) {
+        // 세로 2열: 위아래 가운데
+        const top = tr.top - er.top + el.scrollTop;
+        const target = Math.max(0, top - (el.clientHeight - tr.height) / 2);
+        if (Math.abs(el.scrollTop - target) < 1) return;
+        el.scrollTo({ top: target, behavior });
+      }
+    };
+
+    if (selectionChanged) {
+      // 움직임을 줄이는 설정이면 부드러운 스크롤을 쓰지 않는다.
+      const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      const raf = requestAnimationFrame(() => center(reduce ? "auto" : "smooth"));
+      return () => cancelAnimationFrame(raf);
+    }
+
+    // 다음 두 프레임에 걸쳐 맞추고(레이아웃/페인트 직후), 정착 중 크기 변화(영상 16:9
+    // 계산·툴바 접힘 등)에도 잠깐 동안 다시 맞춘다.
+    const instant = () => center("auto");
+    const raf1 = requestAnimationFrame(() => {
+      instant();
+      requestAnimationFrame(instant);
+    });
+    const ro = new ResizeObserver(instant);
+    ro.observe(el);
+    const stop = setTimeout(() => ro.disconnect(), 1200);
+    return () => {
+      cancelAnimationFrame(raf1);
+      clearTimeout(stop);
+      ro.disconnect();
+    };
+  }, [index, mode, recTab, listWide]);
   // 실시간↔녹화 전환 시 되감기/빨리감기 배속을 0배(기본)로 원복.
   // ExpandedView는 모드가 바뀌어도 언마운트되지 않아 배속 인덱스가 남으므로 명시적으로 리셋.
   useEffect(() => {
@@ -903,9 +1057,14 @@ function ExpandedView({
 
   const handlePointerDown = (e: React.PointerEvent) => {
     swipeRef.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+    // 누르고 있는 동안 딤을 붙잡는다(길게 누르기·드래그 중 안 사라지게).
+    controlsAuto.hold();
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    // 손을 뗀 시점부터 5초를 다시 센다. 아래 조기 반환들보다 먼저 놓아야
+    // 붙잡은 상태가 남아 딤이 영영 안 꺼지는 일이 없다.
+    controlsAuto.release();
     const start = swipeRef.current;
     if (!start) return;
     swipeRef.current = null;
@@ -917,7 +1076,7 @@ function ExpandedView({
     setTimeout(() => {
       swipedRef.current = false;
     }, 350);
-    setActivityTick((t) => t + 1);
+    controlsAuto.keepAlive();
     if (dx < 0) {
       if (index < CAMERAS.length - 1) onSelect(index + 1);
     } else {
@@ -925,11 +1084,6 @@ function ExpandedView({
     }
   };
 
-  useEffect(() => {
-    if (!showControls) return;
-    const t = setTimeout(() => setShowControls(false), 5000);
-    return () => clearTimeout(t);
-  }, [showControls, activityTick]);
 
   // 녹화 모드의 헤더 시간 라벨은 playbackMs(=사용자가 선택/스크럽한 시점) 기준이어야 함.
   // 라이브 모드는 현재 시간(dateLabel) 그대로 사용.
@@ -957,7 +1111,7 @@ function ExpandedView({
       visibleOffsets.pop();
     }
   }
-  return (
+  const headerBlock = (
     <>
       {/* 확대뷰 헤더 — 다채널 화면과 동일. 녹화 모드에서도 항상 표시 */}
       <header
@@ -985,17 +1139,30 @@ function ExpandedView({
           <ModeToggle mode={mode} setMode={setMode} />
         </div>
       </header>
-
-      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 폭과 무관하게 항상 정확히 16:9.
-          크기 규칙은 globals.css 의 .single-video-area/.single-video-box 에 있다:
-          넓은 화면에선 16:9 를 넘어 늘어나지 않고, 짧은 화면에선 비율을 지킨 채
-          줄어든다(좌우에 검은 여백). */}
-      <div className="single-video-area px-0">
+    </>
+  );
+  const videoBlock = (
+    <>
+      {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 크기 규칙은 globals.css 의
+          .single-video-area/.single-video-box: 기본은 정확히 16:9(짧은 화면에선
+          비율을 지킨 채 줄고 좌우에 검은 여백). 단 카메라 목록이 가로 스크롤이거나
+          (useListLayout 이 상한을 풀어 목록 스트립(108) 아래로 남는 세로를 영상이
+          가져감) 오른쪽 세로 패널일 땐(아래) 한도 없이 16:9 를 넘겨 늘어난다. */}
+      <div
+        ref={sidePanel ? undefined : videoAreaRef}
+        className="single-video-area px-0"
+        // 사이드 패널일 땐 왼쪽 컬럼의 남는 세로를 영상이 한도 없이 가져간다
+        // (16:9 상한 해제). 크기는 globals.css 의 [data-side] 가 잡는다.
+        // 훅이 쓰는 data-fill 과 속성을 나눠 둔 건, 배치가 바뀔 때 React 가 건 값과
+        // 훅이 건 값이 서로를 못 지우고 남는 걸 막기 위해서다.
+        data-side={sidePanel ? "true" : undefined}
+      >
         <div
           className="single-video-box relative cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
           onClick={handleVideoClick}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         >
           <div
             className="absolute inset-0 flex transition-transform duration-300 ease-out"
@@ -1050,7 +1217,12 @@ function ExpandedView({
                 gap: "12px",
                 pointerEvents: showControls ? "auto" : "none",
               }}
-              onClick={(e) => e.stopPropagation()}
+              // 버튼을 누르고 있는 동안 딤을 붙잡고, 떼는 순간부터 5초를 다시 센다.
+              {...controlsAuto.holdProps}
+              onClick={(e) => {
+                e.stopPropagation();
+                controlsAuto.keepAlive();
+              }}
             >
               <button type="button" aria-label="목록" onClick={onOpenSheet}>
                 <img
@@ -1068,7 +1240,7 @@ function ExpandedView({
                 onClick={cycleVideoFit}
               >
                 <img
-                  src={`${BASE}/nav/expand.svg`}
+                  src={videoFitIcon(BASE, nextVideoFit(videoFit))}
                   alt=""
                   className="h-8 w-8"
                 />
@@ -1118,6 +1290,8 @@ function ExpandedView({
             </div>
           </div>
           <VideoSkeleton visible={videoLoading} />
+          {/* 화면 맞춤 토스트 — 탐색·캡처 토스트와 같은 자리(영역 하단 20px 위). */}
+          <VideoFitToast text={fitToast} toastKey={fitToastKey} />
           {seekToast && (
             <div
               key={seekToast}
@@ -1161,8 +1335,11 @@ function ExpandedView({
           )}
         </div>
       </div>
-
-      {/* LIVE / 녹화 / 날짜 / 카메라 아이콘 — 크기가 변해도 높이 고정. */}
+    </>
+  );
+  const dateBarBlock = (
+    <>
+      {/* LIVE / 녹화 / 날짜 / 카메라 아이콘 — 크기가 변해도 높이 고정(눌리지 않음). */}
       <div
         className="relative flex flex-none items-center px-5"
         style={{ height: "44px" }}
@@ -1199,18 +1376,22 @@ function ExpandedView({
         <RowSkeleton visible={videoLoading} />
       </div>
 
-      <div
-        className="h-px"
-        style={{ backgroundColor: "#EBEBEB" }}
-      />
-
-      {/* 녹화 모드일 때 플레이어 버튼 — REC 칩을 누르면 숨겨진다/보인다
-          (timelineVisible). 예전엔 이 칩이 가짜 시스템 바(chromeVisible)를
-          같이 토글했는데 무관한 기능이라 분리했다. */}
+      {/* 이 아래로 뭔가 더 오는 경우에만 긋는다. 사이드 패널 + 실시간이면 이게
+          왼쪽 컬럼의 마지막 요소라 하단 탭바 위 테두리와 맞닿아 2px 로 보인다. */}
+      {!(sidePanel && mode !== "recording") && (
+        <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+      )}
+    </>
+  );
+  const playerBlock = (
+    <>
+      {/* 녹화 모드일 때 플레이어 버튼 — 시간바(타임라인) 위. REC 칩을 누르면
+          이 블록이 숨겨진다/보인다(timelineVisible) — 예전엔 REC 칩이 가짜
+          시스템 바(chromeVisible)를 같이 토글했는데 무관한 기능이라 분리했다. */}
       {mode === "recording" && timelineVisible && (
         <>
           <div
-            className="flex items-center justify-center"
+            className="flex flex-none items-center justify-center"
             style={{
               gap: "20px",
               padding: "8px 0",
@@ -1263,11 +1444,18 @@ function ExpandedView({
               }}
             />
           </div>
-          <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+          {/* 사이드 패널에선 탭이 오른쪽으로 빠져 이 선 바로 아래가 하단 탭바다.
+              탭바가 이미 위 테두리를 갖고 있어서 두 줄이 붙어 2px 로 보인다. */}
+          {!sidePanel && (
+            <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+          )}
         </>
       )}
-
-      {/* 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지 */}
+    </>
+  );
+  const tabsBlock = (
+    <>
+      {/* 녹화 모드 하단 탭: 카메라 목록 / 움직임 감지 — 플레이어 버튼(5개) 아래. */}
       {mode === "recording" && (
         <>
           <div className="flex items-center px-5" style={{ gap: "20px" }}>
@@ -1295,7 +1483,10 @@ function ExpandedView({
           <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
         </>
       )}
-
+    </>
+  );
+  const bottomStrip = (
+    <>
       {/* 카메라 목록 OR 녹화 이벤트 타임라인. 두 탭 모두 남는 공간을 채우는 영역(flex-1)
           이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 최소 높이는
           useListLayout 이 배치에 따라 잡는다 — 가로 한 줄이면 타일 세로 기준
@@ -1305,14 +1496,27 @@ function ExpandedView({
         className="relative flex min-h-0 flex-col flex-1"
       >
       {mode === "recording" && recTab === "motion" ? (
-        <RecordingEventTimeline
-          playbackMs={playbackMs}
-          setPlaybackMs={setPlaybackMs}
-          cameraSrc={cam.src}
-          onScrubbingChange={onScrubbingChange}
-        />
+        // 카메라 목록이 가로 한 줄(listWide)일 때만 가로 시간바. 목록이 세로
+        // 2열이면(!listWide) 목록과 같은 방향으로 감지 탭도 세로 타임라인을 쓴다
+        // (사이드 패널과 같은 컴포넌트 — 사용자 결정: "목록이 세로일 땐 감지도 세로").
+        listWide ? (
+          <RecordingEventTimeline
+            playbackMs={playbackMs}
+            setPlaybackMs={setPlaybackMs}
+            cameraSrc={cam.src}
+            onScrubbingChange={onScrubbingChange}
+          />
+        ) : (
+          <SideEventTimeline
+            playbackMs={playbackMs}
+            setPlaybackMs={setPlaybackMs}
+            cameraSrc={cam.src}
+            onScrubbingChange={onScrubbingChange}
+          />
+        )
       ) : (
       <div
+        ref={listWide ? undefined : listScrollRef}
         className={
           listWide
             ? "flex min-h-0 flex-1 flex-col pb-3"
@@ -1320,10 +1524,14 @@ function ExpandedView({
         }
       >
 
-        {/* 620px 이상: 가로 스크롤(좌우 여백은 스크롤 안쪽 패딩 — 첫/마지막만
-            띄우고 중간은 화면 끝까지). 미만: 세로 2열 그리드(px-5 여백). */}
+        {/* 가로(620+): 한 줄 가로 스크롤(carousel), 타일 = 16:9(높이 = 영역 높이).
+            세로(~619): 2열 그리드(세로 스크롤), 타일 = 16:9(폭 = (영역폭−갭)/2).
+            좌우 여백(px-5)은 스크롤 안쪽 패딩이라 첫/마지막만 20px 띄운다. */}
         <div
-          ref={listRowRef}
+          ref={(el) => {
+            listRowRef.current = el;
+            if (listWide) listScrollRef.current = el;
+          }}
           className={
             listWide
               ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -1331,72 +1539,79 @@ function ExpandedView({
           }
           style={{ marginTop: "12px" }}
         >
-          {CAMERAS.map((c, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => onSelect(i)}
-              className={
-                listWide
-                  ? "relative h-full aspect-video flex-none overflow-hidden bg-neutral-900"
-                  : "relative aspect-video overflow-hidden bg-neutral-900"
-              }
-              style={{ borderRadius: "4px" }}
-            >
-              <FrozenImage
-                src={c.src}
-                alt={c.label}
-                className="absolute inset-0 h-full w-full"
-                style={
-                  c.zoom
-                    ? {
-                        transform: `scale(${c.zoom})`,
-                        objectFit: "cover",
-                      }
-                    : { objectFit: "cover" }
-                }
-              />
-              <div
-                className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
-                style={{
-                  top: "4px",
-                  left: "4px",
-                  height: "17px",
-                  padding: "0 4px",
-                  borderRadius: "2px",
-                }}
-              >
-                {c.label}
-              </div>
-              {i === index && (
-                <>
-                  <div
-                    className="pointer-events-none absolute inset-0"
-                    style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-                  />
-                  <div
-                    className="pointer-events-none absolute inset-0"
-                    style={{
-                      boxShadow: "inset 0 0 0 2px #1D6CEB",
-                      borderRadius: "4px",
-                    }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <img
-                      src={`${BASE}/nav/playing.gif`}
-                      alt="재생 중"
-                      className="h-6 w-6"
-                    />
-                  </div>
-                </>
-              )}
-            </button>
-          ))}
+          {CAMERAS.map((c, i) =>
+            cameraTile(
+              c,
+              i,
+              listWide
+                ? "relative h-full aspect-video flex-none overflow-hidden bg-neutral-900"
+                : "relative aspect-video overflow-hidden bg-neutral-900",
+            ),
+          )}
         </div>
       </div>
       )}
       <CameraListSkeleton visible={videoLoading} />
       </div>
+    </>
+  );
+  // 오른쪽 세로 패널 본문 — 목록은 1열 세로 스크롤(타일 폭 = 패널 폭), 감지는
+  // 세로 타임라인. 가로 스트립(bottomStrip)과 달리 useListLayout 이 관여하지 않는다.
+  const sidePanelBody = (
+    <div ref={listAreaRef} className="relative flex min-h-0 flex-1 flex-col">
+      {mode === "recording" && recTab === "motion" ? (
+        <SideEventTimeline
+          playbackMs={playbackMs}
+          setPlaybackMs={setPlaybackMs}
+          cameraSrc={cam.src}
+          onScrubbingChange={onScrubbingChange}
+        />
+      ) : (
+        <div
+          ref={listScrollRef}
+          className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {CAMERAS.map((c, i) =>
+            cameraTile(
+              c,
+              i,
+              "relative aspect-video w-full flex-none overflow-hidden bg-neutral-900",
+            ),
+          )}
+        </div>
+      )}
+      <CameraListSkeleton visible={videoLoading} />
+    </div>
+  );
+
+  return (
+    <>
+      {headerBlock}
+      {sidePanel ? (
+        // 1080+ : 왼쪽 컬럼(영상 + 날짜 + 플레이어) | 오른쪽 세로 패널(탭 + 본문)
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {videoBlock}
+            {dateBarBlock}
+            {playerBlock}
+          </div>
+          <div
+            className="flex min-h-0 flex-none flex-col overflow-hidden"
+            style={{ width: `${SIDE_PANEL_W}px`, borderLeft: "1px solid #EBEBEB" }}
+          >
+            {tabsBlock}
+            {sidePanelBody}
+          </div>
+        </div>
+      ) : (
+        <>
+          {videoBlock}
+          {dateBarBlock}
+          {playerBlock}
+          {tabsBlock}
+          {bottomStrip}
+        </>
+      )}
     </>
   );
 }
@@ -1451,7 +1666,17 @@ const TIMELINE_EVENTS = (() => {
   return arr.sort((a, b) => a.at - b.at);
 })();
 
-function RecordingEventTimeline({
+// ── 가로 움직임-감지 타임라인 ────────────────────────────────────────────
+// 오른쪽 = 최신, 왼쪽 = 과거. 시간 축을 X 로 잡고, 움직임 이벤트 썸네일 카드는
+// 트랙(회색 가로선) '아래쪽'에 가로로 나열한다. 카드가 겹치면 묶어 개수 배지로
+// 표시하고, 탭하면 오른쪽(최신 방향)으로 부채처럼 펼친다(아코디언). 파란 세로선이
+// 화면 가운데(현재 시각)에 고정되고, 콘텐츠가 translateX 로 흐른다.
+// ── 세로 움직임-감지 타임라인 (1080+ 오른쪽 패널 전용) ──────────────────────
+// 시간이 위→아래로 흐르고 이벤트 카드가 쌓인다. 가로 시간바(RecordingEventTimeline)는
+// 폭이 넓어야 쓸 만한데 세로 패널은 폭이 좁아서, 1080 이상 사이드 패널에서는 이걸 쓴다.
+// A-1안의 같은 컴포넌트를 그대로 가져왔다 — 안마다 컴포넌트를 복제해 두는 이 파일들의
+// 관례를 따랐다(각 안이 독립적으로 굴러가야 해서 공유 모듈로 빼지 않는다).
+function SideEventTimeline({
   playbackMs,
   setPlaybackMs,
   cameraSrc,
@@ -1468,17 +1693,6 @@ function RecordingEventTimeline({
   // 줌 레벨: 픽셀/초 — 가로 타임라인과 동일하게 기본 6px/sec. 핀치/휠로 연속 조정.
   const [pxPerSec, setPxPerSec] = useState(6);
   const [lineY, setLineY] = useState(20);
-  // 펼쳐진 이벤트 클러스터 (클러스터 첫 이벤트 key 기준)
-  const [expandedClusters, setExpandedClusters] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const toggleCluster = (key: string) =>
-    setExpandedClusters((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef<{ y: number; ms: number } | null>(null);
   // 탭 판정용 — 카드 위에서 시작해도 드래그는 통과시키고, 거의 안 움직이면 탭으로 처리
@@ -1499,8 +1713,6 @@ function RecordingEventTimeline({
   // transition을 건다. 시간 흐름(50ms 틱)·드래그가 시작되면 즉시 끈다.
   const [animateScroll, setAnimateScroll] = useState(false);
   const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // 펼친 클러스터에서 라인에 정렬해 '선택'한 멤버(occ.key). 같은 멤버를 다시 탭하면 접는다.
-  const [selectedOccKey, setSelectedOccKey] = useState<string | null>(null);
 
   // 가로 타임라인과 동일: ±2시간(VISIBLE_MINUTES) 윈도우
   const VISIBLE_MINUTES = TIMELINE_VISIBLE_MIN;
@@ -1538,11 +1750,11 @@ function RecordingEventTimeline({
     return Math.max(minMs, Math.min(maxMs, ms));
   };
 
-  // 라벨 (labelIntervalSec 단위) — anchor 기준 ±VISIBLE_MINUTES.
-  // playbackMs 는 매 틱마다 갱신되지만 라벨은 anchor·줌에만 의존한다. 메모이즈 없이는
-  // 재생 중 매 틱마다 최대 1,441개를 새로 만든다.
+  // 라벨 (labelIntervalSec 단위) — anchor 기준 ±VISIBLE_MINUTES
   const totalSpanSec = VISIBLE_MINUTES * 60;
   const labelStepCount = Math.ceil(totalSpanSec / labelIntervalSec);
+  // playbackMs 는 매 틱마다 갱신되지만 라벨은 anchor·줌에만 의존한다. 메모이즈 없이는
+  // 재생 중 매 틱마다 최대 1,441개를 새로 만든다.
   const labels = useMemo(
     () =>
       anchor
@@ -1590,12 +1802,14 @@ function RecordingEventTimeline({
     }
   }
 
-  // 이벤트 클러스터링 — 픽셀 거리가 MERGE_GAP 보다 가까우면 묶음.
-  // (카드 높이 60 + 뒤 스택 여유 + 간격) 만큼 떨어뜨려 카드가 서로 겹치지 않게 함.
-  // 펼치면 ROW_H 간격으로 나열되며, 늘어난 높이만큼 아래 컨텐츠를 밀어낸다(아코디언).
-  const CARD_H = 80;
-  const ROW_H = 80;
-  const THUMB_HALF = 36; // 썸네일 높이 72의 절반 — 카드 중심 cy 에서 윗변까지 거리
+  // 썸네일 크기는 가로 타임라인과 같은 값을 쓴다(THUMB_MIN_H 48, 폭은 16:9 로 따라옴).
+  // 예전엔 이 컴포넌트만 72×128 을 하드코딩하고 있어서 두 타임라인의 썸네일이 달랐다.
+  const THUMB_H = THUMB_MIN_H;
+  const THUMB_W = Math.round((THUMB_H * 16) / 9);
+  // 이벤트 클러스터링 — 픽셀 거리가 카드 높이 + 간격보다 가까우면 한 자리로 묶어
+  // 카드가 서로 겹치지 않게 한다. 대표 하나만 그린다(겹쳐 쌓기·개수 배지·펼침 없음
+  // — 가로 타임라인과 동일).
+  const CARD_H = THUMB_H + 8;
   type Occ = { key: string; ms: number; secOffset: number; durSec: number };
   const clusters: {
     key: string;
@@ -1613,10 +1827,9 @@ function RecordingEventTimeline({
     }
   }
   // 펼쳐진 클러스터들이 삽입하는 추가 높이 (anchor secOffset 오름차순)
-  const expandedGaps = clusters
-    .filter((c) => c.members.length > 1 && expandedClusters.has(c.key))
-    .map((c) => ({ at: c.secOffset, gap: (c.members.length - 1) * ROW_H }))
-    .sort((a, b) => a.at - b.at);
+  // 펼침(아코디언)을 안 쓰므로 아래로 밀어낼 간격도 없다 — 가로 타임라인처럼
+  // 한 자리에 대표 카드 하나만 뜬다.
+  const expandedGaps: { at: number; gap: number }[] = [];
   const totalGap = expandedGaps.reduce((s, g) => s + g.gap, 0);
   // 세로 타임라인은 위=최신, 아래=과거. 따라서 컨텐츠 y는 secOffset 부호를 뒤집어 매핑한다
   // (미래/최신 = 작은 y = 위, 과거 = 큰 y = 아래).
@@ -1727,38 +1940,22 @@ function RecordingEventTimeline({
           }
         });
         if (target) {
-          const clusterKey = target.dataset.clusterKey;
-          if (clusterKey) {
-            // 접힌 묶음 → 펼침.
-            toggleCluster(clusterKey);
-          } else if (playbackMs !== null && target.dataset.eventMs) {
+          if (playbackMs !== null && target.dataset.eventMs) {
             const ms = Number(target.dataset.eventMs);
-            const ownerKey = target.dataset.clusterOwner;
-            const occKey = target.dataset.occKey ?? null;
             // 파란 라인을 다크 막대의 아랫끝(이벤트 시작)에 맞춘다. 막대는 중앙 정렬이라
-            // 아랫끝 = 카드 중심(cy) + 막대높이/2. 펼친 멤버는 아코디언 위치(anchorY+i·ROW_H)라
-            // 시간축과 어긋나므로 카드가 그려진 위치(content-y)와 그 시각의 시간축 위치(time-y)
-            // 차이로 보정하고, 거기서 막대높이/2 만큼 더 내려 아랫끝이 라인에 오게 한다.
-            // 접기는 카드 밖 빈 곳 탭으로만 한다.
-            const barH = Math.min(72, Math.max(6, Number(target.dataset.durSec) * pxPerSec));
+            // 아랫끝 = 카드 중심(cy) + 막대높이/2. 카드가 그려진 위치(content-y)와
+            // 그 시각의 시간축 위치(time-y) 차이로 보정하고, 거기서 막대높이/2 만큼
+            // 더 내려 아랫끝이 라인에 오게 한다.
+            const barH = Math.min(THUMB_H, Math.max(6, Number(target.dataset.durSec) * pxPerSec));
             const timeY = Number(target.dataset.timeY);
             const contentY = Number(target.dataset.contentY);
             setAlignOffset(timeY - contentY - barH / 2);
-            setSelectedOccKey(ownerKey ? occKey : null);
             setPlaybackMs(clampMs(ms));
             // 선택 지점까지 부드럽게 이동(약 320ms) 후 transition 해제 → 이후 시간 흐름은 또렷하게.
             setAnimateScroll(true);
             if (animTimerRef.current) clearTimeout(animTimerRef.current);
             animTimerRef.current = setTimeout(() => setAnimateScroll(false), 340);
           }
-        } else if (expandedClusters.size > 0) {
-          // 카드 밖 빈 곳 탭 → 펼친 묶음 모두 접기.
-          setExpandedClusters(new Set());
-          setSelectedOccKey(null);
-          setAlignOffset(0);
-          setAnimateScroll(true);
-          if (animTimerRef.current) clearTimeout(animTimerRef.current);
-          animTimerRef.current = setTimeout(() => setAnimateScroll(false), 340);
         }
       }
       tapRef.current = null;
@@ -1873,68 +2070,40 @@ function RecordingEventTimeline({
         })}
 
         {/* 이벤트 영상 길이 막대 — 선(x=100) 위, 막대 중심을 썸네일 세로 중앙(cy)에 정렬.
-            영상 길이(durSec)만큼 길어진다(줌 비례, 최대 = 썸네일 높이 72px)라 항상 썸네일
-            세로 범위 안에 있다. 펼친 상태에서는 anchorY 기준 ROW_H 간격으로 쌓는다. */}
-        {clusters.flatMap((cluster) => {
-          const { key, secOffset, members } = cluster;
-          const count = members.length;
-          const anchorY = yOf(secOffset);
-          const expanded = count > 1 && expandedClusters.has(key);
-          const bars = expanded
-            ? members.map((m, i) => ({ cy: anchorY + i * ROW_H, dur: m.durSec }))
-            : [{ cy: anchorY, dur: members[0].durSec }];
-          return bars.map((b, i) => {
-            const h = Math.min(72, Math.max(6, b.dur * pxPerSec));
-            return (
-              <span
-                key={`BD${key}-${expanded ? "x" : "c"}-${i}`}
-                className={`pointer-events-none absolute rounded-full${
-                  expanded ? " cluster-bar-fan-in" : ""
-                }`}
-                style={{
-                  left: "100px",
-                  top: `${b.cy - h / 2}px`,
-                  width: "6px",
-                  height: `${h}px`,
-                  marginLeft: "-3px",
-                  backgroundColor: "#595959",
-                  ...(expanded
-                    ? {
-                        ["--fan" as string]: `${i * ROW_H}px`,
-                        animationDelay: `${i * 35}ms`,
-                      }
-                    : null),
-                }}
-              />
-            );
-          });
+            영상 길이(durSec)만큼 길어진다(줌 비례, 최대 = 썸네일 높이 THUMB_H)라 항상
+            썸네일 세로 범위 안에 있다. */}
+        {clusters.map((cluster) => {
+          const cy = yOf(cluster.secOffset);
+          const h = Math.min(THUMB_H, Math.max(6, cluster.members[0].durSec * pxPerSec));
+          return (
+            <span
+              key={`BD${cluster.key}`}
+              className="pointer-events-none absolute rounded-full"
+              style={{
+                left: "100px",
+                top: `${cy - h / 2}px`,
+                width: "6px",
+                height: `${h}px`,
+                marginLeft: "-3px",
+                backgroundColor: "#595959",
+              }}
+            />
+          );
         })}
 
         {/* 이벤트 카드 — anchor 기준 secOffset 위치, ±VISIBLE_MINUTES 만 렌더.
             카드 픽셀 위치가 카드 높이(60px)보다 가까우면 묶어서 카운트 배지로 표시.
             줌인하면 자연스럽게 분리됨. */}
         {(() => {
-          const eventCard = (
-            occ: Occ,
-            y: number,
-            count: number,
-            label: string,
-            clusterKey?: string,
-            fanIndex?: number,
-            ownerKey?: string,
-          ) => (
+          const eventCard = (occ: Occ, y: number) => (
             <div
-              key={`E${occ.key}${fanIndex != null ? "-x" : ""}`}
-              data-cluster-key={clusterKey}
-              data-cluster-owner={ownerKey}
+              key={`E${occ.key}`}
               data-event-ms={occ.ms}
               data-dur-sec={occ.durSec}
               data-occ-key={occ.key}
               data-content-y={y}
               data-time-y={yOf(occ.secOffset)}
-              className={`absolute flex items-center${
-                fanIndex != null ? " cluster-card-fan-in" : ""
-              }`}
+              className="absolute flex items-center"
               style={{
                 left: "100px",
                 top: `${y}px`,
@@ -1946,107 +2115,36 @@ function RecordingEventTimeline({
                 // clusterKey가 있으면(접힌 묶음) 탭 시 펼치고, 없으면 그 시각으로 이동.
                 pointerEvents: "auto",
                 cursor: "pointer",
-                // 펼칠 때 anchorY 에서 각자 위치로 부채처럼 펼쳐지는 진입 애니메이션.
-                ...(fanIndex != null
-                  ? {
-                      ["--fan" as string]: `${fanIndex * ROW_H}px`,
-                      animationDelay: `${fanIndex * 35}ms`,
-                    }
-                  : null),
               }}
             >
               <div
                 className="relative"
-                style={{ width: "128px", height: "72px", flexShrink: 0 }}
+                style={{ width: `${THUMB_W}px`, height: `${THUMB_H}px`, flexShrink: 0 }}
               >
-                {/* 겹친 이벤트일 때 뒤에 쌓인 카드 그래픽 — 사진 없이 그레이톤으로 가운데 정렬, 아래로 살짝 삐져나옴 */}
-                {count > 1 && (
-                  <>
-                    <div
-                      className="absolute rounded-md"
-                      style={{ left: "8px", top: "8px", width: "112px", height: "72px", zIndex: 0, backgroundColor: "#D9D9D9" }}
-                    />
-                    <div
-                      className="absolute rounded-md"
-                      style={{ left: "4px", top: "4px", width: "120px", height: "72px", zIndex: 1, backgroundColor: "#BFBFBF" }}
-                    />
-                  </>
-                )}
-                {/* 앞쪽(대표) 썸네일 */}
+                {/* 썸네일 — 한 자리에 하나만. 겹침 표시(쌓인 카드·개수 배지)는 안 쓴다. */}
                 <div
                   className="absolute overflow-hidden rounded-md bg-neutral-900"
                   style={{
                     left: 0,
                     top: 0,
-                    width: "128px",
-                    height: "72px",
+                    width: `${THUMB_W}px`,
+                    height: `${THUMB_H}px`,
                     zIndex: 2,
-                    // 펼친 상태에서 라인에 정렬해 선택된 멤버 표시.
-                    ...(ownerKey != null && occ.key === selectedOccKey
-                      ? { outline: "2px solid #1D6CEB", outlineOffset: "-1px" }
-                      : null),
                   }}
                 >
                   <FrozenImage
                     src={cameraSrc}
                     alt=""
                     className="h-full w-full"
-                    style={{ objectFit: "cover", transform: "scale(1.1)" }}
+                    style={{ objectFit: "cover" }}
                   />
-                  {count > 1 && (
-                    <span
-                      className="absolute inline-flex items-center justify-center leading-none tabular-nums"
-                      style={{
-                        top: "4px",
-                        left: "4px",
-                        minWidth: "18px",
-                        height: "18px",
-                        padding: "0 5px",
-                        borderRadius: "9px",
-                        backgroundColor: "rgba(0,0,0,0.5)",
-                        color: "#ffffff",
-                        fontSize: "11px",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {count}
-                    </span>
-                  )}
                 </div>
               </div>
             </div>
           );
-          return clusters.map((cluster) => {
-            const { key, secOffset, members } = cluster;
-            const count = members.length;
-            const anchorY = yOf(secOffset);
-            const expanded = count > 1 && expandedClusters.has(key);
-
-            if (!expanded) {
-              return eventCard(
-                cluster,
-                anchorY,
-                count,
-                "움직임 감지",
-                count > 1 ? key : undefined,
-              );
-            }
-
-            // 펼친 상태 — 겹친 이벤트들을 아래로 나열.
-            // 접힘 대표(members[0]=가장 오래된 멤버)와 맞추기 위해 맨 위(anchorY)에
-            // 가장 오래된 멤버를 두고, 아래로 갈수록 최신 멤버를 나열한다.
-            return (
-              <div
-                key={`EX${key}`}
-                className="pointer-events-none absolute left-0 right-0"
-                style={{ top: 0, height: 0 }}
-              >
-                {members.map((m, i) =>
-                  eventCard(m, anchorY + i * ROW_H, 1, "움직임 감지", undefined, i, key),
-                )}
-              </div>
-            );
-          });
+          // 한 자리에 대표 카드 하나. 가까운 이벤트는 클러스터로 묶여 대표만 뜨고,
+          // 줌인하면 자연스럽게 분리된다(가로 타임라인과 같은 방식).
+          return clusters.map((cluster) => eventCard(cluster, yOf(cluster.secOffset)));
         })()}
       </div>
 
@@ -2081,6 +2179,576 @@ function RecordingEventTimeline({
             marginRight: "20px",
           }}
         />
+      </div>
+    </div>
+  );
+}
+
+
+function RecordingEventTimeline({
+  playbackMs,
+  setPlaybackMs,
+  cameraSrc,
+  onScrubbingChange,
+}: {
+  playbackMs: number | null;
+  setPlaybackMs: (
+    v: number | null | ((prev: number | null) => number | null),
+  ) => void;
+  cameraSrc: string;
+  onScrubbingChange?: (s: boolean) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  // 썸네일 영역(시간바 아래 남는 공간). 이 높이에 맞춰 썸네일 세로 크기를 유동
+  // 조절한다(화면이 짧아지면 잘리지 않게 줄인다). 최대 72(원본), 폭은 16:9 로 연동.
+  const thumbAreaRef = useRef<HTMLDivElement>(null);
+  const [thumbH, setThumbH] = useState(THUMB_MAX_H);
+  const updateThumbH = () => {
+    const el = thumbAreaRef.current;
+    if (!el || el.clientHeight <= 0) return;
+    // 남는 영역 높이에서 상하 여백(위 4 + 아래 PAD_TOP)을 뺀 값. 일반 48 로 캡.
+    const avail = el.clientHeight - (4 + PAD_TOP);
+    setThumbH(Math.max(THUMB_MIN_H, Math.min(THUMB_MAX_H, Math.round(avail))));
+  };
+  // 매 렌더 뒤 재계산 — 기기 폭/높이 전환처럼 ResizeObserver 만으로는 놓치는 경우가
+  // 있어서(관측 노드 교체·콜백 누락) 렌더 기준으로도 한 번 더 맞춘다. 값이 같으면
+  // setState 가 리렌더를 만들지 않으므로 루프가 되지 않는다.
+  useEffect(() => {
+    updateThumbH();
+  });
+  useEffect(() => {
+    const el = thumbAreaRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => updateThumbH());
+    ro.observe(el);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // 줌 레벨: 픽셀/초 — 기본 5px/sec(눈금·시간 간격을 조금 더 촘촘하게). 핀치/휠로 조정.
+  const [pxPerSec, setPxPerSec] = useState(5);
+  // 펼쳐진 이벤트 클러스터 (클러스터 첫 이벤트 key 기준)
+  const [expandedClusters, setExpandedClusters] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const toggleCluster = (key: string) =>
+    setExpandedClusters((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef<{ x: number; ms: number } | null>(null);
+  // 탭 판정용 — 카드 위에서 시작해도 드래그는 통과시키고, 거의 안 움직이면 탭으로 처리
+  const tapRef = useRef<{ x: number; y: number; t: number; moved: boolean } | null>(
+    null,
+  );
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchStartRef = useRef<{ distance: number; pxPerSec: number } | null>(
+    null,
+  );
+
+  // 썸네일 탭 정렬: 펼친 멤버는 gap 안에 쌓여 어떤 재생시각으로도 라인에 못 맞춘다.
+  // 선택 순간 그 카드 상단이 라인에 딱 닿도록 컨텐츠를 추가로 밀어두는 '정렬 오프셋'.
+  // 이 오프셋을 유지한 채 playbackMs(=선택 시각)부터 시간이 흐르므로 되돌아가는 미끄러짐 없이
+  // 선택 지점에서 자연스럽게 흘러간다. 새로 드래그(스크럽)를 시작하면 실제 시각축으로 되돌린다.
+  const [alignOffset, setAlignOffset] = useState(0);
+  // 썸네일 선택 시 라인까지 '띡' 점프하지 않고 부드럽게 미끄러져 가도록, 잠깐만 transform에
+  // transition을 건다. 시간 흐름(50ms 틱)·드래그가 시작되면 즉시 끈다.
+  const [animateScroll, setAnimateScroll] = useState(false);
+  const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 펼친 클러스터에서 라인에 정렬해 '선택'한 멤버(occ.key). 같은 멤버를 다시 탭하면 접는다.
+  const [selectedOccKey, setSelectedOccKey] = useState<string | null>(null);
+
+  // 가로 타임라인과 동일: ±2시간(VISIBLE_MINUTES) 윈도우
+  const VISIBLE_MINUTES = TIMELINE_VISIBLE_MIN;
+
+  // 라벨 최소 세로 간격 = 50px(눈금·시간 간격을 조금 더 촘촘하게). 최소 라벨 간격 5초.
+  const niceSeconds = [5, 10, 30, 60, 300, 600, 1800];
+  const labelIntervalSec =
+    niceSeconds.find((s) => s * pxPerSec >= 50) ?? 3600;
+
+  // anchor: 라벨 영역의 기준 시각. 초기에는 playbackMs(분 단위 스냅),
+  // playbackMs가 ±VISIBLE_MINUTES/2를 크게 벗어나면 재정렬.
+  const [anchor, setAnchor] = useState<number | null>(null);
+  useEffect(() => {
+    if (playbackMs === null) return;
+    setAnchor((prev) => {
+      if (prev === null) {
+        const a = new Date(playbackMs);
+        a.setSeconds(0, 0);
+        return a.getTime();
+      }
+      if (Math.abs(playbackMs - prev) > (VISIBLE_MINUTES / 2) * 60 * 1000) {
+        const a = new Date(playbackMs);
+        a.setSeconds(0, 0);
+        return a.getTime();
+      }
+      return prev;
+    });
+  }, [playbackMs, VISIBLE_MINUTES]);
+
+  // 재생 시점이 ±VISIBLE_MINUTES 범위를 넘지 않도록 클램프
+  const clampMs = (ms: number) => {
+    if (anchor === null) return ms;
+    const minMs = anchor - VISIBLE_MINUTES * 60 * 1000;
+    const maxMs = anchor + VISIBLE_MINUTES * 60 * 1000;
+    return Math.max(minMs, Math.min(maxMs, ms));
+  };
+
+  // 라벨 (labelIntervalSec 단위) — anchor 기준 ±VISIBLE_MINUTES
+  const totalSpanSec = VISIBLE_MINUTES * 60;
+  const labelStepCount = Math.ceil(totalSpanSec / labelIntervalSec);
+  // playbackMs 는 매 틱마다 갱신되지만 라벨은 anchor·줌에만 의존한다. 메모이즈 없이는
+  // 재생 중 매 틱마다 최대 1,441개를 새로 만든다.
+  const labels = useMemo(
+    () =>
+      anchor
+        ? Array.from({ length: labelStepCount * 2 + 1 }, (_, i) => {
+            const secOffset = (i - labelStepCount) * labelIntervalSec;
+            const t = new Date(anchor + secOffset * 1000);
+            const text =
+              labelIntervalSec >= 60
+                ? `${pad(t.getHours())}:${pad(t.getMinutes())}`
+                : `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+            return { text, secOffset };
+          })
+        : [],
+    [anchor, labelStepCount, labelIntervalSec],
+  );
+
+  // 이벤트 — anchor 기준 ±VISIBLE_MINUTES 범위에 들어오는 occurrence 만 렌더.
+  // 매일 반복되므로 anchor 날짜 ±1일 내에서 검색.
+  // key는 (day, eventIndex) 조합으로 항상 고유 (같은 초가 중복돼도 인덱스가 다름)
+  const eventOccurrences: {
+    key: string;
+    ms: number;
+    secOffset: number;
+    durSec: number;
+  }[] = [];
+  if (anchor !== null) {
+    const anchorDay = new Date(anchor);
+    anchorDay.setHours(0, 0, 0, 0);
+    const windowSec = VISIBLE_MINUTES * 60 + 120; // 약간의 여유
+    for (const dayOffset of [-1, 0, 1]) {
+      const dayStart = anchorDay.getTime() + dayOffset * 86400000;
+      for (let i = 0; i < TIMELINE_EVENTS.length; i++) {
+        const ev = TIMELINE_EVENTS[i];
+        const eventMs = dayStart + ev.at * 1000;
+        const secOffset = (eventMs - anchor) / 1000;
+        if (Math.abs(secOffset) <= windowSec) {
+          eventOccurrences.push({
+            key: `${dayStart}-${i}`,
+            ms: eventMs,
+            secOffset,
+            durSec: ev.dur,
+          });
+        }
+      }
+    }
+  }
+
+  // 이벤트 클러스터링 — 픽셀 거리가 카드 폭보다 가까우면 묶음(가로로 겹침).
+  // 펼치면 COL_W 간격으로 나열되며, 늘어난 폭만큼 오른쪽(최신) 컨텐츠를 밀어낸다(아코디언).
+  const thumbW = Math.round((thumbH * 16) / 9); // 썸네일 폭(16:9, 세로 크기에 연동)
+  const CARD_W = thumbW; // 이 간격보다 가까운 이벤트는 한 자리로 묶는다.
+  const COL_W = thumbW + 12; // (미사용) 멤버 간 가로 간격.
+  type Occ = { key: string; ms: number; secOffset: number; durSec: number };
+  const clusters: {
+    key: string;
+    ms: number;
+    secOffset: number;
+    durSec: number;
+    members: Occ[];
+  }[] = [];
+  for (const occ of eventOccurrences) {
+    const last = clusters[clusters.length - 1];
+    if (last && (occ.secOffset - last.secOffset) * pxPerSec < CARD_W) {
+      last.members.push(occ);
+    } else {
+      clusters.push({ ...occ, members: [occ] });
+    }
+  }
+  // 펼쳐진 클러스터들이 삽입하는 추가 폭 (secOffset 오름차순)
+  const expandedGaps = clusters
+    .filter((c) => c.members.length > 1 && expandedClusters.has(c.key))
+    .map((c) => ({ at: c.secOffset, gap: (c.members.length - 1) * COL_W }))
+    .sort((a, b) => a.at - b.at);
+  const totalGap = expandedGaps.reduce((s, g) => s + g.gap, 0);
+  // 오른쪽=최신, 왼쪽=과거. 컨텐츠 x = +secOffset*pxPerSec.
+  // 펼쳐진 클러스터는 오른쪽(최신)으로 멤버를 나열하므로, 그보다 최신(secOffset 큰)
+  // 항목들을 오른쪽으로 밀어낸다 → gap은 g.at < secOffset 일 때 누적.
+  const gapBefore = (secOffset: number) =>
+    expandedGaps.reduce((s, g) => s + (g.at < secOffset ? g.gap : 0), 0);
+  const xOf = (secOffset: number) => secOffset * pxPerSec + gapBefore(secOffset);
+
+  // 드래그 + 핀치 줌
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (playbackMs === null) return;
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    try {
+      (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+    } catch {}
+    if (pointersRef.current.size === 2) {
+      const [p1, p2] = Array.from(pointersRef.current.values());
+      pinchStartRef.current = {
+        distance: Math.hypot(p1.x - p2.x, p1.y - p2.y),
+        pxPerSec,
+      };
+      isDraggingRef.current = false;
+      dragStartRef.current = null;
+    } else {
+      isDraggingRef.current = true;
+      dragStartRef.current = { x: e.clientX, ms: playbackMs };
+      tapRef.current = { x: e.clientX, y: e.clientY, t: Date.now(), moved: false };
+      onScrubbingChange?.(true);
+    }
+  };
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!pointersRef.current.has(e.pointerId)) return;
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointersRef.current.size === 2 && pinchStartRef.current) {
+      const [p1, p2] = Array.from(pointersRef.current.values());
+      const newDist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+      const scale = newDist / pinchStartRef.current.distance;
+      setPxPerSec(
+        Math.max(0.05, Math.min(30, pinchStartRef.current.pxPerSec * scale)),
+      );
+    } else if (
+      isDraggingRef.current &&
+      dragStartRef.current &&
+      pointersRef.current.size === 1
+    ) {
+      const dx = e.clientX - dragStartRef.current.x;
+      if (tapRef.current && !tapRef.current.moved) {
+        const moveDist = Math.hypot(
+          e.clientX - tapRef.current.x,
+          e.clientY - tapRef.current.y,
+        );
+        if (moveDist > 8) {
+          tapRef.current.moved = true;
+          // 스크럽이 시작되면 선택 애니메이션 transition을 즉시 꺼 또렷하게 따라오게 한다.
+          if (animTimerRef.current) {
+            clearTimeout(animTimerRef.current);
+            animTimerRef.current = null;
+          }
+          setAnimateScroll(false);
+          // 스크럽 시작 — 멤버 정렬로 생긴 오프셋을 재생시각에 흡수해 실제 시각축으로 되돌린다.
+          // (화면 위치는 그대로 두고 시각만 보정하므로 튐 없이 자연스러운 스크럽으로 이어진다.)
+          if (alignOffset !== 0) {
+            dragStartRef.current.ms -= (alignOffset / pxPerSec) * 1000;
+            setAlignOffset(0);
+          }
+        }
+      }
+      // 오른쪽=최신/왼쪽=과거. 컨텐츠가 손가락을 따라가도록: 오른쪽으로 드래그 →
+      // 과거로(ms 감소), 왼쪽으로 드래그 → 최신으로. ±VISIBLE_MINUTES 클램프.
+      setPlaybackMs(clampMs(dragStartRef.current.ms - (dx / pxPerSec) * 1000));
+    }
+  };
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    pointersRef.current.delete(e.pointerId);
+    if (pointersRef.current.size < 2) pinchStartRef.current = null;
+    if (pointersRef.current.size === 0) {
+      // 거의 안 움직이고 짧게 눌렀다 떼면 탭 — 그 지점의 카드를 선택해 그 시각으로 이동.
+      // elementFromPoint는 카드 위를 덮는 canvas 오버레이를 집으므로, 카드 사각형을
+      // 직접 히트테스트한다(겹치면 탭 지점에 가장 가까운 카드 선택).
+      const tap = tapRef.current;
+      if (tap && !tap.moved && Date.now() - tap.t < 350) {
+        const cards = containerRef.current?.querySelectorAll<HTMLElement>(
+          "[data-event-ms]",
+        );
+        let target: HTMLElement | undefined;
+        let best = Infinity;
+        cards?.forEach((el) => {
+          const rect = el.getBoundingClientRect();
+          if (
+            tap.x >= rect.left &&
+            tap.x <= rect.right &&
+            tap.y >= rect.top &&
+            tap.y <= rect.bottom
+          ) {
+            const dist = Math.abs(tap.x - (rect.left + rect.right) / 2);
+            if (dist < best) {
+              best = dist;
+              target = el;
+            }
+          }
+        });
+        if (target && playbackMs !== null && target.dataset.eventMs) {
+          // 선택한 썸네일 시각으로 이동(그 카드가 중앙 파란선에 온다).
+          const ms = Number(target.dataset.eventMs);
+          setPlaybackMs(clampMs(ms));
+          // 선택 지점까지 부드럽게 이동(약 320ms) 후 transition 해제.
+          setAnimateScroll(true);
+          if (animTimerRef.current) clearTimeout(animTimerRef.current);
+          animTimerRef.current = setTimeout(() => setAnimateScroll(false), 340);
+        }
+      }
+      tapRef.current = null;
+      if (isDraggingRef.current) onScrubbingChange?.(false);
+      isDraggingRef.current = false;
+      dragStartRef.current = null;
+    }
+    try {
+      (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
+    } catch {}
+  };
+  // 휠/트랙패드 핀치 줌 — React onWheel은 passive라 preventDefault가 안 먹으므로
+  // non-passive 네이티브 리스너로 직접 등록해 브라우저 페이지 줌을 막는다.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      setPxPerSec((p) =>
+        Math.max(0.05, Math.min(30, p * Math.exp(-e.deltaY * 0.003))),
+      );
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
+  // anchor 기준 현재 재생 시각의 offset (초) → 컨텐츠 x
+  const playbackOffsetSec =
+    playbackMs !== null && anchor !== null
+      ? (playbackMs - anchor) / 1000
+      : 0;
+  // 파란 세로선(현재 시각)의 컨텐츠 x — 펼쳐진 클러스터만큼(gapBefore) 반영해 라벨
+  // 격자와 파란 선이 어긋나지 않게 한다. 레일을 -playbackX 만큼 밀어 playback 을
+  // 화면 가운데(50%)에 고정한다. alignOffset 은 탭으로 카드를 선에 붙인 오프셋.
+  const playbackX = xOf(playbackOffsetSec);
+  const railTransform = `translateX(${-playbackX + alignOffset}px)`;
+
+  // 눈금(subInterval) — 녹화 시간바와 동일. 라벨 사이를 10등분한 간격의 눈금(대/소).
+  const subIntervalSec = Math.max(1, Math.round(labelIntervalSec / 10));
+  const subStepCount = Math.ceil(totalSpanSec / subIntervalSec);
+  // playbackMs 는 매 틱(50ms) 갱신되지만 눈금은 anchor·줌에만 의존한다. 기본 줌에서
+  // 4시간 범위를 1초 간격으로 찍으면 14,401개 — 메모이즈 없이는 재생 중 매 틱마다
+  // 그 개수를 통째로 새로 만들어 저사양 PC 에서 스크럽이 심하게 끊긴다.
+  const ticks = useMemo(
+    () =>
+      anchor
+        ? Array.from({ length: subStepCount * 2 + 1 }, (_, i) => {
+            const secOffset = (i - subStepCount) * subIntervalSec;
+            const isMajor = secOffset % labelIntervalSec === 0;
+            return { secOffset, isMajor };
+          })
+        : [],
+    [anchor, subStepCount, subIntervalSec, labelIntervalSec],
+  );
+  // 중앙(현재 시각)에 가까운 라벨일수록 작아지고 사라짐 — 다채널 RecordingControls
+  // 시간바와 동일. (라벨/눈금은 썸네일과 '다른 레일'에 있고 컬링으로 개수도 적어,
+  // 매 틱 재계산해도 가볍다. 썸네일 레일은 정적이라 부드럽게 흐른다.)
+  const labelVisualStyle = (secOffset: number) => {
+    const distPx = Math.abs((secOffset - playbackOffsetSec) * pxPerSec);
+    const HIDE = 28;
+    const FULL = 56;
+    const t = Math.max(0, Math.min(1, (distPx - HIDE) / (FULL - HIDE)));
+    return {
+      opacity: t,
+      transform: `translateX(-50%) scale(${0.6 + 0.4 * t})`,
+    };
+  };
+
+  // 레이아웃(px) — 다채널 RecordingControls 시간바 블록과 완전히 동일한 치수로
+  // 시간바(라벨+눈금)를 그리고, 그 아래에 썸네일만 별도 레일로 붙인다.
+  const PAD_TOP = 12; // 시간바 위 여백(다채널과 동일)
+  const PAD_BOTTOM = 4; // 시간바 아래 여백. 삼각형 제거로 줄여 썸네일을 위로 붙인다.
+  const RAIL_H = 28; // 라벨+눈금 영역 높이. 눈금 아래 빈 공간 줄여 썸네일을 위로.
+  const BAR_H = PAD_TOP + RAIL_H + PAD_BOTTOM; // 시간바 블록 전체 높이(=62)
+  const CARD_TOP = 8; // 썸네일 레일 기준 카드 윗변(시간바 바로 아래 약간 띄움)
+
+  const currentTimeLabel = playbackMs
+    ? (() => {
+        const d = new Date(playbackMs);
+        return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      })()
+    : "00:00:00";
+
+  const railTransition = animateScroll
+    ? "transform 320ms cubic-bezier(0.22, 1, 0.36, 1)"
+    : isDraggingRef.current
+      ? "none"
+      : "transform 260ms linear";
+
+  // 성능: 라벨·눈금·카드는 ±2시간 전체가 아니라 '화면에 보이는 범위'만 렌더한다.
+  // (안 그러면 눈금 수천 개 + 썸네일 수백 개를 매 틱 리렌더해 렉이 걸린다.) 중심(현재
+  // 시각)에서 화면 반폭(px)/pxPerSec 초 + 여유만큼만 그린다. 레일은 매 틱 재계산되므로
+  // 스크롤해도 항상 중심 부근만 유지된다.
+  const cullSec = 700 / pxPerSec + 90;
+  const inView = (secOffset: number) =>
+    Math.abs(secOffset - playbackOffsetSec) <= cullSec;
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative flex min-h-0 flex-1 flex-col overflow-hidden touch-none select-none"
+      style={{ backgroundColor: "#FFFFFF", cursor: "grab" }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+    >
+      {/* ── 시간바(다채널 RecordingControls 와 동일한 마크업·치수) ── */}
+      <div
+        className="relative flex-none overflow-hidden"
+        style={{ height: `${BAR_H}px`, paddingTop: `${PAD_TOP}px` }}
+      >
+        {/* 스크롤 레일 (라벨 + 눈금) — 다채널과 동일 */}
+        <div
+          className="relative"
+          style={{
+            height: `${RAIL_H}px`,
+            transform: railTransform,
+            transition: railTransition,
+          }}
+        >
+          {/* 라벨 — 중앙 근처 페이드(다채널과 동일). 화면에 보이는 범위만 렌더. */}
+          {labels.filter(({ secOffset }) => inView(secOffset)).map(({ text, secOffset }) => (
+            <span
+              key={`L${secOffset}`}
+              suppressHydrationWarning
+              className="pointer-events-none absolute whitespace-nowrap"
+              style={{
+                left: `calc(50% + ${xOf(secOffset)}px)`,
+                top: "0",
+                color: "#A4A4A4",
+                transformOrigin: "center center",
+                ...labelVisualStyle(secOffset),
+                fontSize: "10px",
+                fontWeight: 500,
+                lineHeight: "10px",
+              }}
+            >
+              {text}
+            </span>
+          ))}
+          {/* 눈금 (대/소) — 화면에 보이는 범위만 렌더(수천 개 방지). */}
+          {ticks.filter(({ secOffset }) => inView(secOffset)).map(({ secOffset, isMajor }) => (
+            <div
+              key={`T${secOffset}`}
+              className="pointer-events-none absolute rounded-[1px]"
+              style={{
+                left: `calc(50% + ${xOf(secOffset)}px)`,
+                // 대/소 눈금 길이를 짧은 것(8px)으로 통일. 소 눈금 색만 밝은 그레이.
+                // 라벨(top 0~10)과 눈금 사이 간격을 좁히려 top 26→18.
+                top: "18px",
+                width: "2px",
+                height: "8px",
+                backgroundColor: isMajor ? "#797979" : "#C4C4C4",
+              }}
+            />
+          ))}
+        </div>
+        {/* 좌우 페이드(다채널과 동일 — 블록 전체 높이) */}
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: "39%",
+            background:
+              "linear-gradient(to left, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
+          }}
+        />
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: "39%",
+            background:
+              "linear-gradient(to right, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
+          }}
+        />
+        {/* 중앙 고정 현재 시각 라벨(다채널과 동일 — 다크) */}
+        <div
+          className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
+          style={{ top: "10px", lineHeight: 0 }}
+        >
+          <span
+            suppressHydrationWarning
+            style={{
+              display: "inline-block",
+              color: "#353535",
+              fontSize: "12px",
+              fontWeight: 700,
+              lineHeight: "12px",
+              padding: "0 6px",
+              verticalAlign: "top",
+            }}
+          >
+            {currentTimeLabel}
+          </span>
+        </div>
+        {/* 중앙 고정 현재 시각 선 — 눈금(8px)보다 살짝 길고 검정. 세모 대신 현재 시각 표시.
+            눈금은 top 18(+PAD_TOP 12 = 30)~38, 이 선은 27~41 로 위아래 살짝 더 길다. */}
+        <div
+          className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-[1px]"
+          style={{
+            top: "27px",
+            width: "2px",
+            height: "14px",
+            backgroundColor: "#111111",
+          }}
+        />
+      </div>
+
+      {/* ── 썸네일 영역(시간바 아래 남는 세로 공간). 카드 높이는 CSS min(60px,100%)
+          라 이 영역보다 절대 커지지 않는다(짧은 화면에서도 잘리지 않고 줄어든다). ── */}
+      <div ref={thumbAreaRef} className="relative min-h-0 flex-1">
+        {/* 레일 — 영역 전체 높이(top0 bottom0)를 갖고 시간바와 같은 translateX 로 흐른다 */}
+        <div
+          className="absolute left-0 right-0"
+          style={{
+            top: 0,
+            bottom: 0,
+            transform: railTransform,
+            transition: railTransition,
+          }}
+        >
+          {/* 움직임 이벤트 썸네일 — 위치마다 단일 카드 하나만(겹침·묶음·개수배지 없음).
+              가까운 이벤트는 클러스터로 묶여 한 자리에 대표 1개만 나온다. 탭하면 그 시각으로 이동. */}
+          {clusters.filter((c) => inView(c.secOffset)).map((cluster) => (
+            <div
+              key={`E${cluster.key}`}
+              data-event-ms={cluster.ms}
+              className="absolute flex items-start"
+              style={{
+                left: `calc(50% + ${xOf(cluster.secOffset)}px)`,
+                top: "4px",
+                // 아래 여백은 시간바 위 여백(PAD_TOP 12)과 같게 — 세로가 빡빡한
+                // 실기기에서 위는 12, 아래는 4로 붙어 보이던 걸 맞춘 값이다.
+                bottom: `${PAD_TOP}px`,
+                transform: "translateX(-50%)",
+                // 카드 위에서도 드래그가 통과하도록 stopPropagation 하지 않음.
+                pointerEvents: "auto",
+                cursor: "pointer",
+              }}
+            >
+              <div
+                className="overflow-hidden rounded-md bg-neutral-900"
+                style={{
+                  // 높이는 thumbH 하나만 본다 — 예전엔 CSS min(48px,100%) 로
+                  // 따로 정해서 폭 계산(thumbW)의 근거인 thumbH 와 어긋날 수
+                  // 있었다(THUMB_MIN_H 가 실제 높이엔 안 걸렸음).
+                  height: `${thumbH}px`,
+                  aspectRatio: "16 / 9",
+                }}
+              >
+                <FrozenImage
+                  src={cameraSrc}
+                  alt=""
+                  className="h-full w-full"
+                  style={{ objectFit: "cover" }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -2707,7 +3375,7 @@ function RecordingControls({
         </button>
         <RowSkeleton visible={rowLoading} />
       </div>
-      {/* REC 칩을 누르면 이 아래(타임라인 + 플레이어 버튼)만 숨겨진다 — 위 헤더
+      {/* REC 칩을 누르면 이 아래(플레이어 버튼 + 시간바)만 숨겨진다 — 위 헤더
           행(REC+날짜)은 남아서 다시 누르면 되돌릴 수 있다. 예전엔 이 칩이
           가짜 시스템 바(chromeVisible)를 같이 토글했는데, 그 둘은 무관한
           기능이라 분리했다(사용자 결정). */}
@@ -2715,115 +3383,7 @@ function RecordingControls({
       <>
       <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
       <div className="relative">
-      {/* 타임라인 */}
-      <div
-        ref={timelineRef}
-        className="relative flex flex-col overflow-hidden touch-pan-y select-none"
-        style={{
-          backgroundColor: "#FFFFFF",
-          // 위아래 같은 여백 — A안 다채널 시간바와 같은 값. 시간바 아래가 바로
-          // 하단 탭바라 위아래가 다르면 눈금이 한쪽으로 쏠려 보인다.
-          paddingTop: "12px",
-          paddingBottom: "12px",
-          cursor: "grab",
-        }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-      >
-        {/* 스크롤 레일 (라벨 + 눈금) */}
-        <div
-          className="relative"
-          style={{ height: "34px", transform: railTransform }}
-        >
-          {/* 라벨 */}
-          {labels.map(({ text, secOffset }) => (
-            <span
-              key={`L${secOffset}`}
-              suppressHydrationWarning
-              className="absolute whitespace-nowrap"
-              style={{
-                left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                top: "0",
-                color: "#A4A4A4",
-                transformOrigin: "center center",
-                ...labelVisualStyle(secOffset),
-                fontSize: "10px",
-                fontWeight: 500,
-                lineHeight: "10px",
-              }}
-            >
-              {text}
-            </span>
-          ))}
-          {/* 눈금 */}
-          {ticks.map(({ secOffset, isMajor }) => (
-            <div
-              key={`T${secOffset}`}
-              className="absolute rounded-[1px]"
-              style={{
-                left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                top: isMajor ? "20px" : "26px",
-                width: "2px",
-                height: isMajor ? "14px" : "8px",
-                backgroundColor: isMajor ? "#797979" : "rgba(0,0,0,0.4)",
-              }}
-            />
-          ))}
-        </div>
-        {/* 좌우 페이드 (배경 그라데이션) — 가운데에서 바깥으로 갈수록 흰색으로 가려짐 */}
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: "39%",
-            background:
-              "linear-gradient(to left, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
-          }}
-        />
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: "39%",
-            background:
-              "linear-gradient(to right, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
-          }}
-        />
-        {/* 중앙 고정 현재 시간 — 사이드 라벨과 베이스라인 정렬 */}
-        <div
-          className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
-          style={{ top: "10px", lineHeight: 0 }}
-        >
-          <span
-            suppressHydrationWarning
-            style={{
-              display: "inline-block",
-              color: "#353535",
-              fontSize: "12px",
-              fontWeight: 700,
-              lineHeight: "12px",
-              padding: "0 6px",
-              verticalAlign: "top",
-            }}
-          >
-            {centerLabel}
-          </span>
-        </div>
-        {/* 중앙 화살표 — 타임라인 영역 하단에 붙임 */}
-        <div
-          className="pointer-events-none absolute left-1/2 -translate-x-1/2"
-          style={{ bottom: 0 }}
-        >
-          <img src={`${BASE}/Polygon 1.svg`} alt="" width={9} height={8} />
-        </div>
-      </div>
-      {/* 플레이어 컨트롤 */}
+      {/* 플레이어 컨트롤 — 시간바(타임라인) 위 */}
       <div
         className="flex items-center justify-center"
         style={{
@@ -2875,6 +3435,124 @@ function RecordingControls({
             onSpeedChange?.(next === 0 ? 1 : SPEED_MULT[next]!);
             onPlay?.();
             showSeekToast(speedToastText(next));
+          }}
+        />
+      </div>
+      <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+      {/* 타임라인 */}
+      <div
+        ref={timelineRef}
+        className="relative flex flex-col overflow-hidden touch-pan-y select-none"
+        style={{
+          backgroundColor: "#FFFFFF",
+          // 위아래 같은 여백. 단일채널 감지 탭 시간바는 아래가 4 인데(PAD_BOTTOM),
+          // 거긴 바로 아래 썸네일이 이어져서 그런 거다. 다채널은 시간바 아래가 바로
+          // 하단 탭바라 그 4 를 그대로 가져오면 눈금이 탭바에 붙어 보인다.
+          paddingTop: "12px",
+          paddingBottom: "12px",
+          cursor: "grab",
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
+        {/* 스크롤 레일 (라벨 + 눈금) — 단일채널 RAIL_H 와 동일한 28px.
+            눈금은 top 18~26 이라 28 안에 다 들어간다(예전 34 는 아래가 빈 공간). */}
+        <div
+          className="relative"
+          style={{ height: "28px", transform: railTransform }}
+        >
+          {/* 라벨 */}
+          {labels.map(({ text, secOffset }) => (
+            <span
+              key={`L${secOffset}`}
+              suppressHydrationWarning
+              className="absolute whitespace-nowrap"
+              style={{
+                left: `calc(50% + ${secOffset * pxPerSec}px)`,
+                top: "0",
+                color: "#A4A4A4",
+                transformOrigin: "center center",
+                ...labelVisualStyle(secOffset),
+                fontSize: "10px",
+                fontWeight: 500,
+                lineHeight: "10px",
+              }}
+            >
+              {text}
+            </span>
+          ))}
+          {/* 눈금 */}
+          {ticks.map(({ secOffset, isMajor }) => (
+            <div
+              key={`T${secOffset}`}
+              className="absolute rounded-[1px]"
+              style={{
+                left: `calc(50% + ${secOffset * pxPerSec}px)`,
+                // 대/소 눈금 길이를 짧은 것(8px)으로 통일. 소 눈금 색만 밝은 그레이.
+                // 라벨(top 0~10)과 눈금 사이 간격을 좁히려 top 26→18.
+                top: "18px",
+                width: "2px",
+                height: "8px",
+                backgroundColor: isMajor ? "#797979" : "#C4C4C4",
+              }}
+            />
+          ))}
+        </div>
+        {/* 좌우 페이드 (배경 그라데이션) — 가운데에서 바깥으로 갈수록 흰색으로 가려짐 */}
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: "39%",
+            background:
+              "linear-gradient(to left, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
+          }}
+        />
+        <div
+          className="pointer-events-none absolute"
+          style={{
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: "39%",
+            background:
+              "linear-gradient(to right, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
+          }}
+        />
+        {/* 중앙 고정 현재 시간 — 사이드 라벨과 베이스라인 정렬 */}
+        <div
+          className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
+          style={{ top: "10px", lineHeight: 0 }}
+        >
+          <span
+            suppressHydrationWarning
+            style={{
+              display: "inline-block",
+              color: "#353535",
+              fontSize: "12px",
+              fontWeight: 700,
+              lineHeight: "12px",
+              padding: "0 6px",
+              verticalAlign: "top",
+            }}
+          >
+            {centerLabel}
+          </span>
+        </div>
+        {/* 중앙 고정 현재 시각 선 — 단일채널 RecordingEventTimeline 과 동일한 마커.
+            눈금(top 30~38)보다 위아래로 살짝 긴 27~41. 예전엔 삼각형(Polygon 1.svg)
+            이었는데 단일채널만 선으로 바꿔서 두 화면이 달라 보였다. */}
+        <div
+          className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-[1px]"
+          style={{
+            top: "27px",
+            width: "2px",
+            height: "14px",
+            backgroundColor: "#111111",
           }}
         />
       </div>

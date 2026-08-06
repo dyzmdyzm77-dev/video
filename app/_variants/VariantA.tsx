@@ -2,7 +2,7 @@
 
 import { BASE } from "../basePath";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import {
   CameraFeed,
@@ -10,6 +10,9 @@ import {
   useGifFrameCanvas,
 } from "../components/CameraFeed";
 import VariantPicker from "../components/VariantPicker";
+import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
+import { nextVideoFit, videoFitIcon } from "../components/videoFit";
+import { useAutoHide } from "../components/useAutoHide";
 import AndroidNav from "../components/AndroidNav";
 import { useDeviceRatio, useDeviceWidth } from "../components/useDeviceWidth";
 import { useListLayout } from "../components/useListLayout";
@@ -27,22 +30,22 @@ import {
 } from "../components/layoutRules";
 
 const CAMERAS = [
-  { label: "카메라 01", src: `${BASE}/cameras/cam1.gif`, zoom: 1.10 },
+  { label: "카메라 01", src: `${BASE}/cameras/cam1.gif` },
   { label: "카메라 02", src: `${BASE}/cameras/cam2.gif` },
   { label: "카메라 03", src: `${BASE}/cameras/cam3.gif` },
   { label: "카메라 04", src: `${BASE}/cameras/cam4.gif` },
-  { label: "카메라 05", src: `${BASE}/cameras/cam1.gif`, zoom: 1.10 },
+  { label: "카메라 05", src: `${BASE}/cameras/cam1.gif` },
   { label: "카메라 06", src: `${BASE}/cameras/cam2.gif` },
   { label: "카메라 07", src: `${BASE}/cameras/cam3.gif` },
   { label: "카메라 08", src: `${BASE}/cameras/cam4.gif` },
   { label: "카메라 09", src: `${BASE}/cameras/cam2.gif` },
   { label: "카메라 10", src: `${BASE}/cameras/cam4.gif` },
   { label: "카메라 11", src: `${BASE}/cameras/cam3.gif` },
-  { label: "카메라 12", src: `${BASE}/cameras/cam1.gif`, zoom: 1.10 },
+  { label: "카메라 12", src: `${BASE}/cameras/cam1.gif` },
   { label: "카메라 13", src: `${BASE}/cameras/cam4.gif` },
   { label: "카메라 14", src: `${BASE}/cameras/cam3.gif` },
   { label: "카메라 15", src: `${BASE}/cameras/cam2.gif` },
-  { label: "카메라 16", src: `${BASE}/cameras/cam1.gif`, zoom: 1.10 },
+  { label: "카메라 16", src: `${BASE}/cameras/cam1.gif` },
 ];
 
 // 화면 개수(1~16)에서 cols×rows 를 고르는 건 layoutRules.ts 의
@@ -520,21 +523,17 @@ function GridView({
   videoAreaRef?: React.RefObject<HTMLElement | null>;
 }) {
   const [gridSelected, setGridSelected] = useState(false);
-  // 다채널 타일 맞춤 모드 — 딤 상태의 '화면 맞춤' 버튼으로 돌린다. 단일 화면의
-  // videoFit 과 같은 순서(fill → contain → cover)이고, 기본은 단일과 같은 크롭이다.
-  const [gridFit, setGridFit] = useState<"fill" | "contain" | "cover">("cover");
-  const cycleGridFit = () =>
-    setGridFit((v) => (v === "fill" ? "contain" : v === "contain" ? "cover" : "fill"));
-  const [activityTick, setActivityTick] = useState(0);
+  // 다채널 타일 맞춤 모드 — 딤 상태의 '화면 맞춤' 버튼으로 돌린다. 순서·아이콘·
+  // 문구·기본값은 단일 화면과 같은 곳(components/videoFit.ts)에서 온다.
+  const { fit: gridFit, cycle: cycleGridFit, toast: gridFitToast, toastKey: gridFitToastKey } =
+    useVideoFit("fill");
+  // 딤 자동 숨김 — 마지막 조작이 끝난 시점부터 5초. 규칙은 useAutoHide 참고.
+  const hideGrid = useCallback(() => setGridSelected(false), []);
+  const gridAuto = useAutoHide(gridSelected, hideGrid);
   const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const swipedRef = useRef(false);
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (!gridSelected) return;
-    const timer = setTimeout(() => setGridSelected(false), 4000);
-    return () => clearTimeout(timer);
-  }, [gridSelected, activityTick]);
 
   const handleCellClick = (idx: number) => {
     if (swipedRef.current) return; // 스와이프 직후 클릭 무시
@@ -552,9 +551,14 @@ function GridView({
 
   const handlePointerDown = (e: React.PointerEvent) => {
     swipeRef.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+    // 누르고 있는 동안 딤을 붙잡는다(길게 누르기·드래그 중 안 사라지게).
+    gridAuto.hold();
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    // 손을 뗀 시점부터 5초를 다시 센다. 아래 조기 반환들보다 먼저 놓아야
+    // 붙잡은 상태가 남아 딤이 영영 안 꺼지는 일이 없다.
+    gridAuto.release();
     const start = swipeRef.current;
     if (!start) return;
     swipeRef.current = null;
@@ -568,7 +572,7 @@ function GridView({
       swipedRef.current = false;
     }, 350);
     // 딤이 켜져있다면 타이머 리셋 + 그대로 유지
-    setActivityTick((t) => t + 1);
+    gridAuto.keepAlive();
     if (dx < 0) {
       setCurrentPage((p) => Math.min(p + 1, totalPages - 1));
     } else {
@@ -616,6 +620,7 @@ function GridView({
         className="relative min-h-0 flex-1 touch-pan-y select-none overflow-hidden"
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
       >
         <div
           className="flex h-full transition-transform duration-300 ease-out"
@@ -654,7 +659,6 @@ function GridView({
                         <CameraFeed
                           label={cam.label}
                           src={cam.src}
-                          zoom={cam.zoom}
                           paused={
                             isScrubbing || (mode === "recording" && !isPlaying)
                           }
@@ -681,7 +685,9 @@ function GridView({
           totalPages={totalPages}
           onGallery={onOpenSheet}
           onFit={cycleGridFit}
+          fit={gridFit}
         />
+        <VideoFitToast text={gridFitToast} toastKey={gridFitToastKey} />
         <SectionSkeleton visible={gridLoading} cols={cols} rows={rows} />
       </section>
 
@@ -756,7 +762,6 @@ function ExpandedSlide({
   useGifFrameCanvas(canvasRef, c.src, driveByPlayback ? playbackMs : null);
 
   const driving = driveByPlayback && playbackMs != null;
-  const zoom = c.zoom ? `scale(${c.zoom})` : undefined;
   return (
     <>
       <img
@@ -765,7 +770,6 @@ function ExpandedSlide({
         className="absolute inset-0 h-full w-full"
         style={{
           objectFit: fit,
-          transform: zoom,
           opacity: driving ? 0 : paused ? 0 : 1,
         }}
       />
@@ -775,7 +779,6 @@ function ExpandedSlide({
         className="absolute inset-0 h-full w-full"
         style={{
           objectFit: fit,
-          transform: zoom,
           opacity: driving ? 1 : paused ? 1 : 0,
         }}
       />
@@ -853,14 +856,12 @@ function ExpandedView({
   //   contain : 원본 비율 그대로, 빈 공간은 검정으로 채운다(레터박스/필러박스).
   //   cover   : 원본 비율 유지한 채 가로나 세로 중 짧은 쪽 기준으로 최대로 키워
   //             넘치는 쪽을 자른다(크롭) — object-fit: cover 와 같다.
-  // 기본은 크롭(cover) — 원본이 320×214(≈3:2)라 fill 이면 늘어나고 contain 이면
-  // 좌우에 검은 띠가 남는다. 16:9 안에 이미지만 보이게 하려면 크롭이 맞다.
-  const [videoFit, setVideoFit] = useState<"fill" | "contain" | "cover">(
-    "cover",
-  );
-  const cycleVideoFit = () =>
-    setVideoFit((f) => (f === "fill" ? "contain" : f === "contain" ? "cover" : "fill"));
-  const [activityTick, setActivityTick] = useState(0);
+  // 순서·아이콘·문구는 components/videoFit.ts 한 곳에서 온다.
+  const { fit: videoFit, cycle: cycleVideoFit, toast: fitToast, toastKey: fitToastKey } =
+    useVideoFit("fill");
+  // 딤 자동 숨김 — 마지막 조작이 끝난 시점부터 5초. 규칙은 useAutoHide 참고.
+  const hideControls = useCallback(() => setShowControls(false), []);
+  const controlsAuto = useAutoHide(showControls, hideControls);
   const [seekToast, setSeekToast] = useState<string | null>(null);
   const seekToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showSeekToast = (text: string) => {
@@ -920,9 +921,7 @@ function ExpandedView({
         alt={c.label}
         className="absolute inset-0 h-full w-full"
         style={
-          c.zoom
-            ? { transform: `scale(${c.zoom})`, objectFit: "cover" }
-            : { objectFit: "cover" }
+          { objectFit: "cover" }
         }
       />
       <div
@@ -960,12 +959,25 @@ function ExpandedView({
   );
   // 목록이 보일 때(진입·탭 전환·선택 변경·레이아웃 전환) 선택된 카메라 타일을 스크롤
   // 가운데로 맞춘다. 다채널에서 더블클릭해 단일로 들어오면 그 카메라가 가운데에 온다.
+  //
+  // 움직이는 방식이 두 가지다:
+  //   · 선택이 바뀐 경우 — 사용자가 방금 고른 결과라 눈으로 따라갈 수 있어야 한다.
+  //     부드럽게(smooth) 한 번만 움직인다. 위 큰 영상도 300ms 로 미끄러지므로 결이 같다.
+  //   · 그 외(진입·탭 전환·배치 전환) — 이미 가운데 있어야 하는 상태라 즉시 맞춘다.
+  //     이때는 레이아웃이 정착하는 동안(영상 16:9 계산 등) 여러 번 다시 맞춰야 한다.
+  //
+  // 예전엔 두 경우를 안 나누고 scrollLeft 를 직접 대입했다. 그래서 선택할 때마다
+  // 즉시 점프했고, 그 점프가 rAF 2회 + ResizeObserver 1.2초 동안 여러 번 겹쳐
+  // "띡 띡" 끊겨 보였다.
+  const prevIndexRef = useRef(index);
   useEffect(() => {
+    const selectionChanged = prevIndexRef.current !== index;
+    prevIndexRef.current = index;
     const listVisible = mode === "live" || recTab === "list";
     if (!listVisible) return;
     const el = listScrollRef.current;
     if (!el) return;
-    const center = () => {
+    const center = (behavior: ScrollBehavior) => {
       const tile = el.querySelector<HTMLElement>('[data-selected="true"]');
       if (!tile) return;
       const tr = tile.getBoundingClientRect();
@@ -975,20 +987,34 @@ function ExpandedView({
       if (el.scrollWidth > el.clientWidth + 1) {
         // 가로 한 줄: 좌우 가운데
         const left = tr.left - er.left + el.scrollLeft;
-        el.scrollLeft = Math.max(0, left - (el.clientWidth - tr.width) / 2);
+        const target = Math.max(0, left - (el.clientWidth - tr.width) / 2);
+        // 이미 제자리면 건너뛴다 — 안 그러면 정착 중 재보정이 애니메이션을 끊는다.
+        if (Math.abs(el.scrollLeft - target) < 1) return;
+        el.scrollTo({ left: target, behavior });
       } else if (el.scrollHeight > el.clientHeight + 1) {
         // 세로 2열: 위아래 가운데
         const top = tr.top - er.top + el.scrollTop;
-        el.scrollTop = Math.max(0, top - (el.clientHeight - tr.height) / 2);
+        const target = Math.max(0, top - (el.clientHeight - tr.height) / 2);
+        if (Math.abs(el.scrollTop - target) < 1) return;
+        el.scrollTo({ top: target, behavior });
       }
     };
+
+    if (selectionChanged) {
+      // 움직임을 줄이는 설정이면 부드러운 스크롤을 쓰지 않는다.
+      const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      const raf = requestAnimationFrame(() => center(reduce ? "auto" : "smooth"));
+      return () => cancelAnimationFrame(raf);
+    }
+
     // 다음 두 프레임에 걸쳐 맞추고(레이아웃/페인트 직후), 정착 중 크기 변화(영상 16:9
     // 계산·툴바 접힘 등)에도 잠깐 동안 다시 맞춘다.
+    const instant = () => center("auto");
     const raf1 = requestAnimationFrame(() => {
-      center();
-      requestAnimationFrame(center);
+      instant();
+      requestAnimationFrame(instant);
     });
-    const ro = new ResizeObserver(center);
+    const ro = new ResizeObserver(instant);
     ro.observe(el);
     const stop = setTimeout(() => ro.disconnect(), 1200);
     return () => {
@@ -1025,9 +1051,14 @@ function ExpandedView({
 
   const handlePointerDown = (e: React.PointerEvent) => {
     swipeRef.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+    // 누르고 있는 동안 딤을 붙잡는다(길게 누르기·드래그 중 안 사라지게).
+    controlsAuto.hold();
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    // 손을 뗀 시점부터 5초를 다시 센다. 아래 조기 반환들보다 먼저 놓아야
+    // 붙잡은 상태가 남아 딤이 영영 안 꺼지는 일이 없다.
+    controlsAuto.release();
     const start = swipeRef.current;
     if (!start) return;
     swipeRef.current = null;
@@ -1039,7 +1070,7 @@ function ExpandedView({
     setTimeout(() => {
       swipedRef.current = false;
     }, 350);
-    setActivityTick((t) => t + 1);
+    controlsAuto.keepAlive();
     if (dx < 0) {
       if (index < CAMERAS.length - 1) onSelect(index + 1);
     } else {
@@ -1047,11 +1078,6 @@ function ExpandedView({
     }
   };
 
-  useEffect(() => {
-    if (!showControls) return;
-    const t = setTimeout(() => setShowControls(false), 5000);
-    return () => clearTimeout(t);
-  }, [showControls, activityTick]);
 
   // 녹화 모드의 헤더 시간 라벨은 playbackMs(=사용자가 선택/스크럽한 시점) 기준이어야 함.
   // 라이브 모드는 현재 시간(dateLabel) 그대로 사용.
@@ -1130,6 +1156,7 @@ function ExpandedView({
           onClick={handleVideoClick}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         >
           <div
             className="absolute inset-0 flex transition-transform duration-300 ease-out"
@@ -1184,7 +1211,12 @@ function ExpandedView({
                 gap: "12px",
                 pointerEvents: showControls ? "auto" : "none",
               }}
-              onClick={(e) => e.stopPropagation()}
+              // 버튼을 누르고 있는 동안 딤을 붙잡고, 떼는 순간부터 5초를 다시 센다.
+              {...controlsAuto.holdProps}
+              onClick={(e) => {
+                e.stopPropagation();
+                controlsAuto.keepAlive();
+              }}
             >
               <button type="button" aria-label="목록" onClick={onOpenSheet}>
                 <img
@@ -1202,7 +1234,7 @@ function ExpandedView({
                 onClick={cycleVideoFit}
               >
                 <img
-                  src={`${BASE}/nav/expand.svg`}
+                  src={videoFitIcon(BASE, nextVideoFit(videoFit))}
                   alt=""
                   className="h-8 w-8"
                 />
@@ -1252,6 +1284,8 @@ function ExpandedView({
             </div>
           </div>
           <VideoSkeleton visible={videoLoading} />
+          {/* 화면 맞춤 토스트 — 탐색·캡처 토스트와 같은 자리(영역 하단 20px 위). */}
+          <VideoFitToast text={fitToast} toastKey={fitToastKey} />
           {seekToast && (
             <div
               key={seekToast}
@@ -2096,7 +2130,7 @@ function SideEventTimeline({
                     src={cameraSrc}
                     alt=""
                     className="h-full w-full"
-                    style={{ objectFit: "cover", transform: "scale(1.1)" }}
+                    style={{ objectFit: "cover" }}
                   />
                 </div>
               </div>
@@ -2703,7 +2737,7 @@ function RecordingEventTimeline({
                   src={cameraSrc}
                   alt=""
                   className="h-full w-full"
-                  style={{ objectFit: "cover", transform: "scale(1.1)" }}
+                  style={{ objectFit: "cover" }}
                 />
               </div>
             </div>
