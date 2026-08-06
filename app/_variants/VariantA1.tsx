@@ -363,7 +363,6 @@ export default function VariantA1({
           mode={mode}
           setMode={handleSetMode}
           now={now}
-          chromeVisible={chromeVisible}
           isScrubbing={isScrubbing}
           onScrubbingChange={setIsScrubbing}
           playbackMs={playbackMs}
@@ -380,11 +379,11 @@ export default function VariantA1({
         <ExpandedView
           index={expandedIndex}
           onBack={handleBack}
+          onOpenVariantPicker={() => setVariantPickerOpen(true)}
           onSelect={setExpandedIndex}
           dateLabel={dateLabel}
           mode={mode}
           setMode={handleSetMode}
-          chromeVisible={chromeVisible}
           onOpenDateTime={() => setDateTimeOpen(true)}
           videoLoading={videoLoading}
           playbackMs={playbackMs}
@@ -492,7 +491,6 @@ function GridView({
   mode: "live" | "recording";
   setMode: (m: "live" | "recording") => void;
   now: Date | null;
-  chromeVisible?: boolean;
   isScrubbing: boolean;
   onScrubbingChange: (s: boolean) => void;
   playbackMs: number | null;
@@ -774,11 +772,11 @@ function ExpandedSlide({
 function ExpandedView({
   index,
   onBack,
+  onOpenVariantPicker,
   onSelect,
   dateLabel,
   mode,
   setMode,
-
   onOpenDateTime,
   videoLoading,
   playbackMs,
@@ -794,11 +792,13 @@ function ExpandedView({
 }: {
   index: number;
   onBack: () => void;
+  /** 장소명 옆 화살표 — 다채널 화면과 똑같이 시안 목록 시트를 연다.
+   *  다채널로 돌아가는 건 영상 더블탭(handleVideoClick). */
+  onOpenVariantPicker: () => void;
   onSelect: (i: number) => void;
   dateLabel: string;
   mode: "live" | "recording";
   setMode: (m: "live" | "recording") => void;
-  chromeVisible?: boolean;
   onOpenDateTime: () => void;
   videoLoading: boolean;
   playbackMs: number | null;
@@ -1142,7 +1142,7 @@ function ExpandedView({
                 놓인다(실시간/녹화 토글이 있던 자리). */}
             <OverlayHeader
               visible={showControls}
-              onTitleClick={onBack}
+              onTitleClick={onOpenVariantPicker}
               auto={controlsAuto}
             />
             <div
