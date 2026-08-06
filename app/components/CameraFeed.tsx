@@ -262,6 +262,7 @@ export function GridSelectionOverlay({
   mode,
   onBack,
   title,
+  topInset = 0,
 }: {
   visible: boolean;
   currentPage?: number;
@@ -274,6 +275,9 @@ export function GridSelectionOverlay({
   mode?: "live" | "recording";
   onBack?: () => void;
   title?: string;
+  /** 딤 상단 아이콘 줄을 아래로 내리는 여백(px). 딤 위에 헤더를 겹쳐 띄우는
+   *  안(A-1)에서 헤더 높이만큼 밀어 두 줄로 만드는 용도. 기본 0 = 기존 그대로. */
+  topInset?: number;
 }) {
   return (
     <div
@@ -304,7 +308,7 @@ export function GridSelectionOverlay({
         <div
           className="absolute flex items-center"
           style={{
-            top: "12px",
+            top: `${12 + topInset}px`,
             left: "12px",
             gap: "8px",
             pointerEvents: visible ? "auto" : "none",
@@ -338,8 +342,11 @@ export function GridSelectionOverlay({
         </div>
       )}
 
-      {/* 우상단 아이콘 */}
-      <div className="absolute right-4 top-3 flex items-center gap-3 text-white">
+      {/* 우상단 아이콘 — topInset 이 있으면 그만큼 아래로(헤더 아래 줄). */}
+      <div
+        className="absolute right-4 flex items-center gap-3 text-white"
+        style={{ top: `${12 + topInset}px` }}
+      >
         <button
           type="button"
           aria-label="갤러리"

@@ -478,7 +478,6 @@ function GridView({
   setMode,
   now,
   onToggleChrome,
-  chromeVisible = true,
   timelineVisible = true,
   onToggleTimeline,
   isScrubbing,
@@ -592,34 +591,8 @@ function GridView({
 
   return (
     <>
-      {/* 상단 헤더(타이틀+실시간/녹화 탭) — 녹화 모드에서도 항상 표시.
-          시스템 바를 끄는 몰입 모드에선 헤더 위 16px 여백도 함께 제거해 위로 붙인다. */}
-      <header
-        className="flex flex-none items-center px-5"
-        style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
-      >
-        <div className="flex w-full items-center justify-between">
-          <div className="flex flex-col gap-[2px]">
-            <button
-              type="button"
-              onClick={onOpenVariantPicker}
-              className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900"
-            >
-              8층 사무실 A
-              <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
-            </button>
-            <p
-              className="text-[12px] leading-none"
-              style={{ color: "#BFBFBF" }}
-            >
-              에스원 본사 · N1234567
-            </p>
-          </div>
-
-          <ModeToggle mode={mode} setMode={setMode} />
-        </div>
-      </header>
-
+      {/* A-1 은 헤더(타이틀+실시간/녹화 탭)를 상시 노출하지 않는다 — 영상을 눌러
+          딤이 뜰 때만 영상 위에 겹쳐 뜬다. 아래 OverlayHeader 참고. */}
       <section
         ref={videoAreaRef}
         className="relative min-h-0 flex-1 touch-pan-y select-none overflow-hidden"
@@ -691,6 +664,16 @@ function GridView({
           onGallery={onOpenSheet}
           onFit={cycleGridFit}
           fit={gridFit}
+          // 딤 아이콘 줄을 헤더(OVERLAY_HEADER_H) 아래로 내려 두 줄로 만든다.
+          topInset={OVERLAY_HEADER_H}
+        />
+        {/* 딤과 함께 뜨는 헤더 — 평소엔 없다. 버튼을 만지는 동안은 딤을 붙잡는다. */}
+        <OverlayHeader
+          visible={gridSelected}
+          mode={mode}
+          setMode={setMode}
+          onTitleClick={onOpenVariantPicker}
+          auto={gridAuto}
         />
         <VideoFitToast text={gridFitToast} toastKey={gridFitToastKey} />
         <SectionSkeleton visible={gridLoading} cols={cols} rows={rows} />
@@ -811,7 +794,6 @@ function ExpandedView({
   mode,
   setMode,
   onToggleChrome,
-  chromeVisible = true,
   timelineVisible = true,
   onToggleTimeline,
   onOpenDateTime,
@@ -1108,36 +1090,8 @@ function ExpandedView({
       visibleOffsets.pop();
     }
   }
-  const headerBlock = (
-    <>
-      {/* 확대뷰 헤더 — 다채널 화면과 동일. 녹화 모드에서도 항상 표시 */}
-      <header
-        className="flex flex-none items-center px-5"
-        style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
-      >
-        <div className="flex w-full items-center justify-between">
-          <div className="flex flex-col gap-[2px]">
-            <button
-              type="button"
-              onClick={onBack}
-              className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900"
-            >
-              8층 사무실 A
-              <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
-            </button>
-            <p
-              className="text-[12px] leading-none"
-              style={{ color: "#BFBFBF" }}
-            >
-              에스원 본사 · N1234567
-            </p>
-          </div>
-
-          <ModeToggle mode={mode} setMode={setMode} />
-        </div>
-      </header>
-    </>
-  );
+  // 확대뷰 헤더는 다채널 화면과 마찬가지로 상시 노출하지 않는다 — 영상을 눌러
+  // 딤이 뜰 때만 영상 위에 겹쳐 뜬다(아래 딤 오버레이 안의 OverlayHeader).
   const videoBlock = (
     <>
       {/* 큰 영상 — 더블클릭 시 다채널로 복귀. 크기 규칙은 globals.css 의
@@ -1206,10 +1160,19 @@ function ExpandedView({
                   "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
               }}
             />
+            {/* 딤과 함께 뜨는 헤더 — 평소엔 없다. 아래 아이콘 줄은 이 헤더
+                높이만큼 내려 두 줄이 된다. */}
+            <OverlayHeader
+              visible={showControls}
+              mode={mode}
+              setMode={setMode}
+              onTitleClick={onBack}
+              auto={controlsAuto}
+            />
             <div
               className="absolute flex items-center"
               style={{
-                top: "12px",
+                top: `${12 + OVERLAY_HEADER_H}px`,
                 right: "12px",
                 gap: "12px",
                 pointerEvents: showControls ? "auto" : "none",
@@ -1575,7 +1538,6 @@ function ExpandedView({
 
   return (
     <>
-      {headerBlock}
       {sidePanel ? (
         // 1080+ : 왼쪽 컬럼(영상 + 날짜 + 플레이어) | 오른쪽 세로 패널(탭 + 본문)
         <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -3008,6 +2970,66 @@ function LayoutConfigSheet({
             적용
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// A-1 전용 — 딤 위에 겹쳐 뜨는 헤더의 높이. 딤 우상단 아이콘 줄을 이만큼 아래로
+// 내려 '헤더 한 줄 + 아이콘 한 줄' 두 줄이 되게 한다(GridSelectionOverlay topInset).
+const OVERLAY_HEADER_H = 56;
+
+// 딤과 함께 뜨는 헤더(타이틀 + 실시간/녹화 탭). A-1 은 이 헤더를 상시 노출하지
+// 않는다 — 영상 영역을 눌러 딤이 뜰 때만 영상 위에 겹쳐 나타나고, 딤이 사라질 때
+// 같이 사라진다. 그래서 글자·아이콘은 딤(검정 그라데이션) 위에 얹히는 흰색이다.
+function OverlayHeader({
+  visible,
+  mode,
+  setMode,
+  onTitleClick,
+  auto,
+}: {
+  visible: boolean;
+  mode: "live" | "recording";
+  setMode: (m: "live" | "recording") => void;
+  onTitleClick?: () => void;
+  /** 헤더를 만지는 동안 딤을 붙잡고, 떼는 순간부터 5초를 다시 세게 한다. */
+  auto: ReturnType<typeof useAutoHide>;
+}) {
+  return (
+    <div
+      className="absolute inset-x-0 top-0 flex items-center px-5 transition-opacity duration-300 ease-out"
+      style={{
+        height: `${OVERLAY_HEADER_H}px`,
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? "auto" : "none",
+      }}
+      {...auto.holdProps}
+      onClick={(e) => {
+        // 영상 탭(딤 토글)으로 새어나가지 않게 막고, 타이머만 되돌린다.
+        e.stopPropagation();
+        auto.keepAlive();
+      }}
+    >
+      <div className="flex w-full items-center justify-between">
+        <div className="flex flex-col gap-[2px]">
+          <button
+            type="button"
+            onClick={onTitleClick}
+            className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-white"
+          >
+            8층 사무실 A
+            <ChevronDownIcon className="h-6 w-6 text-white" />
+          </button>
+          <p
+            className="text-[12px] leading-none"
+            style={{ color: "rgba(255,255,255,0.75)" }}
+          >
+            에스원 본사 · N1234567
+          </p>
+        </div>
+
+        <ModeToggle mode={mode} setMode={setMode} />
       </div>
     </div>
   );
