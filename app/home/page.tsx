@@ -285,7 +285,18 @@ const RECENT_VIDEOS = [
 ];
 
 // As Is 비교 패널에서도 재사용(홈은 시안과 동일). named export.
-export function Inner() {
+export function Inner({
+  onVideo,
+}: {
+  /** 영상 탭·최근 본 영상을 눌렀을 때. 안 주면 기존대로 진입 전 화면안
+   *  (/a·/a1·/b)으로 라우터 이동한다.
+   *  iOS 사파리는 URL 이 바뀔 때마다(전체 새로고침이든 pushState 든) 접혀 있던
+   *  주소창을 다시 펼친다 — 예전에 window.location 을 router.push 로 바꾼 것도
+   *  같은 이유였는데(fa808fd), 라우트가 바뀌는 한 pushState 로도 남는다. 그래서
+   *  홈↔영상을 URL 을 안 건드리고 같은 화면 안에서 오가는 쪽(A-1)은 이 콜백을
+   *  넘겨 라우터 이동 자체를 없앤다. */
+  onVideo?: () => void;
+} = {}) {
   const router = useRouter();
   const params = useSearchParams();
   const platform = params.get("platform") === "ios" ? "ios" : "android";
@@ -582,6 +593,10 @@ export function Inner() {
   }, [twoCol]);
 
   const goVideo = () => {
+    if (onVideo) {
+      onVideo();
+      return;
+    }
     router.push(
       `/${from}?platform=${platform}${chromeVisible ? "&chrome=1" : ""}`,
     );
@@ -658,7 +673,11 @@ export function Inner() {
             620px 이상에선 2단(왼쪽=내 경비 구역, 오른쪽=나머지) 구성. 스크롤 영역
             폭 = 프레임 폭(--device-w)이라 컨테이너 쿼리(@container)로 프레임 폭 기준
             분기한다(데스크톱 미리보기는 뷰포트≠프레임이라 미디어쿼리로는 못 잡음). */}
-        <div className="@container min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* overscroll-contain — 앱에서 유일하게 세로로 긴 스크롤 영역이라, 여기
+            끝까지 굴리면 스크롤이 루트로 새어 iOS Safari 가 접혀 있던 하단
+            툴바를 다시 펼친다(영상 탭은 스크롤이 없어 그 일이 없다). 체이닝을
+            끊어 이 영역 안에서 스크롤이 끝나게 한다. */}
+        <div className="@container min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {/* 480~619(단일)에선 콘텐츠 폭 480 고정 — 폭이 넓어져도 콘텐츠는 그대로,
               양옆 여백만 늘어난다. 620px 이상에서 2단(각 280~320, 간격 20, 가운데 정렬).
               전환은 위 useEffect 의 View Transition 으로 각 컬럼이 부드럽게 모핑된다. */}

@@ -1,6 +1,11 @@
 "use client";
 
 import { BASE } from "../basePath";
+import {
+  requestDeviceRotate,
+  useDeviceLandscape,
+} from "../components/deviceRotate";
+import LandscapeVideo from "../components/LandscapeVideo";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
@@ -49,7 +54,7 @@ const CAMERAS = [
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const pad = (n: number) => String(n).padStart(2, "0");
 function formatNow(d: Date) {
-  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}.(${WEEKDAYS[d.getDay()]}) ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}. ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
 function ChevronDownIcon({ className }: { className?: string }) {
@@ -168,6 +173,7 @@ export default function VariantB({
 }) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const landscape = useDeviceLandscape();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
   // 다채널 화면 개수 — 사용자가 '화면 구성'에서 직접 고르기 전엔(또는 '자동'을
@@ -304,6 +310,78 @@ export default function VariantB({
   }, []);
 
   const dateLabel = now ? formatNow(now) : "";
+
+  // 가로 모드 — 지금은 영상만 보여준다(헤더·목록·탭바·시스템 바 전부 없음).
+  if (landscape) {
+    return (
+      <div className="app-safe-frame h-full w-full overflow-hidden bg-black">
+        <LandscapeVideo
+          cameras={CAMERAS}
+          expandedIndex={expandedIndex}
+          page={currentPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          playbackMs={playbackMs}
+          driveByPlayback={mode === "recording"}
+          onGallery={() => setSheetOpen(true)}
+          onExpand={handleExpand}
+          onBack={handleBack}
+          title="8층 사무실 B"
+          subtitle="에스원 본사 · N1234567"
+          onTitleClick={() => setVariantPickerOpen(true)}
+          mode={mode}
+          setMode={handleSetMode}
+          timeLabel={dateLabel}
+          controls={
+            mode === "recording" ? (
+              <RecordingControls
+                now={now}
+                onScrubbingChange={setIsScrubbing}
+                playbackMs={playbackMs}
+                setPlaybackMs={setPlaybackMs}
+                onOpenDateTime={() => setDateTimeOpen(true)}
+                isPlaying={isPlaying}
+                onTogglePlay={() => setIsPlaying((p) => !p)}
+                onPlay={() => setIsPlaying(true)}
+                onSpeedChange={setPlaybackRate}
+              />
+            ) : null
+          }
+        />
+        {/* 화면 구성 시트는 가로에서도 세로와 똑같이 뜬다. 예전엔 이 분기가
+            시트보다 먼저 return 해서, 딤의 갤러리 버튼을 눌러도 열릴 시트가
+            아예 렌더되지 않았다. */}
+        <LayoutConfigSheet
+          open={sheetOpen}
+          selectedCount={userGridCount}
+          resolvedCount={gridCount}
+          onClose={() => setSheetOpen(false)}
+          onPreview={(count) => {
+            setUserGridCount(count);
+            setCurrentPage(0);
+          }}
+        />
+        <DateTimePickerSheet
+          open={dateTimeOpen}
+          initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
+          onClose={() => setDateTimeOpen(false)}
+          onApply={(ms) => {
+            setPlaybackMs(ms);
+            setIsPlaying(true);
+            setMode("recording");
+            setDateTimeOpen(false);
+            triggerTransitionSkeleton();
+          }}
+        />
+        <VariantPicker
+          open={variantPickerOpen}
+          current="b"
+          platform={platform}
+          onClose={() => setVariantPickerOpen(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="app-safe-frame h-full w-full flex flex-col items-center bg-white">
@@ -520,7 +598,7 @@ function GridView({
   // 녹화 모드 날짜/시간 라벨 (playbackMs 기준) — 날짜 행을 탭 아래로 올리기 위해 여기서 계산
   const recCenter = playbackMs !== null ? new Date(playbackMs) : null;
   const recLabelDate = recCenter
-    ? `${recCenter.getFullYear()}.${pad(recCenter.getMonth() + 1)}.${pad(recCenter.getDate())}.(${WEEKDAYS[recCenter.getDay()]}) ${pad(recCenter.getHours())}:${pad(recCenter.getMinutes())}:${pad(recCenter.getSeconds())}`
+    ? `${recCenter.getFullYear()}.${pad(recCenter.getMonth() + 1)}.${pad(recCenter.getDate())}. ${pad(recCenter.getHours())}:${pad(recCenter.getMinutes())}:${pad(recCenter.getSeconds())}`
     : "";
   // 끊김 방지: 10~15MB GIF를 16타일 네이티브로 동시에 재생하면 디코딩 부하로
   // 끊긴다. 녹화 재생은 항상 캔버스 경로로 — src별 프레임을 한 번만 디코딩해
@@ -708,6 +786,7 @@ function GridView({
           onGallery={onOpenSheet}
           onFit={cycleGridFit}
           fit={gridFit}
+          auto={gridAuto}
         />
         <VideoFitToast text={gridFitToast} toastKey={gridFitToastKey} />
         <SectionSkeleton visible={gridLoading} cols={cols} rows={rows} />
@@ -978,7 +1057,7 @@ function ExpandedView({
   const recordingDateLabel = playbackMs !== null
     ? (() => {
         const d = new Date(playbackMs);
-        return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}.(${WEEKDAYS[d.getDay()]}) ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}. ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
       })()
     : dateLabel;
 
@@ -1143,7 +1222,11 @@ function ExpandedView({
                   className="h-8 w-8"
                 />
               </button>
-              <button type="button" aria-label="회전">
+              <button
+                type="button"
+                aria-label="화면 전환"
+                onClick={requestDeviceRotate}
+              >
                 <img src={`${BASE}/nav/rotate.svg`} alt="" className="h-8 w-8" />
               </button>
               <button type="button" aria-label="더보기">
@@ -2626,7 +2709,7 @@ function RecordingControls({
   };
   const centerDate = playbackMs !== null ? new Date(playbackMs) : null;
   const labelDate = centerDate
-    ? `${centerDate.getFullYear()}.${pad(centerDate.getMonth() + 1)}.${pad(centerDate.getDate())}.(${WEEKDAYS[centerDate.getDay()]}) ${pad(centerDate.getHours())}:${pad(centerDate.getMinutes())}:${pad(centerDate.getSeconds())}`
+    ? `${centerDate.getFullYear()}.${pad(centerDate.getMonth() + 1)}.${pad(centerDate.getDate())}. ${pad(centerDate.getHours())}:${pad(centerDate.getMinutes())}:${pad(centerDate.getSeconds())}`
     : "";
   const centerLabel = centerDate
     ? `${pad(centerDate.getHours())}:${pad(centerDate.getMinutes())}:${pad(centerDate.getSeconds())}`

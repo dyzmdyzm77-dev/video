@@ -42,8 +42,20 @@ export default function DeviceScaler() {
       const root = document.documentElement;
       const cs = getComputedStyle(root);
       // 선택된 디바이스 크기(px). 미설정 시 기본 폰(360×780).
-      const w = parseFloat(cs.getPropertyValue("--device-w")) || 360;
-      const h = parseFloat(cs.getPropertyValue("--device-h")) || 780;
+      // 가로 모드에서는 --device-w/h 가 눕힌 값이라 배율·왼쪽 앵커가 새로 계산돼
+      // 프레임이 회전하면서 크기와 자리까지 같이 변한다. 그래서 회전 중·가로일
+      // 때는 회전 기준인 세로 크기(--device-rot-w/h)로 계산한다 — 배율도 왼쪽
+      // 앵커도 세로일 때 값 그대로라 "세로에 있던 그 자리"가 유지된다.
+      const rotating =
+        root.dataset.rotate === "true" || root.dataset.landscape === "true";
+      const w =
+        parseFloat(
+          cs.getPropertyValue(rotating ? "--device-rot-w" : "--device-w"),
+        ) || 360;
+      const h =
+        parseFloat(
+          cs.getPropertyValue(rotating ? "--device-rot-h" : "--device-h"),
+        ) || 780;
       // 베젤 사방 여백(--device-margin, 기본 10px). 목업/프레임은 화면보다 2·margin 큼.
       const margin = parseFloat(cs.getPropertyValue("--device-margin")) || 10;
       // 왼쪽 패널 폭을 뺀 가용 폭 기준으로 맞춘다(패널과 겹치지 않게).

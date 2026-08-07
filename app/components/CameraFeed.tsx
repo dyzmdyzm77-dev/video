@@ -1,5 +1,6 @@
 import { BASE } from "../basePath";
 import { nextVideoFit, videoFitIcon, type VideoFit } from "./videoFit";
+import { requestDeviceRotate } from "./deviceRotate";
 import { memo, useEffect, useRef, useState } from "react";
 
 type CameraFeedProps = {
@@ -265,6 +266,7 @@ export function GridSelectionOverlay({
   topInset = 0,
   dimAlpha = 0.6,
   topHeight = "25%",
+  auto,
 }: {
   visible: boolean;
   currentPage?: number;
@@ -286,6 +288,16 @@ export function GridSelectionOverlay({
   /** 상단 그라데이션 길이(CSS 높이). 헤더까지 얹혀 덮을 게 두 줄인 A-1 은 더 길다.
    *  기본 "25%" = 기존 그대로. */
   topHeight?: string;
+  /** 딤 자동 숨김 핸들(useAutoHide). 주면 아이콘을 만지는 동안 딤을 붙잡고,
+   *  떼는 순간부터 5초를 다시 센다. 안 주면 기존 그대로(타이머 안 되돌림). */
+  auto?: {
+    keepAlive: () => void;
+    holdProps: {
+      onPointerDown: () => void;
+      onPointerUp: () => void;
+      onPointerCancel: () => void;
+    };
+  };
 }) {
   return (
     <div
@@ -348,10 +360,21 @@ export function GridSelectionOverlay({
         </div>
       )}
 
-      {/* 우상단 아이콘 — topInset 이 있으면 그만큼 아래로(헤더 아래 줄). */}
+      {/* 우상단 아이콘 — topInset 이 있으면 그만큼 아래로(헤더 아래 줄).
+          아이콘을 누른 건 '영상 탭'이 아니다. 막지 않으면 클릭이 아래 타일까지
+          내려가 딤 토글(그리고 230ms 안이면 단일 화면 전환)까지 같이 걸린다.
+          누른 순간 딤이 닫혀 버리니 "눌러도 반응이 없다"로 보인다.
+          같은 이유로 아이콘을 만지는 동안은 자동 숨김 타이머도 되돌린다 —
+          안 그러면 조준하는 사이 5초가 지나 딤이 사라지고, 그때부터 아이콘은
+          pointer-events:none 이라 클릭이 영상으로 새어 버린다. */}
       <div
         className="absolute right-4 flex items-center gap-3 text-white"
         style={{ top: `${12 + topInset}px` }}
+        onClick={(e) => {
+          e.stopPropagation();
+          auto?.keepAlive();
+        }}
+        {...(auto?.holdProps ?? {})}
       >
         <button
           type="button"
@@ -373,7 +396,16 @@ export function GridSelectionOverlay({
         >
           <OverlayIcon src={videoFitIcon(BASE, nextVideoFit(fit))} size={32} />
         </button>
-        <OverlayIcon src={`${BASE}/nav/rotate.svg`} size={32} />
+        {/* 화면 전환 — 좌측 패널의 '왼쪽으로 회전'과 같은 동작(deviceRotate.ts).
+            목업이라 돌릴 OS 가 없어서 프레임을 대신 돌린다. */}
+        <button
+          type="button"
+          aria-label="화면 전환"
+          onClick={requestDeviceRotate}
+          style={{ pointerEvents: visible ? "auto" : "none" }}
+        >
+          <OverlayIcon src={`${BASE}/nav/rotate.svg`} size={32} />
+        </button>
         <OverlayIcon src={`${BASE}/nav/etc.svg`} size={32} />
       </div>
 

@@ -1,6 +1,11 @@
 "use client";
 
 import { BASE } from "../basePath";
+import {
+  requestDeviceRotate,
+  useDeviceLandscape,
+} from "../components/deviceRotate";
+import LandscapeVideo from "../components/LandscapeVideo";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
@@ -9,6 +14,8 @@ import {
   GridSelectionOverlay,
   useGifFrameCanvas,
 } from "../components/CameraFeed";
+import EventCardFace from "../components/EventCardFace";
+import { useEventThumbs } from "../components/eventThumbs";
 import VariantPicker from "../components/VariantPicker";
 import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
 import { nextVideoFit, videoFitIcon } from "../components/videoFit";
@@ -55,7 +62,7 @@ const CAMERAS = [
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const pad = (n: number) => String(n).padStart(2, "0");
 function formatNow(d: Date) {
-  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}.(${WEEKDAYS[d.getDay()]}) ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}. ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
 function ChevronDownIcon({ className }: { className?: string }) {
@@ -174,6 +181,7 @@ export default function VariantA({
 }) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const landscape = useDeviceLandscape();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
   // 다채널 화면 개수 — 사용자가 '화면 구성'에서 직접 고르기 전엔 영상 영역
@@ -317,6 +325,78 @@ export default function VariantA({
   }, []);
 
   const dateLabel = now ? formatNow(now) : "";
+
+  // 가로 모드 — 지금은 영상만 보여준다(헤더·목록·탭바·시스템 바 전부 없음).
+  if (landscape) {
+    return (
+      <div className="app-safe-frame h-full w-full overflow-hidden bg-black">
+        <LandscapeVideo
+          cameras={CAMERAS}
+          expandedIndex={expandedIndex}
+          page={currentPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          playbackMs={playbackMs}
+          driveByPlayback={mode === "recording"}
+          onGallery={() => setSheetOpen(true)}
+          onExpand={handleExpand}
+          onBack={handleBack}
+          title="8층 사무실 A"
+          subtitle="에스원 본사 · N1234567"
+          onTitleClick={() => setVariantPickerOpen(true)}
+          mode={mode}
+          setMode={handleSetMode}
+          timeLabel={dateLabel}
+          controls={
+            mode === "recording" ? (
+              <RecordingControls
+                now={now}
+                onScrubbingChange={setIsScrubbing}
+                playbackMs={playbackMs}
+                setPlaybackMs={setPlaybackMs}
+                onOpenDateTime={() => setDateTimeOpen(true)}
+                isPlaying={isPlaying}
+                onTogglePlay={() => setIsPlaying((p) => !p)}
+                onPlay={() => setIsPlaying(true)}
+                onSpeedChange={setPlaybackRate}
+              />
+            ) : null
+          }
+        />
+        {/* 화면 구성 시트는 가로에서도 세로와 똑같이 뜬다. 예전엔 이 분기가
+            시트보다 먼저 return 해서, 딤의 갤러리 버튼을 눌러도 열릴 시트가
+            아예 렌더되지 않았다. */}
+        <LayoutConfigSheet
+          open={sheetOpen}
+          selectedCount={userGridCount}
+          resolvedCount={gridCount}
+          onClose={() => setSheetOpen(false)}
+          onPreview={(count) => {
+            setUserGridCount(count);
+            setCurrentPage(0);
+          }}
+        />
+        <DateTimePickerSheet
+          open={dateTimeOpen}
+          initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
+          onClose={() => setDateTimeOpen(false)}
+          onApply={(ms) => {
+            setPlaybackMs(ms);
+            setIsPlaying(true);
+            setMode("recording");
+            setDateTimeOpen(false);
+            triggerTransitionSkeleton();
+          }}
+        />
+        <VariantPicker
+          open={variantPickerOpen}
+          current="a"
+          platform={platform}
+          onClose={() => setVariantPickerOpen(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="app-safe-frame h-full w-full flex flex-col items-center bg-white">
@@ -685,6 +765,7 @@ function GridView({
           onGallery={onOpenSheet}
           onFit={cycleGridFit}
           fit={gridFit}
+          auto={gridAuto}
         />
         <VideoFitToast text={gridFitToast} toastKey={gridFitToastKey} />
         <SectionSkeleton visible={gridLoading} cols={cols} rows={rows} />
@@ -1081,7 +1162,7 @@ function ExpandedView({
   const recordingDateLabel = playbackMs !== null
     ? (() => {
         const d = new Date(playbackMs);
-        return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}.(${WEEKDAYS[d.getDay()]}) ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}. ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
       })()
     : dateLabel;
 
@@ -1228,7 +1309,11 @@ function ExpandedView({
                   className="h-8 w-8"
                 />
               </button>
-              <button type="button" aria-label="회전">
+              <button
+                type="button"
+                aria-label="화면 전환"
+                onClick={requestDeviceRotate}
+              >
                 <img src={`${BASE}/nav/rotate.svg`} alt="" className="h-8 w-8" />
               </button>
               <button type="button" aria-label="더보기">
@@ -1673,6 +1758,8 @@ function SideEventTimeline({
   onScrubbingChange?: (s: boolean) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // 썸네일을 못 뽑는 기기 사양이면 카드에 시각+타이틀만 남긴다(eventThumbs.ts).
+  const eventThumbs = useEventThumbs();
   // 줌 레벨: 픽셀/초 — 가로 타임라인과 동일하게 기본 6px/sec. 핀치/휠로 연속 조정.
   const [pxPerSec, setPxPerSec] = useState(6);
   const [lineY, setLineY] = useState(20);
@@ -2106,7 +2193,7 @@ function SideEventTimeline({
               >
                 {/* 썸네일 — 한 자리에 하나만. 겹침 표시(쌓인 카드·개수 배지)는 안 쓴다. */}
                 <div
-                  className="absolute overflow-hidden rounded-md bg-neutral-900"
+                  className={`absolute overflow-hidden rounded-md ${eventThumbs ? "bg-neutral-900" : ""}`}
                   style={{
                     left: 0,
                     top: 0,
@@ -2115,12 +2202,16 @@ function SideEventTimeline({
                     zIndex: 2,
                   }}
                 >
-                  <FrozenImage
-                    src={cameraSrc}
-                    alt=""
-                    className="h-full w-full"
-                    style={{ objectFit: "cover" }}
-                  />
+                  {eventThumbs ? (
+                    <FrozenImage
+                      src={cameraSrc}
+                      alt=""
+                      className="h-full w-full"
+                      style={{ objectFit: "cover" }}
+                    />
+                  ) : (
+                    <EventCardFace ms={occ.ms} />
+                  )}
                 </div>
               </div>
             </div>
@@ -2182,6 +2273,8 @@ function RecordingEventTimeline({
   onScrubbingChange?: (s: boolean) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // 썸네일을 못 뽑는 기기 사양이면 카드에 시각+타이틀만 남긴다(eventThumbs.ts).
+  const eventThumbs = useEventThumbs();
   // 썸네일 영역(시간바 아래 남는 공간). 이 높이에 맞춰 썸네일 세로 크기를 유동
   // 조절한다(화면이 짧아지면 잘리지 않게 줄인다). 최대 72(원본), 폭은 16:9 로 연동.
   const thumbAreaRef = useRef<HTMLDivElement>(null);
@@ -2713,7 +2806,7 @@ function RecordingEventTimeline({
               }}
             >
               <div
-                className="overflow-hidden rounded-md bg-neutral-900"
+                className={`overflow-hidden rounded-md ${eventThumbs ? "bg-neutral-900" : ""}`}
                 style={{
                   // 높이는 thumbH 하나만 본다 — 예전엔 CSS min(48px,100%) 로
                   // 따로 정해서 폭 계산(thumbW)의 근거인 thumbH 와 어긋날 수
@@ -2722,12 +2815,16 @@ function RecordingEventTimeline({
                   aspectRatio: "16 / 9",
                 }}
               >
-                <FrozenImage
-                  src={cameraSrc}
-                  alt=""
-                  className="h-full w-full"
-                  style={{ objectFit: "cover" }}
-                />
+                {eventThumbs ? (
+                  <FrozenImage
+                    src={cameraSrc}
+                    alt=""
+                    className="h-full w-full"
+                    style={{ objectFit: "cover" }}
+                  />
+                ) : (
+                  <EventCardFace ms={cluster.ms} />
+                )}
               </div>
             </div>
           ))}
@@ -3247,7 +3344,7 @@ function RecordingControls({
   };
   const centerDate = playbackMs !== null ? new Date(playbackMs) : null;
   const labelDate = centerDate
-    ? `${centerDate.getFullYear()}.${pad(centerDate.getMonth() + 1)}.${pad(centerDate.getDate())}.(${WEEKDAYS[centerDate.getDay()]}) ${pad(centerDate.getHours())}:${pad(centerDate.getMinutes())}:${pad(centerDate.getSeconds())}`
+    ? `${centerDate.getFullYear()}.${pad(centerDate.getMonth() + 1)}.${pad(centerDate.getDate())}. ${pad(centerDate.getHours())}:${pad(centerDate.getMinutes())}:${pad(centerDate.getSeconds())}`
     : "";
   const centerLabel = centerDate
     ? `${pad(centerDate.getHours())}:${pad(centerDate.getMinutes())}:${pad(centerDate.getSeconds())}`
