@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { EVENT_THUMBS_EVENT } from "./eventThumbs";
+import { DEVICE_ROTATE_EVENT, LANDSCAPE_EVENT } from "./deviceRotate";
 
 // 데스크톱 전용: 화면 왼쪽 가장자리에 붙는 LNB 패널(좌측 레일).
 // 접으면 각 메뉴의 아이콘만, 펼치면 아이콘+메뉴명이 보인다.
@@ -75,6 +77,8 @@ export default function DesktopVariantNav() {
   const [actualSize, setActualSize] = useState(false); // 배율 1:1 고정 여부
   const [compare, setCompare] = useState(false); // As Is(현재 앱) 나란히 비교 여부
   const [rotated, setRotated] = useState(false); // 디바이스 시각적 90° 회전(가로)
+  // 움직임 감지 이벤트 카드에 썸네일을 쓸 수 있는 사양인지. 끄면 시각+타이틀만.
+  const [eventThumbs, setEventThumbs] = useState(true);
   // 직접 입력(커스텀 해상도) — 가로·세로 px.
   const [customW, setCustomW] = useState("");
   const [customH, setCustomH] = useState("");
@@ -91,11 +95,19 @@ export default function DesktopVariantNav() {
   }, [actualSize]);
 
   // ?compare=1 이면 처음부터 비교 모드로 연다(platform·chrome 과 같은 방식).
+  // ?thumbs=0 이면 썸네일 없는 사양으로 시작한다 — 좌측 패널은 데스크톱 전용이라
+  // 폰으로 미리보기를 열어 볼 땐 쿼리가 유일한 진입점이다.
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("compare") === "1") {
-      setCompare(true);
-    }
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("compare") === "1") setCompare(true);
+    if (sp.get("thumbs") === "0") setEventThumbs(false);
   }, []);
+
+  // 썸네일 지원 여부를 문서 루트에 반영한다(A·A-1 의 움직임 감지 타임라인이 구독).
+  useEffect(() => {
+    document.documentElement.dataset.eventThumbs = eventThumbs ? "true" : "false";
+    window.dispatchEvent(new Event(EVENT_THUMBS_EVENT));
+  }, [eventThumbs]);
 
   // 비교하기(As Is 나란히) 여부를 문서 루트에 반영한다(AsIsPanel 이 구독).
   useEffect(() => {
@@ -107,8 +119,10 @@ export default function DesktopVariantNav() {
   const applyPreset = (i: number) => {
     const d = DEVICES[i];
     const root = document.documentElement;
-    root.style.setProperty("--device-w", `${d.w}px`);
-    root.style.setProperty("--device-h", `${d.h}px`);
+    // 가로 모드면 프리셋도 눕혀서 적용한다 — 안 그러면 세로로 되돌아간다.
+    const land = root.dataset.landscape === "true";
+    root.style.setProperty("--device-w", `${land ? d.h : d.w}px`);
+    root.style.setProperty("--device-h", `${land ? d.w : d.h}px`);
     root.style.setProperty("--device-radius", `${d.r}px`);
     root.style.setProperty("--device-margin", `${d.m}px`);
     // 펀치홀 카메라 위치 — 실기기처럼 기기별로 다르다(CSS 가 참조).
@@ -134,8 +148,10 @@ export default function DesktopVariantNav() {
     h = Math.min(3000, Math.max(240, h));
     const r = w < 480 ? 45 : w < 750 ? 29 : 13;
     const m = w >= 1080 ? 30 : 10;
-    root.style.setProperty("--device-w", `${w}px`);
-    root.style.setProperty("--device-h", `${h}px`);
+    // 가로 모드면 입력값도 눕혀서 적용한다(프리셋과 같은 규칙).
+    const land = root.dataset.landscape === "true";
+    root.style.setProperty("--device-w", `${land ? h : w}px`);
+    root.style.setProperty("--device-h", `${land ? w : h}px`);
     root.style.setProperty("--device-radius", `${r}px`);
     root.style.setProperty("--device-margin", `${m}px`);
     root.dataset.punch =
@@ -147,47 +163,102 @@ export default function DesktopVariantNav() {
   };
 
   // 왼쪽으로 회전 — 디바이스(베젤+화면)를 시계반대 90°로 '제자리에서' 돌린다.
-  // 배치가 flex(세로)↔fixed(가로)로 바뀌는 순간은 트랜지션을 꺼서 무이동으로
-  // 스위치하고, 그 다음 각도(--device-rot)만 트랜지션해 그 자리에서 자연스럽게
-  // 돈다. 되돌릴 땐 각도를 0으로 트랜지션한 뒤 배치를 flex 로 스위치한다.
+  //
+  // 돌기만 하면 안의 콘텐츠까지 같이 누워 글자를 옆으로 읽어야 한다. 그래서 각도
+  // 애니메이션이 끝나는 순간, 무이동으로(트랜지션 꺼짐) 각도를 0 으로 되돌리면서
+  // 기기 크기(--device-w/h)를 눕힌 값으로 맞바꾼다. 세로 박스를 -90° 돌린
+  // footprint 와 눕힌 박스의 footprint 가 같아서 화면상 위치·크기는 안 튀고,
+  // 앱만 가로 폭 기준으로 다시 배치돼 콘텐츠가 똑바로 선다.
+  //
+  // --device-rot-w/h 는 그 계산의 기준이 되는 '세로 크기'다. 회전 중에는 고정 —
+  // 중심 계산이 같이 바뀌면 갈아끼우는 순간 프레임이 뛴다(globals.css 참고).
   const rotFirst = useRef(true);
   useEffect(() => {
     const root = document.documentElement;
     if (rotFirst.current) {
       rotFirst.current = false;
       root.dataset.rotate = "false";
+      root.dataset.landscape = "false";
       root.style.setProperty("--device-rot", "0deg");
       return;
     }
+    const cs = getComputedStyle(root);
+    const w = parseFloat(cs.getPropertyValue("--device-w")) || 360;
+    const h = parseFloat(cs.getPropertyValue("--device-h")) || 780;
+
+    // 무이동 스위치 — 트랜지션을 끄고 값을 바꾼 뒤, 강제 리플로로 그 상태를 확정하고
+    // 다시 켠다. 예전엔 requestAnimationFrame 두 번으로 기다렸는데, 탭이 화면에
+    // 안 보이면(visibilityState=hidden) rAF 가 아예 안 불려서 회전이 중간 상태로
+    // 멈춰 있었다. 리플로는 보이든 안 보이든 그 자리에서 끝난다.
+    const still = (mutate: () => void) => {
+      root.dataset.rotating = "true";
+      mutate();
+      void root.offsetHeight; // 스타일 플러시
+      root.dataset.rotating = "false";
+    };
+
+    // 세로 기준 크기(pw×ph). 회전축은 '세로 상태의 디바이스 중심' 하나로 고정하고,
+    // 가로로 있는 동안에도 그 중심 기준 배치(data-rotate)를 유지한다. 끝에서
+    // 흐름 배치(왼쪽·바닥 앵커)로 되돌리면 그 순간 중심이 옮겨져 프레임이 튄다.
+    const pw = rotated ? w : h; // 세로 폭
+    const ph = rotated ? h : w; // 세로 높이
+
     if (rotated) {
-      // 무이동 스위치(트랜지션 꺼짐) → fixed·각도0(세로와 동일하게 보임)
-      root.dataset.rotating = "true";
-      root.dataset.rotate = "true";
-      root.style.setProperty("--device-rot", "0deg");
+      // 세로 → 가로.
+      root.style.setProperty("--device-rot-w", `${pw}px`);
+      root.style.setProperty("--device-rot-h", `${ph}px`);
+      // 1) flex → fixed 무이동 스위치(각도 0 = 세로와 똑같이 보임)
+      still(() => {
+        root.dataset.rotate = "true";
+        root.style.setProperty("--device-rot", "0deg");
+      });
       window.dispatchEvent(new Event("devicechange"));
-      // 다음 프레임: 트랜지션 켜고 각도만 -90° 로 → 제자리 회전
-      const id = requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          root.dataset.rotating = "false";
-          root.style.setProperty("--device-rot", "-90deg");
-        }),
-      );
-      return () => cancelAnimationFrame(id);
+      // 2) 각도만 -90° 로 트랜지션 → 디바이스 중심에서 제자리 회전
+      root.style.setProperty("--device-rot", "-90deg");
+      // 3) 회전이 끝나면 각도를 0 으로 되돌리며 크기를 눕힌다 — 콘텐츠가 선다.
+      //    세로 박스를 -90° 돌린 footprint 와 눕힌 박스의 footprint 가 같은 자리라
+      //    무이동으로 갈아끼워도 안 튄다.
+      const t = setTimeout(() => {
+        still(() => {
+          root.style.setProperty("--device-w", `${ph}px`);
+          root.style.setProperty("--device-h", `${pw}px`);
+          root.style.setProperty("--device-rot", "0deg");
+          root.dataset.landscape = "true";
+        });
+        window.dispatchEvent(new Event("devicechange"));
+        window.dispatchEvent(new Event(LANDSCAPE_EVENT));
+      }, 360);
+      return () => clearTimeout(t);
     }
-    // 되돌리기: 각도 -90 → 0 트랜지션 후, 끝나면 배치를 flex 로 무이동 스위치
+
+    // 가로 → 세로. 먼저 '지금 화면 그대로'를 각도 -90° 로 표현한 뒤(크기는 세로로
+    // 되돌리고), 각도만 0 으로 되돌려 같은 중심에서 세운다.
+    still(() => {
+      root.style.setProperty("--device-w", `${pw}px`);
+      root.style.setProperty("--device-h", `${ph}px`);
+      root.style.setProperty("--device-rot", "-90deg");
+      root.dataset.landscape = "false";
+    });
+    window.dispatchEvent(new Event("devicechange"));
+    window.dispatchEvent(new Event(LANDSCAPE_EVENT));
     root.style.setProperty("--device-rot", "0deg");
+    // 각도가 0 이 되면 fixed → flex 로 무이동 복귀(세로는 두 배치의 자리가 같다).
     const t = setTimeout(() => {
-      root.dataset.rotating = "true";
-      root.dataset.rotate = "false";
+      still(() => {
+        root.dataset.rotate = "false";
+      });
       window.dispatchEvent(new Event("devicechange"));
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          root.dataset.rotating = "false";
-        }),
-      );
     }, 360);
     return () => clearTimeout(t);
   }, [rotated]);
+
+  // 안들의 딤에 있는 '화면 전환' 버튼 — 이 토글을 누른 것과 똑같이 동작시킨다.
+  // 회전 연출은 위 effect 하나가 전부 담당하므로 여기선 상태만 뒤집는다.
+  useEffect(() => {
+    const onRotate = () => setRotated((v) => !v);
+    window.addEventListener(DEVICE_ROTATE_EVENT, onRotate);
+    return () => window.removeEventListener(DEVICE_ROTATE_EVENT, onRotate);
+  }, []);
 
   // 입력한 가로:세로의 약분 비율(정수비 미리보기용).
   const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
@@ -381,6 +452,19 @@ export default function DesktopVariantNav() {
         </span>
         <span className="dvn-label">비교하기</span>
       </button>
+
+      {/* 움직임 감지 썸네일 온/오프 — 썸네일을 못 뽑는 기기 사양 대응 화면 확인용.
+          끄면 카드 자리에 시각 + "움직임 감지" 텍스트만 남는다(카드 크기는 동일). */}
+      <label className="dvn-ruler-toggle" title="움직임 감지 썸네일">
+        <span className="dvn-icon">
+          <input
+            type="checkbox"
+            checked={eventThumbs}
+            onChange={(e) => setEventThumbs(e.target.checked)}
+          />
+        </span>
+        <span className="dvn-label">감지 썸네일</span>
+      </label>
 
       {/* 목업 위 치수 눈금자 표시 온/오프. */}
       <label className="dvn-ruler-toggle" title="치수 표시">

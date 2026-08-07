@@ -21,15 +21,25 @@ export function useGridAreaRatio() {
   const areaRef = useRef<HTMLElement>(null);
   const [ratio, setRatio] = useState(GRID_TILE_RATIO);
   useEffect(() => {
-    const el = areaRef.current;
-    if (!el) return;
+    // 잴 때마다 areaRef.current 를 다시 읽고, 대상이 바뀌었으면 관찰도 옮긴다.
+    // 예전엔 마운트 시점의 요소 하나를 붙잡아 뒀는데, 그리드가 언마운트됐다가
+    // 다시 마운트되면(가로 모드 왕복) 관찰 대상이 떨어져 나간 옛 요소로 남아
+    // 비율이 그 시점 값에 굳었다. 그 굳은 비율로 화면 개수를 고르니 세로로
+    // 돌아왔을 때 배치가 어긋났다.
+    let observed: HTMLElement | null = null;
     const measure = () => {
+      const el = areaRef.current;
+      if (!el) return;
+      if (el !== observed) {
+        if (observed) ro.unobserve(observed);
+        ro.observe(el);
+        observed = el;
+      }
       const r = el.getBoundingClientRect();
       if (r.width > 0 && r.height > 0) setRatio(r.width / r.height);
     };
-    measure();
     const ro = new ResizeObserver(measure);
-    ro.observe(el);
+    measure();
     const evts = ["devicechange", "devicerange", "deviceresize", "resize"];
     evts.forEach((e) => window.addEventListener(e, measure));
     return () => {

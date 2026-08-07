@@ -7,6 +7,11 @@
 // A안을 고치면 이 파일도 같이 맞춰야 한다.
 
 import { BASE } from "../basePath";
+import {
+  requestDeviceRotate,
+  useDeviceLandscape,
+} from "../components/deviceRotate";
+import LandscapeVideo from "../components/LandscapeVideo";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
@@ -15,6 +20,8 @@ import {
   GridSelectionOverlay,
   useGifFrameCanvas,
 } from "../components/CameraFeed";
+import EventCardFace from "../components/EventCardFace";
+import { useEventThumbs } from "../components/eventThumbs";
 import VariantPicker from "../components/VariantPicker";
 import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
 import { nextVideoFit, videoFitIcon } from "../components/videoFit";
@@ -61,7 +68,7 @@ const CAMERAS = [
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const pad = (n: number) => String(n).padStart(2, "0");
 function formatNow(d: Date) {
-  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}.(${WEEKDAYS[d.getDay()]}) ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}. ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
 function ChevronDownIcon({ className }: { className?: string }) {
@@ -202,6 +209,11 @@ export default function VariantA1({
   const [dateTimeOpen, setDateTimeOpen] = useState(false);
   const [gridLoading, setGridLoading] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
+  const landscape = useDeviceLandscape();
+  // 영상 탭에 처음 들어왔을 때는 딤이 기본이다 — 뭘 할 수 있는지 한 번 보여주고
+  // 5초 뒤 useAutoHide 가 알아서 걷어낸다. 단일 화면에 들어갔다 돌아온 다채널은
+  // 해당 없음(GridView 가 매번 다시 마운트되므로 그때마다 딤이 뜨면 성가시다).
+  const gridDimOnce = useRef(true);
   const toggleChrome = () => setChromeVisible((v) => !v);
 
   // 화면 캡처 토스트 — 카메라 버튼 누르면 잠깐 노출 후 자동 사라짐.
@@ -234,6 +246,7 @@ export default function VariantA1({
   // 다채널→단일 진입: 같은 렌더에서 setExpandedIndex와 함께 스켈레톤을 켜
   // 이미지 페인트 전에 스켈레톤이 위(z-20)에 즉시 깔리도록 한다.
   const handleExpand = (idx: number) => {
+    gridDimOnce.current = false; // 한 번 나갔다 오면 다채널 딤은 더 이상 자동 노출 안 함
     setVideoLoading(true);
     setExpandedIndex(idx);
     setTimeout(() => setVideoLoading(false), 600);
@@ -319,6 +332,83 @@ export default function VariantA1({
 
   const dateLabel = now ? formatNow(now) : "";
 
+  // 가로 모드 — 지금은 영상만 보여준다(헤더·목록·탭바·시스템 바 전부 없음).
+  if (landscape) {
+    return (
+      <div className="app-safe-frame h-full w-full overflow-hidden bg-black">
+        <LandscapeVideo
+          cameras={CAMERAS}
+          expandedIndex={expandedIndex}
+          page={currentPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          playbackMs={playbackMs}
+          driveByPlayback={mode === "recording"}
+          onGallery={() => setSheetOpen(true)}
+          onExpand={handleExpand}
+          onBack={handleBack}
+          title="8층 사무실 A"
+          subtitle="에스원 본사 · N1234567"
+          onTitleClick={() => setVariantPickerOpen(true)}
+          mode={mode}
+          setMode={handleSetMode}
+          timeLabel={dateLabel}
+          // A-1 은 플레이어·시간바를 딤 색에 맞춰 넘긴다(overlay) — 흰 바를 걷어
+          // 영상이 비치게 한다.
+          controlsOnDim
+          controls={
+            mode === "recording" ? (
+              <RecordingControls
+                overlay
+                now={now}
+                setMode={handleSetMode}
+                onScrubbingChange={setIsScrubbing}
+                playbackMs={playbackMs}
+                setPlaybackMs={setPlaybackMs}
+                onOpenDateTime={() => setDateTimeOpen(true)}
+                isPlaying={isPlaying}
+                onTogglePlay={() => setIsPlaying((p) => !p)}
+                onPlay={() => setIsPlaying(true)}
+                onSpeedChange={setPlaybackRate}
+              />
+            ) : null
+          }
+        />
+        {/* 화면 구성 시트는 가로에서도 세로와 똑같이 뜬다. 예전엔 이 분기가
+            시트보다 먼저 return 해서, 딤의 갤러리 버튼을 눌러도 열릴 시트가
+            아예 렌더되지 않았다. */}
+        <LayoutConfigSheet
+          open={sheetOpen}
+          selectedCount={userGridCount}
+          resolvedCount={gridCount}
+          onClose={() => setSheetOpen(false)}
+          onPreview={(count) => {
+            setUserGridCount(count);
+            setCurrentPage(0);
+          }}
+        />
+        <DateTimePickerSheet
+          open={dateTimeOpen}
+          initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
+          onClose={() => setDateTimeOpen(false)}
+          onApply={(ms) => {
+            setPlaybackMs(ms);
+            setIsPlaying(true);
+            setMode("recording");
+            setDateTimeOpen(false);
+            triggerTransitionSkeleton();
+          }}
+        />
+        <VariantPicker
+          open={variantPickerOpen}
+          current="a1"
+          platform={platform}
+          onClose={() => setVariantPickerOpen(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="app-safe-frame h-full w-full flex flex-col items-center bg-white">
     <div className="relative flex min-h-0 flex-1 w-full flex-col overflow-hidden bg-white">
@@ -374,6 +464,7 @@ export default function VariantA1({
           onPlay={() => setIsPlaying(true)}
           onSpeedChange={setPlaybackRate}
           videoAreaRef={videoAreaRef}
+          initialDim={gridDimOnce.current}
         />
       ) : (
         <ExpandedView
@@ -477,6 +568,7 @@ function GridView({
   onPlay,
   onSpeedChange,
   videoAreaRef,
+  initialDim = false,
 }: {
   onExpand: (i: number) => void;
   currentPage: number;
@@ -507,8 +599,10 @@ function GridView({
   // 이 섹션(헤더·하단 컨트롤 제외 나머지)에 단다 — 크기가 cols×rows 선택과
   // 무관해서(그 안을 나누기만 하므로) 순환 의존이 없다.
   videoAreaRef?: React.RefObject<HTMLElement | null>;
+  // 마운트 시 딤을 켠 채로 시작할지. 영상 탭 첫 진입에서만 true.
+  initialDim?: boolean;
 }) {
-  const [gridSelected, setGridSelected] = useState(false);
+  const [gridSelected, setGridSelected] = useState(initialDim);
   // 다채널 타일 맞춤 모드 — 딤 상태의 '화면 맞춤' 버튼으로 돌린다. 순서·아이콘·
   // 문구·기본값은 단일 화면과 같은 곳(components/videoFit.ts)에서 온다.
   const { fit: gridFit, cycle: cycleGridFit, toast: gridFitToast, toastKey: gridFitToastKey } =
@@ -652,6 +746,7 @@ function GridView({
           // (topInset 은 기본 0 = 헤더와 같은 높이)
           dimAlpha={DIM_ALPHA}
           topHeight={DIM_TOP_H_GRID}
+          auto={gridAuto}
         />
         {/* 딤과 함께 뜨는 헤더 — 평소엔 없다. 버튼을 만지는 동안은 딤을 붙잡는다. */}
         <OverlayHeader
@@ -1049,7 +1144,7 @@ function ExpandedView({
   const recordingDateLabel = playbackMs !== null
     ? (() => {
         const d = new Date(playbackMs);
-        return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}.(${WEEKDAYS[d.getDay()]}) ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}. ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
       })()
     : dateLabel;
 
@@ -1174,7 +1269,11 @@ function ExpandedView({
                   className="h-8 w-8"
                 />
               </button>
-              <button type="button" aria-label="회전">
+              <button
+                type="button"
+                aria-label="화면 전환"
+                onClick={requestDeviceRotate}
+              >
                 <img src={`${BASE}/nav/rotate.svg`} alt="" className="h-8 w-8" />
               </button>
               <button type="button" aria-label="더보기">
@@ -1615,6 +1714,8 @@ function SideEventTimeline({
   onScrubbingChange?: (s: boolean) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // 썸네일을 못 뽑는 기기 사양이면 카드에 시각+타이틀만 남긴다(eventThumbs.ts).
+  const eventThumbs = useEventThumbs();
   // 줌 레벨: 픽셀/초 — 가로 타임라인과 동일하게 기본 6px/sec. 핀치/휠로 연속 조정.
   const [pxPerSec, setPxPerSec] = useState(6);
   const [lineY, setLineY] = useState(20);
@@ -2048,7 +2149,7 @@ function SideEventTimeline({
               >
                 {/* 썸네일 — 한 자리에 하나만. 겹침 표시(쌓인 카드·개수 배지)는 안 쓴다. */}
                 <div
-                  className="absolute overflow-hidden rounded-md bg-neutral-900"
+                  className={`absolute overflow-hidden rounded-md ${eventThumbs ? "bg-neutral-900" : ""}`}
                   style={{
                     left: 0,
                     top: 0,
@@ -2057,12 +2158,16 @@ function SideEventTimeline({
                     zIndex: 2,
                   }}
                 >
-                  <FrozenImage
-                    src={cameraSrc}
-                    alt=""
-                    className="h-full w-full"
-                    style={{ objectFit: "cover" }}
-                  />
+                  {eventThumbs ? (
+                    <FrozenImage
+                      src={cameraSrc}
+                      alt=""
+                      className="h-full w-full"
+                      style={{ objectFit: "cover" }}
+                    />
+                  ) : (
+                    <EventCardFace ms={occ.ms} />
+                  )}
                 </div>
               </div>
             </div>
@@ -2124,6 +2229,8 @@ function RecordingEventTimeline({
   onScrubbingChange?: (s: boolean) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // 썸네일을 못 뽑는 기기 사양이면 카드에 시각+타이틀만 남긴다(eventThumbs.ts).
+  const eventThumbs = useEventThumbs();
   // 썸네일 영역(시간바 아래 남는 공간). 이 높이에 맞춰 썸네일 세로 크기를 유동
   // 조절한다(화면이 짧아지면 잘리지 않게 줄인다). 최대 72(원본), 폭은 16:9 로 연동.
   const thumbAreaRef = useRef<HTMLDivElement>(null);
@@ -2655,7 +2762,7 @@ function RecordingEventTimeline({
               }}
             >
               <div
-                className="overflow-hidden rounded-md bg-neutral-900"
+                className={`overflow-hidden rounded-md ${eventThumbs ? "bg-neutral-900" : ""}`}
                 style={{
                   // 높이는 thumbH 하나만 본다 — 예전엔 CSS min(48px,100%) 로
                   // 따로 정해서 폭 계산(thumbW)의 근거인 thumbH 와 어긋날 수
@@ -2664,12 +2771,16 @@ function RecordingEventTimeline({
                   aspectRatio: "16 / 9",
                 }}
               >
-                <FrozenImage
-                  src={cameraSrc}
-                  alt=""
-                  className="h-full w-full"
-                  style={{ objectFit: "cover" }}
-                />
+                {eventThumbs ? (
+                  <FrozenImage
+                    src={cameraSrc}
+                    alt=""
+                    className="h-full w-full"
+                    style={{ objectFit: "cover" }}
+                  />
+                ) : (
+                  <EventCardFace ms={cluster.ms} />
+                )}
               </div>
             </div>
           ))}
@@ -3058,6 +3169,7 @@ function RecordingControls({
   onTogglePlay,
   onPlay,
   onSpeedChange,
+  overlay = false,
 }: {
   now: Date | null;
   setMode: (m: "live" | "recording") => void;
@@ -3072,6 +3184,12 @@ function RecordingControls({
   onTogglePlay?: () => void;
   onPlay?: () => void;
   onSpeedChange?: (rate: number) => void;
+  /** 딤 위에 얹히는 배치(가로 모드)인가. 기본은 세로 — 흰 바에 얹히는 밝은 UI.
+   *  켜면 (1) 흰 배경을 걷어 영상이 비치게 하고, (2) 글자·눈금·버튼을 흰 계열로
+   *  뒤집고, (3) 위쪽 '녹화 + 날짜' 줄을 안 그린다. 가로에선 LandscapeVideo 가
+   *  같은 정보(실시간/녹화 칩 + 시각)를 딤에 맞춘 색으로 이미 얹기 때문에, 그
+   *  줄까지 그리면 칩 줄이 두 번 겹쳐 보인다. */
+  overlay?: boolean;
 }) {
   const VISIBLE_MINUTES = TIMELINE_VISIBLE_MIN;
   // 줌 레벨: 픽셀/초 — 핀치 너비 비율로 연속적으로 조정 (기본 6px/sec → 라벨 10초 간격)
@@ -3219,7 +3337,7 @@ function RecordingControls({
   };
   const centerDate = playbackMs !== null ? new Date(playbackMs) : null;
   const labelDate = centerDate
-    ? `${centerDate.getFullYear()}.${pad(centerDate.getMonth() + 1)}.${pad(centerDate.getDate())}.(${WEEKDAYS[centerDate.getDay()]}) ${pad(centerDate.getHours())}:${pad(centerDate.getMinutes())}:${pad(centerDate.getSeconds())}`
+    ? `${centerDate.getFullYear()}.${pad(centerDate.getMonth() + 1)}.${pad(centerDate.getDate())}. ${pad(centerDate.getHours())}:${pad(centerDate.getMinutes())}:${pad(centerDate.getSeconds())}`
     : "";
   const centerLabel = centerDate
     ? `${pad(centerDate.getHours())}:${pad(centerDate.getMinutes())}:${pad(centerDate.getSeconds())}`
@@ -3314,24 +3432,29 @@ function RecordingControls({
 
   return (
     <div className="relative flex flex-col">
-      {/* 녹화 + 날짜 */}
-      <div
-        className="relative flex items-center px-5"
-        style={{ height: "48px", gap: "8px" }}
-      >
-        {/* 실시간/녹화 토글 — 딤 헤더에 있던 걸 여기로 내렸다. */}
-        <ModeChipToggle mode="recording" setMode={setMode} />
-        <button
-          type="button"
-          onClick={onOpenDateTime}
-          className="flex items-center gap-0 text-[14px] font-medium leading-none text-[#353535]"
-        >
-          <span suppressHydrationWarning>{labelDate}</span>
-          <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
-        </button>
-        <RowSkeleton visible={rowLoading} />
-      </div>
-      <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+      {/* 녹화 + 날짜 — 가로 딤(overlay)에선 안 그린다. LandscapeVideo 가 같은
+          정보를 딤에 맞춘 색으로 이미 얹고 있어서 칩 줄이 두 번 겹친다. */}
+      {!overlay && (
+        <>
+          <div
+            className="relative flex items-center px-5"
+            style={{ height: "48px", gap: "8px" }}
+          >
+            {/* 실시간/녹화 토글 — 딤 헤더에 있던 걸 여기로 내렸다. */}
+            <ModeChipToggle mode="recording" setMode={setMode} />
+            <button
+              type="button"
+              onClick={onOpenDateTime}
+              className="flex items-center gap-0 text-[14px] font-medium leading-none text-[#353535]"
+            >
+              <span suppressHydrationWarning>{labelDate}</span>
+              <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
+            </button>
+            <RowSkeleton visible={rowLoading} />
+          </div>
+          <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+        </>
+      )}
       <div className="relative">
       {/* 플레이어 컨트롤 — 시간바(타임라인) 위 */}
       <div
@@ -3339,10 +3462,12 @@ function RecordingControls({
         style={{
           gap: "20px",
           padding: "8px 0",
-          backgroundColor: "#FFFFFF",
+          // 가로 딤에선 배경을 걷는다 — 흰 바가 영상을 통째로 가린다.
+          backgroundColor: overlay ? "transparent" : "#FFFFFF",
         }}
       >
         <PlayerButton
+          overlay={overlay}
           kind="skip-back"
           label={BACK_SPEED_LABELS[backSpeedIdx]}
           onClick={() => {
@@ -3355,6 +3480,7 @@ function RecordingControls({
           }}
         />
         <PlayerButton
+          overlay={overlay}
           kind="back10"
           onClick={() => {
             setPlaybackMs((p) => (p === null ? p : p - 10000));
@@ -3363,11 +3489,13 @@ function RecordingControls({
           }}
         />
         <PlayerButton
+          overlay={overlay}
           kind={isPlaying ? "pause" : "play"}
           onClick={onTogglePlay}
           held={!isPlaying}
         />
         <PlayerButton
+          overlay={overlay}
           kind="forward10"
           onClick={() => {
             setPlaybackMs((p) => (p === null ? p : p + 10000));
@@ -3376,6 +3504,7 @@ function RecordingControls({
           }}
         />
         <PlayerButton
+          overlay={overlay}
           kind="skip-forward"
           label={FWD_SPEED_LABELS[fwdSpeedIdx]}
           onClick={() => {
@@ -3388,13 +3517,30 @@ function RecordingControls({
           }}
         />
       </div>
-      <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+      <div
+        className="h-px"
+        style={{
+          backgroundColor: overlay ? "rgba(255,255,255,0.18)" : "#EBEBEB",
+        }}
+      />
       {/* 타임라인 */}
       <div
         ref={timelineRef}
         className="relative flex flex-col overflow-hidden touch-pan-y select-none"
         style={{
-          backgroundColor: "#FFFFFF",
+          backgroundColor: overlay ? "transparent" : "#FFFFFF",
+          // 좌우 페이드 — 흰 배경일 땐 아래에서 흰 그라데이션 두 장을 덮어 가리지만,
+          // 배경이 없는 딤 위에선 덮을 색이 없다. 대신 영역 자체를 마스크로 깎아
+          // 라벨·눈금이 가장자리로 갈수록 사라지게 한다(끝나는 지점은 흰 배경 쪽
+          // 그라데이션과 같은 3.9%/96.1%).
+          ...(overlay
+            ? {
+                WebkitMaskImage:
+                  "linear-gradient(to right, transparent 3.9%, #000 39%, #000 61%, transparent 96.1%)",
+                maskImage:
+                  "linear-gradient(to right, transparent 3.9%, #000 39%, #000 61%, transparent 96.1%)",
+              }
+            : null),
           // 위아래 같은 여백. 단일채널 감지 탭 시간바는 아래가 4 인데(PAD_BOTTOM),
           // 거긴 바로 아래 썸네일이 이어져서 그런 거다. 다채널은 시간바 아래가 바로
           // 하단 탭바라 그 4 를 그대로 가져오면 눈금이 탭바에 붙어 보인다.
@@ -3422,7 +3568,7 @@ function RecordingControls({
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
                 top: "0",
-                color: "#A4A4A4",
+                color: overlay ? "rgba(255,255,255,0.75)" : "#A4A4A4",
                 transformOrigin: "center center",
                 ...labelVisualStyle(secOffset),
                 fontSize: "10px",
@@ -3445,34 +3591,45 @@ function RecordingControls({
                 top: "18px",
                 width: "2px",
                 height: "8px",
-                backgroundColor: isMajor ? "#797979" : "#C4C4C4",
+                backgroundColor: overlay
+                  ? isMajor
+                    ? "#FFFFFF"
+                    : "rgba(255,255,255,0.5)"
+                  : isMajor
+                    ? "#797979"
+                    : "#C4C4C4",
               }}
             />
           ))}
         </div>
-        {/* 좌우 페이드 (배경 그라데이션) — 가운데에서 바깥으로 갈수록 흰색으로 가려짐 */}
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: "39%",
-            background:
-              "linear-gradient(to left, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
-          }}
-        />
-        <div
-          className="pointer-events-none absolute"
-          style={{
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: "39%",
-            background:
-              "linear-gradient(to right, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
-          }}
-        />
+        {/* 좌우 페이드 (배경 그라데이션) — 가운데에서 바깥으로 갈수록 흰색으로 가려짐.
+            딤 위(overlay)에선 덮을 흰 배경이 없어 위 컨테이너의 마스크가 대신한다. */}
+        {!overlay && (
+          <>
+            <div
+              className="pointer-events-none absolute"
+              style={{
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: "39%",
+                background:
+                  "linear-gradient(to left, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
+              }}
+            />
+            <div
+              className="pointer-events-none absolute"
+              style={{
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: "39%",
+                background:
+                  "linear-gradient(to right, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
+              }}
+            />
+          </>
+        )}
         {/* 중앙 고정 현재 시간 — 사이드 라벨과 베이스라인 정렬 */}
         <div
           className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
@@ -3482,7 +3639,7 @@ function RecordingControls({
             suppressHydrationWarning
             style={{
               display: "inline-block",
-              color: "#353535",
+              color: overlay ? "#FFFFFF" : "#353535",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
@@ -3502,7 +3659,7 @@ function RecordingControls({
             top: "27px",
             width: "2px",
             height: "14px",
-            backgroundColor: "#111111",
+            backgroundColor: overlay ? "#FFFFFF" : "#111111",
           }}
         />
       </div>
@@ -3835,6 +3992,7 @@ function PlayerButton({
   onClick,
   held = false,
   label = null,
+  overlay = false,
 }: {
   kind: PlayerButtonKind;
   onClick?: () => void;
@@ -3842,6 +4000,8 @@ function PlayerButton({
   held?: boolean;
   // label이 있으면 아이콘 대신 배속 텍스트("2배" 등)를 표시하고 active 상태로 둔다.
   label?: string | null;
+  // 딤 위(가로)면 흰 알약 대신 반투명 검정 + 흰 아이콘. RecordingControls 참고.
+  overlay?: boolean;
 }) {
   const [pressed, setPressed] = useState(false);
   const active = held || pressed || label != null;
@@ -3857,18 +4017,28 @@ function PlayerButton({
       style={{
         width: "40px",
         height: "40px",
-        border: "1px solid #D9D9D9",
-        backgroundColor: active ? "#F2F2F2" : "#FFFFFF",
+        border: overlay ? "1px solid rgba(255,255,255,0.35)" : "1px solid #D9D9D9",
+        backgroundColor: overlay
+          ? active
+            ? "rgba(255,255,255,0.3)"
+            : "rgba(0,0,0,0.35)"
+          : active
+            ? "#F2F2F2"
+            : "#FFFFFF",
       }}
     >
       {label != null ? (
         <span
-          style={{ fontSize: "14px", fontWeight: 500, color: "#262626" }}
+          style={{
+            fontSize: "14px",
+            fontWeight: 500,
+            color: overlay ? "#FFFFFF" : "#262626",
+          }}
         >
           {label}
         </span>
       ) : (
-        <PlayerIcon kind={kind} size={24} />
+        <PlayerIcon kind={kind} size={24} invert={overlay} />
       )}
     </button>
   );
@@ -3886,9 +4056,12 @@ const PLAYER_ICON_SRC: Record<PlayerButtonKind, string> = {
 function PlayerIcon({
   kind,
   size,
+  invert = false,
 }: {
   kind: PlayerButtonKind;
   size: number;
+  /** 어두운 배경(가로 딤)에 얹을 때 아이콘을 흰색으로 뒤집는다. */
+  invert?: boolean;
 }) {
   const marginLeft = kind === "skip-forward" ? "2px" : undefined;
   const marginRight = kind === "skip-back" ? "2px" : undefined;
@@ -3896,7 +4069,13 @@ function PlayerIcon({
     <img
       src={PLAYER_ICON_SRC[kind]}
       alt=""
-      style={{ width: `${size}px`, height: `${size}px`, marginLeft, marginRight }}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        marginLeft,
+        marginRight,
+        filter: invert ? "brightness(0) invert(1)" : undefined,
+      }}
     />
   );
 }
