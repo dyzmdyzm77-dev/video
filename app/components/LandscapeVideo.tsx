@@ -32,6 +32,17 @@ const CLICK_GAP = 230;
 /** 딤 헤더 높이(px). 세로 A-1 의 OVERLAY_HEADER_H 와 같은 값. */
 const OVERLAY_HEADER_H = 56;
 
+// 가로 딤 그라데이션 사양 — 세 안이 공유한다. 세로 A-1 값(DIM_ALPHA 0.8,
+// 상단 40%/50%)에서 가져왔다. 공용 기본값(0.6/25%/20%)을 쓰면 같은 화면인데
+// 가로만 옅어 보인다.
+const LANDSCAPE_DIM_ALPHA = 0.8;
+const LANDSCAPE_DIM_TOP_GRID = "40%";
+const LANDSCAPE_DIM_TOP_SINGLE = "50%";
+// 하단은 세로(20%/33%)보다 더 올린다 — 가로는 화면이 짧은데 아래에 플레이어
+// 버튼 + 시간바가 통째로 얹혀서, 20% 로는 그라데이션이 컨트롤까지 못 올라와
+// 글자·눈금이 영상에 묻힌다(사용자 요청).
+const LANDSCAPE_DIM_BOTTOM = "45%";
+
 function ChevronDownIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -68,13 +79,18 @@ export default function LandscapeVideo({
   timeLabel,
   controls,
   controlsOnDim = false,
-  statusPlacement = "bottom-left",
-  dimAlpha,
+  // ── 아래 넷은 '가로 화면' 자체의 사양이라 안이 정하지 않는다 ──────────────
+  // 예전엔 안마다 넘기게 뒀는데, A-1 만 넘기고 A·B 는 안 넘겨서 같은 가로
+  // 화면인데 딤 농도·칩 위치·페이지 점이 서로 달랐다(사용자 지적).
+  // 기본값을 여기로 올려 세 안이 자동으로 같아지게 한다. 바꿀 일이 있으면
+  // 이 파일만 고치면 된다.
+  statusPlacement = "top-center",
+  showPageIndicator = false,
+  dimAlpha = LANDSCAPE_DIM_ALPHA,
   dimTopHeight,
-  dimBottomHeight,
+  dimBottomHeight = LANDSCAPE_DIM_BOTTOM,
   fit: fitProp,
   onFitCycle,
-  showPageIndicator = true,
 }: {
   cameras: { label: string; src: string }[];
   /** 단일 화면이면 그 인덱스, 다채널이면 null. */
@@ -319,7 +335,13 @@ export default function LandscapeVideo({
       onFit={cycle}
       fit={fit}
       dimAlpha={dimAlpha}
-      topHeight={dimTopHeight}
+      // 상단 길이만 화면 종류에 따라 다르다(단일이 더 김) — 세로와 같은 규칙.
+      topHeight={
+        dimTopHeight ??
+        (expandedIndex !== null
+          ? LANDSCAPE_DIM_TOP_SINGLE
+          : LANDSCAPE_DIM_TOP_GRID)
+      }
       bottomHeight={dimBottomHeight}
       showPageIndicator={showPageIndicator}
       auto={auto}

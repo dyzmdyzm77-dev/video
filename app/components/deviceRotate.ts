@@ -78,3 +78,34 @@ export function useDeviceLandscape(): boolean {
   }, []);
   return on;
 }
+
+// ── 포인터 좌표축 보정 ──────────────────────────────────────────────────────
+// 실기기 가로는 '화면이 돌아간' 게 아니라 콘텐츠를 CSS 로 90° 돌린 것이다
+// (globals.css 의 터치 전용 규칙). 포인터 이벤트의 clientX/clientY 는 변환과
+// 무관한 화면 좌표라, 콘텐츠 기준으로 보면 x·y 가 맞바뀐 상태가 된다.
+//
+// rotate(90deg) 는 콘텐츠의 로컬 (1,0)[오른쪽] 을 화면 (0,1)[아래] 로 보낸다.
+// 그래서 콘텐츠 기준 가로 이동량 = 화면 세로 이동량(부호까지 그대로)이다.
+// 시간바처럼 '가로로 끄는' UI 는 이때 clientY 를 읽어야 한다 — 안 그러면
+// 손가락을 가로로 움직여도 clientX 가 거의 안 변해서 아무 반응이 없다.
+//
+// 데스크톱 목업은 각도를 0 으로 되돌리고 크기만 맞바꾸므로 콘텐츠가 똑바로
+// 서 있다 — 거기선 보정하면 안 된다. 그래서 '터치 && 가로' 일 때만 참이다.
+export function useRotatedInput(): boolean {
+  const landscape = useDeviceLandscape();
+  const [touch, setTouch] = useState(false);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      setTouch(true);
+      return;
+    }
+    // 마운트 때 한 번만 재면 안 된다 — 데스크톱 미리보기에서 개발자도구로 기기를
+    // 바꾸거나, 마우스가 붙었다 떨어지는 환경에서 판정이 굳는다. 변화도 구독한다.
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const sync = () => setTouch(!mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return landscape && touch;
+}
