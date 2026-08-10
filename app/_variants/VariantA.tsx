@@ -1345,10 +1345,13 @@ function ExpandedView({
                 aria-label="크게 보기"
                 onClick={toggleImmersive}
               >
+                {/* 아이콘 원본이 진회색(#353535)이라 어두운 딤 위에선 묻힌다.
+                    같은 줄의 다른 아이콘과 같이 흰색으로 뒤집는다. */}
                 <img
                   src={`${BASE}/zoom_in.svg`}
                   alt=""
                   className="h-8 w-8"
+                  style={{ filter: "brightness(0) invert(1)" }}
                 />
               </button>
               <button type="button" aria-label="더보기">
