@@ -7,6 +7,7 @@ import type React from "react";
 import { CameraFeed, GridSelectionOverlay } from "./CameraFeed";
 import { useAutoHide } from "./useAutoHide";
 import { useVideoFit } from "./VideoFitToast";
+import type { VideoFit } from "./videoFit";
 
 // 가로 모드의 영상 화면 — 지금은 '영상만'이다(사용자 결정).
 // 헤더·날짜 바·카메라 목록·하단 탭바·시스템 바 전부 빼고 화면을 영상이 다 쓴다.
@@ -67,6 +68,13 @@ export default function LandscapeVideo({
   timeLabel,
   controls,
   controlsOnDim = false,
+  statusPlacement = "bottom-left",
+  dimAlpha,
+  dimTopHeight,
+  dimBottomHeight,
+  fit: fitProp,
+  onFitCycle,
+  showPageIndicator = true,
 }: {
   cameras: { label: string; src: string }[];
   /** 단일 화면이면 그 인덱스, 다채널이면 null. */
@@ -102,11 +110,34 @@ export default function LandscapeVideo({
    *  영상이 비친다(A-1). 끄면(기본) 기존처럼 흰 바에 얹는다 — 밝은 UI 를 그대로
    *  넘기는 안은 배경이 없으면 글자·눈금이 영상에 묻힌다. */
   controlsOnDim?: boolean;
+  /** 실시간/녹화 칩 + 시각을 어디에 둘지.
+   *  "bottom-left"(기본) — 딤 아래 왼쪽, 녹화 컨트롤 바로 위. 기존 그대로.
+   *  "top-center"      — 딤 위 가운데. 장소명(왼쪽)·딤 아이콘(오른쪽)과 같은 줄에
+   *                      앉는다. 녹화 컨트롤은 그대로 아래 남는다. */
+  statusPlacement?: "bottom-left" | "top-center";
+  /** 딤 그라데이션 사양 — 안 주면 GridSelectionOverlay 기본값(0.6 / 25% / 20%).
+   *  세로에서 더 진한 딤을 쓰는 안(A-1: 0.8)은 가로도 같은 값을 넘겨야 한다.
+   *  안 그러면 같은 화면인데 가로만 옅어 보인다. */
+  dimAlpha?: number;
+  dimTopHeight?: string;
+  dimBottomHeight?: string;
+  /** 화면 맞춤(원본비율·늘리기·채우기)을 바깥에서 관리할 때 넘긴다.
+   *  안 주면(기본) 이 컴포넌트가 자체 상태를 들고 "채우기"에서 시작한다.
+   *  회전하면 세로 화면이 통째로 언마운트되므로, 세로에서 보던 맞춤을 그대로
+   *  이어가려면 세로와 같은 상태를 여기로 넘겨야 한다. */
+  fit?: VideoFit;
+  onFitCycle?: () => void;
+  /** 딤 아래 페이지 인디케이터(점)를 그릴지. 기본 true = 기존 그대로. */
+  showPageIndicator?: boolean;
 }) {
   const [dim, setDim] = useState(false);
   const hide = useCallback(() => setDim(false), []);
   const auto = useAutoHide(dim, hide);
-  const { fit, cycle } = useVideoFit("fill");
+  // 바깥에서 맞춤 상태를 주면 그걸 쓰고, 안 주면 자체 상태(기존 동작).
+  // 훅은 조건 없이 항상 부른다 — 안 쓰이면 그냥 놀고 있는 상태다.
+  const ownFit = useVideoFit("fill");
+  const fit = fitProp ?? ownFit.fit;
+  const cycle = onFitCycle ?? ownFit.cycle;
   // 배치(cols×rows)는 가로 영역 비율로 다시 고른다. 세로에서 고른 값을 그대로
   // 들고 오면 안 된다 — 16채널 기준 세로는 2×8 이 맞지만 가로(≈2.17:1)에서 그
   // 배치는 타일이 0.54:1 로 길쭉해진다. 같은 영역에서 4×4 면 2.17:1 로 16:9 에
@@ -141,61 +172,101 @@ export default function LandscapeVideo({
     backgroundColor: active ? activeBg : "transparent",
     color: active ? "#ffffff" : "rgba(255,255,255,0.7)",
   });
-  // 딤 아래 — 실시간/녹화 + 현재 시각, 그리고 녹화면 그 아래 플레이어·시간바.
-  // 둘을 한 덩어리로 쌓아 바 높이를 몰라도 칩 줄이 항상 그 위에 앉게 한다.
-  const status = (
+  // 실시간/녹화 칩 + 현재 시각 한 줄. 내용은 자리와 무관하게 같고, statusPlacement
+  // 가 아래 왼쪽에 둘지 위 가운데에 둘지만 정한다.
+  const statusRow = (
+    <div className="flex items-center gap-2">
+      <div
+        className="inline-flex items-center rounded-full"
+        style={{
+          backgroundColor: "rgba(255,255,255,0.22)",
+          padding: "2px",
+          gap: "2px",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setMode?.("live")}
+          className="inline-flex items-center text-[10px] font-bold leading-none tracking-wide transition-colors"
+          style={seg(mode === "live", "#ff3b4a")}
+        >
+          LIVE
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode?.("recording")}
+          className="inline-flex items-center text-[10px] font-bold leading-none tracking-wide transition-colors"
+          style={seg(mode === "recording", "#757575")}
+        >
+          녹화
+        </button>
+      </div>
+      {timeLabel && (
+        <span
+          suppressHydrationWarning
+          className="text-[14px] font-medium leading-none text-white"
+        >
+          {timeLabel}
+        </span>
+      )}
+    </div>
+  );
+
+  // 딤 위에 얹는 덩어리 공통 처리 — 딤과 같이 뜨고, 만지는 동안 자동 숨김 타이머를
+  // 붙잡고, 클릭이 영상 탭(딤 토글·더블탭 전환)으로 새어나가지 않게 막는다.
+  const dimLayer = (
+    className: string,
+    style: React.CSSProperties,
+    children: React.ReactNode,
+  ) => (
     <div
-      className="absolute inset-x-0 bottom-0 transition-opacity duration-300 ease-out"
-      style={{ opacity: dim ? 1 : 0, pointerEvents: dim ? "auto" : "none" }}
+      className={`absolute transition-opacity duration-300 ease-out ${className}`}
+      style={{
+        ...style,
+        opacity: dim ? 1 : 0,
+        pointerEvents: dim ? "auto" : "none",
+      }}
       {...auto.holdProps}
       onClick={(e) => {
-        // 영상 탭(딤 토글·더블탭 전환)으로 새어나가지 않게 막고 타이머만 되돌린다.
         e.stopPropagation();
         auto.keepAlive();
       }}
     >
-      <div className="flex items-center gap-2 px-5 pb-3">
-        <div
-          className="inline-flex items-center rounded-full"
-          style={{
-            backgroundColor: "rgba(255,255,255,0.22)",
-            padding: "2px",
-            gap: "2px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setMode?.("live")}
-            className="inline-flex items-center text-[10px] font-bold leading-none tracking-wide transition-colors"
-            style={seg(mode === "live", "#ff3b4a")}
-          >
-            LIVE
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode?.("recording")}
-            className="inline-flex items-center text-[10px] font-bold leading-none tracking-wide transition-colors"
-            style={seg(mode === "recording", "#757575")}
-          >
-            녹화
-          </button>
-        </div>
-        {timeLabel && (
-          <span
-            suppressHydrationWarning
-            className="text-[14px] font-medium leading-none text-white"
-          >
-            {timeLabel}
-          </span>
-        )}
-      </div>
-      {controls && (
-        <div className={`w-full${controlsOnDim ? "" : " bg-white"}`}>
-          {controls}
-        </div>
-      )}
+      {children}
     </div>
   );
+
+  const topCenter = statusPlacement === "top-center";
+
+  // 위 가운데 — 장소명(왼쪽)·딤 아이콘(오른쪽)과 한 줄로 읽히게 맞춘다. 아이콘 줄이
+  // top 12 에 높이 32(중심 28)라 여기도 같은 값을 쓴다. 헤더(pointer-events:none)
+  // 보다 뒤에 그려지므로 가운데 칩 클릭이 헤더에 먹히지 않는다.
+  const statusTop = topCenter
+    ? dimLayer(
+        "left-1/2 flex -translate-x-1/2 items-center",
+        { top: "12px", height: "32px" },
+        statusRow,
+      )
+    : null;
+
+  // 딤 아래 — (기본이면) 칩 줄 + 녹화 플레이어·시간바. 둘을 한 덩어리로 쌓아
+  // 바 높이를 몰라도 칩 줄이 항상 그 위에 앉는다. 위 가운데로 올린 경우엔
+  // 컨트롤만 남으므로, 컨트롤도 없으면 아예 그리지 않는다.
+  const statusBottom =
+    !topCenter || controls
+      ? dimLayer(
+          "inset-x-0 bottom-0",
+          {},
+          <>
+            {!topCenter && <div className="px-5 pb-3">{statusRow}</div>}
+            {controls && (
+              <div className={`w-full${controlsOnDim ? "" : " bg-white"}`}>
+                {controls}
+              </div>
+            )}
+          </>,
+        )
+      : null;
 
   // 딤 위 헤더 — 딤과 같이 뜨고 같이 사라진다(세로 A-1 OverlayHeader 와 동일).
   // 껍데기는 가로 전체를 덮는 띠라 클릭을 통과시켜야 한다(pointer-events: none).
@@ -243,6 +314,10 @@ export default function LandscapeVideo({
       onGallery={onGallery}
       onFit={cycle}
       fit={fit}
+      dimAlpha={dimAlpha}
+      topHeight={dimTopHeight}
+      bottomHeight={dimBottomHeight}
+      showPageIndicator={showPageIndicator}
       auto={auto}
     />
   );
@@ -253,7 +328,8 @@ export default function LandscapeVideo({
       {children}
       {overlay}
       {header}
-      {status}
+      {statusTop}
+      {statusBottom}
     </div>
   );
 

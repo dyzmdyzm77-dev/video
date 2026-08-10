@@ -172,6 +172,10 @@ export default function DesktopVariantNav() {
   //
   // --device-rot-w/h 는 그 계산의 기준이 되는 '세로 크기'다. 회전 중에는 고정 —
   // 중심 계산이 같이 바뀌면 갈아끼우는 순간 프레임이 뛴다(globals.css 참고).
+  //
+  // 중심은 세로·가로가 같아야 한다(사용자 결정) — 각도만 돌리고 이동은 섞지 않는다.
+  // 가로가 됐을 때 좌측 패널 밑으로 깔리던 건 여기서 밀어 때우지 않고, 기기를
+  // 애초에 패널 오른쪽 영역 가운데에 놓아서 푼다(DeviceScaler.setAnchor).
   const rotFirst = useRef(true);
   useEffect(() => {
     const root = document.documentElement;
@@ -213,7 +217,8 @@ export default function DesktopVariantNav() {
         root.style.setProperty("--device-rot", "0deg");
       });
       window.dispatchEvent(new Event("devicechange"));
-      // 2) 각도만 -90° 로 트랜지션 → 디바이스 중심에서 제자리 회전
+      // 2) 각도 -90° + 앵커 보정을 같은 트랜지션으로 → 돌면서 세로 때와 같은
+      //    왼쪽·바닥 자리로 들어온다(보정 없이 돌면 왼쪽 패널 밑으로 깔린다).
       root.style.setProperty("--device-rot", "-90deg");
       // 3) 회전이 끝나면 각도를 0 으로 되돌리며 크기를 눕힌다 — 콘텐츠가 선다.
       //    세로 박스를 -90° 돌린 footprint 와 눕힌 박스의 footprint 가 같은 자리라
@@ -237,6 +242,8 @@ export default function DesktopVariantNav() {
       root.style.setProperty("--device-w", `${pw}px`);
       root.style.setProperty("--device-h", `${ph}px`);
       root.style.setProperty("--device-rot", "-90deg");
+      // 보정은 아직 가로 값 그대로 — '지금 가로 자리'를 세로 크기+(-90°)로 바꿔
+      // 적은 것이라 여기서 0 으로 되돌리면 그 순간 프레임이 뛴다.
       root.dataset.landscape = "false";
     });
     window.dispatchEvent(new Event("devicechange"));

@@ -97,20 +97,21 @@ export default function DeviceScaler() {
           root.style.setProperty("--device-left", `${Math.round(anchor)}px`);
           return;
         }
-        const TF_W = 1080;
-        const TF_H = 792;
-        const TF_M = 30;
-        const sTF = Math.min(
-          MAX_SCALE,
-          (window.innerHeight - 32) / (TF_H + TF_M * 2),
-          (window.innerWidth - panel - 72) / (TF_W + TF_M * 2),
-        );
-        const tfOuter = (TF_W + TF_M * 2) * sTF;
-        let anchor =
-          panel + (window.innerWidth - panel - tfOuter) / 2 + TF_M * sTF;
-        const maxAnchor =
-          window.innerWidth - 16 - (w + margin) * curScale;
-        anchor = Math.max(panel + 40, Math.min(anchor, maxAnchor));
+        // 기기를 '패널 오른쪽 영역 가로 정중앙'에 놓는다. --device-left 는 화면
+        // 왼쪽이므로 그 중심에서 화면 폭의 절반을 뺀 값이다.
+        //
+        // 예전엔 모든 프리셋이 공유하는 고정 왼쪽 앵커(Z TriFold 가 가운데 왔을 때의
+        // 화면 왼쪽 x)를 썼다. 프리셋을 바꿔도 왼쪽이 안 움직이게 하려던 것인데,
+        // 회전과 맞지 않았다 — 세로 폭 360 이 가로에선 780 이 되면서 좌우로 반씩
+        // 퍼지면 왼쪽이 좌측 패널 밑으로 깔렸다. 회전을 '제자리 회전'(세로·가로
+        // 중심 동일)으로 두기로 해서(사용자 결정), 그 중심을 애초에 안 깔릴 자리 =
+        // 가용 영역 가운데로 잡는다. 대신 프리셋을 바꾸면 좌우로 같이 움직인다.
+        //
+        // w 는 위에서 회전 기준(세로) 크기로 읽으므로 세로·가로가 같은 중심을 낸다.
+        const centerX = panel + (window.innerWidth - panel) / 2;
+        let anchor = centerX - (w * curScale) / 2;
+        // 창이 좁아 가운데로도 안 들어가면 최소한 베젤이 패널 밑으로는 안 들어가게.
+        anchor = Math.max(panel + 16 + margin * curScale, anchor);
         root.style.setProperty("--device-left", `${Math.round(anchor)}px`);
       };
       // "실제 사이즈로 보기" 상태면 창 크기와 무관하게, 모니터 위에서 실제
