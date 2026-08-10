@@ -14,6 +14,13 @@
 //
 // 썸네일(어두운 영상)과 달리 흰 배경 + 회색 테두리다 — 이미지가 아니라 정보
 // 카드라는 걸 한눈에 구분하려는 것. 텍스트는 좌측 정렬, 타이틀만 파랑.
+//
+// active — '지금 재생 중인 이벤트' 표시(파란 테두리 + 옅은 파란 배경). 카드를
+// 탭하면 그 시각으로 이동하므로, 재생 시각이 그 이벤트 구간(시작~영상 길이)
+// 안에 있는 동안만 켜진다. 판정은 호출부(타임라인)가 한다 — 여기선 그리기만.
+// 기본값 false 라 이 prop 을 안 넘기는 안은 예전 그대로다.
+// 테두리 두께가 1→2px 로 바뀌어도 바깥 크기는 그대로다(border-box) — 위에
+// 적었듯 카드 크기가 흔들리면 레일 높이 규칙까지 어긋난다.
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -22,7 +29,13 @@ export function formatEventTime(ms: number) {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-export default function EventCardFace({ ms }: { ms: number }) {
+export default function EventCardFace({
+  ms,
+  active = false,
+}: {
+  ms: number;
+  active?: boolean;
+}) {
   return (
     // 흰 배경 + 회색 테두리. 감싸는 박스와 같은 rounded-md 라 모서리가 겹친다.
     // 호출부는 이때 박스의 bg-neutral-900 을 아예 빼야 한다 — 덮는 게 아니라
@@ -30,8 +43,8 @@ export default function EventCardFace({ ms }: { ms: number }) {
     <div
       className="flex h-full w-full flex-col justify-center gap-[3px] rounded-md"
       style={{
-        backgroundColor: "#FFFFFF",
-        border: "1px solid #D9D9D9",
+        backgroundColor: active ? "#F2F7FF" : "#FFFFFF",
+        border: active ? "2px solid #1D6CEB" : "1px solid #D9D9D9",
         paddingLeft: "6px",
         paddingRight: "4px",
       }}

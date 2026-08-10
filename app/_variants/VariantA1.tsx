@@ -319,6 +319,14 @@ export default function VariantA1({
   const pageSize = layoutDims.cols * layoutDims.rows;
   const totalPages = Math.ceil(CAMERAS.length / pageSize);
 
+  // 화면 맞춤(원본비율·늘리기·채우기) 상태는 여기서 들고 아래로 내려 준다.
+  // 예전엔 GridView·ExpandedView·LandscapeVideo 가 각자 useVideoFit 을 갖고 있었다.
+  // 회전하면 이 컴포넌트가 가로 분기로 빠지면서 세로 화면이 통째로 언마운트돼,
+  // 원본 비율로 보고 있다가 돌리면 기본값(채우기)으로 되돌아갔다.
+  // 다채널·단일은 세로에서 따로 기억하던 그대로 둘로 나눠 둔다.
+  const gridFitState = useVideoFit("fill");
+  const videoFitState = useVideoFit("fill");
+
   // 폭 경계(620)를 넘나들며 레이아웃이 바뀌어 페이지 수가 줄면 현재 페이지를 범위 안으로.
   useEffect(() => {
     setCurrentPage((p) => Math.min(p, totalPages - 1));
@@ -353,6 +361,24 @@ export default function VariantA1({
           mode={mode}
           setMode={handleSetMode}
           timeLabel={dateLabel}
+          // 실시간/녹화 + 시각은 딤 위 가운데 — 장소명(왼쪽)·딤 아이콘(오른쪽)과 한 줄.
+          statusPlacement="top-center"
+          // 가로에선 페이지 인디케이터(점)를 안 쓴다(사용자 결정).
+          showPageIndicator={false}
+          // 딤은 세로 A-1 과 같은 사양으로. 기본값(0.6/25%/20%)을 그대로 쓰면
+          // 같은 화면인데 가로만 옅어 보인다.
+          dimAlpha={DIM_ALPHA}
+          dimTopHeight={
+            expandedIndex !== null ? DIM_TOP_H_SINGLE : DIM_TOP_H_GRID
+          }
+          dimBottomHeight={expandedIndex !== null ? "33%" : "20%"}
+          // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
+          fit={
+            expandedIndex !== null ? videoFitState.fit : gridFitState.fit
+          }
+          onFitCycle={
+            expandedIndex !== null ? videoFitState.cycle : gridFitState.cycle
+          }
           // A-1 은 플레이어·시간바를 딤 색에 맞춰 넘긴다(overlay) — 흰 바를 걷어
           // 영상이 비치게 한다.
           controlsOnDim
@@ -465,6 +491,7 @@ export default function VariantA1({
           onSpeedChange={setPlaybackRate}
           videoAreaRef={videoAreaRef}
           initialDim={gridDimOnce.current}
+          fitState={gridFitState}
         />
       ) : (
         <ExpandedView
@@ -487,6 +514,7 @@ export default function VariantA1({
           onCapture={showCaptureToast}
           captureToast={captureToast}
           onSpeedChange={setPlaybackRate}
+          fitState={videoFitState}
         />
       )}
 
@@ -569,6 +597,7 @@ function GridView({
   onSpeedChange,
   videoAreaRef,
   initialDim = false,
+  fitState,
 }: {
   onExpand: (i: number) => void;
   currentPage: number;
@@ -601,12 +630,15 @@ function GridView({
   videoAreaRef?: React.RefObject<HTMLElement | null>;
   // 마운트 시 딤을 켠 채로 시작할지. 영상 탭 첫 진입에서만 true.
   initialDim?: boolean;
+  // 화면 맞춤 상태. 회전(가로 전환)에도 유지돼야 해서 VariantA1 이 들고 내려 준다.
+  fitState: ReturnType<typeof useVideoFit>;
 }) {
   const [gridSelected, setGridSelected] = useState(initialDim);
   // 다채널 타일 맞춤 모드 — 딤 상태의 '화면 맞춤' 버튼으로 돌린다. 순서·아이콘·
   // 문구·기본값은 단일 화면과 같은 곳(components/videoFit.ts)에서 온다.
+  // 상태 자체는 VariantA1 이 들고 있다(회전해도 유지되도록) — 여기선 받아 쓴다.
   const { fit: gridFit, cycle: cycleGridFit, toast: gridFitToast, toastKey: gridFitToastKey } =
-    useVideoFit("fill");
+    fitState;
   // 딤 자동 숨김 — 마지막 조작이 끝난 시점부터 5초. 규칙은 useAutoHide 참고.
   const hideGrid = useCallback(() => setGridSelected(false), []);
   const gridAuto = useAutoHide(gridSelected, hideGrid);
@@ -884,6 +916,7 @@ function ExpandedView({
   onCapture,
   captureToast = false,
   onSpeedChange,
+  fitState,
 }: {
   index: number;
   onBack: () => void;
@@ -908,6 +941,8 @@ function ExpandedView({
   onCapture?: () => void;
   captureToast?: boolean;
   onSpeedChange?: (rate: number) => void;
+  // 화면 맞춤 상태. 회전(가로 전환)에도 유지돼야 해서 VariantA1 이 들고 내려 준다.
+  fitState: ReturnType<typeof useVideoFit>;
 }) {
   const cam = CAMERAS[index];
   const [showControls, setShowControls] = useState(false);
@@ -917,8 +952,9 @@ function ExpandedView({
   //   cover   : 원본 비율 유지한 채 가로나 세로 중 짧은 쪽 기준으로 최대로 키워
   //             넘치는 쪽을 자른다(크롭) — object-fit: cover 와 같다.
   // 순서·아이콘·문구는 components/videoFit.ts 한 곳에서 온다.
+  // 상태 자체는 VariantA1 이 들고 있다(회전해도 유지되도록) — 여기선 받아 쓴다.
   const { fit: videoFit, cycle: cycleVideoFit, toast: fitToast, toastKey: fitToastKey } =
-    useVideoFit("fill");
+    fitState;
   // 딤 자동 숨김 — 마지막 조작이 끝난 시점부터 5초. 규칙은 useAutoHide 참고.
   const hideControls = useCallback(() => setShowControls(false), []);
   const controlsAuto = useAutoHide(showControls, hideControls);
@@ -1865,6 +1901,14 @@ function SideEventTimeline({
     expandedGaps.reduce((s, g) => s + (g.at > secOffset ? g.gap : 0), 0);
   const yOf = (secOffset: number) => -secOffset * pxPerSec + gapBefore(secOffset);
 
+  // 지금 재생 중인 이벤트인가 — 카드를 탭하면 그 시각(ms)으로 이동하므로, 선택
+  // 직후부터 그 이벤트 영상이 끝날 때까지(ms ~ ms+durSec) 참이 된다. 스크럽으로
+  // 그 구간에 들어가도 똑같이 켜진다. 카드에 파란 테두리를 남기는 데 쓴다.
+  // 묶음은 다음 묶음과 최소 16초 떨어져 있고 영상 길이는 최대 15초라, 동시에
+  // 두 카드가 켜지지는 않는다(TIMELINE_EVENTS 생성 규칙).
+  const isActiveEvent = (ms: number, durSec: number) =>
+    playbackMs !== null && playbackMs >= ms && playbackMs < ms + durSec * 1000;
+
   // 라인 위치: 컨테이너 상단에서 20px 아래
   useEffect(() => {
     setLineY(20);
@@ -2166,7 +2210,10 @@ function SideEventTimeline({
                       style={{ objectFit: "cover" }}
                     />
                   ) : (
-                    <EventCardFace ms={occ.ms} />
+                    <EventCardFace
+                      ms={occ.ms}
+                      active={isActiveEvent(occ.ms, occ.durSec)}
+                    />
                   )}
                 </div>
               </div>
@@ -2413,6 +2460,11 @@ function RecordingEventTimeline({
   const gapBefore = (secOffset: number) =>
     expandedGaps.reduce((s, g) => s + (g.at < secOffset ? g.gap : 0), 0);
   const xOf = (secOffset: number) => secOffset * pxPerSec + gapBefore(secOffset);
+
+  // 지금 재생 중인 이벤트인가 — 세로 타임라인(SideEventTimeline)과 같은 판정.
+  // 카드를 탭하면 그 시각으로 이동하니, 그 이벤트 영상이 끝날 때까지 켜진다.
+  const isActiveEvent = (ms: number, durSec: number) =>
+    playbackMs !== null && playbackMs >= ms && playbackMs < ms + durSec * 1000;
 
   // 드래그 + 핀치 줌
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -2779,7 +2831,10 @@ function RecordingEventTimeline({
                     style={{ objectFit: "cover" }}
                   />
                 ) : (
-                  <EventCardFace ms={cluster.ms} />
+                  <EventCardFace
+                    ms={cluster.ms}
+                    active={isActiveEvent(cluster.ms, cluster.durSec)}
+                  />
                 )}
               </div>
             </div>

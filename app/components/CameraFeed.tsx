@@ -266,6 +266,8 @@ export function GridSelectionOverlay({
   topInset = 0,
   dimAlpha = 0.6,
   topHeight = "25%",
+  bottomHeight = "20%",
+  showPageIndicator = true,
   auto,
 }: {
   visible: boolean;
@@ -288,6 +290,12 @@ export function GridSelectionOverlay({
   /** 상단 그라데이션 길이(CSS 높이). 헤더까지 얹혀 덮을 게 두 줄인 A-1 은 더 길다.
    *  기본 "25%" = 기존 그대로. */
   topHeight?: string;
+  /** 하단 그라데이션 길이(CSS 높이). 기본 "20%" = 기존 그대로.
+   *  A-1 단일 화면은 세로에서 33% 를 쓰는데(직접 그린다), 가로도 같은 딤으로
+   *  맞추려면 이 값이 필요했다. */
+  bottomHeight?: string;
+  /** 하단 페이지 인디케이터(점)를 그릴지. 기본 true = 기존 그대로. */
+  showPageIndicator?: boolean;
   /** 딤 자동 숨김 핸들(useAutoHide). 주면 아이콘을 만지는 동안 딤을 붙잡고,
    *  떼는 순간부터 5초를 다시 센다. 안 주면 기존 그대로(타이머 안 되돌림). */
   auto?: {
@@ -316,7 +324,7 @@ export function GridSelectionOverlay({
       <div
         className="absolute inset-x-0 bottom-0"
         style={{
-          height: "20%",
+          height: bottomHeight,
           background: `linear-gradient(to top, rgba(0,0,0,${dimAlpha}) 0%, rgba(0,0,0,0) 100%)`,
         }}
       />
@@ -410,32 +418,34 @@ export function GridSelectionOverlay({
       </div>
 
       {/* 하단 페이지 인디케이터 */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
-        <div
-          className="inline-flex items-center gap-1.5 rounded-full bg-black/45"
-          style={{ height: "24px", padding: "0 10px" }}
-        >
-          {computeVisibleOffsets(currentPage, totalPages).map((offset) => {
-            const size = DOT_SIZE_BY_ABS_OFFSET[
-              Math.min(Math.abs(offset), DOT_SIZE_BY_ABS_OFFSET.length - 1)
-            ];
-            const isActive = offset === 0;
-            return (
-              <span
-                key={currentPage + offset}
-                className="rounded-full transition-all duration-200 ease-out"
-                style={{
-                  width: `${size}px`,
-                  height: `${size}px`,
-                  backgroundColor: isActive
-                    ? "rgba(255,255,255,1)"
-                    : "rgba(255,255,255,0.45)",
-                }}
-              />
-            );
-          })}
+      {showPageIndicator && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
+          <div
+            className="inline-flex items-center gap-1.5 rounded-full bg-black/45"
+            style={{ height: "24px", padding: "0 10px" }}
+          >
+            {computeVisibleOffsets(currentPage, totalPages).map((offset) => {
+              const size = DOT_SIZE_BY_ABS_OFFSET[
+                Math.min(Math.abs(offset), DOT_SIZE_BY_ABS_OFFSET.length - 1)
+              ];
+              const isActive = offset === 0;
+              return (
+                <span
+                  key={currentPage + offset}
+                  className="rounded-full transition-all duration-200 ease-out"
+                  style={{
+                    width: `${size}px`,
+                    height: `${size}px`,
+                    backgroundColor: isActive
+                      ? "rgba(255,255,255,1)"
+                      : "rgba(255,255,255,0.45)",
+                  }}
+                />
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

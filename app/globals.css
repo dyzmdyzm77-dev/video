@@ -275,7 +275,12 @@ body {
     );
     transform-origin: center center;
     /* 축은 디바이스 중심 하나뿐이다. 여기에 다른 이동(앵커 보정 등)을 섞으면
-       도는 동안 프레임이 미끄러져 중심이 어긋나 보인다 — 실제로 한 번 겪었다. */
+       도는 동안 프레임이 미끄러져 '제자리 회전'으로 안 보인다 — 세로·가로 중심이
+       같아야 한다는 게 이 화면의 기준이다(사용자 결정).
+       그래서 가로가 됐을 때 좌측 패널 밑으로 깔리는 문제는 여기서 이동으로 때우지
+       않고, 기기를 애초에 '패널 오른쪽 영역 가운데'에 놓아서 푼다 — 계산은
+       DeviceScaler.setAnchor. 세로 폭이 가로 높이가 되는 만큼 좌우로 퍼져도
+       그 중심에서라면 패널을 안 넘는다. */
     transform: translate(-50%, -50%) scale(var(--device-scale, 1))
       rotate(var(--device-rot, 0deg));
     transition: transform 0.35s ease;
