@@ -7,6 +7,8 @@ import type React from "react";
 import { CameraFeed, GridSelectionOverlay } from "./CameraFeed";
 import { useAutoHide } from "./useAutoHide";
 import { useVideoFit } from "./VideoFitToast";
+import { useRotatedInput } from "./deviceRotate";
+import { exitImmersive, useImmersive } from "./immersive";
 import type { VideoFit } from "./videoFit";
 
 // 가로 모드의 영상 화면 — 지금은 '영상만'이다(사용자 결정).
@@ -28,6 +30,10 @@ import type { VideoFit } from "./videoFit";
 
 /** 더블탭 판정 시간(ms). 세로 다채널과 같은 값. */
 const CLICK_GAP = 230;
+
+/** 확대(몰입)를 드래그로 풀 때 필요한 세로 이동량(px). 탭·스크럽과 헷갈리지
+ *  않을 만큼은 크고, 한 손으로 한 번에 그을 수 있을 만큼은 작게 잡았다. */
+const EXIT_DRAG_PX = 60;
 
 /** 딤 헤더 높이(px). 세로 A-1 의 OVERLAY_HEADER_H 와 같은 값. */
 const OVERLAY_HEADER_H = 56;
@@ -173,6 +179,33 @@ export default function LandscapeVideo({
   const { cols, rows } = bestGridForCount(pageSize, landscapeRatio);
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // 확대(몰입) 중 영상 영역을 위/아래로 그으면 확대를 푼다(사용자 요청).
+  // 실기기 가로에선 콘텐츠가 CSS 로 90° 돌아 있어 화면 좌표의 x·y 가 콘텐츠
+  // 기준과 맞바뀐다 — 사용자가 느끼는 '위아래'를 쓰려면 환산해야 한다
+  // (rotate(90deg) 는 콘텐츠 아래를 화면 왼쪽으로 보낸다 → dy = -dx_screen).
+  const immersive = useImmersive();
+  const rotatedInput = useRotatedInput();
+  const dragRef = useRef<{ x: number; y: number } | null>(null);
+  const startExitDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!immersive) return;
+    // 딤(헤더·칩줄·플레이어·시간바) 위에서 시작한 건 그쪽 조작이다.
+    if ((e.target as HTMLElement).closest?.("[data-dim-layer]")) return;
+    dragRef.current = { x: e.clientX, y: e.clientY };
+  };
+  const endExitDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    const s = dragRef.current;
+    dragRef.current = null;
+    if (!s || !immersive) return;
+    const sx = e.clientX - s.x;
+    const sy = e.clientY - s.y;
+    const dy = rotatedInput ? -sx : sy;
+    const dx = rotatedInput ? sy : sx;
+    // 세로로 충분히, 그리고 가로보다 많이 움직였을 때만. 위·아래 둘 다 해제다.
+    if (Math.abs(dy) >= EXIT_DRAG_PX && Math.abs(dy) > Math.abs(dx)) {
+      exitImmersive();
+    }
+  };
+
   // 한 번이면 딤 토글, 두 번이면 전환. index 는 다채널 타일에서만 온다.
   const handleTap = (index: number | null) => {
     if (clickTimer.current !== null) {
@@ -252,6 +285,7 @@ export default function LandscapeVideo({
     passThrough = false,
   ) => (
     <div
+      data-dim-layer=""
       className={`absolute transition-opacity duration-300 ease-out ${className}`}
       style={{
         ...style,
@@ -400,7 +434,18 @@ export default function LandscapeVideo({
     <div
       ref={shellRef}
       className="relative h-full w-full select-none"
-      {...auto.holdProps}
+      onPointerDown={(e) => {
+        auto.hold();
+        startExitDrag(e);
+      }}
+      onPointerUp={(e) => {
+        auto.release();
+        endExitDrag(e);
+      }}
+      onPointerCancel={() => {
+        auto.release();
+        dragRef.current = null;
+      }}
     >
       {children}
       {overlay}

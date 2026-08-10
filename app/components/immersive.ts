@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { readDeviceLandscape, requestDeviceRotate } from "./deviceRotate";
+import { readDeviceHeight, readDeviceWidth } from "./useDeviceWidth";
 
 // ============================================================================
 // 몰입 모드 — 영상만 화면을 꽉 채우기
@@ -61,21 +63,74 @@ export function readImmersive(): boolean {
   return document.documentElement.dataset.immersive === "true";
 }
 
+// ── 확대할 때 방향까지 정한다 ────────────────────────────────────────────
+// 기준: '영상이 가장 커지는 상태로 간다'(사용자 결정). 유튜브 전체화면과 같은
+// 개념이다 — 회전 버튼이 따로 있는 게 아니라, 전체화면 하나가 방향까지 정한다.
+//
+// 판정은 간단하다: 프레임이 세로로 길면 눕힌다. 16:9 영상 기준으로 이게 곧
+// '면적 최대'와 같은 답이 된다. 360×780 이면 세로로는 360×203 인데 눕히면
+// 780×439 로 4.7배다 — 세로로 아무리 늘려도 영상은 폭에 묶여 검은 여백만 는다.
+// 반대로 이미 넓은 기기(780×780·864×648·1080×792)는 눕히면 오히려 작아지므로
+// 그 자리에서 몰입만 한다.
+//
+// 다채널도 같은 규칙을 쓴다. 그리드는 배치가 알아서 바뀌어 이득이 단일만큼
+// 크진 않지만, 같은 버튼이 화면마다 다르게 동작하면 안 된다.
+const ROTATED_FLAG = "immersiveRotated";
+
+// 눕혔을 때 영상이 이 배수 이상 커질 때만 돌린다. 회전은 사용자가 폰을 직접
+// 돌려야 하는 동작이라, 조금 커지는 정도로는 오히려 번거롭다(사용자 결정).
+// 기기별 실제 배수 — 1.5 를 넘는 건 폰 계열뿐이다:
+//   360×780 3.16 / 480×780 2.64 / 620×780 1.58 / 405×648 2.56  → 돌린다
+//   750×832 1.23 / 780×780 1.00                                 → 그대로 (차이 작음)
+//   864×648 0.56 / 1080×780 0.52 / 1080×792 0.54                → 그대로 (오히려 작아짐)
+// 1.3 으로 낮춰도 이 목록에선 결과가 같다. 여유를 두고 1.5 로 잡았다.
+const ROTATE_GAIN = 1.5;
+
+/** 프레임 w×h 안에 16:9 영상이 들어갈 때의 면적. */
+function fitArea(w: number, h: number): number {
+  const r = 16 / 9;
+  return w / h >= r ? h * r * h : w * (w / r);
+}
+
+/** 눕히는 게 확실히 이득인가. 지금 면적 대비 눕혔을 때 면적으로 판정한다.
+ *  기준은 단일 영상(16:9)이다 — 다채널은 배치가 알아서 바뀌어 이득이 작지만,
+ *  같은 버튼이 화면마다 다르게 동작하면 안 되므로 한 기준으로 통일한다. */
+function shouldRotate(): boolean {
+  const w = readDeviceWidth();
+  const h = readDeviceHeight();
+  const now = fitArea(w, h);
+  if (!(now > 0)) return false;
+  return fitArea(h, w) / now >= ROTATE_GAIN;
+}
+
 /** 딤의 확대/축소 버튼에서 호출. 지금 상태를 뒤집는다.
- *  전체화면은 '사용자 조작' 안에서만 허용되므로 버튼 핸들러인 여기서 바로
+ *  전체화면·회전은 '사용자 조작' 안에서만 허용되므로 버튼 핸들러인 여기서 바로
  *  부른다 — 상태가 바뀐 뒤 effect 에서 부르면 제스처가 끊겨 거부된다. */
 export function toggleImmersive() {
-  const next = !readImmersive();
-  document.documentElement.dataset.immersive = next ? "true" : "false";
-  syncFullscreen(next);
+  if (readImmersive()) {
+    exitImmersive();
+    return;
+  }
+  document.documentElement.dataset.immersive = "true";
+  syncFullscreen(true);
+  // 세로로 긴 프레임이면 눕혀야 영상이 커진다. 이미 가로면 그대로 둔다.
+  if (!readDeviceLandscape() && shouldRotate()) {
+    document.documentElement.dataset[ROTATED_FLAG] = "true";
+    requestDeviceRotate();
+  }
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
 }
 
-/** 몰입 모드를 끈다(가로로 전환할 때처럼 상태를 정리해야 하는 쪽에서 쓴다). */
+/** 몰입 모드를 끈다. 확대하면서 눕힌 거였다면 방향도 원래대로 되돌린다 —
+ *  사용자가 직접 눕혀 둔 가로는 건드리지 않는다(플래그로 구분). */
 export function exitImmersive() {
   if (!readImmersive()) return;
   document.documentElement.dataset.immersive = "false";
   syncFullscreen(false);
+  if (document.documentElement.dataset[ROTATED_FLAG] === "true") {
+    document.documentElement.dataset[ROTATED_FLAG] = "false";
+    requestDeviceRotate();
+  }
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
 }
 

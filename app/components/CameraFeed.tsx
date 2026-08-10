@@ -416,7 +416,11 @@ export function GridSelectionOverlay({
         <button
           type="button"
           aria-label={landscape || immersive ? "원래 크기로" : "크게 보기"}
-          onClick={landscape ? requestDeviceRotate : toggleImmersive}
+          // 확대로 들어온 상태면(스스로 눕힌 경우 포함) 확대 해제가 먼저다 —
+          // 여기서 회전만 풀면 확대 상태가 남아 화면과 어긋난다.
+          onClick={
+            !immersive && landscape ? requestDeviceRotate : toggleImmersive
+          }
           style={{ pointerEvents: visible ? "auto" : "none" }}
         >
           <OverlayIcon
