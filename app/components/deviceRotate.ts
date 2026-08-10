@@ -16,35 +16,13 @@ import { useEffect, useState } from "react";
 
 export const DEVICE_ROTATE_EVENT = "devicerotaterequest";
 
-// 실기기에서 가로로 갈 때 브라우저 UI(주소창·툴바)와 OS 시스템 바까지 걷어
-// 영상만 남긴다. 전체화면 API 는 '사용자 조작' 안에서만 허용되므로 회전 버튼을
-// 누른 이 자리에서 바로 부른다 — 상태가 바뀐 뒤 effect 에서 부르면 제스처가
-// 끊겨 거부된다.
-//
-// 플랫폼별로 되는 정도가 다르다:
-//   · Android Chrome — 전체화면 되면 브라우저 UI·상태바·내비바가 다 사라진다.
-//   · iPhone Safari  — requestFullscreen 자체가 없다(video 태그 전용). 아래
-//                      guard 에 걸려 아무 일도 안 일어난다. 사파리 툴바·상태바를
-//                      웹 페이지가 걷을 방법은 '홈 화면에 추가'(standalone) 뿐이다.
-//   · 데스크톱 미리보기 — 목업이라 전체화면으로 만들면 좌측 패널까지 같이 커진다.
-//                      hover+정밀 포인터면 건너뛴다.
-function syncFullscreen(toLandscape: boolean) {
-  if (typeof document === "undefined") return;
-  const desktop =
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  if (desktop) return;
-  try {
-    if (toLandscape) {
-      const el = document.documentElement;
-      // 거부(제스처 없음·미지원)는 그냥 무시한다 — 전체화면은 덤이고, 안 돼도
-      // 회전 자체는 그대로 동작해야 한다.
-      el.requestFullscreen?.({ navigationUI: "hide" })?.catch(() => {});
-    } else if (document.fullscreenElement) {
-      document.exitFullscreen?.()?.catch(() => {});
-    }
-  } catch {}
-}
+// 가로로 갈 때 전체화면(requestFullscreen)을 부르지 않는다 — 한 번 해 봤다가
+// 뺐다(사용자 결정). 안드로이드 크롬은 전체화면에 들어가면 "아래로 내린 후
+// 뒤로가기를 누르세요" 안내를 반드시 띄운다. 갇히지 않게 브라우저가 강제하는
+// 것이라 웹 페이지에서 끌 방법이 없고, UT 중에 그 토스트가 뜨는 게 브라우저
+// 주소창이 남는 것보다 방해된다고 봤다.
+// (아이폰 사파리는 애초에 requestFullscreen 이 없어 해도 아무 일도 안 났다.
+//  거기서 사파리 UI 를 걷는 방법은 '홈 화면에 추가'(standalone) 뿐이다.)
 
 // 상단 바(아이폰 상태바 영역 / 안드로이드 상태바)의 색을 지금 화면에 맞춘다.
 //
@@ -75,8 +53,6 @@ export function setBarColor(landscape: boolean) {
 
 /** 딤의 회전 버튼에서 호출. 좌측 패널이 받아서 회전 토글을 뒤집는다. */
 export function requestDeviceRotate() {
-  // 지금 세로면 가로로 가는 것 — 그 방향에 맞춰 전체화면을 켜고 끈다.
-  syncFullscreen(!readDeviceLandscape());
   window.dispatchEvent(new Event(DEVICE_ROTATE_EVENT));
 }
 

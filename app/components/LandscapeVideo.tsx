@@ -130,7 +130,11 @@ export default function LandscapeVideo({
   /** 딤 아래 페이지 인디케이터(점)를 그릴지. 기본 true = 기존 그대로. */
   showPageIndicator?: boolean;
 }) {
-  const [dim, setDim] = useState(false);
+  // 가로로 들어오면 딤을 켠 채로 시작한다(사용자 결정) — 세로 영상 탭 첫 진입과
+  // 같은 규칙이다(GridView 의 initialDim). 5초 뒤 자동으로 걷힌다(useAutoHide).
+  // 가로는 헤더·탭바가 없어 화면에 영상뿐이라, 딤이 안 뜨면 무엇을 누를 수 있는지
+  // 알 길이 없다.
+  const [dim, setDim] = useState(true);
   const hide = useCallback(() => setDim(false), []);
   const auto = useAutoHide(dim, hide);
   // 바깥에서 맞춤 상태를 주면 그걸 쓰고, 안 주면 자체 상태(기존 동작).
