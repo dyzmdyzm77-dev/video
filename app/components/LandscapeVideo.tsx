@@ -192,16 +192,21 @@ export default function LandscapeVideo({
     if ((e.target as HTMLElement).closest?.("[data-dim-layer]")) return;
     dragRef.current = { x: e.clientX, y: e.clientY };
   };
-  const endExitDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+  // 판정은 '손을 뗄 때'가 아니라 '움직이는 동안' 한다. 터치에서 세로로 그으면
+  // 브라우저가 스크롤 제스처로 가로채면서 pointerup 대신 pointercancel 을
+  // 보내는데, up 에서만 보면 그때 판정이 통째로 사라진다. 문턱을 넘는 순간
+  // 바로 풀면 취소가 와도 이미 처리된 뒤다.
+  const moveExitDrag = (e: React.PointerEvent<HTMLDivElement>) => {
     const s = dragRef.current;
-    dragRef.current = null;
     if (!s || !immersive) return;
     const sx = e.clientX - s.x;
     const sy = e.clientY - s.y;
+    // 실기기 가로는 콘텐츠가 90° 돌아 있어 화면 좌표를 콘텐츠 기준으로 환산한다.
     const dy = rotatedInput ? -sx : sy;
     const dx = rotatedInput ? sy : sx;
     // 세로로 충분히, 그리고 가로보다 많이 움직였을 때만. 위·아래 둘 다 해제다.
     if (Math.abs(dy) >= EXIT_DRAG_PX && Math.abs(dy) > Math.abs(dx)) {
+      dragRef.current = null;
       exitImmersive();
     }
   };
@@ -434,13 +439,17 @@ export default function LandscapeVideo({
     <div
       ref={shellRef}
       className="relative h-full w-full select-none"
+      // 확대 중엔 영상 영역에서 브라우저가 제스처를 가져가지 않게 한다.
+      // 스크롤할 것도 없고, 안 막으면 세로로 긋는 순간 pointercancel 이 온다.
+      style={immersive ? { touchAction: "none" } : undefined}
       onPointerDown={(e) => {
         auto.hold();
         startExitDrag(e);
       }}
-      onPointerUp={(e) => {
+      onPointerMove={moveExitDrag}
+      onPointerUp={() => {
         auto.release();
-        endExitDrag(e);
+        dragRef.current = null;
       }}
       onPointerCancel={() => {
         auto.release();
