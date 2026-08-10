@@ -1,39 +1,14 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import VariantA1 from "../_variants/VariantA1";
-import { Inner as HomeScreen } from "../home/page";
+import { Suspense } from "react";
+import AppShell from "../_variants/AppShell";
 
-// A-1안(A안 복사본). ?platform= 으로 환경(iOS/Android)을, ?chrome=1 이면 가짜
-// 시스템 바를 기본 표시(데스크톱 진입 시).
-//
-// 홈 버튼은 /home 으로 라우터 이동하지 않고 여기서 홈 화면을 대신 렌더한다 —
-// iOS 사파리가 URL 이 바뀔 때마다(전체 새로고침이든 router.push 의 pushState 든)
-// 접혀 있던 주소창을 다시 펼치기 때문이다. 화면 자체는 /home 과 같은 컴포넌트라
-// 시안은 그대로고, 바뀌는 건 "URL 을 안 건드린다"는 것뿐이다.
-// (A안·B안은 아직 기존 라우터 이동 그대로다 — A-1 만 손대는 중.)
-function Inner() {
-  const params = useSearchParams();
-  const platform = params.get("platform") === "ios" ? "ios" : "android";
-  const initialChrome = params.get("chrome") === "1";
-  const [home, setHome] = useState(false);
-
-  if (home) return <HomeScreen onVideo={() => setHome(false)} />;
-
-  return (
-    <VariantA1
-      platform={platform}
-      initialChrome={initialChrome}
-      onHome={() => setHome(true)}
-    />
-  );
-}
-
+// A-1안. 화면 전환(안 바꾸기·홈 가기)은 전부 AppShell 이 상태로 처리한다 —
+// URL 을 안 건드려야 iOS 사파리 툴바가 다시 펼쳐지지 않는다(variantRoute.ts).
 export default function PageA1() {
   return (
     <Suspense>
-      <Inner />
+      <AppShell initialVariant="a1" />
     </Suspense>
   );
 }

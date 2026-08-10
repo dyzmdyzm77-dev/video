@@ -1,18 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { EVENT_THUMBS_EVENT } from "./eventThumbs";
 import { DEVICE_ROTATE_EVENT, LANDSCAPE_EVENT } from "./deviceRotate";
+import {
+  VARIANT_EVENT,
+  readVariant,
+  requestVariant,
+  variantFromPath,
+  type VariantKey,
+} from "./variantRoute";
 
 // 데스크톱 전용: 화면 왼쪽 가장자리에 붙는 LNB 패널(좌측 레일).
 // 접으면 각 메뉴의 아이콘만, 펼치면 아이콘+메뉴명이 보인다.
 // 두 그룹 — 화면안(A/B) + 해상도(디바이스 폭) 선택.
 // 모바일/터치에선 CSS(.desktop-variant-nav)로 숨긴다.
-const VARIANTS = [
-  { href: "/a", icon: "A", label: "A안" },
-  { href: "/a1", icon: "A-1", label: "A-1안" },
-  { href: "/b", icon: "B", label: "B안" },
+const VARIANTS: { key: VariantKey; icon: string; label: string }[] = [
+  { key: "a", icon: "A", label: "A안" },
+  { key: "a1", icon: "A-1", label: "A-1안" },
+  { key: "b", icon: "B", label: "B안" },
 ];
 
 // 선택 가능한 디바이스 폭. w/h 는 앱 프레임(px), 목업은 사방 10px 크게 잡힌다.
@@ -69,8 +76,17 @@ const ratioText = (w: number, h: number) => {
 };
 
 export default function DesktopVariantNav() {
-  const router = useRouter();
   const pathname = usePathname();
+  // 지금 보고 있는 안. 안 전환은 URL 을 안 건드리므로(variantRoute.ts) 경로만
+  // 보면 강조가 어긋난다 — 경로를 초기값으로 두고 전환 이벤트를 따라간다.
+  const routeVariant = variantFromPath(pathname);
+  const [variant, setVariant] = useState<VariantKey>(routeVariant);
+  useEffect(() => {
+    const sync = () => setVariant(readVariant(routeVariant));
+    sync();
+    window.addEventListener(VARIANT_EVENT, sync);
+    return () => window.removeEventListener(VARIANT_EVENT, sync);
+  }, [routeVariant]);
   const [open, setOpen] = useState(true);
   const [active, setActive] = useState(DEFAULT_PRESET); // 강조 표시할 DEVICES 인덱스
   const [showRuler, setShowRuler] = useState(true); // 목업 위 치수 눈금자 표시 여부
@@ -328,21 +344,14 @@ export default function DesktopVariantNav() {
       <p className="dvn-group-title dvn-label">화면 시안</p>
       <ul className="dvn-list">
         {VARIANTS.map((v) => (
-          <li key={v.href}>
+          <li key={v.key}>
             <button
               type="button"
-              data-active={pathname === v.href}
+              data-active={variant === v.key}
               title={v.label}
-              onClick={() => {
-                // 현재 platform·chrome 쿼리를 유지한 채 해당 안으로 이동.
-                const sp = new URLSearchParams(window.location.search);
-                const platform =
-                  sp.get("platform") === "ios" ? "ios" : "android";
-                const chrome = sp.get("chrome") === "1";
-                router.push(
-                  `${v.href}?platform=${platform}${chrome ? "&chrome=1" : ""}`,
-                );
-              }}
+              // URL 을 안 건드리고 안만 갈아끼운다 — 안 화면의 시안 목록 시트와
+              // 같은 경로다(variantRoute.ts). platform·chrome 쿼리도 그대로 남는다.
+              onClick={() => requestVariant(v.key)}
             >
               <span className="dvn-icon" aria-hidden>
                 {v.icon}

@@ -1,16 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { BASE } from "../basePath";
+import { requestVariant, type VariantKey } from "./variantRoute";
 
 // 상단 위치명("8층 사무실 A/B")을 누르면 뜨는 바텀시트.
 // A안·B안 사이를 전환한다. 현재 보고 있는 안에는 체크 표시.
-type VariantKey = "a" | "a1" | "b";
 
-const OPTIONS: { key: VariantKey; label: string; href: string }[] = [
-  { key: "a", label: "A안", href: "/a" },
-  { key: "a1", label: "A-1안", href: "/a1" },
-  { key: "b", label: "B안", href: "/b" },
+const OPTIONS: { key: VariantKey; label: string }[] = [
+  { key: "a", label: "A안" },
+  { key: "a1", label: "A-1안" },
+  { key: "b", label: "B안" },
 ];
 
 export default function VariantPicker({
@@ -22,10 +21,10 @@ export default function VariantPicker({
   open: boolean;
   current: VariantKey;
   onClose: () => void;
-  // 변형 전환 시에도 선택한 환경(iOS/Android)을 URL 쿼리로 이어준다.
+  /** 지금은 안 쓴다 — 안 전환이 URL 을 안 건드리므로 쿼리를 다시 붙일 일이 없다.
+   *  호출부(세 안)가 전부 넘기고 있어 시그니처만 남겨 둔다. */
   platform?: "android" | "ios";
 }) {
-  const router = useRouter();
   return (
     <div
       className="pointer-events-none absolute inset-0 z-40"
@@ -82,23 +81,11 @@ export default function VariantPicker({
                 type="button"
                 onClick={() => {
                   if (selected) onClose();
-                  else {
-                    // Next 라우터로 클라이언트 이동(basePath 자동 처리). window.location
-                    // 전체 새로고침을 쓰면 iOS 사파리 툴바(주소창)가 펼쳐진 상태로
-                    // 리셋돼 뜨므로, router.push 로 새로고침 없이 전환한다.
-                    // 현재 URL 의 chrome(데스크톱 가짜 시스템 바) 플래그는 이어준다.
-                    const chrome =
-                      new URLSearchParams(window.location.search).get(
-                        "chrome",
-                      ) === "1";
-                    const qs = [
-                      platform ? `platform=${platform}` : "",
-                      chrome ? "chrome=1" : "",
-                    ]
-                      .filter(Boolean)
-                      .join("&");
-                    router.push(`${o.href}${qs ? `?${qs}` : ""}`);
-                  }
+                  // URL 을 안 건드리고 같은 화면 안에서 안만 갈아끼운다(AppShell).
+                  // 예전엔 router.push 로 라우트를 옮겼는데, iOS 사파리가 URL 이
+                  // 바뀔 때마다 접혀 있던 툴바를 다시 펼치고 이 앱은 스크롤이
+                  // 없어 그게 다시 안 접혔다(variantRoute.ts).
+                  else requestVariant(o.key);
                 }}
                 className="flex items-center justify-between border-b border-neutral-100 text-left"
                 style={{ height: "56px" }}
