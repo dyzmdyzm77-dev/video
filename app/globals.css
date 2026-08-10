@@ -137,17 +137,15 @@ body {
     transform-origin: center center;
     transform: translate(-50%, -50%) rotate(90deg);
     transition: transform 0.35s ease;
-    /* 안전 영역 인셋도 다시 매핑한다. 여긴 '화면이 돌아간' 게 아니라 '콘텐츠만
-       돌린' 것이라, .app-safe-frame 의 기본 padding(위=노치, 아래=홈 인디케이터)
-       이 콘텐츠와 같이 돌아 물리 모서리와 어긋난다 — OS UI 가 없는 자리에 빈 띠가
-       생기고, 정작 노치 밑으로는 콘텐츠가 들어간다.
-       rotate(90deg) 는 요소의 (오른·위·왼·아래) 변을 화면의 (아래·오른·위·왼)
-       으로 보낸다. 그래서 화면 위(=노치)를 막으려면 요소의 왼쪽에 inset-top 을
-       줘야 한다. 나머지도 같은 규칙으로 한 칸씩 돌린다. */
-    padding-top: env(safe-area-inset-right);
-    padding-right: env(safe-area-inset-bottom);
-    padding-bottom: env(safe-area-inset-left);
-    padding-left: env(safe-area-inset-top);
+    /* 가로에선 안전 영역을 비우지 않는다 — 영상이 화면을 가득 채워야 한다
+       (사용자 결정). .app-safe-frame 의 기본 padding(위=노치, 아래=홈 인디케이터)
+       을 여기서 0 으로 덮는다. 남겨 두면 상태바·홈 인디케이터 자리만큼 빈 띠가
+       생기는데, 가로는 '영상만' 보는 화면이라 그 띠가 그대로 낭비다.
+       (한때 인셋을 회전만큼 돌려 물리 모서리에 맞춰 봤지만, 자리를 옮길 뿐
+       비는 건 마찬가지였다. 아예 안 비우는 쪽으로 정리한다.)
+       딤 위 UI 는 자기 여백(px-5 등)으로 가장자리에서 떨어져 있어 노치와 크게
+       겹치지 않는다 — 영상만 끝까지 깔린다. */
+    padding: 0;
   }
 }
 
