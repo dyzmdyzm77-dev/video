@@ -16,8 +16,40 @@ import { useEffect, useState } from "react";
 
 export const DEVICE_ROTATE_EVENT = "devicerotaterequest";
 
+// 실기기에서 가로로 갈 때 브라우저 UI(주소창·툴바)와 OS 시스템 바까지 걷어
+// 영상만 남긴다. 전체화면 API 는 '사용자 조작' 안에서만 허용되므로 회전 버튼을
+// 누른 이 자리에서 바로 부른다 — 상태가 바뀐 뒤 effect 에서 부르면 제스처가
+// 끊겨 거부된다.
+//
+// 플랫폼별로 되는 정도가 다르다:
+//   · Android Chrome — 전체화면 되면 브라우저 UI·상태바·내비바가 다 사라진다.
+//   · iPhone Safari  — requestFullscreen 자체가 없다(video 태그 전용). 아래
+//                      guard 에 걸려 아무 일도 안 일어난다. 사파리 툴바·상태바를
+//                      웹 페이지가 걷을 방법은 '홈 화면에 추가'(standalone) 뿐이다.
+//   · 데스크톱 미리보기 — 목업이라 전체화면으로 만들면 좌측 패널까지 같이 커진다.
+//                      hover+정밀 포인터면 건너뛴다.
+function syncFullscreen(toLandscape: boolean) {
+  if (typeof document === "undefined") return;
+  const desktop =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (desktop) return;
+  try {
+    if (toLandscape) {
+      const el = document.documentElement;
+      // 거부(제스처 없음·미지원)는 그냥 무시한다 — 전체화면은 덤이고, 안 돼도
+      // 회전 자체는 그대로 동작해야 한다.
+      el.requestFullscreen?.({ navigationUI: "hide" })?.catch(() => {});
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen?.()?.catch(() => {});
+    }
+  } catch {}
+}
+
 /** 딤의 회전 버튼에서 호출. 좌측 패널이 받아서 회전 토글을 뒤집는다. */
 export function requestDeviceRotate() {
+  // 지금 세로면 가로로 가는 것 — 그 방향에 맞춰 전체화면을 켜고 끈다.
+  syncFullscreen(!readDeviceLandscape());
   window.dispatchEvent(new Event(DEVICE_ROTATE_EVENT));
 }
 
