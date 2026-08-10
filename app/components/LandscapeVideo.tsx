@@ -197,7 +197,10 @@ export default function LandscapeVideo({
   const dragRef = useRef<{ x: number; y: number } | null>(null);
   const startExitDrag = (e: React.PointerEvent<HTMLDivElement>) => {
     // 딤(헤더·칩줄·플레이어·시간바) 위에서 시작한 건 그쪽 조작이다.
-    if ((e.target as HTMLElement).closest?.("[data-dim-layer]")) return;
+    // 시간바·플레이어 위에서 시작한 건 그쪽 조작(스크럽)이다. 그 외 딤 요소
+    // (헤더·칩줄·아이콘 줄) 위에서는 스와이프를 받는다 — 가로는 화면이 짧아
+    // 딤 전체를 빼면 스와이프할 자리가 거의 안 남는다.
+    if ((e.target as HTMLElement).closest?.("[data-no-swipe]")) return;
     dragRef.current = { x: e.clientX, y: e.clientY };
   };
   // 판정은 '손을 뗄 때'가 아니라 '움직이는 동안' 한다. 터치에서 세로로 그으면
@@ -314,7 +317,6 @@ export default function LandscapeVideo({
     passThrough = false,
   ) => (
     <div
-      data-dim-layer=""
       className={`absolute transition-opacity duration-300 ease-out ${className}`}
       style={{
         ...style,
@@ -390,7 +392,10 @@ export default function LandscapeVideo({
           <>
             {!topCenter && <div className="px-5 pb-3">{statusRow}</div>}
             {controls && (
-              <div className={`w-full${controlsOnDim ? "" : " bg-white"}`}>
+              <div
+                data-no-swipe=""
+                className={`w-full${controlsOnDim ? "" : " bg-white"}`}
+              >
                 {controls}
               </div>
             )}
