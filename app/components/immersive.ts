@@ -19,10 +19,40 @@ import { useEffect, useState } from "react";
 // 이벤트를 쏜다. 버튼은 공용 딤(GridSelectionOverlay)에 있어 안의 상태를 직접
 // 못 건드리기 때문이다.
 //
-// 실기기의 '진짜' 브라우저 UI(주소창)와 OS 상태바까지 걷지는 못한다 — 전체화면
-// API 를 쓰면 안드로이드 크롬이 "아래로 내린 후 뒤로가기" 안내를 강제로 띄워서
-// 빼기로 했다(deviceRotate.ts 참고). 여기서 가려지는 건 앱이 그리는 것들이다.
+// 여기까지는 '앱이 그리는 것'만 가린다. 실기기의 진짜 브라우저 주소창과 OS
+// 내비게이션/상태 바는 전체화면 API 로만 걷을 수 있어서, 크게 보기로 들어갈 때
+// 같이 요청한다(사용자 결정).
+//
+// 그 대가로 안드로이드 크롬은 "아래로 내린 후 뒤로가기를 누르세요" 안내를
+// 반드시 띄운다 — 사용자가 갇히지 않게 브라우저가 강제하는 것이라 웹에서 끌
+// 방법이 없다. 한 번 뺐다가(회전에 묶여 있던 시절) OS 바까지 가려 달라는
+// 요구로 되돌린 것이니, 지우기 전에 그 트레이드오프를 먼저 확인할 것.
+//
+// 플랫폼별:
+//   · Android Chrome — 주소창·상태바·내비바가 다 사라진다.
+//   · iPhone Safari  — requestFullscreen 이 없다(video 전용). 아무 일도 안 난다.
+//                      거기서 사파리 UI 를 걷는 건 '홈 화면에 추가'뿐이다.
+//   · 데스크톱 미리보기 — 목업이라 전체화면이면 좌측 패널까지 커진다. 건너뛴다.
 // ============================================================================
+
+function syncFullscreen(on: boolean) {
+  if (typeof document === "undefined") return;
+  const desktop =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (desktop) return;
+  try {
+    if (on) {
+      // 거부(미지원·제스처 없음)는 무시한다 — 전체화면은 덤이고, 안 되더라도
+      // 크게 보기 자체는 그대로 동작해야 한다.
+      document.documentElement.requestFullscreen?.({
+        navigationUI: "hide",
+      })?.catch(() => {});
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen?.()?.catch(() => {});
+    }
+  } catch {}
+}
 
 export const IMMERSIVE_EVENT = "immersivechange";
 
@@ -31,10 +61,13 @@ export function readImmersive(): boolean {
   return document.documentElement.dataset.immersive === "true";
 }
 
-/** 딤의 확대/축소 버튼에서 호출. 지금 상태를 뒤집는다. */
+/** 딤의 확대/축소 버튼에서 호출. 지금 상태를 뒤집는다.
+ *  전체화면은 '사용자 조작' 안에서만 허용되므로 버튼 핸들러인 여기서 바로
+ *  부른다 — 상태가 바뀐 뒤 effect 에서 부르면 제스처가 끊겨 거부된다. */
 export function toggleImmersive() {
   const next = !readImmersive();
   document.documentElement.dataset.immersive = next ? "true" : "false";
+  syncFullscreen(next);
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
 }
 
@@ -42,6 +75,7 @@ export function toggleImmersive() {
 export function exitImmersive() {
   if (!readImmersive()) return;
   document.documentElement.dataset.immersive = "false";
+  syncFullscreen(false);
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
 }
 
@@ -52,7 +86,16 @@ export function useImmersive(): boolean {
     const sync = () => setOn(readImmersive());
     sync();
     window.addEventListener(IMMERSIVE_EVENT, sync);
-    return () => window.removeEventListener(IMMERSIVE_EVENT, sync);
+    // 안드로이드에선 뒤로가기·스와이프로 전체화면만 빠져나올 수 있다. 그때
+    // 크게 보기 상태만 남으면 화면과 어긋나므로 같이 되돌린다.
+    const onFs = () => {
+      if (!document.fullscreenElement && readImmersive()) exitImmersive();
+    };
+    document.addEventListener("fullscreenchange", onFs);
+    return () => {
+      window.removeEventListener(IMMERSIVE_EVENT, sync);
+      document.removeEventListener("fullscreenchange", onFs);
+    };
   }, []);
   return on;
 }
