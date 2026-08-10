@@ -35,8 +35,17 @@ export function useGridAreaRatio() {
         ro.observe(el);
         observed = el;
       }
-      const r = el.getBoundingClientRect();
-      if (r.width > 0 && r.height > 0) setRatio(r.width / r.height);
+      // transform 을 안 타는 '레이아웃 크기'로 잰다. getBoundingClientRect 는
+      // 변환이 적용된 뒤의 축 정렬 박스라, 실기기 가로 모드에선 값이 뒤집힌다 —
+      // 실기기는 돌릴 목업이 없어 프레임 자체를 CSS 로 90° 돌리는데(globals.css
+      // 의 터치 전용 규칙), 90° 돌린 요소의 축 정렬 박스는 가로·세로가 맞바뀐
+      // 세로 값이다. 그 값으로 배치를 고르니 같은 가로 화면인데 PC 목업(각도를
+      // 0 으로 되돌리고 크기를 맞바꾼다)과 실기기가 서로 다른 그리드가 나왔다.
+      // 회전 트랜지션 도중에 재면 중간 각도의 박스가 잡혀 개수가 들쭉날쭉하던
+      // 것도 같이 사라진다 — offsetWidth/Height 는 각도와 무관하다.
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      if (w > 0 && h > 0) setRatio(w / h);
     };
     const ro = new ResizeObserver(measure);
     measure();
