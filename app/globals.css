@@ -122,13 +122,32 @@ body {
 @media not all and (hover: hover) and (pointer: fine) {
   html[data-landscape="true"] .app-safe-frame {
     position: fixed;
-    top: 50%;
+    /* 세로 중심을 '작은 뷰포트'(svh) 기준으로 잡는다 — % 가 아니라 50svh 다.
+       position:fixed 의 % 기준은 iOS 에서 툴바가 걷힌 '큰 뷰포트'(lvh)인데,
+       프레임 크기는 100svh(툴바가 보일 때)라 둘을 섞으면 위아래로 (lvh-svh)/2
+       씩 어긋난다 — 위엔 빈 띠가 생기고 아래는 툴바 밑으로 들어간다.
+       세로 화면은 body 가 100svh 라 위에서부터 딱 맞는데 가로만 어긋났던 것.
+       50svh 로 잡으면 회전 뒤 화면 범위가 정확히 0 ~ 100svh 가 돼 세로와 같다.
+       vh 는 svh 를 모르는 구형 브라우저용 폴백(위 html/body 와 같은 패턴). */
+    top: 50vh;
+    top: 50svh;
     left: 50%;
     width: 100svh;
     height: 100vw;
     transform-origin: center center;
     transform: translate(-50%, -50%) rotate(90deg);
     transition: transform 0.35s ease;
+    /* 안전 영역 인셋도 다시 매핑한다. 여긴 '화면이 돌아간' 게 아니라 '콘텐츠만
+       돌린' 것이라, .app-safe-frame 의 기본 padding(위=노치, 아래=홈 인디케이터)
+       이 콘텐츠와 같이 돌아 물리 모서리와 어긋난다 — OS UI 가 없는 자리에 빈 띠가
+       생기고, 정작 노치 밑으로는 콘텐츠가 들어간다.
+       rotate(90deg) 는 요소의 (오른·위·왼·아래) 변을 화면의 (아래·오른·위·왼)
+       으로 보낸다. 그래서 화면 위(=노치)를 막으려면 요소의 왼쪽에 inset-top 을
+       줘야 한다. 나머지도 같은 규칙으로 한 칸씩 돌린다. */
+    padding-top: env(safe-area-inset-right);
+    padding-right: env(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-left);
+    padding-left: env(safe-area-inset-top);
   }
 }
 
