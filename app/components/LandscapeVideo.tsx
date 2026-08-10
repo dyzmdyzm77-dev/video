@@ -35,6 +35,10 @@ const CLICK_GAP = 230;
  *  않을 만큼은 크고, 한 손으로 한 번에 그을 수 있을 만큼은 작게 잡았다. */
 const EXIT_DRAG_PX = 60;
 
+/** 좌우 스와이프로 페이지를 넘길 때 필요한 가로 이동량(px).
+ *  세로 다채널(GridView)의 스와이프 판정과 같은 값이라 조작감이 같다. */
+const PAGE_SWIPE_PX = 50;
+
 /** 딤 헤더 높이(px). 세로 A-1 의 OVERLAY_HEADER_H 와 같은 값. */
 const OVERLAY_HEADER_H = 56;
 
@@ -104,6 +108,7 @@ export default function LandscapeVideo({
   dimBottomHeight = LANDSCAPE_DIM_BOTTOM,
   fit: fitProp,
   onFitCycle,
+  onPageChange,
 }: {
   cameras: { label: string; src: string }[];
   /** 단일 화면이면 그 인덱스, 다채널이면 null. */
@@ -158,6 +163,10 @@ export default function LandscapeVideo({
   onFitCycle?: () => void;
   /** 딤 아래 페이지 인디케이터(점)를 그릴지. 기본 true = 기존 그대로. */
   showPageIndicator?: boolean;
+  /** 좌우 스와이프로 페이지를 넘길 때. 안 주면 스와이프가 아무 일도 안 한다.
+   *  세로 다채널의 스와이프 페이징을 가로·확대 화면에서도 그대로 쓰기 위한 것 —
+   *  '위아래는 확대 취소, 좌우는 페이지 넘김'이 원래 사양이다. */
+  onPageChange?: (next: number) => void;
 }) {
   // 가로로 들어오면 딤을 켠 채로 시작한다(사용자 결정) — 세로 영상 탭 첫 진입과
   // 같은 규칙이다(GridView 의 initialDim). 5초 뒤 자동으로 걷힌다(useAutoHide).
@@ -187,7 +196,6 @@ export default function LandscapeVideo({
   const rotatedInput = useRotatedInput();
   const dragRef = useRef<{ x: number; y: number } | null>(null);
   const startExitDrag = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!immersive) return;
     // 딤(헤더·칩줄·플레이어·시간바) 위에서 시작한 건 그쪽 조작이다.
     if ((e.target as HTMLElement).closest?.("[data-dim-layer]")) return;
     dragRef.current = { x: e.clientX, y: e.clientY };
@@ -198,16 +206,32 @@ export default function LandscapeVideo({
   // 바로 풀면 취소가 와도 이미 처리된 뒤다.
   const moveExitDrag = (e: React.PointerEvent<HTMLDivElement>) => {
     const s = dragRef.current;
-    if (!s || !immersive) return;
+    if (!s) return;
     const sx = e.clientX - s.x;
     const sy = e.clientY - s.y;
     // 실기기 가로는 콘텐츠가 90° 돌아 있어 화면 좌표를 콘텐츠 기준으로 환산한다.
     const dy = rotatedInput ? -sx : sy;
     const dx = rotatedInput ? sy : sx;
-    // 세로로 충분히, 그리고 가로보다 많이 움직였을 때만. 위·아래 둘 다 해제다.
-    if (Math.abs(dy) >= EXIT_DRAG_PX && Math.abs(dy) > Math.abs(dx)) {
+    const vertical = Math.abs(dy) > Math.abs(dx);
+    // 위아래 = 확대 취소. 확대 중일 때만이다.
+    if (vertical) {
+      if (immersive && Math.abs(dy) >= EXIT_DRAG_PX) {
+        dragRef.current = null;
+        exitImmersive();
+      }
+      return;
+    }
+    // 좌우 = 페이지 넘김(원래 사양). 단일 화면은 넘길 페이지가 없다.
+    if (
+      expandedIndex === null &&
+      totalPages > 1 &&
+      Math.abs(dx) >= PAGE_SWIPE_PX
+    ) {
       dragRef.current = null;
-      exitImmersive();
+      const next = dx < 0 ? page + 1 : page - 1;
+      const clamped = Math.max(0, Math.min(totalPages - 1, next));
+      if (clamped !== page) onPageChange?.(clamped);
+      auto.keepAlive();
     }
   };
 
@@ -439,9 +463,9 @@ export default function LandscapeVideo({
     <div
       ref={shellRef}
       className="relative h-full w-full select-none"
-      // 확대 중엔 영상 영역에서 브라우저가 제스처를 가져가지 않게 한다.
-      // 스크롤할 것도 없고, 안 막으면 세로로 긋는 순간 pointercancel 이 온다.
-      style={immersive ? { touchAction: "none" } : undefined}
+      // 브라우저가 제스처를 가져가지 않게 한다. 이 화면은 스크롤할 게 없고,
+      // 안 막으면 긋는 순간 pointercancel 이 와서 위아래·좌우 판정이 다 죽는다.
+      style={{ touchAction: "none" }}
       onPointerDown={(e) => {
         auto.hold();
         startExitDrag(e);

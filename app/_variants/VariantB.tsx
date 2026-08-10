@@ -331,6 +331,8 @@ export default function VariantB({
           onBack={handleBack}
           title="8층 사무실 B"
           subtitle="에스원 본사 · N1234567"
+          // 좌우 스와이프로 페이지 넘김(세로 다채널과 같은 사양).
+          onPageChange={setCurrentPage}
           onTitleClick={() => setVariantPickerOpen(true)}
           mode={mode}
           setMode={handleSetMode}
