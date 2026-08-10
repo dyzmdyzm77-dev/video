@@ -1,6 +1,6 @@
 import { BASE } from "../basePath";
 import { nextVideoFit, videoFitIcon, type VideoFit } from "./videoFit";
-import { requestDeviceRotate } from "./deviceRotate";
+import { requestDeviceRotate, useDeviceLandscape } from "./deviceRotate";
 import { memo, useEffect, useRef, useState } from "react";
 
 type CameraFeedProps = {
@@ -307,6 +307,9 @@ export function GridSelectionOverlay({
     };
   };
 }) {
+  // 가로 전환 버튼의 아이콘은 '지금 어디로 가는지'를 보여준다 —
+  // 세로면 확대(zoom_in), 가로면 되돌리기(zoom_out).
+  const landscape = useDeviceLandscape();
   return (
     <div
       className="pointer-events-none absolute inset-0 transition-opacity duration-300 ease-out"
@@ -412,7 +415,10 @@ export function GridSelectionOverlay({
           onClick={requestDeviceRotate}
           style={{ pointerEvents: visible ? "auto" : "none" }}
         >
-          <OverlayIcon src={`${BASE}/nav/rotate.svg`} size={32} />
+          <OverlayIcon
+            src={`${BASE}/${landscape ? "zoom_out" : "zoom_in"}.svg`}
+            size={32}
+          />
         </button>
         <OverlayIcon src={`${BASE}/nav/etc.svg`} size={32} />
       </div>

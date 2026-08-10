@@ -1310,7 +1310,11 @@ function ExpandedView({
                 aria-label="화면 전환"
                 onClick={requestDeviceRotate}
               >
-                <img src={`${BASE}/nav/rotate.svg`} alt="" className="h-8 w-8" />
+                <img
+                  src={`${BASE}/zoom_in.svg`}
+                  alt=""
+                  className="h-8 w-8"
+                />
               </button>
               <button type="button" aria-label="더보기">
                 <img
