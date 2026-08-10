@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { bestGridForCount } from "./layoutRules";
 import { useGridAreaRatio } from "./useGridLayout";
 import type React from "react";
@@ -42,6 +42,13 @@ const LANDSCAPE_DIM_TOP_SINGLE = "50%";
 // 버튼 + 시간바가 통째로 얹혀서, 20% 로는 그라데이션이 컨트롤까지 못 올라와
 // 글자·눈금이 영상에 묻힌다(사용자 요청).
 const LANDSCAPE_DIM_BOTTOM = "45%";
+
+// 딤 위 첫 줄에 '장소명(왼쪽) + 실시간/녹화·시각(가운데) + 아이콘(오른쪽)' 셋을
+// 한 줄로 넣으려면 이만큼은 있어야 한다. 실측으로 장소명 ~125 + 칩줄 ~180 +
+// 아이콘 ~165 = 470 에 사이 여백까지 필요해서 560 으로 잡았다.
+// 이보다 좁으면(세로에서 '크게 보기'로 들어온 경우) 셋이 서로 물린다 — 그때는
+// 아이콘 줄만 헤더 아래(둘째 줄)로 내린다. 장소명 + 칩줄은 둘이서는 들어간다.
+const ONE_ROW_MIN_W = 560;
 
 function ChevronDownIcon({ className }: { className?: string }) {
   return (
@@ -238,13 +245,18 @@ export default function LandscapeVideo({
     className: string,
     style: React.CSSProperties,
     children: React.ReactNode,
+    // 껍데기는 클릭을 통과시키고 안쪽 내용만 받게 할지. 위 가운데 칩 줄처럼
+    // 딤 아이콘 줄과 같은 높이에 겹쳐 놓는 층에 쓴다 — 껍데기가 클릭을 받으면
+    // 폭이 좁을 때 아이콘(갤러리·화면맞춤·확대) 위를 덮어 눌러도 반응이 없다.
+    // (헤더가 같은 이유로 이미 pointer-events:none 이다.)
+    passThrough = false,
   ) => (
     <div
       className={`absolute transition-opacity duration-300 ease-out ${className}`}
       style={{
         ...style,
         opacity: dim ? 1 : 0,
-        pointerEvents: dim ? "auto" : "none",
+        pointerEvents: passThrough ? "none" : dim ? "auto" : "none",
       }}
       {...auto.holdProps}
       onClick={(e) => {
@@ -252,20 +264,55 @@ export default function LandscapeVideo({
         auto.keepAlive();
       }}
     >
-      {children}
+      {passThrough ? (
+        <div style={{ pointerEvents: dim ? "auto" : "none" }}>{children}</div>
+      ) : (
+        children
+      )}
     </div>
   );
 
-  const topCenter = statusPlacement === "top-center";
+
+  // 딤 첫 줄에 셋(장소명·칩줄·아이콘)이 다 들어가는 폭인가. 세로에서 '크게
+  // 보기'로 들어오면 폭이 기기 폭 그대로라 못 들어간다 — 그때는 아이콘 줄만
+  // 둘째 줄로 내린다(ONE_ROW_MIN_W 주석 참고).
+  const shellRef = useRef<HTMLDivElement>(null);
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const measure = () => {
+      const el = shellRef.current;
+      if (!el || el.offsetWidth <= 0) return;
+      setNarrow(el.offsetWidth < ONE_ROW_MIN_W);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (shellRef.current) ro.observe(shellRef.current);
+    // 프리셋 변경·드래그 리사이즈·회전은 ResizeObserver 만으로는 놓칠 수 있다
+    // (useGridLayout 과 같은 이유).
+    const evts = ["devicechange", "deviceresize", "resize"];
+    evts.forEach((e) => window.addEventListener(e, measure));
+    return () => {
+      ro.disconnect();
+      evts.forEach((e) => window.removeEventListener(e, measure));
+    };
+  }, []);
+
+  // 칩줄을 위 가운데 두는 건 폭이 넉넉할 때만이다. 좁으면(세로에서 '크게 보기')
+  // 가운데 정렬한 칩줄이 왼쪽 장소명과 물린다 — 실측으로 폭 285 에서 장소명
+  // 16~115, 칩줄 71~213 로 44px 겹쳤다. 그때는 칩줄을 원래 자리(딤 아래 왼쪽,
+  // 컨트롤 바로 위)로 내린다. 위 첫 줄엔 장소명 + 아이콘만 남아 편하게 들어간다.
+  const topCenter = statusPlacement === "top-center" && !narrow;
 
   // 위 가운데 — 장소명(왼쪽)·딤 아이콘(오른쪽)과 한 줄로 읽히게 맞춘다. 아이콘 줄이
-  // top 12 에 높이 32(중심 28)라 여기도 같은 값을 쓴다. 헤더(pointer-events:none)
-  // 보다 뒤에 그려지므로 가운데 칩 클릭이 헤더에 먹히지 않는다.
+  // top 12 에 높이 32(중심 28)라 여기도 같은 값을 쓴다.
+  // 이 층은 아이콘 줄과 같은 높이에 겹쳐 있고 딤(overlay)보다 뒤에 그려진다.
+  // 껍데기까지 클릭을 받으면 폭이 좁을 때 아이콘 위를 덮어 삼키므로 통과시킨다.
   const statusTop = topCenter
     ? dimLayer(
         "left-1/2 flex -translate-x-1/2 items-center",
         { top: "12px", height: "32px" },
         statusRow,
+        true,
       )
     : null;
 
@@ -350,7 +397,11 @@ export default function LandscapeVideo({
 
   // 딤을 붙이는 껍데기. 딤 안 버튼을 누르고 있는 동안은 타이머를 붙잡는다.
   const shell = (children: React.ReactNode) => (
-    <div className="relative h-full w-full select-none" {...auto.holdProps}>
+    <div
+      ref={shellRef}
+      className="relative h-full w-full select-none"
+      {...auto.holdProps}
+    >
       {children}
       {overlay}
       {header}

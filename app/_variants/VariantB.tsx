@@ -2,9 +2,9 @@
 
 import { BASE } from "../basePath";
 import {
-  requestDeviceRotate,
   useDeviceLandscape,
 } from "../components/deviceRotate";
+import { toggleImmersive, useImmersive } from "../components/immersive";
 import LandscapeVideo from "../components/LandscapeVideo";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -174,6 +174,7 @@ export default function VariantB({
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const landscape = useDeviceLandscape();
+  const immersive = useImmersive();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
   // 다채널 화면 개수 — 사용자가 '화면 구성'에서 직접 고르기 전엔(또는 '자동'을
@@ -312,7 +313,9 @@ export default function VariantB({
   const dateLabel = now ? formatNow(now) : "";
 
   // 가로 모드 — 지금은 영상만 보여준다(헤더·목록·탭바·시스템 바 전부 없음).
-  if (landscape) {
+  // 가로(눕힘)든 몰입(크게 보기)이든 '영상만' 화면 하나를 쓴다 — 상태바·헤더·
+  // 하단 탭바·안드로이드 내비를 다 걷는다. 레이아웃이 같아야 한다는 게 요구사항.
+  if (landscape || immersive) {
     return (
       <div className="app-safe-frame h-full w-full overflow-hidden bg-black">
         <LandscapeVideo
@@ -1224,8 +1227,8 @@ function ExpandedView({
               </button>
               <button
                 type="button"
-                aria-label="화면 전환"
-                onClick={requestDeviceRotate}
+                aria-label="크게 보기"
+                onClick={toggleImmersive}
               >
                 <img
                   src={`${BASE}/zoom_in.svg`}
