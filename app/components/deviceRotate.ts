@@ -46,6 +46,33 @@ function syncFullscreen(toLandscape: boolean) {
   } catch {}
 }
 
+// 상단 바(아이폰 상태바 영역 / 안드로이드 상태바)의 색을 지금 화면에 맞춘다.
+//
+// 세로→가로→세로 를 오가면 상태바 영역이 검정으로 굳어 있는 문제가 있었다.
+// 사파리는 viewport-fit=cover 인 페이지에서 상단 바 색을 페이지에서 샘플링해
+// 쓰는데, 가로(영상만 있는 검정 화면)에서 잡은 색을 세로로 돌아와도 다시
+// 안 잡는 경우가 있다. theme-color 를 명시하면 샘플링 대신 이 값을 쓰므로
+// 방향이 바뀔 때마다 못 박아 준다 — 가로는 검정(영상), 세로는 흰색(앱 배경).
+//
+// html 배경도 같이 맞춘다. body 는 100svh 라 그 바깥(상태바 아래·툴바 뒤)은
+// 캔버스(html 배경)가 칠하는데, 값을 바꾸는 것 자체가 그 영역을 다시 그리게
+// 만든다. 데스크톱 미리보기는 목업 배경(#e5e5e5)이 따로 있으니 건드리지 않는다.
+export function setBarColor(landscape: boolean) {
+  if (typeof document === "undefined") return;
+  const color = landscape ? "#000000" : "#ffffff";
+  let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.name = "theme-color";
+    document.head.appendChild(meta);
+  }
+  meta.content = color;
+  const desktop =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (!desktop) document.documentElement.style.backgroundColor = color;
+}
+
 /** 딤의 회전 버튼에서 호출. 좌측 패널이 받아서 회전 토글을 뒤집는다. */
 export function requestDeviceRotate() {
   // 지금 세로면 가로로 가는 것 — 그 방향에 맞춰 전체화면을 켜고 끈다.

@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { EVENT_THUMBS_EVENT } from "./eventThumbs";
-import { DEVICE_ROTATE_EVENT, LANDSCAPE_EVENT } from "./deviceRotate";
+import {
+  DEVICE_ROTATE_EVENT,
+  LANDSCAPE_EVENT,
+  setBarColor,
+} from "./deviceRotate";
 import {
   VARIANT_EVENT,
   readVariant,
@@ -200,6 +204,8 @@ export default function DesktopVariantNav() {
       root.dataset.rotate = "false";
       root.dataset.landscape = "false";
       root.style.setProperty("--device-rot", "0deg");
+      // 상단 바 색을 세로(흰 앱 배경) 기준으로 못 박아 둔다.
+      setBarColor(false);
       return;
     }
     const cs = getComputedStyle(root);
@@ -245,6 +251,8 @@ export default function DesktopVariantNav() {
           root.style.setProperty("--device-h", `${pw}px`);
           root.style.setProperty("--device-rot", "0deg");
           root.dataset.landscape = "true";
+          // 가로는 영상만 남는 검정 화면 — 상단 바도 검정으로.
+          setBarColor(true);
         });
         window.dispatchEvent(new Event("devicechange"));
         window.dispatchEvent(new Event(LANDSCAPE_EVENT));
@@ -261,6 +269,9 @@ export default function DesktopVariantNav() {
       // 보정은 아직 가로 값 그대로 — '지금 가로 자리'를 세로 크기+(-90°)로 바꿔
       // 적은 것이라 여기서 0 으로 되돌리면 그 순간 프레임이 뛴다.
       root.dataset.landscape = "false";
+      // 세로로 돌아오면 흰 앱 배경에 맞춰 상단 바도 다시 흰색으로. 이걸 안 하면
+      // 사파리가 가로에서 잡은 검정을 그대로 물고 있어 상태바가 검게 남는다.
+      setBarColor(false);
     });
     window.dispatchEvent(new Event("devicechange"));
     window.dispatchEvent(new Event(LANDSCAPE_EVENT));
