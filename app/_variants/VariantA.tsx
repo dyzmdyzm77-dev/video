@@ -4,6 +4,7 @@ import { BASE } from "../basePath";
 import {
   requestDeviceRotate,
   useDeviceLandscape,
+  useRotatedInput,
 } from "../components/deviceRotate";
 import LandscapeVideo from "../components/LandscapeVideo";
 
@@ -309,6 +310,12 @@ export default function VariantA({
   };
   const [now, setNow] = useState<Date | null>(null);
 
+  // 화면 맞춤(원본비율·늘리기·채우기) 상태는 여기서 들고 아래로 내려 준다.
+  // 세 화면(다채널·단일·가로)이 각자 useVideoFit 을 갖고 있으면, 회전할 때
+  // 세로가 통째로 언마운트되면서 맞춤이 기본값으로 되돌아간다(A-1 과 동일).
+  const gridFitState = useVideoFit("fill");
+  const videoFitState = useVideoFit("fill");
+
   const layoutDims = bestGridForCount(gridCount, gridRatio);
   const pageSize = layoutDims.cols * layoutDims.rows;
   const totalPages = Math.ceil(CAMERAS.length / pageSize);
@@ -347,9 +354,20 @@ export default function VariantA({
           mode={mode}
           setMode={handleSetMode}
           timeLabel={dateLabel}
+          // 딤 농도·칩 위치·페이지 점은 LandscapeVideo 기본값을 그대로 쓴다
+          // — 가로 화면은 세 안이 같아야 해서 그쪽에 모아 뒀다.
+          // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
+          fit={expandedIndex !== null ? videoFitState.fit : gridFitState.fit}
+          onFitCycle={
+            expandedIndex !== null ? videoFitState.cycle : gridFitState.cycle
+          }
+          // 플레이어·시간바를 딤 색에 맞춰 넘긴다(overlay) — 흰 바를 걷어
+          // 영상이 비치게 한다.
+          controlsOnDim
           controls={
             mode === "recording" ? (
               <RecordingControls
+                overlay
                 now={now}
                 onScrubbingChange={setIsScrubbing}
                 playbackMs={playbackMs}
@@ -457,6 +475,7 @@ export default function VariantA({
           onPlay={() => setIsPlaying(true)}
           onSpeedChange={setPlaybackRate}
           videoAreaRef={videoAreaRef}
+          fitState={gridFitState}
         />
       ) : (
         <ExpandedView
@@ -482,6 +501,7 @@ export default function VariantA({
           onCapture={showCaptureToast}
           captureToast={captureToast}
           onSpeedChange={setPlaybackRate}
+          fitState={videoFitState}
         />
       )}
 
@@ -566,6 +586,7 @@ function GridView({
   onPlay,
   onSpeedChange,
   videoAreaRef,
+  fitState,
 }: {
   onExpand: (i: number) => void;
   currentPage: number;
@@ -600,12 +621,15 @@ function GridView({
   // 이 섹션(헤더·하단 컨트롤 제외 나머지)에 단다 — 크기가 cols×rows 선택과
   // 무관해서(그 안을 나누기만 하므로) 순환 의존이 없다.
   videoAreaRef?: React.RefObject<HTMLElement | null>;
+  // 화면 맞춤 상태. 회전(가로 전환)에도 유지돼야 해서 VariantA 가 들고 내려 준다.
+  fitState: ReturnType<typeof useVideoFit>;
 }) {
   const [gridSelected, setGridSelected] = useState(false);
   // 다채널 타일 맞춤 모드 — 딤 상태의 '화면 맞춤' 버튼으로 돌린다. 순서·아이콘·
   // 문구·기본값은 단일 화면과 같은 곳(components/videoFit.ts)에서 온다.
+  // 상태 자체는 VariantA 가 들고 있다(회전해도 유지되도록) — 여기선 받아 쓴다.
   const { fit: gridFit, cycle: cycleGridFit, toast: gridFitToast, toastKey: gridFitToastKey } =
-    useVideoFit("fill");
+    fitState;
   // 딤 자동 숨김 — 마지막 조작이 끝난 시점부터 5초. 규칙은 useAutoHide 참고.
   const hideGrid = useCallback(() => setGridSelected(false), []);
   const gridAuto = useAutoHide(gridSelected, hideGrid);
@@ -901,6 +925,7 @@ function ExpandedView({
   onCapture,
   captureToast = false,
   onSpeedChange,
+  fitState,
 }: {
   index: number;
   onBack: () => void;
@@ -926,6 +951,8 @@ function ExpandedView({
   onCapture?: () => void;
   captureToast?: boolean;
   onSpeedChange?: (rate: number) => void;
+  // 화면 맞춤 상태. 회전(가로 전환)에도 유지돼야 해서 VariantA 가 들고 내려 준다.
+  fitState: ReturnType<typeof useVideoFit>;
 }) {
   const cam = CAMERAS[index];
   const [showControls, setShowControls] = useState(false);
@@ -935,8 +962,9 @@ function ExpandedView({
   //   cover   : 원본 비율 유지한 채 가로나 세로 중 짧은 쪽 기준으로 최대로 키워
   //             넘치는 쪽을 자른다(크롭) — object-fit: cover 와 같다.
   // 순서·아이콘·문구는 components/videoFit.ts 한 곳에서 온다.
+  // 상태 자체는 VariantA 가 들고 있다(회전해도 유지되도록) — 여기선 받아 쓴다.
   const { fit: videoFit, cycle: cycleVideoFit, toast: fitToast, toastKey: fitToastKey } =
-    useVideoFit("fill");
+    fitState;
   // 딤 자동 숨김 — 마지막 조작이 끝난 시점부터 5초. 규칙은 useAutoHide 참고.
   const hideControls = useCallback(() => setShowControls(false), []);
   const controlsAuto = useAutoHide(showControls, hideControls);
@@ -3185,6 +3213,7 @@ function RecordingControls({
   onTogglePlay,
   onPlay,
   onSpeedChange,
+  overlay = false,
 }: {
   now: Date | null;
   onToggleChrome?: () => void;
@@ -3201,8 +3230,20 @@ function RecordingControls({
   onTogglePlay?: () => void;
   onPlay?: () => void;
   onSpeedChange?: (rate: number) => void;
+  /** 딤 위에 얹히는 배치(가로 모드)인가. 기본은 세로 — 흰 바에 얹히는 밝은 UI.
+   *  켜면 흰 배경을 걷고, 글자·눈금·버튼을 흰 계열로 뒤집고, 위쪽 '녹화 + 날짜'
+   *  줄을 안 그린다(가로에선 LandscapeVideo 가 같은 정보를 이미 얹는다).
+   *  A-1 과 같은 규칙 — 가로 화면은 세 안이 동일해야 한다. */
+  overlay?: boolean;
 }) {
   const VISIBLE_MINUTES = TIMELINE_VISIBLE_MIN;
+  // 시간바를 끌고 있는 중인가. 가로(overlay)에서 플레이어 버튼 5개를 잠깐 감춘다.
+  const [scrubbing, setScrubbing] = useState(false);
+  // 실기기 가로에선 콘텐츠가 CSS 로 90° 돌아가 있어 화면 좌표의 x·y 가 콘텐츠
+  // 기준과 맞바뀐다 — 시간바는 그때 clientY 를 읽어야 한다(deviceRotate.ts).
+  const rotatedInput = useRotatedInput();
+  const dragAxis = (e: { clientX: number; clientY: number }) =>
+    rotatedInput ? e.clientY : e.clientX;
   // 줌 레벨: 픽셀/초 — 핀치 너비 비율로 연속적으로 조정 (기본 6px/sec → 라벨 10초 간격)
   const [pxPerSec, setPxPerSec] = useState(6);
   const isDraggingRef = useRef(false);
@@ -3311,7 +3352,8 @@ function RecordingControls({
       dragStartRef.current = null;
     } else {
       isDraggingRef.current = true;
-      dragStartRef.current = { x: e.clientX, ms: playbackMs };
+      dragStartRef.current = { x: dragAxis(e), ms: playbackMs };
+      setScrubbing(true);
       onScrubbingChange?.(true);
     }
   };
@@ -3330,7 +3372,7 @@ function RecordingControls({
       dragStartRef.current &&
       pointersRef.current.size === 1
     ) {
-      const dx = e.clientX - dragStartRef.current.x;
+      const dx = dragAxis(e) - dragStartRef.current.x;
       setPlaybackMs(clampMs(dragStartRef.current.ms - (dx / pxPerSec) * 1000));
     }
   };
@@ -3339,6 +3381,7 @@ function RecordingControls({
     if (pointersRef.current.size < 2) pinchStartRef.current = null;
     if (pointersRef.current.size === 0) {
       if (isDraggingRef.current) onScrubbingChange?.(false);
+      setScrubbing(false);
       isDraggingRef.current = false;
       dragStartRef.current = null;
     }
@@ -3443,7 +3486,9 @@ function RecordingControls({
 
   return (
     <div className="relative flex flex-col">
-      {/* 녹화 + 날짜 */}
+      {/* 녹화 + 날짜 — 가로 딤(overlay)에선 안 그린다. LandscapeVideo 가 같은
+          정보를 딤에 맞춘 색으로 이미 얹고 있어서 칩 줄이 두 번 겹친다. */}
+      {!overlay && (
       <div
         className="relative flex items-center px-5"
         style={{ height: "48px", gap: "8px" }}
@@ -3459,24 +3504,36 @@ function RecordingControls({
         </button>
         <RowSkeleton visible={rowLoading} />
       </div>
+      )}
       {/* REC 칩을 누르면 이 아래(플레이어 버튼 + 시간바)만 숨겨진다 — 위 헤더
           행(REC+날짜)은 남아서 다시 누르면 되돌릴 수 있다. 예전엔 이 칩이
           가짜 시스템 바(chromeVisible)를 같이 토글했는데, 그 둘은 무관한
           기능이라 분리했다(사용자 결정). */}
-      {timelineVisible && (
+      {/* 가로 딤엔 REC 칩(숨기기 토글)이 없으므로 항상 편다. */}
+      {(overlay || timelineVisible) && (
       <>
-      <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
-      <div className="relative">
-      {/* 플레이어 컨트롤 — 시간바(타임라인) 위 */}
       <div
-        className="flex items-center justify-center"
+        className="h-px"
+        style={{
+          backgroundColor: overlay ? "rgba(255,255,255,0.18)" : "#EBEBEB",
+        }}
+      />
+      <div className="relative">
+      {/* 플레이어 컨트롤 — 시간바(타임라인) 위.
+          가로(overlay)에선 시간바를 끄는 동안 잠깐 감춘다 — 손을 떼면 돌아온다.
+          자리는 그대로 두고 투명도만 바꾼다(접으면 시간바가 위로 튄다). */}
+      <div
+        className="flex items-center justify-center transition-opacity duration-150 ease-out"
         style={{
           gap: "20px",
           padding: "8px 0",
-          backgroundColor: "#FFFFFF",
+          backgroundColor: overlay ? "transparent" : "#FFFFFF",
+          opacity: overlay && scrubbing ? 0 : 1,
+          pointerEvents: overlay && scrubbing ? "none" : undefined,
         }}
       >
         <PlayerButton
+          overlay={overlay}
           kind="skip-back"
           label={BACK_SPEED_LABELS[backSpeedIdx]}
           onClick={() => {
@@ -3489,6 +3546,7 @@ function RecordingControls({
           }}
         />
         <PlayerButton
+          overlay={overlay}
           kind="back10"
           onClick={() => {
             setPlaybackMs((p) => (p === null ? p : p - 10000));
@@ -3497,11 +3555,13 @@ function RecordingControls({
           }}
         />
         <PlayerButton
+          overlay={overlay}
           kind={isPlaying ? "pause" : "play"}
           onClick={onTogglePlay}
           held={!isPlaying}
         />
         <PlayerButton
+          overlay={overlay}
           kind="forward10"
           onClick={() => {
             setPlaybackMs((p) => (p === null ? p : p + 10000));
@@ -3510,6 +3570,7 @@ function RecordingControls({
           }}
         />
         <PlayerButton
+          overlay={overlay}
           kind="skip-forward"
           label={FWD_SPEED_LABELS[fwdSpeedIdx]}
           onClick={() => {
@@ -3522,13 +3583,28 @@ function RecordingControls({
           }}
         />
       </div>
-      <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+      <div
+        className="h-px"
+        style={{
+          backgroundColor: overlay ? "rgba(255,255,255,0.18)" : "#EBEBEB",
+        }}
+      />
       {/* 타임라인 */}
       <div
         ref={timelineRef}
         className="relative flex flex-col overflow-hidden touch-pan-y select-none"
         style={{
-          backgroundColor: "#FFFFFF",
+          backgroundColor: overlay ? "transparent" : "#FFFFFF",
+          // 좌우 페이드 — 흰 배경일 땐 흰 그라데이션 두 장으로 덮지만, 배경이
+          // 없는 딤 위에선 덮을 색이 없다. 대신 영역을 마스크로 깎는다(A-1 동일).
+          ...(overlay
+            ? {
+                WebkitMaskImage:
+                  "linear-gradient(to right, transparent 3.9%, #000 39%, #000 61%, transparent 96.1%)",
+                maskImage:
+                  "linear-gradient(to right, transparent 3.9%, #000 39%, #000 61%, transparent 96.1%)",
+              }
+            : null),
           // 위아래 같은 여백. 단일채널 감지 탭 시간바는 아래가 4 인데(PAD_BOTTOM),
           // 거긴 바로 아래 썸네일이 이어져서 그런 거다. 다채널은 시간바 아래가 바로
           // 하단 탭바라 그 4 를 그대로 가져오면 눈금이 탭바에 붙어 보인다.
@@ -3556,7 +3632,7 @@ function RecordingControls({
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
                 top: "0",
-                color: "#A4A4A4",
+                color: overlay ? "rgba(255,255,255,0.75)" : "#A4A4A4",
                 transformOrigin: "center center",
                 ...labelVisualStyle(secOffset),
                 fontSize: "10px",
@@ -3579,12 +3655,21 @@ function RecordingControls({
                 top: "18px",
                 width: "2px",
                 height: "8px",
-                backgroundColor: isMajor ? "#797979" : "#C4C4C4",
+                backgroundColor: overlay
+                  ? isMajor
+                    ? "#FFFFFF"
+                    : "rgba(255,255,255,0.5)"
+                  : isMajor
+                    ? "#797979"
+                    : "#C4C4C4",
               }}
             />
           ))}
         </div>
-        {/* 좌우 페이드 (배경 그라데이션) — 가운데에서 바깥으로 갈수록 흰색으로 가려짐 */}
+        {/* 좌우 페이드 — 딤 위(overlay)에선 덮을 흰 배경이 없어 위 컨테이너의
+            마스크가 대신한다. */}
+        {!overlay && (
+        <>
         <div
           className="pointer-events-none absolute"
           style={{
@@ -3607,6 +3692,8 @@ function RecordingControls({
               "linear-gradient(to right, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
           }}
         />
+        </>
+        )}
         {/* 중앙 고정 현재 시간 — 사이드 라벨과 베이스라인 정렬 */}
         <div
           className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
@@ -3616,7 +3703,7 @@ function RecordingControls({
             suppressHydrationWarning
             style={{
               display: "inline-block",
-              color: "#353535",
+              color: overlay ? "#FFFFFF" : "#353535",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
@@ -3636,7 +3723,7 @@ function RecordingControls({
             top: "27px",
             width: "2px",
             height: "14px",
-            backgroundColor: "#111111",
+            backgroundColor: overlay ? "#FFFFFF" : "#111111",
           }}
         />
       </div>
@@ -3971,9 +4058,12 @@ function PlayerButton({
   onClick,
   held = false,
   label = null,
+  overlay = false,
 }: {
   kind: PlayerButtonKind;
   onClick?: () => void;
+  // 딤 위(가로)면 흰 알약 대신 반투명 검정 + 흰 아이콘. RecordingControls 참고.
+  overlay?: boolean;
   // held=true면 계속 눌린 상태(F2F2F2) 유지(재생/일시정지 토글). 나머지는 누르는 동안만.
   held?: boolean;
   // label이 있으면 아이콘 대신 배속 텍스트("2배" 등)를 표시하고 active 상태로 둔다.
@@ -3993,18 +4083,30 @@ function PlayerButton({
       style={{
         width: "40px",
         height: "40px",
-        border: "1px solid #D9D9D9",
-        backgroundColor: active ? "#F2F2F2" : "#FFFFFF",
+        border: overlay
+          ? "1px solid rgba(255,255,255,0.35)"
+          : "1px solid #D9D9D9",
+        backgroundColor: overlay
+          ? active
+            ? "rgba(255,255,255,0.3)"
+            : "rgba(0,0,0,0.35)"
+          : active
+            ? "#F2F2F2"
+            : "#FFFFFF",
       }}
     >
       {label != null ? (
         <span
-          style={{ fontSize: "14px", fontWeight: 500, color: "#262626" }}
+          style={{
+            fontSize: "14px",
+            fontWeight: 500,
+            color: overlay ? "#FFFFFF" : "#262626",
+          }}
         >
           {label}
         </span>
       ) : (
-        <PlayerIcon kind={kind} size={24} />
+        <PlayerIcon kind={kind} size={24} invert={overlay} />
       )}
     </button>
   );
@@ -4022,9 +4124,12 @@ const PLAYER_ICON_SRC: Record<PlayerButtonKind, string> = {
 function PlayerIcon({
   kind,
   size,
+  invert = false,
 }: {
   kind: PlayerButtonKind;
   size: number;
+  // 딤 위(가로)에선 아이콘을 흰색으로 뒤집는다.
+  invert?: boolean;
 }) {
   const marginLeft = kind === "skip-forward" ? "2px" : undefined;
   const marginRight = kind === "skip-back" ? "2px" : undefined;
@@ -4032,7 +4137,13 @@ function PlayerIcon({
     <img
       src={PLAYER_ICON_SRC[kind]}
       alt=""
-      style={{ width: `${size}px`, height: `${size}px`, marginLeft, marginRight }}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        marginLeft,
+        marginRight,
+        filter: invert ? "brightness(0) invert(1)" : undefined,
+      }}
     />
   );
 }

@@ -10,6 +10,7 @@ import { BASE } from "../basePath";
 import {
   requestDeviceRotate,
   useDeviceLandscape,
+  useRotatedInput,
 } from "../components/deviceRotate";
 import LandscapeVideo from "../components/LandscapeVideo";
 
@@ -361,17 +362,8 @@ export default function VariantA1({
           mode={mode}
           setMode={handleSetMode}
           timeLabel={dateLabel}
-          // 실시간/녹화 + 시각은 딤 위 가운데 — 장소명(왼쪽)·딤 아이콘(오른쪽)과 한 줄.
-          statusPlacement="top-center"
-          // 가로에선 페이지 인디케이터(점)를 안 쓴다(사용자 결정).
-          showPageIndicator={false}
-          // 딤은 세로 A-1 과 같은 사양으로. 기본값(0.6/25%/20%)을 그대로 쓰면
-          // 같은 화면인데 가로만 옅어 보인다.
-          dimAlpha={DIM_ALPHA}
-          dimTopHeight={
-            expandedIndex !== null ? DIM_TOP_H_SINGLE : DIM_TOP_H_GRID
-          }
-          dimBottomHeight={expandedIndex !== null ? "33%" : "20%"}
+          // 딤 농도·칩 위치·페이지 점은 LandscapeVideo 기본값을 그대로 쓴다
+          // — 가로 화면은 세 안이 같아야 해서 그쪽에 모아 뒀다.
           // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
           fit={
             expandedIndex !== null ? videoFitState.fit : gridFitState.fit
@@ -3256,6 +3248,13 @@ function RecordingControls({
   // onScrubbingChange 와 같은 시점이지만, 여기 UI 는 이 안에서만 쓰므로
   // 부모 상태를 거치지 않고 자체로 들고 있는다.
   const [scrubbing, setScrubbing] = useState(false);
+  // 실기기 가로에선 콘텐츠가 CSS 로 90° 돌아가 있어 화면 좌표의 x·y 가 콘텐츠
+  // 기준과 맞바뀐다. 시간바는 '가로로 끄는' UI 라 그때는 clientY 를 읽어야
+  // 한다 — 안 그러면 손가락을 가로로 움직여도 clientX 가 안 변해 반응이 없다.
+  // (근거·부호는 deviceRotate.ts 의 useRotatedInput 주석 참고.)
+  const rotatedInput = useRotatedInput();
+  const dragAxis = (e: { clientX: number; clientY: number }) =>
+    rotatedInput ? e.clientY : e.clientX;
   // 줌 레벨: 픽셀/초 — 핀치 너비 비율로 연속적으로 조정 (기본 6px/sec → 라벨 10초 간격)
   const [pxPerSec, setPxPerSec] = useState(6);
   const isDraggingRef = useRef(false);
@@ -3364,7 +3363,7 @@ function RecordingControls({
       dragStartRef.current = null;
     } else {
       isDraggingRef.current = true;
-      dragStartRef.current = { x: e.clientX, ms: playbackMs };
+      dragStartRef.current = { x: dragAxis(e), ms: playbackMs };
       setScrubbing(true);
       onScrubbingChange?.(true);
     }
@@ -3384,7 +3383,7 @@ function RecordingControls({
       dragStartRef.current &&
       pointersRef.current.size === 1
     ) {
-      const dx = e.clientX - dragStartRef.current.x;
+      const dx = dragAxis(e) - dragStartRef.current.x;
       setPlaybackMs(clampMs(dragStartRef.current.ms - (dx / pxPerSec) * 1000));
     }
   };
