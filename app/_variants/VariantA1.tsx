@@ -3247,6 +3247,11 @@ function RecordingControls({
   overlay?: boolean;
 }) {
   const VISIBLE_MINUTES = TIMELINE_VISIBLE_MIN;
+  // 시간바를 끌고 있는 중인가. 가로(overlay)에서 플레이어 버튼 5개를 잠깐
+  // 감추는 데 쓴다 — 손을 떼면 바로 돌아온다. 바깥으로 알리는
+  // onScrubbingChange 와 같은 시점이지만, 여기 UI 는 이 안에서만 쓰므로
+  // 부모 상태를 거치지 않고 자체로 들고 있는다.
+  const [scrubbing, setScrubbing] = useState(false);
   // 줌 레벨: 픽셀/초 — 핀치 너비 비율로 연속적으로 조정 (기본 6px/sec → 라벨 10초 간격)
   const [pxPerSec, setPxPerSec] = useState(6);
   const isDraggingRef = useRef(false);
@@ -3356,6 +3361,7 @@ function RecordingControls({
     } else {
       isDraggingRef.current = true;
       dragStartRef.current = { x: e.clientX, ms: playbackMs };
+      setScrubbing(true);
       onScrubbingChange?.(true);
     }
   };
@@ -3383,6 +3389,7 @@ function RecordingControls({
     if (pointersRef.current.size < 2) pinchStartRef.current = null;
     if (pointersRef.current.size === 0) {
       if (isDraggingRef.current) onScrubbingChange?.(false);
+      setScrubbing(false);
       isDraggingRef.current = false;
       dragStartRef.current = null;
     }
@@ -3511,14 +3518,20 @@ function RecordingControls({
         </>
       )}
       <div className="relative">
-      {/* 플레이어 컨트롤 — 시간바(타임라인) 위 */}
+      {/* 플레이어 컨트롤 — 시간바(타임라인) 위.
+          가로(overlay)에선 시간바를 끄는 동안 잠깐 감춘다(사용자 요청) — 손을
+          떼면 바로 돌아온다. 자리는 그대로 두고 투명도만 바꾼다: 접어 버리면
+          시간바가 위로 튀어 끌던 위치가 손가락 밑에서 어긋난다.
+          세로는 그대로다 — 흰 바 위라 버튼이 영상을 가리지 않는다. */}
       <div
-        className="flex items-center justify-center"
+        className="flex items-center justify-center transition-opacity duration-150 ease-out"
         style={{
           gap: "20px",
           padding: "8px 0",
           // 가로 딤에선 배경을 걷는다 — 흰 바가 영상을 통째로 가린다.
           backgroundColor: overlay ? "transparent" : "#FFFFFF",
+          opacity: overlay && scrubbing ? 0 : 1,
+          pointerEvents: overlay && scrubbing ? "none" : undefined,
         }}
       >
         <PlayerButton
