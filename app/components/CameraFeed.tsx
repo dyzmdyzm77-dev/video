@@ -1,6 +1,7 @@
 import { BASE } from "../basePath";
 import { nextVideoFit, videoFitIcon, type VideoFit } from "./videoFit";
 import { requestDeviceRotate, useDeviceLandscape } from "./deviceRotate";
+import { toggleImmersive, useImmersive } from "./immersive";
 import { memo, useEffect, useRef, useState } from "react";
 
 type CameraFeedProps = {
@@ -307,9 +308,10 @@ export function GridSelectionOverlay({
     };
   };
 }) {
-  // 가로 전환 버튼의 아이콘은 '지금 어디로 가는지'를 보여준다 —
-  // 세로면 확대(zoom_in), 가로면 되돌리기(zoom_out).
+  // 확대 버튼의 아이콘은 '지금 어디로 가는지'를 보여준다 —
+  // 평소면 확대(zoom_in), 이미 커져 있으면 되돌리기(zoom_out).
   const landscape = useDeviceLandscape();
+  const immersive = useImmersive();
   return (
     <div
       className="pointer-events-none absolute inset-0 transition-opacity duration-300 ease-out"
@@ -407,16 +409,18 @@ export function GridSelectionOverlay({
         >
           <OverlayIcon src={videoFitIcon(BASE, nextVideoFit(fit))} size={32} />
         </button>
-        {/* 화면 전환 — 좌측 패널의 '왼쪽으로 회전'과 같은 동작(deviceRotate.ts).
-            목업이라 돌릴 OS 가 없어서 프레임을 대신 돌린다. */}
+        {/* 크게 보기 — 상태바·헤더·하단 탭바·안드로이드 내비를 걷고 영상만 화면을
+            꽉 채운다(immersive.ts). 회전이 아니라 '지금 방향 그대로 키우기'다.
+            이미 가로로 눕혀 둔 상태면 그건 세로로 되돌리는 버튼이 된다 —
+            버튼 뜻은 늘 '크게 ↔ 원래대로' 하나로 읽힌다. */}
         <button
           type="button"
-          aria-label="화면 전환"
-          onClick={requestDeviceRotate}
+          aria-label={landscape || immersive ? "원래 크기로" : "크게 보기"}
+          onClick={landscape ? requestDeviceRotate : toggleImmersive}
           style={{ pointerEvents: visible ? "auto" : "none" }}
         >
           <OverlayIcon
-            src={`${BASE}/${landscape ? "zoom_out" : "zoom_in"}.svg`}
+            src={`${BASE}/${landscape || immersive ? "zoom_out" : "zoom_in"}.svg`}
             size={32}
           />
         </button>

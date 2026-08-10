@@ -8,10 +8,10 @@
 
 import { BASE } from "../basePath";
 import {
-  requestDeviceRotate,
   useDeviceLandscape,
   useRotatedInput,
 } from "../components/deviceRotate";
+import { toggleImmersive, useImmersive } from "../components/immersive";
 import LandscapeVideo from "../components/LandscapeVideo";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -211,6 +211,7 @@ export default function VariantA1({
   const [gridLoading, setGridLoading] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
   const landscape = useDeviceLandscape();
+  const immersive = useImmersive();
   // 영상 탭에 처음 들어왔을 때는 딤이 기본이다 — 뭘 할 수 있는지 한 번 보여주고
   // 5초 뒤 useAutoHide 가 알아서 걷어낸다. 단일 화면에 들어갔다 돌아온 다채널은
   // 해당 없음(GridView 가 매번 다시 마운트되므로 그때마다 딤이 뜨면 성가시다).
@@ -342,7 +343,9 @@ export default function VariantA1({
   const dateLabel = now ? formatNow(now) : "";
 
   // 가로 모드 — 지금은 영상만 보여준다(헤더·목록·탭바·시스템 바 전부 없음).
-  if (landscape) {
+  // 가로(눕힘)든 몰입(크게 보기)이든 '영상만' 화면 하나를 쓴다 — 상태바·헤더·
+  // 하단 탭바·안드로이드 내비를 다 걷는다. 레이아웃이 같아야 한다는 게 요구사항.
+  if (landscape || immersive) {
     return (
       <div className="app-safe-frame h-full w-full overflow-hidden bg-black">
         <LandscapeVideo
@@ -1299,8 +1302,8 @@ function ExpandedView({
               </button>
               <button
                 type="button"
-                aria-label="화면 전환"
-                onClick={requestDeviceRotate}
+                aria-label="크게 보기"
+                onClick={toggleImmersive}
               >
                 <img
                   src={`${BASE}/zoom_in.svg`}
