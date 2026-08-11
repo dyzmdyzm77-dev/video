@@ -8,7 +8,10 @@ import VariantB from "./VariantB";
 import { Inner as HomeScreen } from "../home/page";
 import { useVariant, type VariantKey } from "../components/variantRoute";
 import { LANDSCAPE_EVENT } from "../components/deviceRotate";
-import { syncImmersiveWithLandscape } from "../components/immersive";
+import {
+  noteDeviceOrientation,
+  syncImmersiveWithLandscape,
+} from "../components/immersive";
 
 // 세 화면안(A · A-1 · B)과 홈 화면을 한 자리에서 갈아끼우는 껍데기.
 // /a1 · /a2 · /b (와 옛 /a) 라우트가 전부 이걸 렌더하고, 다른 건 initialVariant 뿐이다.
@@ -59,10 +62,18 @@ export default function AppShell({
       ? [LANDSCAPE_EVENT]
       : [LANDSCAPE_EVENT, "resize", "orientationchange"];
     evts.forEach((e) => window.addEventListener(e, syncImmersiveWithLandscape));
+    // 프리셋·크기 변경은 '눕힌' 게 아니라 다른 기기를 고른 것 — 확대는 건드리지
+    // 않고 기준 방향만 새로 기록한다. 이걸 안 하면 1080(가로) 을 보다가 360 으로
+    // 바꿨을 때 '이미 가로였다'로 남아, 360 에서 눕혀도 확대가 안 켜졌다.
+    const noteEvts = ["devicechange", "devicerange", "deviceresize"];
+    noteEvts.forEach((e) => window.addEventListener(e, noteDeviceOrientation));
     return () => {
       clearTimeout(baseline);
       evts.forEach((e) =>
         window.removeEventListener(e, syncImmersiveWithLandscape),
+      );
+      noteEvts.forEach((e) =>
+        window.removeEventListener(e, noteDeviceOrientation),
       );
     };
   }, [home]);

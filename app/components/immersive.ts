@@ -143,20 +143,52 @@ function landscapeIsMuchBetter(): boolean {
  *
  *  '가로인가'는 readDeviceWide 로 본다 — 앱이 돌린 회전과 실기기 물리 회전을
  *  한 값으로 묶어 주는 유일한 출처다(useDeviceWidth.ts). */
-// 직전에 본 방향. '가로다'가 아니라 '가로가 됐다'로 판정하기 위한 것 —
+// 직전에 본 화면 크기·방향. '가로다'가 아니라 '가로가 됐다'로 판정하기 위한 것 —
 // 처음부터 가로인 상태(가로로 긴 프리셋을 고르거나, 가로로 든 채 앱을 열거나)
 // 까지 확대로 끌고 가면 안 된다. 눕히는 '동작'만 신호로 본다.
-let lastWide: boolean | null = null;
+//
+// 방향(boolean)만 들고 있으면 '눕혔다'와 '다른 기기를 골랐다'를 못 가른다.
+// 크기까지 기억해 두면 회전은 w·h 가 정확히 맞바뀐 것으로 알아볼 수 있다.
+let lastState: { w: number; h: number; wide: boolean } | null = null;
+
+/** 지금 크기·방향을 '기준값'으로만 기록한다(확대는 건드리지 않는다).
+ *  데스크톱 미리보기에서 프리셋을 바꾸면 방향이 통째로 달라지는데, 그건
+ *  '눕힌' 게 아니라 다른 기기를 고른 것이다. 기록만 해 두지 않으면 직전
+ *  기기의 방향이 남아, 새 기기에서 눕혀도 '이미 가로였다'로 보고 지나친다.
+ *
+ *  단 회전일 때는 손대지 않는다 — 회전도 devicechange 를 같이 쏘는데, 여기서
+ *  기준을 먼저 갱신해 버리면 뒤이어 오는 회전 신호가 '변화 없음'이 된다. */
+export function noteDeviceOrientation() {
+  if (typeof document === "undefined") return;
+  const w = readDeviceWidth();
+  const h = readDeviceHeight();
+  if (lastState && w === lastState.h && h === lastState.w) return;
+  lastState = { w, h, wide: readDeviceWide() };
+}
 
 export function syncImmersiveWithLandscape() {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
+  const w = readDeviceWidth();
+  const h = readDeviceHeight();
   const wide = readDeviceWide();
-  const prev = lastWide;
-  lastWide = wide;
-  if (prev === null || prev === wide) return;
+  const prev = lastState;
+  lastState = { w, h, wide };
+  if (prev === null || prev.wide === wide) return;
   if (wide) {
     if (readImmersive()) return;
+    // '눕혔다'가 아니라 '원래 방향으로 돌아왔다'면 확대할 일이 아니다.
+    // 데스크톱 미리보기에는 가로로 긴 프리셋(1080×780 등)이 있는데, 그걸
+    // 세로로 돌렸다가 되돌리면 '세로 → 가로' 전환으로 보여 확대가 켜졌다
+    // (사용자 지적: "확대모드를 안했는데 되돌아올 때는 왜 확대모드가 되는거야").
+    // data-landscape 는 '기본 방향에서 돌려 놓은 상태'라, 되돌아온 순간엔
+    // false 다 — 그걸로 가른다.
+    // 실기기는 이 플래그를 안 쓰고(물리 회전은 뷰포트만 바뀐다) 폰의 기본
+    // 방향은 세로이므로, 미리보기에서만 따진다.
+    const desktopPreview =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    if (desktopPreview && !readDeviceLandscape()) return;
     if (!landscapeIsMuchBetter()) return;
     root.dataset.immersive = "true";
     root.dataset[BY_ROTATE_FLAG] = "true";

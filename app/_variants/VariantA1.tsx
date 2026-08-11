@@ -242,10 +242,14 @@ export default function VariantA1({
   const orientKey: "portrait" | "landscape" = useDeviceWide()
     ? "landscape"
     : "portrait";
-  // 영상 탭에 처음 들어왔을 때는 딤이 기본이다 — 뭘 할 수 있는지 한 번 보여주고
-  // 5초 뒤 useAutoHide 가 알아서 걷어낸다. 단일 화면에 들어갔다 돌아온 다채널은
-  // 해당 없음(GridView 가 매번 다시 마운트되므로 그때마다 딤이 뜨면 성가시다).
-  const gridDimOnce = useRef(true);
+  // A-1 은 헤더를 상시 노출하지 않는 대신, 화면이 바뀔 때마다 딤을 한 번 띄운다
+  // (사용자 결정 2026-08-11). 바뀐 화면에서 무엇을 할 수 있는지 매번 보여 주자는
+  // 것 — 5초 뒤 useAutoHide 가 알아서 걷어낸다.
+  // '화면 전환'은 셋이다: 다채널 ↔ 단일 / 실시간 ↔ 녹화 / 세로 ↔ 확대.
+  // 앞뒤는 뷰가 다시 마운트되므로 초기값(true)으로 되고, 모드 전환만 같은 뷰
+  // 안에서 일어나 각 뷰가 mode 를 보고 다시 띄운다.
+  // 예전엔 영상 탭 첫 진입에만 띄웠다(gridDimOnce) — 단일에 들어갔다 돌아오면
+  // 딤이 안 떴다.
   const toggleChrome = () => setChromeVisible((v) => !v);
 
   // 화면 캡처 토스트 — 카메라 버튼 누르면 잠깐 노출 후 자동 사라짐.
@@ -278,7 +282,6 @@ export default function VariantA1({
   // 다채널→단일 진입: 같은 렌더에서 setExpandedIndex와 함께 스켈레톤을 켜
   // 이미지 페인트 전에 스켈레톤이 위(z-20)에 즉시 깔리도록 한다.
   const handleExpand = (idx: number) => {
-    gridDimOnce.current = false; // 한 번 나갔다 오면 다채널 딤은 더 이상 자동 노출 안 함
     setVideoLoading(true);
     setExpandedIndex(idx);
     setTimeout(() => setVideoLoading(false), 600);
@@ -546,7 +549,7 @@ export default function VariantA1({
           onPlay={() => setIsPlaying(true)}
           onSpeedChange={setPlaybackRate}
           videoAreaRef={videoAreaRef}
-          initialDim={gridDimOnce.current}
+          initialDim
           fitState={gridFitState}
         />
       ) : (
@@ -699,6 +702,16 @@ function GridView({
   fitState: ReturnType<typeof useVideoFit>;
 }) {
   const [gridSelected, setGridSelected] = useState(initialDim);
+  // 실시간 ↔ 녹화는 같은 뷰 안에서 일어나 마운트가 안 되므로 여기서 다시 띄운다.
+  // (다채널 ↔ 단일, 세로 ↔ 확대는 뷰가 다시 마운트돼 초기값으로 뜬다.)
+  const modeFirst = useRef(true);
+  useEffect(() => {
+    if (modeFirst.current) {
+      modeFirst.current = false;
+      return;
+    }
+    setGridSelected(true);
+  }, [mode]);
   // 다채널 타일 맞춤 모드 — 딤 상태의 '화면 맞춤' 버튼으로 돌린다. 순서·아이콘·
   // 문구·기본값은 단일 화면과 같은 곳(components/videoFit.ts)에서 온다.
   // 상태 자체는 VariantA1 이 들고 있다(회전해도 유지되도록) — 여기선 받아 쓴다.
@@ -1017,7 +1030,16 @@ function ExpandedView({
   fitState: ReturnType<typeof useVideoFit>;
 }) {
   const cam = CAMERAS[index];
-  const [showControls, setShowControls] = useState(false);
+  // 단일 화면도 들어오자마자 딤을 띄운다(A-1 의 화면 전환 규칙 — 위 주석 참고).
+  const [showControls, setShowControls] = useState(true);
+  const modeFirst = useRef(true);
+  useEffect(() => {
+    if (modeFirst.current) {
+      modeFirst.current = false;
+      return;
+    }
+    setShowControls(true);
+  }, [mode]);
   // 영상 맞춤 모드 — 딤(showControls) 상태의 화면맞춤 버튼으로 돌린다.
   //   fill    : 영상 뷰 영역을 가득 채운다(원본 비율 무시, 늘어남/찌그러짐).
   //   contain : 원본 비율 그대로, 빈 공간은 검정으로 채운다(레터박스/필러박스).
