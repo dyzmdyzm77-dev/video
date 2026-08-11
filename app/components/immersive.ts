@@ -25,31 +25,44 @@ import {
 // 이벤트를 쏜다. 버튼은 공용 딤(GridSelectionOverlay)에 있어 안의 상태를 직접
 // 못 건드리기 때문이다.
 //
-// 여기서 가리는 건 '앱이 그리는 것'뿐이다 — 헤더·목록·탭바·가짜 시스템 바.
-// 브라우저 주소창과 OS 바까지 걷으려면 '홈 화면에 추가'로 설치해 열어야 한다
-// (manifest 가 display:"fullscreen"). 전체화면 API 를 왜 안 쓰는지는 아래
-// syncFullscreen 주석 참고.
+// 앱이 그리는 것(헤더·목록·탭바·가짜 시스템 바)에 더해, 실기기의 브라우저
+// 주소창과 OS 바도 전체화면 API 로 같이 걷는다 — 아래 syncFullscreen 주석 참고.
 // ============================================================================
 
-// 전체화면 API 는 쓰지 않는다(사용자 결정 2026-08-11).
+// 확대할 때는 전체화면 API 로 브라우저 주소창과 OS 바까지 걷는다.
 //
-// 확대할 때 requestFullscreen 을 부르면 안드로이드 크롬이 "아래로 내린 후
-// 뒤로가기를 누르세요" 안내를 반드시 띄우는데(브라우저가 강제, 웹에서 못 끈다),
-// 그것뿐이면 감수할 만했다. 문제는 전체화면에 들어가는 순간 뷰포트가 한 번 더
-// 바뀌고, 그 resize 를 방향 전환으로 읽어 화면이 한 번 더 도는 것이었다
-// (사용자 지적: "뒤로가기를 누르세요 이 토스트 팝업이 뜨면서 한번 더 회전").
+// 한 번 뺐다가 되돌렸다. 뺀 이유는 "아래로 내린 후 뒤로가기를 누르세요" 안내와
+// '한 번 더 도는 회전' 이었는데, 회전 쪽 원인은 따로 잡혔다 — 실기기 확대가
+// 이제 앱을 CSS 로 돌리지 않으므로(toggleImmersive), 전체화면 때문에 뷰포트가
+// 바뀌어도 방향 전환으로 읽힐 일이 없다. 남는 건 안드로이드 크롬의 안내 토스트
+// 하나뿐이고, 그건 사용자가 갇히지 않게 브라우저가 강제하는 것이라 웹에서 끌
+// 방법이 없다. OS 바가 남는 것보다는 낫다는 판단(사용자 지적: "여전히
+// 안드로이드바랑 상태바 다 보이는데, 아까는 없었는데").
 //
-// 그래서 앱이 그리는 것(헤더·목록·탭바·가짜 시스템 바)만 걷고, 브라우저 UI 와
-// OS 바는 그대로 둔다. 그것까지 걷으려면 '홈 화면에 추가'로 설치해서 열면 된다
-// — manifest 가 display:"fullscreen" 이라 설치본은 안내 없이 꽉 찬다(manifest.ts).
+// 안내 없이 바까지 없애려면 '홈 화면에 추가'로 설치해 열면 된다 — manifest 가
+// display:"fullscreen" 이다(manifest.ts).
 //
-// 이미 전체화면에 들어가 있는 상태(사용자가 직접 켰거나 예전 세션)라면 확대를
-// 끌 때 같이 빠져나온다 — 상태가 어긋난 채 남지 않게.
+// 플랫폼별:
+//   · Android Chrome — 주소창·상태바·내비바가 다 사라진다(안내 토스트 1회).
+//   · iPhone Safari  — requestFullscreen 이 없다(video 전용). 아무 일도 안 난다.
+//                      거기서 사파리 UI 를 걷는 건 '홈 화면에 추가'뿐이다.
+//   · 데스크톱 미리보기 — 목업이라 전체화면이면 좌측 패널까지 커진다. 건너뛴다.
 function syncFullscreen(on: boolean) {
   if (typeof document === "undefined") return;
-  if (on) return;
+  const desktop =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (desktop) return;
   try {
-    if (document.fullscreenElement) document.exitFullscreen?.()?.catch(() => {});
+    if (on) {
+      // 거부(미지원·제스처 없음)는 무시한다 — 전체화면은 덤이고, 안 되더라도
+      // 확대 자체는 그대로 동작해야 한다.
+      document.documentElement
+        .requestFullscreen?.({ navigationUI: "hide" })
+        ?.catch(() => {});
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen?.()?.catch(() => {});
+    }
   } catch {}
 }
 
@@ -283,11 +296,15 @@ export function useImmersive(): boolean {
     const sync = () => setOn(readImmersive());
     sync();
     window.addEventListener(IMMERSIVE_EVENT, sync);
-    // 전체화면 이벤트는 안 듣는다 — 이제 확대가 전체화면을 켜지 않으므로
-    // (syncFullscreen 주석) 짝 맞출 상태가 없다. 예전엔 안드로이드에서
-    // 뒤로가기로 전체화면만 빠져나올 때 확대도 같이 껐었다.
+    // 안드로이드에선 뒤로가기·스와이프로 전체화면만 빠져나올 수 있다. 그때
+    // 확대 상태만 남으면 화면과 어긋나므로 같이 되돌린다.
+    const onFs = () => {
+      if (!document.fullscreenElement && readImmersive()) exitImmersive();
+    };
+    document.addEventListener("fullscreenchange", onFs);
     return () => {
       window.removeEventListener(IMMERSIVE_EVENT, sync);
+      document.removeEventListener("fullscreenchange", onFs);
     };
   }, []);
   return on;
