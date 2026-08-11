@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 
 // ============================================================================
-// 지금 보고 있는 화면안(A / A-1 / B) — URL 을 안 건드리는 전환
+// 지금 보고 있는 화면안(A-1 / A-2 / B) — URL 을 안 건드리는 전환
 // ============================================================================
 // 안 전환을 router.push 로 하면 라우트가 바뀐다. iOS 사파리는 URL 이 바뀔 때마다
 // (전체 새로고침이든 pushState 든) 접혀 있던 주소창/툴바를 다시 펼치는데, 이 앱은
 // 스크롤이 없어서(globals.css 의 overflow:hidden + 100svh) 한 번 펼쳐지면 다시
 // 접히지 않는다. 그래서 안을 한 번 바꾸면 그 뒤로 계속 툴바가 남아 있었다.
-// 홈 탭에서 같은 문제를 없앤 방식(a/a1/b 페이지가 홈 화면을 그 자리에 렌더)을
+// 홈 탭에서 같은 문제를 없앤 방식(a1/a2/b 페이지가 홈 화면을 그 자리에 렌더)을
 // 안 전환에도 그대로 적용한다 — 세 안을 한 화면(AppShell)에서 상태로 갈아끼운다.
 //
 // 전달 방식은 eventThumbs / deviceRotate 와 같다: 문서 루트의 data 속성에 쓰고
@@ -21,22 +21,25 @@ import { useEffect, useState } from "react";
 // 마찬가지로 URL 의 안으로 돌아온다.
 // ============================================================================
 
-export type VariantKey = "a" | "a1" | "b";
+export type VariantKey = "a1" | "a2" | "b";
 
 export const VARIANT_EVENT = "variantchange";
 
-const KEYS: VariantKey[] = ["a", "a1", "b"];
+const KEYS: VariantKey[] = ["a1", "a2", "b"];
 
 /** 안 이름. 시안 목록 시트·좌측 패널·각 안의 상단 제목이 전부 여기서 읽는다 —
  *  UT 중 지금 어느 안을 보고 있는지 화면 위에서 바로 읽히게 하려고 원래
  *  장소명("8층 사무실 A") 자리에 이 이름을 쓴다(사용자 요청 2026-08-11). */
 export const VARIANT_LABEL: Record<VariantKey, string> = {
   a1: "A-1안",
-  a: "A-2안",
+  a2: "A-2안",
   b: "B안",
 };
 
-/** 경로(/a·/a1·/b)에서 안 키를 뽑는다. 모르면 A-1안(기본 진입). */
+/** 경로(/a1·/a2·/b)에서 안 키를 뽑는다. 모르면 A-1안(기본 진입).
+ *  옛 경로 /a 는 한때 A안(지금의 A-2안)이었지만, 지금은 기본인 A-1안으로
+ *  보낸다 — 그 링크를 저장해 둔 사람이 A-2안으로 떨어지던 걸 막는다.
+ *  A-2안의 주소는 /a2 다. */
 export function variantFromPath(pathname: string): VariantKey {
   const seg = pathname.replace(/^\/+|\/+$/g, "");
   return (KEYS as string[]).includes(seg) ? (seg as VariantKey) : "a1";

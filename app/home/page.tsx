@@ -24,7 +24,7 @@ const DRAG_EASE = "ease-out";
 
 // 홈 화면 — "내 경비 구역" 시안을 실제 코드로 구현한 화면.
 // 하단탭의 홈 버튼으로 진입하며, 영상 탭·최근 본 영상 항목을 누르면 진입 전
-// 화면안(?from=a|a1|b)으로 돌아간다. 경비 구역 카드는 펼침/접힘과
+// 화면안(?from=a1|a2|b)으로 돌아간다. 경비 구역 카드는 펼침/접힘과
 // 경비중 ↔ 해제중 상태 전환이 동작한다(시안 기준 인터랙션).
 // 상단 정렬: "홍길동" 타이틀이 화면안의 "8층 사무실 A"와 같은 위치(상태바
 // 아래 25dp, 좌 20dp)에 오도록 맞춘다.
@@ -289,7 +289,7 @@ export function Inner({
   onVideo,
 }: {
   /** 영상 탭·최근 본 영상을 눌렀을 때. 안 주면 기존대로 진입 전 화면안
-   *  (/a·/a1·/b)으로 라우터 이동한다.
+   *  (/a1·/a2·/b)으로 라우터 이동한다.
    *  iOS 사파리는 URL 이 바뀔 때마다(전체 새로고침이든 pushState 든) 접혀 있던
    *  주소창을 다시 펼친다 — 예전에 window.location 을 router.push 로 바꾼 것도
    *  같은 이유였는데(fa808fd), 라우트가 바뀌는 한 pushState 로도 남는다. 그래서
@@ -302,7 +302,7 @@ export function Inner({
   const platform = params.get("platform") === "ios" ? "ios" : "android";
   const initialChrome = params.get("chrome") === "1";
   // 진입 전 화면안. 영상 탭/최근 본 영상으로 돌아갈 때 사용한다.
-  const from = ["a", "a1", "b"].includes(params.get("from") ?? "")
+  const from = ["a", "a1", "a2", "b"].includes(params.get("from") ?? "")
     ? (params.get("from") as string)
     : "a1";
   const [chromeVisible, setChromeVisible] = useState(initialChrome);

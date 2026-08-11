@@ -22,10 +22,10 @@ import {
 // 두 그룹 — 화면안(A/B) + 해상도(디바이스 폭) 선택.
 // 모바일/터치에선 CSS(.desktop-variant-nav)로 숨긴다.
 // 순서·라벨은 사용자가 정한다(2026-08-11: A안 → 'A-2안', 자리는 두 번째).
-// 라우트(/a)는 그대로라 key 는 여전히 "a" 다 — 이름만 바뀐 것.
+// 주소는 /a1 · /a2 · /b. 옛 /a 링크는 기본인 A-1안으로 간다(variantRoute).
 const VARIANTS: { key: VariantKey; icon: string }[] = [
   { key: "a1", icon: "A-1" },
-  { key: "a", icon: "A-2" },
+  { key: "a2", icon: "A-2" },
   { key: "b", icon: "B" },
 ];
 

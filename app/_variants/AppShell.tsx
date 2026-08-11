@@ -9,7 +9,7 @@ import { Inner as HomeScreen } from "../home/page";
 import { useVariant, type VariantKey } from "../components/variantRoute";
 
 // 세 화면안(A · A-1 · B)과 홈 화면을 한 자리에서 갈아끼우는 껍데기.
-// /a · /a1 · /b 세 라우트가 전부 이걸 렌더하고, 다른 건 initialVariant 뿐이다.
+// /a1 · /a2 · /b (와 옛 /a) 라우트가 전부 이걸 렌더하고, 다른 건 initialVariant 뿐이다.
 //
 // 왜 라우터 이동을 안 쓰나 — iOS 사파리는 URL 이 바뀌면 접혀 있던 주소창/툴바를
 // 다시 펼치는데 이 앱은 스크롤이 없어 그게 다시 안 접힌다. 홈 탭도 같은 이유로
@@ -37,7 +37,7 @@ export default function AppShell({
     onHome: () => setHome(true),
   } as const;
 
-  if (variant === "a1") return <VariantA1 {...shared} />;
+  if (variant === "a2") return <VariantA {...shared} />;
   if (variant === "b") return <VariantB {...shared} />;
-  return <VariantA {...shared} />;
+  return <VariantA1 {...shared} />;
 }
