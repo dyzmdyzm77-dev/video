@@ -34,12 +34,38 @@ export default function AppShell({
   // 방향이 바뀌면 확대 상태를 맞춘다 — 눕히면 영상만 보이는 화면으로 들어가고,
   // 세우면 돌아온다(immersive.ts 의 syncImmersiveWithLandscape). 안이 아니라
   // 여기서 거는 이유는, 안이 갈아끼워져도 구독이 끊기지 않아야 해서다.
+  //
+  // 듣는 신호가 둘이다: 앱 안의 회전(LANDSCAPE_EVENT)과 실기기를 손으로 눕힌
+  // 것(resize·orientationchange). 후자는 앱이 아무 플래그도 안 남기고 뷰포트만
+  // 바뀌므로 크기 이벤트로 알아채야 한다.
+  //
+  // 크기 이벤트는 데스크톱 미리보기에선 안 듣는다 — 거기서 뷰포트가 바뀌는 건
+  // 프리셋을 고르거나 기기 테두리를 드래그한 것이지 '눕힌' 게 아니다. 가로로
+  // 긴 프리셋(864×648 등)을 골랐다고 확대로 들어가면 곤란하다.
+  //
+  // 홈 화면에선 하지 않는다 — 영상이 없는 화면이라 눕혔다고 확대할 게 없다.
   useEffect(() => {
-    syncImmersiveWithLandscape();
-    window.addEventListener(LANDSCAPE_EVENT, syncImmersiveWithLandscape);
-    return () =>
-      window.removeEventListener(LANDSCAPE_EVENT, syncImmersiveWithLandscape);
-  }, []);
+    if (home) return;
+    // 기준값(지금 방향)은 한 틱 뒤에 잡는다. 이 effect 는 좌측 패널
+    // (DesktopVariantNav)의 effect 보다 먼저 도는데, --device-w/h 를 심는 건
+    // 그쪽이다. 지금 바로 읽으면 데스크톱 미리보기에서 브라우저 창 크기
+    // (1280×720 = 가로)를 기준으로 잡아 버려, 정작 회전했을 때 '이미 가로였다'로
+    // 보고 아무 일도 안 한다.
+    const baseline = setTimeout(syncImmersiveWithLandscape, 0);
+    const desktopPreview =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    const evts = desktopPreview
+      ? [LANDSCAPE_EVENT]
+      : [LANDSCAPE_EVENT, "resize", "orientationchange"];
+    evts.forEach((e) => window.addEventListener(e, syncImmersiveWithLandscape));
+    return () => {
+      clearTimeout(baseline);
+      evts.forEach((e) =>
+        window.removeEventListener(e, syncImmersiveWithLandscape),
+      );
+    };
+  }, [home]);
 
   if (home) return <HomeScreen onVideo={() => setHome(false)} />;
 

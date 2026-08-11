@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { readDeviceLandscape, requestDeviceRotate } from "./deviceRotate";
-import { readDeviceHeight, readDeviceWidth } from "./useDeviceWidth";
+import {
+  readDeviceHeight,
+  readDeviceWide,
+  readDeviceWidth,
+} from "./useDeviceWidth";
 
 // ============================================================================
 // 몰입 모드 — 영상만 화면을 꽉 채우기
@@ -103,8 +107,11 @@ function shouldRotate(): boolean {
   return fitArea(h, w) / now >= ROTATE_GAIN;
 }
 
-// ── 회전하면 자동으로 확대 ──────────────────────────────────────────────
-// '왼쪽으로 회전'으로 가로가 되면 확대 모드로 들어간다(사용자 결정 2026-08-11).
+// ── 가로가 되면 자동으로 확대 ────────────────────────────────────────────
+// 화면이 가로로 길어지면 확대 모드로 들어간다(사용자 결정 2026-08-11).
+// 앱 안의 '왼쪽으로 회전'이든, 실기기를 손으로 눕힌 것이든 똑같이 본다 —
+// 눕히는 행동 자체가 '영상 크게 보고 싶다'는 신호라, 어느 쪽으로 눕혔는지에
+// 따라 다르게 동작하면 안 된다(유튜브·넷플릭스도 같은 규칙).
 // 눕힌 화면에서 헤더·목록·탭바를 그대로 두면 영상이 오히려 작아진다 — 눕히는
 // 목적 자체가 영상을 크게 보는 것이라, 가로 = 영상만 화면으로 맞춘다.
 //
@@ -127,11 +134,23 @@ function landscapeIsMuchBetter(): boolean {
 
 /** 방향이 바뀔 때마다 확대 상태를 맞춘다. 가로가 되면(그리고 그게 이득이면)
  *  확대를 켜고, 그때 켠 것이었다면 세로로 돌아올 때 끈다. 사용자가 확대
- *  버튼으로 직접 켠 건 건드리지 않는다(플래그로 구분). */
+ *  버튼으로 직접 켠 건 건드리지 않는다(플래그로 구분).
+ *
+ *  '가로인가'는 readDeviceWide 로 본다 — 앱이 돌린 회전과 실기기 물리 회전을
+ *  한 값으로 묶어 주는 유일한 출처다(useDeviceWidth.ts). */
+// 직전에 본 방향. '가로다'가 아니라 '가로가 됐다'로 판정하기 위한 것 —
+// 처음부터 가로인 상태(가로로 긴 프리셋을 고르거나, 가로로 든 채 앱을 열거나)
+// 까지 확대로 끌고 가면 안 된다. 눕히는 '동작'만 신호로 본다.
+let lastWide: boolean | null = null;
+
 export function syncImmersiveWithLandscape() {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  if (readDeviceLandscape()) {
+  const wide = readDeviceWide();
+  const prev = lastWide;
+  lastWide = wide;
+  if (prev === null || prev === wide) return;
+  if (wide) {
     if (readImmersive()) return;
     if (!landscapeIsMuchBetter()) return;
     root.dataset.immersive = "true";
