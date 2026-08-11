@@ -1356,6 +1356,16 @@ function ExpandedView({
                 );
               })}
             </div>
+            {/* AI 아이콘 — 딤 오른쪽 아래. 원본이 이미 흰색이라 필터 없이 쓴다.
+                카메라 인디케이터와 같은 높이(bottom 12)에 앉힌다. 다채널 딤
+                (GridSelectionOverlay)에 넣은 것과 같은 자리·같은 크기다. */}
+            <img
+              src={`${BASE}/ai_Icon.svg`}
+              alt=""
+              aria-hidden
+              className="pointer-events-none absolute h-8 w-8"
+              style={{ bottom: "12px", right: "16px" }}
+            />
           </div>
           <VideoSkeleton visible={videoLoading} />
           {/* 화면 맞춤 토스트 — 탐색·캡처 토스트와 같은 자리(영역 하단 20px 위). */}

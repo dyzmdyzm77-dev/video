@@ -431,6 +431,17 @@ export function GridSelectionOverlay({
         <OverlayIcon src={`${BASE}/nav/etc.svg`} size={32} />
       </div>
 
+      {/* AI 아이콘 — 딤 오른쪽 아래. 원본이 이미 흰색이라 마스크·필터 없이
+          그대로 쓴다(다른 아이콘들은 회색 원본이라 OverlayIcon 으로 뒤집는다).
+          페이지 인디케이터와 같은 높이(bottom 12)에 앉혀 한 줄로 읽히게 했다.
+          지금은 표시만 한다 — 누르면 무엇을 할지는 아직 정해지지 않았다. */}
+      <img
+        src={`${BASE}/ai_Icon.svg`}
+        alt=""
+        aria-hidden
+        className="pointer-events-none absolute bottom-3 right-4 h-8 w-8"
+      />
+
       {/* 하단 페이지 인디케이터 */}
       {showPageIndicator && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
