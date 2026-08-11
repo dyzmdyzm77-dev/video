@@ -252,21 +252,14 @@ export function toggleImmersive() {
   }
   document.documentElement.dataset.immersive = "true";
   syncFullscreen(true);
-  // 세로로 긴 프레임이면 눕혀야 영상이 커진다. 이미 가로면 그대로 둔다.
+  // 세로로 긴 프레임이면 눕혀야 영상이 커진다(ROTATE_GAIN). 이미 가로면 그대로.
   //
-  // 단 '눕히기'는 데스크톱 미리보기에서만 한다. 실기기에서 앱을 CSS 로 돌리면
-  // OS 상태바·내비바는 세로 그대로라 콘텐츠만 옆으로 누운 꼴이 된다(사용자
-  // 지적: "안드로이드 바나 상태바는 세로 유지인데, 영상 뷰 컨텐츠쪽만 돌아가").
-  // 예전엔 전체화면 API 로 그 바들을 걷어 맞췄는데, 그게 안내 토스트와 추가
-  // 회전을 불러 뺐다(syncFullscreen 주석).
-  //
-  // 그래서 실기기의 확대는 '그 자리에서 영상 최대화'다. 가로로 보고 싶으면
-  // 폰을 실제로 눕히면 된다 — 그때는 OS 도 같이 돌아 어긋나지 않고, 확대는
-  // 그대로 유지된다(syncImmersiveWithLandscape).
-  const desktopPreview =
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  if (desktopPreview && !readDeviceLandscape() && shouldRotate()) {
+  // 실기기에서도 눕힌다. 잠깐 '실기기에선 안 눕힌다'로 뒀었는데 — 앱만 CSS 로
+  // 돌면 OS 상태바·내비바는 세로 그대로라 콘텐츠만 옆으로 누워서였다 — 그건
+  // 전체화면을 빼 둔 동안의 이야기다. 지금은 확대가 전체화면으로 그 바들을
+  // 같이 걷으므로 어긋날 상대가 없다(syncFullscreen). 360 처럼 세로로 긴
+  // 기기에서 확대가 안 눕는 게 오히려 어색하다는 지적이 있었다.
+  if (!readDeviceLandscape() && shouldRotate()) {
     document.documentElement.dataset[ROTATED_FLAG] = "true";
     requestDeviceRotate();
   }
