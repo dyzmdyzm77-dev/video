@@ -27,14 +27,23 @@ export const VARIANT_EVENT = "variantchange";
 
 const KEYS: VariantKey[] = ["a", "a1", "b"];
 
-/** 경로(/a·/a1·/b)에서 안 키를 뽑는다. 모르면 A안. */
+/** 안 이름. 시안 목록 시트·좌측 패널·각 안의 상단 제목이 전부 여기서 읽는다 —
+ *  UT 중 지금 어느 안을 보고 있는지 화면 위에서 바로 읽히게 하려고 원래
+ *  장소명("8층 사무실 A") 자리에 이 이름을 쓴다(사용자 요청 2026-08-11). */
+export const VARIANT_LABEL: Record<VariantKey, string> = {
+  a1: "A-1안",
+  a: "A-2안",
+  b: "B안",
+};
+
+/** 경로(/a·/a1·/b)에서 안 키를 뽑는다. 모르면 A-1안(기본 진입). */
 export function variantFromPath(pathname: string): VariantKey {
   const seg = pathname.replace(/^\/+|\/+$/g, "");
-  return (KEYS as string[]).includes(seg) ? (seg as VariantKey) : "a";
+  return (KEYS as string[]).includes(seg) ? (seg as VariantKey) : "a1";
 }
 
 /** 문서 루트에서 현재 안을 읽는다. 아직 안 심겼으면 fallback. */
-export function readVariant(fallback: VariantKey = "a"): VariantKey {
+export function readVariant(fallback: VariantKey = "a1"): VariantKey {
   if (typeof document === "undefined") return fallback;
   const v = document.documentElement.dataset.variant;
   return (KEYS as string[]).includes(v ?? "") ? (v as VariantKey) : fallback;

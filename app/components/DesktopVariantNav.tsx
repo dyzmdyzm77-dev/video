@@ -13,6 +13,7 @@ import {
   readVariant,
   requestVariant,
   variantFromPath,
+  VARIANT_LABEL,
   type VariantKey,
 } from "./variantRoute";
 
@@ -22,10 +23,10 @@ import {
 // 모바일/터치에선 CSS(.desktop-variant-nav)로 숨긴다.
 // 순서·라벨은 사용자가 정한다(2026-08-11: A안 → 'A-2안', 자리는 두 번째).
 // 라우트(/a)는 그대로라 key 는 여전히 "a" 다 — 이름만 바뀐 것.
-const VARIANTS: { key: VariantKey; icon: string; label: string }[] = [
-  { key: "a1", icon: "A-1", label: "A-1안" },
-  { key: "a", icon: "A-2", label: "A-2안" },
-  { key: "b", icon: "B", label: "B안" },
+const VARIANTS: { key: VariantKey; icon: string }[] = [
+  { key: "a1", icon: "A-1" },
+  { key: "a", icon: "A-2" },
+  { key: "b", icon: "B" },
 ];
 
 // 선택 가능한 디바이스 폭. w/h 는 앱 프레임(px), 목업은 사방 10px 크게 잡힌다.
@@ -361,7 +362,7 @@ export default function DesktopVariantNav() {
             <button
               type="button"
               data-active={variant === v.key}
-              title={v.label}
+              title={VARIANT_LABEL[v.key]}
               // URL 을 안 건드리고 안만 갈아끼운다 — 안 화면의 시안 목록 시트와
               // 같은 경로다(variantRoute.ts). platform·chrome 쿼리도 그대로 남는다.
               onClick={() => requestVariant(v.key)}
@@ -369,7 +370,7 @@ export default function DesktopVariantNav() {
               <span className="dvn-icon" aria-hidden>
                 {v.icon}
               </span>
-              <span className="dvn-label">{v.label}</span>
+              <span className="dvn-label">{VARIANT_LABEL[v.key]}</span>
             </button>
           </li>
         ))}

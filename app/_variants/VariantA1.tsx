@@ -25,6 +25,7 @@ import EventCardFace from "../components/EventCardFace";
 import EventKindChip from "../components/EventKindChip";
 import { useEventThumbs } from "../components/eventThumbs";
 import VariantPicker from "../components/VariantPicker";
+import { VARIANT_LABEL } from "../components/variantRoute";
 import MoreSheet from "../components/MoreSheet";
 import AiSearchSheet from "../components/AiSearchSheet";
 import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
@@ -407,7 +408,7 @@ export default function VariantA1({
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
           onBack={handleBack}
-          title="8층 사무실 A"
+          title={VARIANT_LABEL["a1"]}
           subtitle="에스원 본사 · N1234567"
           // 좌우 스와이프로 페이지 넘김(세로 다채널과 같은 사양).
           onPageChange={setCurrentPage}
@@ -3363,7 +3364,7 @@ function OverlayHeader({
           className="flex flex-col items-start gap-[2px] pb-1 pr-3 text-left"
         >
           <span className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-white">
-            8층 사무실 A
+            {VARIANT_LABEL["a1"]}
             <ChevronDownIcon className="h-6 w-6 text-white" />
           </span>
           <span

@@ -1,18 +1,18 @@
 "use client";
 
 import { BASE } from "../basePath";
-import { requestVariant, type VariantKey } from "./variantRoute";
+import {
+  requestVariant,
+  VARIANT_LABEL,
+  type VariantKey,
+} from "./variantRoute";
 
-// 상단 위치명("8층 사무실 A/B")을 누르면 뜨는 바텀시트.
+// 상단 제목(안 이름 — VARIANT_LABEL)을 누르면 뜨는 바텀시트.
 // A안·B안 사이를 전환한다. 현재 보고 있는 안에는 체크 표시.
 
 // 순서·라벨은 사용자가 정한다(2026-08-11: A안 → 'A-2안', 자리는 두 번째).
 // 라우트(/a)는 그대로다 — 공유해 둔 링크가 깨지지 않게 이름만 바꿨다.
-const OPTIONS: { key: VariantKey; label: string }[] = [
-  { key: "a1", label: "A-1안" },
-  { key: "a", label: "A-2안" },
-  { key: "b", label: "B안" },
-];
+const OPTIONS: VariantKey[] = ["a1", "a", "b"];
 
 export default function VariantPicker({
   open,
@@ -75,11 +75,11 @@ export default function VariantPicker({
 
         {/* 옵션 목록 */}
         <div className="flex flex-col" style={{ padding: "0 20px 24px" }}>
-          {OPTIONS.map((o) => {
-            const selected = o.key === current;
+          {OPTIONS.map((key) => {
+            const selected = key === current;
             return (
               <button
-                key={o.key}
+                key={key}
                 type="button"
                 onClick={() => {
                   if (selected) onClose();
@@ -87,7 +87,7 @@ export default function VariantPicker({
                   // 예전엔 router.push 로 라우트를 옮겼는데, iOS 사파리가 URL 이
                   // 바뀔 때마다 접혀 있던 툴바를 다시 펼치고 이 앱은 스크롤이
                   // 없어 그게 다시 안 접혔다(variantRoute.ts).
-                  else requestVariant(o.key);
+                  else requestVariant(key);
                 }}
                 className="flex items-center justify-between border-b border-neutral-100 text-left"
                 style={{ height: "56px" }}
@@ -99,7 +99,7 @@ export default function VariantPicker({
                     fontWeight: selected ? 700 : 500,
                   }}
                 >
-                  {o.label}
+                  {VARIANT_LABEL[key]}
                 </span>
                 {selected && (
                   <svg

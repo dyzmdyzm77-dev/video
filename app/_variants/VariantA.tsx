@@ -19,6 +19,7 @@ import EventCardFace from "../components/EventCardFace";
 import EventKindChip from "../components/EventKindChip";
 import { useEventThumbs } from "../components/eventThumbs";
 import VariantPicker from "../components/VariantPicker";
+import { VARIANT_LABEL } from "../components/variantRoute";
 import MoreSheet from "../components/MoreSheet";
 import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
 import { nextVideoFit, videoFitIcon } from "../components/videoFit";
@@ -364,7 +365,7 @@ export default function VariantA({
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
           onBack={handleBack}
-          title="8층 사무실 A"
+          title={VARIANT_LABEL["a"]}
           subtitle="에스원 본사 · N1234567"
           // 좌우 스와이프로 페이지 넘김(세로 다채널과 같은 사양).
           onPageChange={setCurrentPage}
@@ -731,7 +732,7 @@ function GridView({
               className="flex flex-col items-start gap-[2px] pb-1 pr-3 text-left"
             >
               <span className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900">
-                8층 사무실 A
+                {VARIANT_LABEL["a"]}
                 <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
               </span>
               <span className="text-[12px] leading-none" style={{ color: "#BFBFBF" }}>
@@ -1257,7 +1258,7 @@ function ExpandedView({
               className="flex flex-col items-start gap-[2px] pb-1 pr-3 text-left"
             >
               <span className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900">
-                8층 사무실 A
+                {VARIANT_LABEL["a"]}
                 <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
               </span>
               <span className="text-[12px] leading-none" style={{ color: "#BFBFBF" }}>

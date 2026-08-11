@@ -15,6 +15,7 @@ import {
   useGifFrameCanvas,
 } from "../components/CameraFeed";
 import VariantPicker from "../components/VariantPicker";
+import { VARIANT_LABEL } from "../components/variantRoute";
 import MoreSheet from "../components/MoreSheet";
 import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
 import { nextVideoFit, videoFitIcon } from "../components/videoFit";
@@ -342,7 +343,7 @@ export default function VariantB({
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
           onBack={handleBack}
-          title="8층 사무실 B"
+          title={VARIANT_LABEL["b"]}
           subtitle="에스원 본사 · N1234567"
           // 좌우 스와이프로 페이지 넘김(세로 다채널과 같은 사양).
           onPageChange={setCurrentPage}
@@ -697,7 +698,7 @@ function GridView({
               className="flex flex-col items-start gap-[2px] pb-1 pr-3 text-left"
             >
               <span className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900">
-                8층 사무실 B
+                {VARIANT_LABEL["b"]}
                 <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
               </span>
               <span className="text-[12px] leading-none" style={{ color: "#BFBFBF" }}>
@@ -1124,7 +1125,7 @@ function ExpandedView({
               className="flex flex-col items-start gap-[2px] pb-1 pr-3 text-left"
             >
               <span className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900">
-                8층 사무실 B
+                {VARIANT_LABEL["b"]}
                 <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
               </span>
               <span className="text-[12px] leading-none" style={{ color: "#BFBFBF" }}>
