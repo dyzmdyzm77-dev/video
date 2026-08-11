@@ -22,6 +22,7 @@ import {
   useGifFrameCanvas,
 } from "../components/CameraFeed";
 import EventCardFace from "../components/EventCardFace";
+import EventKindChip from "../components/EventKindChip";
 import { useEventThumbs } from "../components/eventThumbs";
 import VariantPicker from "../components/VariantPicker";
 import MoreSheet from "../components/MoreSheet";
@@ -1750,9 +1751,20 @@ function mulberry32(seed: number) {
 //  2) 상식적인 겹침 — 한 묶음은 1개(78%)·2개(18%)·3개(4%)뿐이고, 멤버는 4~8초 간격.
 //     다음 묶음은 마지막 멤버에서 최소 16초 떨어뜨려 '격리'하므로 묶음끼리는 절대 붙지 않는다
 //     → 같은 1초에 떼박히거나 4개 이상 겹치는 비상식적 분포가 구조적으로 불가능.
+// 감지 유형 — 썸네일 위 칩에 쓴다. 대부분은 단순 '움직임'이고 이상 상황은
+// 드물게 섞인다(넘어짐 > 폭행). 실제 분포를 흉내 낸 값이라, 화면을 훑을 때
+// 빨간 칩이 드문드문 보이는 정도가 된다.
+const EVENT_KINDS = ["움직임", "넘어짐", "폭행"] as const;
+type EventKind = (typeof EVENT_KINDS)[number];
+function pickKind(r: number): EventKind {
+  if (r < 0.86) return "움직임";
+  if (r < 0.95) return "넘어짐";
+  return "폭행";
+}
+
 const TIMELINE_EVENTS = (() => {
   const rng = mulberry32(20260529);
-  const arr: { at: number; dur: number }[] = [];
+  const arr: { at: number; dur: number; kind: EventKind }[] = [];
   let t = 0;
   while (t < 86400) {
     const h = Math.min(23, Math.floor(t / 3600));
@@ -1761,10 +1773,19 @@ const TIMELINE_EVENTS = (() => {
     const r = rng();
     const size = r < 0.78 ? 1 : r < 0.96 ? 2 : 3; // 묶음 크기
     let last = t;
-    arr.push({ at: Math.round(t), dur: 4 + Math.floor(rng() * 12) }); // 4~15초
+    // 4~15초. 유형은 같은 rng 에서 뽑아 매번 같은 하루가 나오게 한다.
+    arr.push({
+      at: Math.round(t),
+      dur: 4 + Math.floor(rng() * 12),
+      kind: pickKind(rng()),
+    });
     for (let k = 1; k < size; k++) {
       last += 4 + Math.floor(rng() * 5); // 묶음 내 멤버 간 4~8초
-      arr.push({ at: Math.round(last), dur: 4 + Math.floor(rng() * 12) });
+      arr.push({
+        at: Math.round(last),
+        dur: 4 + Math.floor(rng() * 12),
+        kind: pickKind(rng()),
+      });
     }
     // 다음 묶음 시작 — 마지막 멤버에서 ≥16초 떨어뜨려 묶음을 격리.
     t = last + Math.max(16, Math.round(meanGap * (0.5 + rng())));
@@ -1887,6 +1908,7 @@ function SideEventTimeline({
     ms: number;
     secOffset: number;
     durSec: number;
+    kind: EventKind;
   }[] = [];
   if (anchor !== null) {
     const anchorDay = new Date(anchor);
@@ -1904,6 +1926,7 @@ function SideEventTimeline({
             ms: eventMs,
             secOffset,
             durSec: ev.dur,
+            kind: ev.kind,
           });
         }
       }
@@ -1918,12 +1941,19 @@ function SideEventTimeline({
   // 카드가 서로 겹치지 않게 한다. 대표 하나만 그린다(겹쳐 쌓기·개수 배지·펼침 없음
   // — 가로 타임라인과 동일).
   const CARD_H = THUMB_H + 8;
-  type Occ = { key: string; ms: number; secOffset: number; durSec: number };
+  type Occ = {
+    key: string;
+    ms: number;
+    secOffset: number;
+    durSec: number;
+    kind: EventKind;
+  };
   const clusters: {
     key: string;
     ms: number;
     secOffset: number;
     durSec: number;
+    kind: EventKind;
     members: Occ[];
   }[] = [];
   for (const occ of eventOccurrences) {
@@ -2253,6 +2283,7 @@ function SideEventTimeline({
                       : null),
                   }}
                 >
+                  {eventThumbs && <EventKindChip kind={occ.kind} />}
                   {eventThumbs ? (
                     <FrozenImage
                       src={cameraSrc}
@@ -2455,6 +2486,7 @@ function RecordingEventTimeline({
     ms: number;
     secOffset: number;
     durSec: number;
+    kind: EventKind;
   }[] = [];
   if (anchor !== null) {
     const anchorDay = new Date(anchor);
@@ -2472,6 +2504,7 @@ function RecordingEventTimeline({
             ms: eventMs,
             secOffset,
             durSec: ev.dur,
+            kind: ev.kind,
           });
         }
       }
@@ -2483,12 +2516,19 @@ function RecordingEventTimeline({
   const thumbW = Math.round((thumbH * 16) / 9); // 썸네일 폭(16:9, 세로 크기에 연동)
   const CARD_W = thumbW; // 이 간격보다 가까운 이벤트는 한 자리로 묶는다.
   const COL_W = thumbW + 12; // (미사용) 멤버 간 가로 간격.
-  type Occ = { key: string; ms: number; secOffset: number; durSec: number };
+  type Occ = {
+    key: string;
+    ms: number;
+    secOffset: number;
+    durSec: number;
+    kind: EventKind;
+  };
   const clusters: {
     key: string;
     ms: number;
     secOffset: number;
     durSec: number;
+    kind: EventKind;
     members: Occ[];
   }[] = [];
   for (const occ of eventOccurrences) {
@@ -2868,7 +2908,7 @@ function RecordingEventTimeline({
               }}
             >
               <div
-                className={`overflow-hidden rounded-md ${eventThumbs ? "bg-neutral-900" : ""}`}
+                className={`relative overflow-hidden rounded-md ${eventThumbs ? "bg-neutral-900" : ""}`}
                 style={{
                   // 높이는 thumbH 하나만 본다 — 예전엔 CSS min(48px,100%) 로
                   // 따로 정해서 폭 계산(thumbW)의 근거인 thumbH 와 어긋날 수
@@ -2881,6 +2921,7 @@ function RecordingEventTimeline({
                     : null),
                 }}
               >
+                {eventThumbs && <EventKindChip kind={cluster.kind} />}
                 {eventThumbs ? (
                   <FrozenImage
                     src={cameraSrc}

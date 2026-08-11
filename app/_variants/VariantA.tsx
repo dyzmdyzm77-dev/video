@@ -16,6 +16,7 @@ import {
   useGifFrameCanvas,
 } from "../components/CameraFeed";
 import EventCardFace from "../components/EventCardFace";
+import EventKindChip from "../components/EventKindChip";
 import { useEventThumbs } from "../components/eventThumbs";
 import VariantPicker from "../components/VariantPicker";
 import MoreSheet from "../components/MoreSheet";
@@ -1794,9 +1795,20 @@ function mulberry32(seed: number) {
 //  2) 상식적인 겹침 — 한 묶음은 1개(78%)·2개(18%)·3개(4%)뿐이고, 멤버는 4~8초 간격.
 //     다음 묶음은 마지막 멤버에서 최소 16초 떨어뜨려 '격리'하므로 묶음끼리는 절대 붙지 않는다
 //     → 같은 1초에 떼박히거나 4개 이상 겹치는 비상식적 분포가 구조적으로 불가능.
+// 감지 유형 — 썸네일 위 칩에 쓴다. 대부분은 단순 '움직임'이고 이상 상황은
+// 드물게 섞인다(넘어짐 > 폭행). 실제 분포를 흉내 낸 값이라, 화면을 훑을 때
+// 빨간 칩이 드문드문 보이는 정도가 된다.
+const EVENT_KINDS = ["움직임", "넘어짐", "폭행"] as const;
+type EventKind = (typeof EVENT_KINDS)[number];
+function pickKind(r: number): EventKind {
+  if (r < 0.86) return "움직임";
+  if (r < 0.95) return "넘어짐";
+  return "폭행";
+}
+
 const TIMELINE_EVENTS = (() => {
   const rng = mulberry32(20260529);
-  const arr: { at: number; dur: number }[] = [];
+  const arr: { at: number; dur: number; kind: EventKind }[] = [];
   let t = 0;
   while (t < 86400) {
     const h = Math.min(23, Math.floor(t / 3600));
@@ -1805,10 +1817,19 @@ const TIMELINE_EVENTS = (() => {
     const r = rng();
     const size = r < 0.78 ? 1 : r < 0.96 ? 2 : 3; // 묶음 크기
     let last = t;
-    arr.push({ at: Math.round(t), dur: 4 + Math.floor(rng() * 12) }); // 4~15초
+    // 4~15초. 유형은 같은 rng 에서 뽑아 매번 같은 하루가 나오게 한다.
+    arr.push({
+      at: Math.round(t),
+      dur: 4 + Math.floor(rng() * 12),
+      kind: pickKind(rng()),
+    });
     for (let k = 1; k < size; k++) {
       last += 4 + Math.floor(rng() * 5); // 묶음 내 멤버 간 4~8초
-      arr.push({ at: Math.round(last), dur: 4 + Math.floor(rng() * 12) });
+      arr.push({
+        at: Math.round(last),
+        dur: 4 + Math.floor(rng() * 12),
+        kind: pickKind(rng()),
+      });
     }
     // 다음 묶음 시작 — 마지막 멤버에서 ≥16초 떨어뜨려 묶음을 격리.
     t = last + Math.max(16, Math.round(meanGap * (0.5 + rng())));
@@ -1931,6 +1952,7 @@ function SideEventTimeline({
     ms: number;
     secOffset: number;
     durSec: number;
+    kind: EventKind;
   }[] = [];
   if (anchor !== null) {
     const anchorDay = new Date(anchor);
@@ -1948,6 +1970,7 @@ function SideEventTimeline({
             ms: eventMs,
             secOffset,
             durSec: ev.dur,
+            kind: ev.kind,
           });
         }
       }
@@ -1962,12 +1985,19 @@ function SideEventTimeline({
   // 카드가 서로 겹치지 않게 한다. 대표 하나만 그린다(겹쳐 쌓기·개수 배지·펼침 없음
   // — 가로 타임라인과 동일).
   const CARD_H = THUMB_H + 8;
-  type Occ = { key: string; ms: number; secOffset: number; durSec: number };
+  type Occ = {
+    key: string;
+    ms: number;
+    secOffset: number;
+    durSec: number;
+    kind: EventKind;
+  };
   const clusters: {
     key: string;
     ms: number;
     secOffset: number;
     durSec: number;
+    kind: EventKind;
     members: Occ[];
   }[] = [];
   for (const occ of eventOccurrences) {
@@ -1990,6 +2020,12 @@ function SideEventTimeline({
   const gapBefore = (secOffset: number) =>
     expandedGaps.reduce((s, g) => s + (g.at > secOffset ? g.gap : 0), 0);
   const yOf = (secOffset: number) => -secOffset * pxPerSec + gapBefore(secOffset);
+
+  // 지금 재생 중인 이벤트인가 — 카드를 탭하면 그 시각(ms)으로 이동하므로, 선택
+  // 직후부터 그 이벤트 영상이 끝날 때까지(ms ~ ms+durSec) 참이 된다. 스크럽으로
+  // 그 구간에 들어가도 똑같이 켜진다. 썸네일을 켜든 끄든 같은 규칙이다.
+  const isActiveEvent = (ms: number, durSec: number) =>
+    playbackMs !== null && playbackMs >= ms && playbackMs < ms + durSec * 1000;
 
   // 라인 위치: 컨테이너 상단에서 20px 아래
   useEffect(() => {
@@ -2273,7 +2309,9 @@ function SideEventTimeline({
                 className="relative"
                 style={{ width: `${THUMB_W}px`, height: `${THUMB_H}px`, flexShrink: 0 }}
               >
-                {/* 썸네일 — 한 자리에 하나만. 겹침 표시(쌓인 카드·개수 배지)는 안 쓴다. */}
+                {/* 썸네일 — 한 자리에 하나만. 겹침 표시(쌓인 카드·개수 배지)는 안 쓴다.
+                    지금 재생 중인 이벤트면 파란 테두리를 두른다 — 썸네일을 끈
+                    사양(EventCardFace)과 같은 규칙이라 켜고 꺼도 표시가 같다. */}
                 <div
                   className={`absolute overflow-hidden rounded-md ${eventThumbs ? "bg-neutral-900" : ""}`}
                   style={{
@@ -2282,8 +2320,12 @@ function SideEventTimeline({
                     width: `${THUMB_W}px`,
                     height: `${THUMB_H}px`,
                     zIndex: 2,
+                    ...(eventThumbs && isActiveEvent(occ.ms, occ.durSec)
+                      ? { border: "2px solid #1D6CEB" }
+                      : null),
                   }}
                 >
+                  {eventThumbs && <EventKindChip kind={occ.kind} />}
                   {eventThumbs ? (
                     <FrozenImage
                       src={cameraSrc}
@@ -2292,7 +2334,10 @@ function SideEventTimeline({
                       style={{ objectFit: "cover" }}
                     />
                   ) : (
-                    <EventCardFace ms={occ.ms} />
+                    <EventCardFace
+                      ms={occ.ms}
+                      active={isActiveEvent(occ.ms, occ.durSec)}
+                    />
                   )}
                 </div>
               </div>
@@ -2483,6 +2528,7 @@ function RecordingEventTimeline({
     ms: number;
     secOffset: number;
     durSec: number;
+    kind: EventKind;
   }[] = [];
   if (anchor !== null) {
     const anchorDay = new Date(anchor);
@@ -2500,6 +2546,7 @@ function RecordingEventTimeline({
             ms: eventMs,
             secOffset,
             durSec: ev.dur,
+            kind: ev.kind,
           });
         }
       }
@@ -2511,12 +2558,19 @@ function RecordingEventTimeline({
   const thumbW = Math.round((thumbH * 16) / 9); // 썸네일 폭(16:9, 세로 크기에 연동)
   const CARD_W = thumbW; // 이 간격보다 가까운 이벤트는 한 자리로 묶는다.
   const COL_W = thumbW + 12; // (미사용) 멤버 간 가로 간격.
-  type Occ = { key: string; ms: number; secOffset: number; durSec: number };
+  type Occ = {
+    key: string;
+    ms: number;
+    secOffset: number;
+    durSec: number;
+    kind: EventKind;
+  };
   const clusters: {
     key: string;
     ms: number;
     secOffset: number;
     durSec: number;
+    kind: EventKind;
     members: Occ[];
   }[] = [];
   for (const occ of eventOccurrences) {
@@ -2539,6 +2593,10 @@ function RecordingEventTimeline({
   const gapBefore = (secOffset: number) =>
     expandedGaps.reduce((s, g) => s + (g.at < secOffset ? g.gap : 0), 0);
   const xOf = (secOffset: number) => secOffset * pxPerSec + gapBefore(secOffset);
+
+  // 지금 재생 중인 이벤트인가 — 세로 타임라인과 같은 판정.
+  const isActiveEvent = (ms: number, durSec: number) =>
+    playbackMs !== null && playbackMs >= ms && playbackMs < ms + durSec * 1000;
 
   // 드래그 + 핀치 줌
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -2881,22 +2939,29 @@ function RecordingEventTimeline({
                 // 아래 여백은 시간바 위 여백(PAD_TOP 12)과 같게 — 세로가 빡빡한
                 // 실기기에서 위는 12, 아래는 4로 붙어 보이던 걸 맞춘 값이다.
                 bottom: `${PAD_TOP}px`,
-                transform: "translateX(-50%)",
+                // 카드의 '왼쪽 끝'이 자기 시각에 오게 둔다(가운데 정렬 아님).
+                // 탭하면 그 시각이 중앙 파란선으로 오므로, 결과적으로 썸네일
+                // 왼쪽 끝이 선에 맞는다(사용자 요청).
                 // 카드 위에서도 드래그가 통과하도록 stopPropagation 하지 않음.
                 pointerEvents: "auto",
                 cursor: "pointer",
               }}
             >
               <div
-                className={`overflow-hidden rounded-md ${eventThumbs ? "bg-neutral-900" : ""}`}
+                className={`relative overflow-hidden rounded-md ${eventThumbs ? "bg-neutral-900" : ""}`}
                 style={{
                   // 높이는 thumbH 하나만 본다 — 예전엔 CSS min(48px,100%) 로
                   // 따로 정해서 폭 계산(thumbW)의 근거인 thumbH 와 어긋날 수
                   // 있었다(THUMB_MIN_H 가 실제 높이엔 안 걸렸음).
                   height: `${thumbH}px`,
                   aspectRatio: "16 / 9",
+                  // 지금 재생 중인 이벤트면 파란 테두리(썸네일 끈 사양과 동일 규칙).
+                  ...(eventThumbs && isActiveEvent(cluster.ms, cluster.durSec)
+                    ? { border: "2px solid #1D6CEB" }
+                    : null),
                 }}
               >
+                {eventThumbs && <EventKindChip kind={cluster.kind} />}
                 {eventThumbs ? (
                   <FrozenImage
                     src={cameraSrc}
@@ -2905,7 +2970,10 @@ function RecordingEventTimeline({
                     style={{ objectFit: "cover" }}
                   />
                 ) : (
-                  <EventCardFace ms={cluster.ms} />
+                  <EventCardFace
+                    ms={cluster.ms}
+                    active={isActiveEvent(cluster.ms, cluster.durSec)}
+                  />
                 )}
               </div>
             </div>
