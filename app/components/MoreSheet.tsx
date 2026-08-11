@@ -79,7 +79,7 @@ export default function MoreSheet({
               key={label}
               type="button"
               onClick={onClose}
-              className="flex items-center border-b border-neutral-100 text-left"
+              className="flex items-center text-left"
               style={{ height: "56px" }}
             >
               <span className="text-[16px] font-medium leading-none text-[#262626]">

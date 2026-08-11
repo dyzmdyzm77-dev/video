@@ -3562,12 +3562,11 @@ function RecordingControls({
       {/* 가로 딤엔 REC 칩(숨기기 토글)이 없으므로 항상 편다. */}
       {(overlay || timelineVisible) && (
       <>
-      <div
-        className="h-px"
-        style={{
-          backgroundColor: overlay ? "rgba(255,255,255,0.18)" : "#EBEBEB",
-        }}
-      />
+      {/* 구분선 — 흰 바 위(세로)에서만 그린다. 확대·가로 딤에선 영상 위에
+          흰 줄이 그어져 보여 뺐다(사용자 요청). */}
+      {!overlay && (
+        <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+      )}
       <div className="relative">
       {/* 플레이어 컨트롤 — 시간바(타임라인) 위.
           가로(overlay)에선 시간바를 끄는 동안 잠깐 감춘다 — 손을 떼면 돌아온다.
@@ -3633,12 +3632,11 @@ function RecordingControls({
           }}
         />
       </div>
-      <div
-        className="h-px"
-        style={{
-          backgroundColor: overlay ? "rgba(255,255,255,0.18)" : "#EBEBEB",
-        }}
-      />
+      {/* 구분선 — 흰 바 위(세로)에서만 그린다. 확대·가로 딤에선 영상 위에
+          흰 줄이 그어져 보여 뺐다(사용자 요청). */}
+      {!overlay && (
+        <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+      )}
       {/* 타임라인 */}
       <div
         ref={timelineRef}

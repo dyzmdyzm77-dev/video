@@ -3638,12 +3638,11 @@ function RecordingControls({
           }}
         />
       </div>
-      <div
-        className="h-px"
-        style={{
-          backgroundColor: overlay ? "rgba(255,255,255,0.18)" : "#EBEBEB",
-        }}
-      />
+      {/* 구분선 — 흰 바 위(세로)에서만 그린다. 확대·가로 딤에선 영상 위에
+          흰 줄이 그어져 보여 뺐다(사용자 요청). */}
+      {!overlay && (
+        <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+      )}
       {/* 타임라인 */}
       <div
         ref={timelineRef}
