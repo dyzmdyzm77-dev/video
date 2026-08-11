@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { EVENT_THUMBS_EVENT } from "./eventThumbs";
-import { exitImmersive, readImmersiveRotated } from "./immersive";
+import {
+  exitImmersive,
+  readImmersive,
+  readImmersiveRotated,
+} from "./immersive";
 import {
   DEVICE_ROTATE_EVENT,
   LANDSCAPE_EVENT,
@@ -452,14 +456,19 @@ export default function DesktopVariantNav() {
         data-active={rotated}
         title={rotated ? "세로로 되돌리기" : "왼쪽으로 회전"}
         onClick={() => {
-          // 확대가 '눕혀서' 만든 상태일 때만 가로챈다 — 그때는 이미 가로라
-          // 또 돌리면 두 번 돈 꼴이 된다. 확대를 풀면서 원래 방향으로 되돌린다.
+          // 확대 중 회전은 '확대를 끄고 방향을 한 번만 바꾼다'로 통일한다.
+          // 확대 화면인 채로 프레임만 돌면, 프레임이 돌고 나서 안의 콘텐츠가
+          // 다시 서느라 두 번 도는 것처럼 보인다(사용자 지적: "제자리 확대 →
+          // 회전 → 두번 회전").
           //
-          // 제자리 확대(눕히지 않은 확대 — 780×780 처럼 눕혀도 안 커지는 기기)나
-          // 회전해서 켜진 확대는 방향을 바꾼 적이 없으므로 평소대로 돈다. 돌고
-          // 나면 확대 여부는 그 방향 기준으로 다시 정해진다(immersive.ts).
-          if (readImmersiveRotated()) {
+          // 회전이 한 번만 나가도록 경로를 나눈다:
+          //  · 확대가 눕혀 만든 상태 → exitImmersive 가 원래 방향으로 되돌린다.
+          //  · 제자리 확대(750·780 처럼 눕혀도 안 커지는 기기) → 방향을 안 바꿨
+          //    으므로 여기서 평소대로 한 번 돌린다.
+          if (readImmersive()) {
+            const undoesRotation = readImmersiveRotated();
             exitImmersive();
+            if (!undoesRotation) setRotated((v) => !v);
             return;
           }
           setRotated((v) => !v);
