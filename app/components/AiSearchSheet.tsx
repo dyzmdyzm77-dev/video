@@ -38,11 +38,15 @@ export default function AiSearchSheet({
     if (open) setText("");
   }, [open]);
 
-  // 키보드 대응 — 화면 전체가 밀려 올라가는 걸 막는다.
+  // 키보드 대응 — 움직이는 건 입력창뿐이다.
   // 모바일 브라우저는 입력창에 포커스가 가면 (1) 뷰포트를 키보드 높이만큼 줄이고
   // (2) 입력창이 보이도록 페이지를 스크롤한다. 이 앱은 스크롤이 없는 화면이라
   // (2)가 앱 전체를 위로 밀어 올린 채 돌아오지 않는다. 그래서 스크롤은 즉시
-  // 되돌리고(scrollTo 0), 대신 시트만 키보드 높이만큼 띄운다.
+  // 되돌린다(scrollTo 0).
+  //
+  // 시트 자체는 자리도 크기도 그대로 둔다 — 키보드가 떴다고 바텀시트가 통째로
+  // 떠오르면 안 된다(사용자 지적). 대신 시트 안쪽에 키보드 높이만큼 아래 여백을
+  // 줘서 입력창만 키보드 위로 올라오고, 그만큼 대화 영역이 줄어든다.
   useEffect(() => {
     if (!open) {
       setKeyboard(0);
@@ -91,10 +95,11 @@ export default function AiSearchSheet({
           open ? "pointer-events-auto" : ""
         }`}
         style={{
-          bottom: `${keyboard}px`,
+          bottom: 0,
           height: "80%",
-          // 키보드가 올라온 만큼은 시트가 쓸 수 없다 — 넘치면 제목이 잘린다.
-          maxHeight: `calc(100% - ${keyboard}px)`,
+          // 키보드에 가린 만큼은 시트 안쪽에서 비운다 — 시트는 안 움직이고
+          // 입력창만 키보드 위로 올라온다.
+          paddingBottom: `${keyboard}px`,
           borderTopLeftRadius: "10px",
           borderTopRightRadius: "10px",
           transform: open ? "translateY(0%)" : "translateY(100%)",
