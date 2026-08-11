@@ -304,7 +304,7 @@ export function Inner({
   // 진입 전 화면안. 영상 탭/최근 본 영상으로 돌아갈 때 사용한다.
   const from = ["a", "a1", "b"].includes(params.get("from") ?? "")
     ? (params.get("from") as string)
-    : "a";
+    : "a1";
   const [chromeVisible, setChromeVisible] = useState(initialChrome);
   const [stamp, setStamp] = useState<string>("");
   const [zones, setZones] = useState<Zone[]>([

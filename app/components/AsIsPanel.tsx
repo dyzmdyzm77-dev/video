@@ -215,7 +215,7 @@ export default function AsIsPanel() {
   const isHome = pathname === "/home";
   const from = ["a", "a1", "b"].includes(params.get("from") ?? "")
     ? (params.get("from") as string)
-    : "a";
+    : "a1";
 
   useEffect(() => {
     const read = () => {

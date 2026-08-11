@@ -21,6 +21,7 @@ import { useEventThumbs } from "../components/eventThumbs";
 import VariantPicker from "../components/VariantPicker";
 import { VARIANT_LABEL } from "../components/variantRoute";
 import MoreSheet from "../components/MoreSheet";
+import AiSearchSheet from "../components/AiSearchSheet";
 import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
 import { nextVideoFit, videoFitIcon } from "../components/videoFit";
 import { useAutoHide } from "../components/useAutoHide";
@@ -195,8 +196,32 @@ export default function VariantA({
   // videoAreaRef 는 GridView 의 슬라이드 섹션에 달아 실측한다 — 섹션 크기는
   // cols×rows 선택과 무관해서(그 안을 나누기만 하므로) 순환 의존이 없다.
   const [videoAreaRef, gridRatio] = useGridAreaRatio();
-  const [userGridCount, setUserGridCount] = useState<number | null>(null);
-  const gridCount = userGridCount ?? autoGridCount(gridRatio);
+  // 사용자가 직접 고른 '한 화면에 볼 채널 수' — 기기 방향별로 따로 기억한다.
+  // 눕혀 보면 16채널, 세로로 들면 8채널처럼 방향마다 알맞은 수가 다르다
+  // (사용자 요청 2026-08-11, A-1 과 같은 사양). null 이면 그 방향은 '자동'.
+  const [userCounts, setUserCounts] = useState<{
+    portrait: number | null;
+    landscape: number | null;
+  }>({ portrait: null, landscape: null });
+  // 방향별로 마지막에 잰 '자동' 개수. 시트는 두 방향을 한 화면에 같이 보여
+  // 주는데, 지금 안 보고 있는 방향은 실측할 길이 없어 마지막 값을 쓴다.
+  const autoCountSeen = useRef<{
+    portrait: number | null;
+    landscape: number | null;
+  }>({ portrait: null, landscape: null });
+  // 기기가 가로로 긴 상태인가 — 회전하면 --device-w/h 가 맞바뀌고(데스크톱
+  // 미리보기) 실기기는 innerWidth/Height 가 바뀌므로 비율 하나로 알 수 있다.
+  const orientKey: "portrait" | "landscape" =
+    useDeviceRatio() > 1 ? "landscape" : "portrait";
+  const autoCount = autoGridCount(gridRatio);
+  autoCountSeen.current[orientKey] = autoCount;
+  const gridCount = userCounts[orientKey] ?? autoCount;
+  // 시트의 두 슬라이더 시작값 — 방향마다 '지금 쓰이는 개수'.
+  const sheetCounts = {
+    portrait: userCounts.portrait ?? autoCountSeen.current.portrait ?? autoCount,
+    landscape:
+      userCounts.landscape ?? autoCountSeen.current.landscape ?? autoCount,
+  };
   const [mode, setMode] = useState<"live" | "recording">("live");
   // 위아래 가짜 시스템 바 표시 여부. 기본은 숨긴 몰입 상태(LIVE 칩으로 토글).
   // 단 데스크톱 진입(initialChrome)이면 켠 채로 시작한다.
@@ -319,6 +344,8 @@ export default function VariantA({
   // 세로가 통째로 언마운트되면서 맞춤이 기본값으로 되돌아간다(A-1 과 동일).
   // 딤의 '더보기'(⋮) 시트. 다채널·단일·가로 딤이 모두 이 하나를 연다.
   const [moreOpen, setMoreOpen] = useState(false);
+  // 딤의 AI 버튼이 여는 'AI 검색 기능' 시트(A-1 과 같은 사양).
+  const [aiOpen, setAiOpen] = useState(false);
   const gridFitState = useVideoFit("fill");
   const videoFitState = useVideoFit("fill");
 
@@ -361,6 +388,7 @@ export default function VariantA({
           driveByPlayback={mode === "recording"}
           onGallery={() => setSheetOpen(true)}
           onMore={() => setMoreOpen(true)}
+          onAi={() => setAiOpen(true)}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
@@ -405,11 +433,11 @@ export default function VariantA({
             아예 렌더되지 않았다. */}
         <LayoutConfigSheet
           open={sheetOpen}
-          selectedCount={userGridCount}
-          resolvedCount={gridCount}
+          selected={userCounts}
+          resolved={sheetCounts}
           onClose={() => setSheetOpen(false)}
-          onPreview={(count) => {
-            setUserGridCount(count);
+          onPreview={(counts) => {
+            setUserCounts(counts);
             setCurrentPage(0);
           }}
         />
@@ -426,6 +454,7 @@ export default function VariantA({
           }}
         />
         <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+        <AiSearchSheet open={aiOpen} onClose={() => setAiOpen(false)} />
         <VariantPicker
           open={variantPickerOpen}
           current="a"
@@ -473,6 +502,7 @@ export default function VariantA({
           dateLabel={dateLabel}
           onOpenSheet={() => setSheetOpen(true)}
           onOpenMore={() => setMoreOpen(true)}
+          onOpenAi={() => setAiOpen(true)}
           onOpenVariantPicker={() => setVariantPickerOpen(true)}
           cols={layoutDims.cols}
           rows={layoutDims.rows}
@@ -503,6 +533,7 @@ export default function VariantA({
           index={expandedIndex}
           onBack={handleBack}
           onOpenMore={() => setMoreOpen(true)}
+          onOpenAi={() => setAiOpen(true)}
           onSelect={setExpandedIndex}
           dateLabel={dateLabel}
           mode={mode}
@@ -542,16 +573,17 @@ export default function VariantA({
 
       <LayoutConfigSheet
         open={sheetOpen}
-        selectedCount={userGridCount}
-        resolvedCount={gridCount}
+        selected={userCounts}
+        resolved={sheetCounts}
         onClose={() => setSheetOpen(false)}
-        onPreview={(count) => {
-          setUserGridCount(count);
+        onPreview={(counts) => {
+          setUserCounts(counts);
           setCurrentPage(0);
         }}
       />
 
       <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+        <AiSearchSheet open={aiOpen} onClose={() => setAiOpen(false)} />
       <VariantPicker
         open={variantPickerOpen}
         current="a"
@@ -587,6 +619,7 @@ function GridView({
   dateLabel,
   onOpenSheet,
   onOpenMore,
+  onOpenAi,
   onOpenVariantPicker,
   cols,
   rows,
@@ -619,6 +652,7 @@ function GridView({
   onOpenSheet: () => void;
   /** 딤의 더보기(⋮) — 안이 더보기 시트를 연다. */
   onOpenMore: () => void;
+  onOpenAi: () => void;
   onOpenVariantPicker: () => void;
   cols: number;
   rows: number;
@@ -815,6 +849,7 @@ function GridView({
           totalPages={totalPages}
           onGallery={onOpenSheet}
           onMore={onOpenMore}
+          onAi={onOpenAi}
           onFit={cycleGridFit}
           fit={gridFit}
           auto={gridAuto}
@@ -934,6 +969,7 @@ function ExpandedView({
   index,
   onBack,
   onOpenMore,
+  onOpenAi,
   onSelect,
   dateLabel,
   mode,
@@ -960,6 +996,7 @@ function ExpandedView({
   onBack: () => void;
   /** 딤의 더보기(⋮) — 안이 더보기 시트를 연다. */
   onOpenMore: () => void;
+  onOpenAi: () => void;
   onSelect: (i: number) => void;
   dateLabel: string;
   mode: "live" | "recording";
@@ -1434,9 +1471,11 @@ function ExpandedView({
             {/* AI 아이콘 — 딤 오른쪽 아래. 원본이 이미 흰색이라 필터 없이 쓴다.
                 카메라 인디케이터와 같은 높이(bottom 12)에 앉힌다. 다채널 딤
                 (GridSelectionOverlay)에 넣은 것과 같은 자리·같은 크기다. */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute flex items-center justify-center rounded-full"
+            <button
+              type="button"
+              aria-label="AI 검색"
+              onClick={onOpenAi}
+              className="absolute flex items-center justify-center rounded-full"
               style={{
                 bottom: "12px",
                 right: "16px",
@@ -1444,10 +1483,11 @@ function ExpandedView({
                 height: "34px",
                 border: "1px solid rgba(255,255,255,0.35)",
                 backgroundColor: "rgba(0,0,0,0.35)",
+                pointerEvents: showControls ? "auto" : "none",
               }}
             >
               <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
-            </div>
+            </button>
           </div>
           <VideoSkeleton visible={videoLoading} />
           {/* 화면 맞춤 토스트 — 탐색·캡처 토스트와 같은 자리(영역 하단 20px 위). */}
@@ -3067,52 +3107,79 @@ function FrozenImage({
   return <canvas ref={canvasRef} aria-label={alt} className={className} style={style} />;
 }
 
-// '화면 구성' 시트 — 배치(2×4 같은 모양)가 아니라 '개수'(1~16)를 슬라이더로
-// 고른다. 몇 열인지보다 몇 개가 보이는지가 사용자에게 중요한 정보라서다. 고른
-// 개수의 cols×rows 는 layoutRules.ts 의 bestGridForCount(count, 영상영역비율)
-// 가 16:9 에 가장 가깝게 자동으로 고른다.
+// '화면 구성' 시트 — 기기 방향마다 '한 화면에 볼 채널 수'를 따로 정한다.
+// 눕혀 보면 16채널, 세로로 들면 8채널처럼 방향마다 알맞은 수가 다르다는 게
+// 사용자 요구다(2026-08-11). 두 슬라이더를 한 화면에 같이 두어, 지금 어느
+// 방향이든 두 값을 다 보고 정할 수 있게 한다.
 //
-// '자동'은 개수를 직접 정하지 않고 영상 영역 비율에 맞춰(autoGridCount) 그때
-// 그때 최적 개수를 쓰겠다는 뜻 — 슬라이더를 만지면 자동은 즉시 꺼진다(그
-// 순간부터 사용자가 개수를 정한 것이므로).
+// 여기서 정하는 건 개수뿐이다 — 그 개수를 몇 열 × 몇 행으로 나눌지는 그 화면
+// 에서 타일이 16:9 에 가장 가깝도록 bestGridForCount 가 고른다(layoutRules.ts).
+// 같은 8채널이라도 세로면 2×4, 가로면 4×2 가 되는 식이다.
 //
-// 슬라이더는 '적용'을 눌러야 반영되는 게 아니라 끄는 즉시(onPreview) 뒤 그리드가
-// 따라온다 — 몇 개가 어떻게 보이는지 드래그하면서 바로 눈으로 확인하며 고르는
-// 게 자연스럽다(밝기 슬라이더처럼). '취소'를 누르면 시트를 열었을 때 값으로
-// 되돌린다 — 그래서 미리보기 중 실제 상태가 바뀌어도 취소가 의미를 갖는다.
+// '자동'은 개수를 정하지 않고 영상 영역 비율에 맞춰(autoGridCount) 그때그때
+// 쓰겠다는 뜻 — 슬라이더를 만지면 그 순간 두 방향 모두 지금 값으로 고정된다.
+//
+// 슬라이더는 '적용'을 눌러야 반영되는 게 아니라 끄는 즉시(onPreview) 뒤 화면이
+// 따라온다 — 몇 개가 어떻게 보이는지 드래그하며 눈으로 확인하는 게 자연스럽다
+// (밝기 슬라이더처럼). '취소'는 시트를 열었을 때 값으로 되돌린다.
+type OrientCounts = { portrait: number | null; landscape: number | null };
+
 function LayoutConfigSheet({
   open,
-  selectedCount,
-  resolvedCount,
+  selected,
+  resolved,
   onClose,
   onPreview,
 }: {
   open: boolean;
-  /** 사용자가 직접 고른 개수. null 이면 '자동'. */
-  selectedCount: number | null;
-  /** 지금 실제로 쓰이는 개수(자동이면 autoGridCount 결과) — 슬라이더 위치·라벨용. */
-  resolvedCount: number;
+  /** 방향별로 사용자가 직접 고른 개수. null 이면 그 방향은 '자동'. */
+  selected: OrientCounts;
+  /** 방향별로 지금 쓰이는 개수(자동이면 계산 결과) — 슬라이더 시작값. */
+  resolved: { portrait: number; landscape: number };
   onClose: () => void;
-  /** 값이 바뀔 때마다(자동 토글·슬라이더 드래그) 즉시 호출 — 그리드가 바로 따라온다. */
-  onPreview: (count: number | null) => void;
+  /** 값이 바뀔 때마다 즉시 호출 — 화면이 바로 따라온다. */
+  onPreview: (counts: OrientCounts) => void;
 }) {
-  const [auto, setAuto] = useState(selectedCount === null);
-  const [count, setCount] = useState(resolvedCount);
+  const [auto, setAuto] = useState(
+    selected.portrait === null && selected.landscape === null,
+  );
+  const [counts, setCounts] = useState({
+    portrait: resolved.portrait,
+    landscape: resolved.landscape,
+  });
   // 시트를 열었을 때의 선택값 — '취소' 누르면 이 값으로 되돌린다.
-  const originalRef = useRef<number | null>(selectedCount);
+  const originalRef = useRef<OrientCounts>(selected);
 
   useEffect(() => {
     if (open) {
-      setAuto(selectedCount === null);
-      setCount(resolvedCount);
-      originalRef.current = selectedCount;
+      setAuto(selected.portrait === null && selected.landscape === null);
+      setCounts({ portrait: resolved.portrait, landscape: resolved.landscape });
+      originalRef.current = selected;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const preview = (nextAuto: boolean, nextCount: number) => {
-    onPreview(nextAuto ? null : nextCount);
+  // 자동인 채로 방향이 바뀌면(회전) 슬라이더도 새로 잰 값을 따라간다.
+  useEffect(() => {
+    if (!open || !auto) return;
+    setCounts({ portrait: resolved.portrait, landscape: resolved.landscape });
+  }, [open, auto, resolved.portrait, resolved.landscape]);
+
+  const preview = (
+    nextAuto: boolean,
+    next: { portrait: number; landscape: number },
+  ) => {
+    onPreview(nextAuto ? { portrait: null, landscape: null } : next);
   };
+
+  const ROWS = [
+    {
+      key: "portrait" as const,
+      label: "세로 화면",
+      hint: "기기를 세로로 들었을 때",
+    },
+    { key: "landscape" as const, label: "가로 화면", hint: "기기를 눕혔을 때" },
+  ];
 
   return (
     <div
@@ -3178,7 +3245,7 @@ function LayoutConfigSheet({
               onClick={() => {
                 const next = !auto;
                 setAuto(next);
-                preview(next, count);
+                preview(next, counts);
               }}
               className="inline-flex items-center justify-center text-[14px] font-semibold leading-none"
               style={{
@@ -3193,50 +3260,65 @@ function LayoutConfigSheet({
             </button>
           </div>
 
-          <div
-            className="flex items-center justify-center text-[16px] font-semibold text-neutral-900"
-            style={{ marginBottom: "12px" }}
-          >
-            {count}개
-          </div>
-          {/* disabled 를 안 쓴다 — 자동일 때 슬라이더를 막으면 사용자가 자동을 먼저
-              꺼야만 드래그할 수 있어 한 단계가 더 든다. 항상 드래그 가능하게 두고
-              흐림(opacity)만 자동 상태를 알리는 용도로 쓴다 — 만지는 순간
-              onChange 이 자동을 꺼서 자연스럽게 넘어간다.
+          {/* disabled 를 안 쓴다 — 자동일 때 슬라이더를 막으면 자동을 먼저 꺼야만
+              드래그할 수 있어 한 단계가 더 든다. 항상 드래그 가능하게 두고
+              흐림(opacity)만 자동 상태를 알린다 — 만지는 순간 자동이 꺼진다.
               슬라이더는 GRID_COUNT_OPTIONS 의 '인덱스'를 움직인다 — native range
-              의 step 은 균일 간격만 지원해 2,3,4,6,8,9,10,12,14,15,16 처럼
-              듬성듬성한 목록엔 못 쓴다. */}
-          <input
-            type="range"
-            min={0}
-            max={GRID_COUNT_OPTIONS.length - 1}
-            step={1}
-            value={nearestGridCountIndex(count)}
-            onChange={(e) => {
-              const next = GRID_COUNT_OPTIONS[Number(e.target.value)];
-              setAuto(false);
-              setCount(next);
-              preview(false, next);
-            }}
-            className="w-full"
-            style={{
-              accentColor: "#1D6CEB",
-              opacity: auto ? 0.4 : 1,
-            }}
-          />
-          <div
-            className="flex items-center justify-between text-[12px]"
-            style={{ color: "#A4A4A4", marginTop: "4px" }}
-          >
-            <span>{GRID_COUNT_OPTIONS[0]}</span>
-            <span>{GRID_COUNT_OPTIONS[GRID_COUNT_OPTIONS.length - 1]}</span>
-          </div>
+              의 step 은 균일 간격만 지원해 2,3,4,6,8,9,12,16 처럼 듬성듬성한
+              목록엔 못 쓴다. */}
+          {ROWS.map(({ key, label, hint }) => (
+            <div key={key} style={{ marginBottom: "18px" }}>
+              <div className="flex items-baseline justify-between">
+                <span className="text-[15px] font-semibold leading-none text-neutral-900">
+                  {label}
+                  <span
+                    className="text-[12px] font-medium"
+                    style={{ color: "#A4A4A4", marginLeft: "6px" }}
+                  >
+                    {hint}
+                  </span>
+                </span>
+                <span className="text-[15px] font-semibold leading-none text-neutral-900">
+                  {counts[key]}채널
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={GRID_COUNT_OPTIONS.length - 1}
+                step={1}
+                value={nearestGridCountIndex(counts[key])}
+                onChange={(e) => {
+                  const next = {
+                    ...counts,
+                    [key]: GRID_COUNT_OPTIONS[Number(e.target.value)],
+                  };
+                  setAuto(false);
+                  setCounts(next);
+                  preview(false, next);
+                }}
+                className="w-full"
+                style={{
+                  accentColor: "#1D6CEB",
+                  opacity: auto ? 0.4 : 1,
+                  marginTop: "8px",
+                }}
+              />
+              <div
+                className="flex items-center justify-between text-[12px]"
+                style={{ color: "#A4A4A4" }}
+              >
+                <span>{GRID_COUNT_OPTIONS[0]}</span>
+                <span>{GRID_COUNT_OPTIONS[GRID_COUNT_OPTIONS.length - 1]}</span>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* 버튼 */}
         <div
           className="flex items-center"
-          style={{ gap: "8px", padding: "0 20px", height: "90px", marginTop: "16px" }}
+          style={{ gap: "8px", padding: "0 20px", height: "90px" }}
         >
           <button
             type="button"
