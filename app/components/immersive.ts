@@ -268,6 +268,16 @@ export function alignImmersiveRotation() {
   requestDeviceRotate();
 }
 
+/** 지금 확대가 '앱을 눕혀서' 만든 상태인가. 이때는 이미 가로라, 회전을 또
+ *  걸면 두 번 돈 꼴이 된다 — 좌측 패널의 회전 버튼이 이걸 보고 원복으로 바꾼다. */
+export function readImmersiveRotated(): boolean {
+  if (typeof document === "undefined") return false;
+  return (
+    readImmersive() &&
+    document.documentElement.dataset[ROTATED_FLAG] === "true"
+  );
+}
+
 /** 딤의 확대/축소 버튼에서 호출. 지금 상태를 뒤집는다.
  *  전체화면·회전은 '사용자 조작' 안에서만 허용되므로 버튼 핸들러인 여기서 바로
  *  부른다 — 상태가 바뀐 뒤 effect 에서 부르면 제스처가 끊겨 거부된다. */

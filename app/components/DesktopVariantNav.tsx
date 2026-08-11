@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { EVENT_THUMBS_EVENT } from "./eventThumbs";
-import { exitImmersive, readImmersive } from "./immersive";
+import { exitImmersive, readImmersiveRotated } from "./immersive";
 import {
   DEVICE_ROTATE_EVENT,
   LANDSCAPE_EVENT,
-  readDeviceLandscape,
   setBarColor,
 } from "./deviceRotate";
 import {
@@ -451,20 +450,16 @@ export default function DesktopVariantNav() {
         type="button"
         className="dvn-rotate-toggle"
         data-active={rotated}
-        title={
-          readImmersive()
-            ? "원래대로"
-            : rotated
-              ? "세로로 되돌리기"
-              : "왼쪽으로 회전"
-        }
+        title={rotated ? "세로로 되돌리기" : "왼쪽으로 회전"}
         onClick={() => {
-          if (readImmersive()) {
-            // 확대를 끈다. 확대하며 눕힌 것이었으면 exitImmersive 가 방향까지
-            // 되돌리고, 회전해서 켜진 확대였으면 여기서 세운다 — 어느 쪽이든
-            // '원복' 하나로 끝난다(두 번 부르지 않게 아래는 idempotent).
+          // 확대가 '눕혀서' 만든 상태일 때만 가로챈다 — 그때는 이미 가로라
+          // 또 돌리면 두 번 돈 꼴이 된다. 확대를 풀면서 원래 방향으로 되돌린다.
+          //
+          // 제자리 확대(눕히지 않은 확대 — 780×780 처럼 눕혀도 안 커지는 기기)나
+          // 회전해서 켜진 확대는 방향을 바꾼 적이 없으므로 평소대로 돈다. 돌고
+          // 나면 확대 여부는 그 방향 기준으로 다시 정해진다(immersive.ts).
+          if (readImmersiveRotated()) {
             exitImmersive();
-            if (readDeviceLandscape()) setRotated(false);
             return;
           }
           setRotated((v) => !v);
