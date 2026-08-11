@@ -26,7 +26,11 @@ import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
 import { nextVideoFit, videoFitIcon } from "../components/videoFit";
 import { useAutoHide } from "../components/useAutoHide";
 import AndroidNav from "../components/AndroidNav";
-import { useDeviceRatio, useDeviceWidth } from "../components/useDeviceWidth";
+import {
+  useDeviceRatio,
+  useDeviceWide,
+  useDeviceWidth,
+} from "../components/useDeviceWidth";
 import { useListLayout } from "../components/useListLayout";
 import { useGridAreaRatio } from "../components/useGridLayout";
 import {
@@ -209,10 +213,11 @@ export default function VariantA({
     portrait: number | null;
     landscape: number | null;
   }>({ portrait: null, landscape: null });
-  // 기기가 가로로 긴 상태인가 — 회전하면 --device-w/h 가 맞바뀌고(데스크톱
-  // 미리보기) 실기기는 innerWidth/Height 가 바뀌므로 비율 하나로 알 수 있다.
-  const orientKey: "portrait" | "landscape" =
-    useDeviceRatio() > 1 ? "landscape" : "portrait";
+  // 기기가 가로로 긴 상태인가 — 판정은 useDeviceWide 하나에 모아 뒀다
+  // (데스크톱 미리보기와 실기기가 회전을 다르게 표현해서다. useDeviceWidth.ts).
+  const orientKey: "portrait" | "landscape" = useDeviceWide()
+    ? "landscape"
+    : "portrait";
   const autoCount = autoGridCount(gridRatio);
   autoCountSeen.current[orientKey] = autoCount;
   const gridCount = userCounts[orientKey] ?? autoCount;

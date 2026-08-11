@@ -32,7 +32,11 @@ import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
 import { nextVideoFit, videoFitIcon } from "../components/videoFit";
 import { useAutoHide } from "../components/useAutoHide";
 import AndroidNav from "../components/AndroidNav";
-import { useDeviceRatio, useDeviceWidth } from "../components/useDeviceWidth";
+import {
+  useDeviceRatio,
+  useDeviceWide,
+  useDeviceWidth,
+} from "../components/useDeviceWidth";
 import { useListLayout } from "../components/useListLayout";
 import { useGridAreaRatio } from "../components/useGridLayout";
 import {
@@ -233,12 +237,11 @@ export default function VariantA1({
   const landscape = useDeviceLandscape();
   const immersive = useImmersive();
 
-  // '지금 기기가 가로로 긴 상태인가'. 화면 분할을 방향별로 나눠 기억하는 기준이다.
-  // 회전 플래그(data-landscape)를 따로 볼 필요는 없다 — 데스크톱 미리보기는
-  // 회전할 때 --device-w/h 를 맞바꾸고(DesktopVariantNav), 실기기는 물리 회전에
-  // innerWidth/Height 가 바뀐다. 어느 쪽이든 비율 하나로 방향이 드러난다.
-  const orientKey: "portrait" | "landscape" =
-    useDeviceRatio() > 1 ? "landscape" : "portrait";
+  // '지금 기기가 가로로 긴 상태인가' — 판정은 useDeviceWide 하나에 모아 뒀다
+  // (데스크톱 미리보기와 실기기가 회전을 다르게 표현해서다. useDeviceWidth.ts).
+  const orientKey: "portrait" | "landscape" = useDeviceWide()
+    ? "landscape"
+    : "portrait";
   // 영상 탭에 처음 들어왔을 때는 딤이 기본이다 — 뭘 할 수 있는지 한 번 보여주고
   // 5초 뒤 useAutoHide 가 알아서 걷어낸다. 단일 화면에 들어갔다 돌아온 다채널은
   // 해당 없음(GridView 가 매번 다시 마운트되므로 그때마다 딤이 뜨면 성가시다).

@@ -52,6 +52,51 @@ export function readDeviceHeight(): number {
   return window.innerHeight || 780;
 }
 
+/** 지금 '기기가 가로로 긴 상태'인가. 방향에 따라 달라지는 설정(예: 화면 분할
+ *  채널 수)이 어느 쪽을 뜻하는지 판단하는 유일한 출처다.
+ *
+ *  왜 비율만 보면 안 되나 —
+ *   · 데스크톱 미리보기: 회전하면 DesktopVariantNav 가 --device-w/h 를 맞바꾼다.
+ *     그래서 비율이 이미 방향을 말해 준다.
+ *   · 실기기: OS 방향은 못 바꾸므로 앱을 CSS 로 90° 돌리기만 한다
+ *     (globals.css 의 터치 전용 규칙). innerWidth/Height 는 그대로라 비율은
+ *     세로 그대로다 — 회전 플래그(data-landscape)를 뒤집어 줘야 맞는다.
+ *  물리 회전(사용자가 폰을 직접 돌린 경우)은 innerWidth/Height 가 알아서
+ *  바뀌고 data-landscape 는 꺼져 있으므로 같은 식이 그대로 맞는다. */
+export function readDeviceWide(): boolean {
+  if (typeof window === "undefined") return false;
+  const wide = readDeviceWidth() > readDeviceHeight();
+  const desktopPreview =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (desktopPreview) return wide;
+  const rotated =
+    typeof document !== "undefined" &&
+    document.documentElement.dataset.landscape === "true";
+  return rotated ? !wide : wide;
+}
+
+/** readDeviceWide 를 구독한다. SSR·첫 렌더는 세로(false)로 맞춰 하이드레이션
+ *  불일치를 막는다. */
+export function useDeviceWide(): boolean {
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const read = () => setWide(readDeviceWide());
+    read();
+    const evts = [
+      "devicechange",
+      "devicerange",
+      "deviceresize",
+      "resize",
+      // 회전은 크기 이벤트를 안 낼 수도 있다(실기기는 CSS 회전뿐).
+      "devicelandscapechange",
+    ];
+    evts.forEach((e) => window.addEventListener(e, read));
+    return () => evts.forEach((e) => window.removeEventListener(e, read));
+  }, []);
+  return wide;
+}
+
 /** 화면 비율(가로/세로). 1 보다 크면 가로가 더 긴 화면. */
 export function useDeviceRatio() {
   const [r, setR] = useState(() => readDeviceWidth() / readDeviceHeight());
