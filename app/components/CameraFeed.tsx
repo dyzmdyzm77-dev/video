@@ -397,7 +397,7 @@ export function GridSelectionOverlay({
         >
           <OverlayIcon
             src={`${BASE}/ic_list_gallery.svg`}
-            size={32}
+            size={28}
           />
         </button>
         {/* 화면 맞춤 — 단일 화면과 같은 자리·같은 아이콘. 그리드 타일 전체에 걸린다. */}
@@ -407,7 +407,7 @@ export function GridSelectionOverlay({
           onClick={onFit}
           style={{ pointerEvents: visible ? "auto" : "none" }}
         >
-          <OverlayIcon src={videoFitIcon(BASE, nextVideoFit(fit))} size={32} />
+          <OverlayIcon src={videoFitIcon(BASE, nextVideoFit(fit))} size={28} />
         </button>
         {/* 크게 보기 — 상태바·헤더·하단 탭바·안드로이드 내비를 걷고 영상만 화면을
             꽉 채운다(immersive.ts). 회전이 아니라 '지금 방향 그대로 키우기'다.
@@ -416,31 +416,35 @@ export function GridSelectionOverlay({
         <button
           type="button"
           aria-label={landscape || immersive ? "원래 크기로" : "크게 보기"}
-          // 확대로 들어온 상태면(스스로 눕힌 경우 포함) 확대 해제가 먼저다 —
-          // 여기서 회전만 풀면 확대 상태가 남아 화면과 어긋난다.
-          onClick={
-            !immersive && landscape ? requestDeviceRotate : toggleImmersive
-          }
+          // 언제나 '크게 보기 ↔ 원래대로'다. 방향은 확대가 알아서 정한다
+          // (immersive.ts) — 회전은 좌측 패널의 몫이고 이 버튼과 무관하다.
+          onClick={toggleImmersive}
           style={{ pointerEvents: visible ? "auto" : "none" }}
         >
           <OverlayIcon
             src={`${BASE}/${landscape || immersive ? "zoom_out" : "zoom_in"}.svg`}
-            size={32}
+            size={28}
           />
         </button>
-        <OverlayIcon src={`${BASE}/nav/etc.svg`} size={32} />
+        <OverlayIcon src={`${BASE}/nav/etc.svg`} size={28} />
       </div>
 
-      {/* AI 아이콘 — 딤 오른쪽 아래. 원본이 이미 흰색이라 마스크·필터 없이
-          그대로 쓴다(다른 아이콘들은 회색 원본이라 OverlayIcon 으로 뒤집는다).
+      {/* AI 아이콘 — 딤 오른쪽 아래. 30px 원으로 감싼다(플레이어 버튼과 같은
+          결: 반투명 검정 + 흰 테두리). 원본이 이미 흰색이라 마스크·필터는 없다.
           페이지 인디케이터와 같은 높이(bottom 12)에 앉혀 한 줄로 읽히게 했다.
           지금은 표시만 한다 — 누르면 무엇을 할지는 아직 정해지지 않았다. */}
-      <img
-        src={`${BASE}/ai_Icon.svg`}
-        alt=""
+      <div
         aria-hidden
-        className="pointer-events-none absolute bottom-3 right-4 h-8 w-8"
-      />
+        className="pointer-events-none absolute bottom-3 right-4 flex items-center justify-center rounded-full"
+        style={{
+          width: "30px",
+          height: "30px",
+          border: "1px solid rgba(255,255,255,0.35)",
+          backgroundColor: "rgba(0,0,0,0.35)",
+        }}
+      >
+        <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-6 w-6" />
+      </div>
 
       {/* 하단 페이지 인디케이터 */}
       {showPageIndicator && (

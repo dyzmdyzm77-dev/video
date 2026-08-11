@@ -335,9 +335,15 @@ export default function VariantA({
   const dateLabel = now ? formatNow(now) : "";
 
   // 가로 모드 — 지금은 영상만 보여준다(헤더·목록·탭바·시스템 바 전부 없음).
-  // 가로(눕힘)든 몰입(크게 보기)이든 '영상만' 화면 하나를 쓴다 — 상태바·헤더·
-  // 하단 탭바·안드로이드 내비를 다 걷는다. 레이아웃이 같아야 한다는 게 요구사항.
-  if (landscape || immersive) {
+  // '영상만' 화면은 크게 보기(확대)일 때만이다.
+  //
+  // 회전(왼쪽으로 회전)은 그냥 가로 해상도로 바꾸는 것이지 확대가 아니다 —
+  // 헤더·목록·하단 탭바가 그대로 있고, 그 폭에 맞춰 다시 배치될 뿐이다.
+  // 예전엔 회전만 해도 여기로 빠져 영상만 남았는데, '확대 = 영상 최대화 /
+  // 회전 = 방향 전환' 이라는 기준과 어긋났다(사용자 지적).
+  //
+  // 확대하면서 눕힌 경우엔 landscape 와 immersive 가 같이 켜지므로 여기로 온다.
+  if (immersive) {
     return (
       <div className="app-safe-frame h-full w-full overflow-hidden bg-black">
         <LandscapeVideo
@@ -1339,7 +1345,7 @@ function ExpandedView({
                 <img
                   src={videoFitIcon(BASE, nextVideoFit(videoFit))}
                   alt=""
-                  className="h-8 w-8"
+                  className="h-7 w-7"
                 />
               </button>
               <button
@@ -1352,7 +1358,7 @@ function ExpandedView({
                 <img
                   src={`${BASE}/zoom_in.svg`}
                   alt=""
-                  className="h-8 w-8"
+                  className="h-7 w-7"
                   style={{ filter: "brightness(0) invert(1)" }}
                 />
               </button>
@@ -1360,7 +1366,7 @@ function ExpandedView({
                 <img
                   src={`${BASE}/nav/etc.svg`}
                   alt=""
-                  className="h-8 w-8"
+                  className="h-7 w-7"
                   style={{ filter: "brightness(0) invert(1)" }}
                 />
               </button>
@@ -1399,13 +1405,20 @@ function ExpandedView({
             {/* AI 아이콘 — 딤 오른쪽 아래. 원본이 이미 흰색이라 필터 없이 쓴다.
                 카메라 인디케이터와 같은 높이(bottom 12)에 앉힌다. 다채널 딤
                 (GridSelectionOverlay)에 넣은 것과 같은 자리·같은 크기다. */}
-            <img
-              src={`${BASE}/ai_Icon.svg`}
-              alt=""
+            <div
               aria-hidden
-              className="pointer-events-none absolute h-8 w-8"
-              style={{ bottom: "12px", right: "16px" }}
-            />
+              className="pointer-events-none absolute flex items-center justify-center rounded-full"
+              style={{
+                bottom: "12px",
+                right: "16px",
+                width: "30px",
+                height: "30px",
+                border: "1px solid rgba(255,255,255,0.35)",
+                backgroundColor: "rgba(0,0,0,0.35)",
+              }}
+            >
+              <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-6 w-6" />
+            </div>
           </div>
           <VideoSkeleton visible={videoLoading} />
           {/* 화면 맞춤 토스트 — 탐색·캡처 토스트와 같은 자리(영역 하단 20px 위). */}
