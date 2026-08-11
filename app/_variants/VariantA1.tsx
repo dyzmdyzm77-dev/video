@@ -1301,7 +1301,9 @@ function ExpandedView({
                 // 헤더(높이 56)와 같은 줄 — 32px 아이콘이 세로 중앙에 걸린다.
                 top: "12px",
                 right: "12px",
-                gap: "12px",
+                // 버튼 좌우 패딩(6+6)이 예전 gap 12 를 대신한다 — 아이콘 사이
+                // 간격은 그대로면서 손가락이 닿는 면적만 넓어진다.
+                gap: "0px",
                 pointerEvents: showControls ? "auto" : "none",
               }}
               // 버튼을 누르고 있는 동안 딤을 붙잡고, 떼는 순간부터 5초를 다시 센다.
@@ -1316,6 +1318,7 @@ function ExpandedView({
               <button
                 type="button"
                 aria-label="화면 맞춤"
+                className="px-1.5 py-2"
                 onClick={cycleVideoFit}
               >
                 <img
@@ -1327,6 +1330,7 @@ function ExpandedView({
               <button
                 type="button"
                 aria-label="크게 보기"
+                className="px-1.5 py-2"
                 onClick={toggleImmersive}
               >
                 {/* 아이콘 원본이 진회색(#353535)이라 어두운 딤 위에선 묻힌다.
@@ -1341,6 +1345,7 @@ function ExpandedView({
               <button
                 type="button"
                 aria-label="더보기"
+                className="px-1.5 py-2"
                 onClick={onOpenMore}
               >
                 <img

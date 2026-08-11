@@ -384,7 +384,7 @@ export function GridSelectionOverlay({
           안 그러면 조준하는 사이 5초가 지나 딤이 사라지고, 그때부터 아이콘은
           pointer-events:none 이라 클릭이 영상으로 새어 버린다. */}
       <div
-        className="absolute right-4 flex items-center gap-3 text-white"
+        className="absolute right-4 flex items-center gap-0 text-white"
         style={{ top: `${12 + topInset}px` }}
         onClick={(e) => {
           e.stopPropagation();
@@ -395,6 +395,7 @@ export function GridSelectionOverlay({
         <button
           type="button"
           aria-label="갤러리"
+          className="px-1.5 py-2"
           onClick={onGallery}
           style={{ pointerEvents: visible ? "auto" : "none" }}
         >
@@ -407,6 +408,7 @@ export function GridSelectionOverlay({
         <button
           type="button"
           aria-label="화면 맞춤"
+          className="px-1.5 py-2"
           onClick={onFit}
           style={{ pointerEvents: visible ? "auto" : "none" }}
         >
@@ -419,6 +421,7 @@ export function GridSelectionOverlay({
         <button
           type="button"
           aria-label={landscape || immersive ? "원래 크기로" : "크게 보기"}
+          className="px-1.5 py-2"
           // 언제나 '크게 보기 ↔ 원래대로'다. 방향은 확대가 알아서 정한다
           // (immersive.ts) — 회전은 좌측 패널의 몫이고 이 버튼과 무관하다.
           onClick={toggleImmersive}
@@ -434,6 +437,7 @@ export function GridSelectionOverlay({
         <button
           type="button"
           aria-label="더보기"
+          className="px-1.5 py-2"
           onClick={onMore}
           style={{ pointerEvents: visible ? "auto" : "none" }}
         >
