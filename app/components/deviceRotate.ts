@@ -24,20 +24,24 @@ export const DEVICE_ROTATE_EVENT = "devicerotaterequest";
 // (아이폰 사파리는 애초에 requestFullscreen 이 없어 해도 아무 일도 안 났다.
 //  거기서 사파리 UI 를 걷는 방법은 '홈 화면에 추가'(standalone) 뿐이다.)
 
-// 상단 바(아이폰 상태바 영역 / 안드로이드 상태바)의 색을 지금 화면에 맞춘다.
+// 상단 바(아이폰 상태바 영역 / 안드로이드 상태바)의 색을 못 박는다.
 //
-// 세로→가로→세로 를 오가면 상태바 영역이 검정으로 굳어 있는 문제가 있었다.
 // 사파리는 viewport-fit=cover 인 페이지에서 상단 바 색을 페이지에서 샘플링해
 // 쓰는데, 가로(영상만 있는 검정 화면)에서 잡은 색을 세로로 돌아와도 다시
 // 안 잡는 경우가 있다. theme-color 를 명시하면 샘플링 대신 이 값을 쓰므로
-// 방향이 바뀔 때마다 못 박아 준다 — 가로는 검정(영상), 세로는 흰색(앱 배경).
+// 방향이 바뀔 때마다 다시 못 박아 준다.
+//
+// 색은 언제나 흰색이다(사용자 결정 2026-08-11). 한때 가로에선 검정으로 바꿨는데
+// — 가로가 영상만 남는 검정 화면이라 — 세로·가로를 오가다 보면 상태바가 검정인
+// 채로 남았다. 애초에 안 바꾸면 남을 것도 없다. landscape 인자는 호출부(회전
+// 연출)가 그대로 넘기고 있어 시그니처만 남겨 둔다.
 //
 // html 배경도 같이 맞춘다. body 는 100svh 라 그 바깥(상태바 아래·툴바 뒤)은
 // 캔버스(html 배경)가 칠하는데, 값을 바꾸는 것 자체가 그 영역을 다시 그리게
 // 만든다. 데스크톱 미리보기는 목업 배경(#e5e5e5)이 따로 있으니 건드리지 않는다.
-export function setBarColor(landscape: boolean) {
+export function setBarColor(_landscape?: boolean) {
   if (typeof document === "undefined") return;
-  const color = landscape ? "#000000" : "#ffffff";
+  const color = "#ffffff";
   let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   if (!meta) {
     meta = document.createElement("meta");
