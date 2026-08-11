@@ -2237,7 +2237,9 @@ function SideEventTimeline({
                 className="relative"
                 style={{ width: `${THUMB_W}px`, height: `${THUMB_H}px`, flexShrink: 0 }}
               >
-                {/* 썸네일 — 한 자리에 하나만. 겹침 표시(쌓인 카드·개수 배지)는 안 쓴다. */}
+                {/* 썸네일 — 한 자리에 하나만. 겹침 표시(쌓인 카드·개수 배지)는 안 쓴다.
+                    지금 재생 중인 이벤트면 파란 테두리를 두른다 — 썸네일을 끈
+                    사양(EventCardFace)과 같은 규칙이라 켜고 꺼도 표시가 같다. */}
                 <div
                   className={`absolute overflow-hidden rounded-md ${eventThumbs ? "bg-neutral-900" : ""}`}
                   style={{
@@ -2246,6 +2248,9 @@ function SideEventTimeline({
                     width: `${THUMB_W}px`,
                     height: `${THUMB_H}px`,
                     zIndex: 2,
+                    ...(eventThumbs && isActiveEvent(occ.ms, occ.durSec)
+                      ? { border: "2px solid #1D6CEB" }
+                      : null),
                   }}
                 >
                   {eventThumbs ? (
@@ -2853,7 +2858,10 @@ function RecordingEventTimeline({
                 // 아래 여백은 시간바 위 여백(PAD_TOP 12)과 같게 — 세로가 빡빡한
                 // 실기기에서 위는 12, 아래는 4로 붙어 보이던 걸 맞춘 값이다.
                 bottom: `${PAD_TOP}px`,
-                transform: "translateX(-50%)",
+                // 카드의 '왼쪽 끝'이 자기 시각에 오게 둔다(가운데 정렬 아님).
+                // 탭하면 그 시각이 중앙 파란선으로 오므로, 결과적으로 썸네일
+                // 왼쪽 끝이 선에 맞는다(사용자 요청). 이벤트가 그 시각에
+                // '시작'해 오른쪽으로 흐른다는 읽기와도 맞는다.
                 // 카드 위에서도 드래그가 통과하도록 stopPropagation 하지 않음.
                 pointerEvents: "auto",
                 cursor: "pointer",
@@ -2867,6 +2875,10 @@ function RecordingEventTimeline({
                   // 있었다(THUMB_MIN_H 가 실제 높이엔 안 걸렸음).
                   height: `${thumbH}px`,
                   aspectRatio: "16 / 9",
+                  // 지금 재생 중인 이벤트면 파란 테두리(썸네일 끈 사양과 동일 규칙).
+                  ...(eventThumbs && isActiveEvent(cluster.ms, cluster.durSec)
+                    ? { border: "2px solid #1D6CEB" }
+                    : null),
                 }}
               >
                 {eventThumbs ? (
