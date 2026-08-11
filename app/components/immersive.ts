@@ -209,6 +209,38 @@ export function syncImmersiveWithLandscape() {
   }
 }
 
+/** 확대 중에는 화면이 늘 가로로 보이게 방향을 정렬한다.
+ *
+ *  확대는 세로로 긴 기기에서 앱을 CSS 로 90° 눕혀서 만든다. 그런데 그 상태를
+ *  본 사용자는 자연스럽게 폰도 같이 눕힌다 — 그러면 CSS 회전 90° + 물리 회전
+ *  90° 가 겹쳐 콘텐츠가 도로 옆으로 눕는다(사용자 지적: "그 상태에서 또 가로로
+ *  돌리면 돌아가면 어떡하니").
+ *
+ *  그래서 확대 중에는 'CSS 회전 = 기기가 세로일 때만' 으로 맞춘다. 폰을 눕히면
+ *  CSS 회전을 풀고(화면은 그대로 가로), 다시 세우면 CSS 회전을 켠다. 어느 쪽이든
+ *  사용자 눈에는 늘 똑바로 선 가로 화면이다.
+ *
+ *  데스크톱 미리보기는 물리 회전이 없으므로 건너뛴다 — 거기선 CSS 회전이 곧
+ *  '눕힌 상태'다. */
+export function alignImmersiveRotation() {
+  if (typeof window === "undefined") return;
+  const desktopPreview =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (desktopPreview) return;
+  if (!readImmersive()) return;
+  const physicalLandscape = window.innerWidth > window.innerHeight;
+  const cssRotated = readDeviceLandscape();
+  // 원하는 상태: 기기가 세로일 때만 앱을 눕힌다.
+  if (cssRotated === !physicalLandscape) return;
+  // 확대를 끌 때 되돌릴지 여부도 여기서 같이 갱신한다 — 지금 앱을 눕히는
+  // 것이었다면 끌 때 세워야 하고, 이미 기기가 가로라 안 눕혔다면 되돌릴 것도 없다.
+  document.documentElement.dataset[ROTATED_FLAG] = physicalLandscape
+    ? "false"
+    : "true";
+  requestDeviceRotate();
+}
+
 /** 딤의 확대/축소 버튼에서 호출. 지금 상태를 뒤집는다.
  *  전체화면·회전은 '사용자 조작' 안에서만 허용되므로 버튼 핸들러인 여기서 바로
  *  부른다 — 상태가 바뀐 뒤 effect 에서 부르면 제스처가 끊겨 거부된다. */
