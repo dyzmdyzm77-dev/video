@@ -120,6 +120,17 @@ body {
    가로·세로를 맞바꿔 잡아야(폭=화면 세로, 높이=화면 가로) 돌렸을 때 화면을
    꽉 채운다. 데스크톱 쪽 규칙과는 미디어쿼리로 갈라져 서로 안 겹친다. */
 @media not all and (hover: hover) and (pointer: fine) {
+  /* 확대(크게 보기)는 방향과 무관하게 화면을 끝까지 쓴다. 안전 영역 인셋을
+     남겨 두면 상태바·홈 인디케이터 자리만큼 위아래가 비어 "확대인데 왜 안
+     꽉 차냐"가 된다(사용자 지적). 가로에서 이미 같은 이유로 padding 을 0 으로
+     두고 있었는데, 실기기 확대는 이제 화면을 돌리지 않으므로(immersive.ts)
+     세로인 채로도 같은 규칙이 필요하다.
+     딤 위 UI 는 자기 여백(px-5 등)으로 가장자리에서 떨어져 있어 노치와 크게
+     겹치지 않는다 — 영상만 끝까지 깔린다. */
+  html[data-immersive="true"] .app-safe-frame {
+    padding: 0;
+  }
+
   html[data-landscape="true"] .app-safe-frame {
     position: fixed;
     top: 50vh;
