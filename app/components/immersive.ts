@@ -229,48 +229,6 @@ export function syncImmersiveWithLandscape() {
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
 }
 
-/** 확대 중에는 화면이 늘 가로로 보이게 방향을 정렬한다.
- *
- *  확대는 세로로 긴 기기에서 앱을 CSS 로 90° 눕혀서 만든다. 그런데 그 상태를
- *  본 사용자는 자연스럽게 폰도 같이 눕힌다 — 그러면 CSS 회전 90° + 물리 회전
- *  90° 가 겹쳐 콘텐츠가 도로 옆으로 눕는다(사용자 지적: "그 상태에서 또 가로로
- *  돌리면 돌아가면 어떡하니").
- *
- *  그래서 확대 중에는 'CSS 회전 = 기기가 세로일 때만' 으로 맞춘다. 폰을 눕히면
- *  CSS 회전을 풀고(화면은 그대로 가로), 다시 세우면 CSS 회전을 켠다. 어느 쪽이든
- *  사용자 눈에는 늘 똑바로 선 가로 화면이다.
- *
- *  데스크톱 미리보기는 물리 회전이 없으므로 건너뛴다 — 거기선 CSS 회전이 곧
- *  '눕힌 상태'다. */
-export function alignImmersiveRotation() {
-  if (typeof window === "undefined") return;
-  const desktopPreview =
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  if (desktopPreview) return;
-  if (!readImmersive()) return;
-  const physicalLandscape = window.innerWidth > window.innerHeight;
-  const cssRotated = readDeviceLandscape();
-  // 원하는 상태: 기기가 세로일 때만 앱을 눕힌다.
-  if (cssRotated === !physicalLandscape) return;
-  // 확대를 끌 때 되돌릴지 여부도 여기서 같이 갱신한다 — 지금 앱을 눕히는
-  // 것이었다면 끌 때 세워야 하고, 이미 기기가 가로라 안 눕혔다면 되돌릴 것도 없다.
-  document.documentElement.dataset[ROTATED_FLAG] = physicalLandscape
-    ? "false"
-    : "true";
-  requestDeviceRotate();
-}
-
-/** 지금 확대가 '앱을 눕혀서' 만든 상태인가. 이때는 이미 가로라, 회전을 또
- *  걸면 두 번 돈 꼴이 된다 — 좌측 패널의 회전 버튼이 이걸 보고 원복으로 바꾼다. */
-export function readImmersiveRotated(): boolean {
-  if (typeof document === "undefined") return false;
-  return (
-    readImmersive() &&
-    document.documentElement.dataset[ROTATED_FLAG] === "true"
-  );
-}
-
 /** 딤의 확대/축소 버튼에서 호출. 지금 상태를 뒤집는다.
  *  전체화면·회전은 '사용자 조작' 안에서만 허용되므로 버튼 핸들러인 여기서 바로
  *  부른다 — 상태가 바뀐 뒤 effect 에서 부르면 제스처가 끊겨 거부된다. */
@@ -282,7 +240,20 @@ export function toggleImmersive() {
   document.documentElement.dataset.immersive = "true";
   syncFullscreen(true);
   // 세로로 긴 프레임이면 눕혀야 영상이 커진다. 이미 가로면 그대로 둔다.
-  if (!readDeviceLandscape() && shouldRotate()) {
+  //
+  // 단 '눕히기'는 데스크톱 미리보기에서만 한다. 실기기에서 앱을 CSS 로 돌리면
+  // OS 상태바·내비바는 세로 그대로라 콘텐츠만 옆으로 누운 꼴이 된다(사용자
+  // 지적: "안드로이드 바나 상태바는 세로 유지인데, 영상 뷰 컨텐츠쪽만 돌아가").
+  // 예전엔 전체화면 API 로 그 바들을 걷어 맞췄는데, 그게 안내 토스트와 추가
+  // 회전을 불러 뺐다(syncFullscreen 주석).
+  //
+  // 그래서 실기기의 확대는 '그 자리에서 영상 최대화'다. 가로로 보고 싶으면
+  // 폰을 실제로 눕히면 된다 — 그때는 OS 도 같이 돌아 어긋나지 않고, 확대는
+  // 그대로 유지된다(syncImmersiveWithLandscape).
+  const desktopPreview =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (desktopPreview && !readDeviceLandscape() && shouldRotate()) {
     document.documentElement.dataset[ROTATED_FLAG] = "true";
     requestDeviceRotate();
   }
