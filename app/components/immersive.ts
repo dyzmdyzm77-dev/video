@@ -201,12 +201,19 @@ export function syncImmersiveWithLandscape() {
     window.dispatchEvent(new Event(IMMERSIVE_EVENT));
     return;
   }
-  if (root.dataset[BY_ROTATE_FLAG] === "true") {
-    root.dataset[BY_ROTATE_FLAG] = "false";
-    root.dataset.immersive = "false";
-    syncFullscreen(false);
-    window.dispatchEvent(new Event(IMMERSIVE_EVENT));
-  }
+  // 세로가 됐다. 확대 화면은 '가로로 눕힌 영상'이라 세로에 남겨 두면 위아래로
+  // 검은 띠만 남는다 — 어떻게 켠 확대였든 같이 정리하고 보통 화면으로 돌아온다.
+  // (확대 중에 회전을 한 번 더 눌러 세로로 온 경우도 여기로 온다. 예전엔 회전으로
+  //  켠 확대만 껐더니, 확대 버튼으로 켠 뒤 회전하면 '세로인데 확대 화면'이
+  //  남았다 — 사용자 지적: "그 상태에서 또 가로 또는 세로로 눕히면 또 돌아가면
+  //  어떡해".)
+  if (!readImmersive()) return;
+  root.dataset[BY_ROTATE_FLAG] = "false";
+  // 이미 세로다 — 확대를 끄면서 방향을 또 되돌릴 일은 없다.
+  root.dataset[ROTATED_FLAG] = "false";
+  root.dataset.immersive = "false";
+  syncFullscreen(false);
+  window.dispatchEvent(new Event(IMMERSIVE_EVENT));
 }
 
 /** 확대 중에는 화면이 늘 가로로 보이게 방향을 정렬한다.
