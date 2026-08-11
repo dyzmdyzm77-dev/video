@@ -20,9 +20,11 @@ import {
 // 접으면 각 메뉴의 아이콘만, 펼치면 아이콘+메뉴명이 보인다.
 // 두 그룹 — 화면안(A/B) + 해상도(디바이스 폭) 선택.
 // 모바일/터치에선 CSS(.desktop-variant-nav)로 숨긴다.
+// 순서·라벨은 사용자가 정한다(2026-08-11: A안 → 'A-2안', 자리는 두 번째).
+// 라우트(/a)는 그대로라 key 는 여전히 "a" 다 — 이름만 바뀐 것.
 const VARIANTS: { key: VariantKey; icon: string; label: string }[] = [
-  { key: "a", icon: "A", label: "A안" },
   { key: "a1", icon: "A-1", label: "A-1안" },
+  { key: "a", icon: "A-2", label: "A-2안" },
   { key: "b", icon: "B", label: "B안" },
 ];
 
