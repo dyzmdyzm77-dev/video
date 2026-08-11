@@ -200,17 +200,23 @@ export default function VariantA1({
   // videoAreaRef 는 GridView 의 슬라이드 섹션에 달아 실측한다 — 섹션 크기는
   // cols×rows 선택과 무관해서(그 안을 나누기만 하므로) 순환 의존이 없다.
   const [videoAreaRef, gridRatio] = useGridAreaRatio();
-  // 사용자가 직접 고른 배치(가로 × 세로). null 이면 '자동' — 비율에서 개수를
-  // 고르고(autoGridCount) 그 개수로 가장 16:9 에 가까운 배치를 잡는다
-  // (bestGridForCount). 직접 고르면 그 값을 그대로 쓴다.
+  // 사용자가 직접 고른 '한 화면에 볼 채널 수'. null 이면 '자동'(영상 영역
+  // 비율에서 autoGridCount 가 고른다). 그 개수를 몇 열 × 몇 행으로 나눌지는
+  // 사용자가 정하지 않는다 — bestGridForCount 가 그 화면에서 타일이 16:9 에
+  // 가장 가깝도록 고른다.
   //
-  // 기기 방향별로 따로 기억한다(사용자 요청 2026-08-11). 세로로 긴 화면에서
-  // 2×4 로 잡아 놓고 가로로 눕히면 그 배치가 그대로 오면 타일이 납작해진다 —
-  // 방향마다 어울리는 배치가 다르므로 각각 고르게 하고, 돌아오면 그 방향에서
-  // 고른 값으로 복귀한다. 아직 안 고른 방향은 null(자동)이다.
-  const [userGrids, setUserGrids] = useState<{
-    portrait: { cols: number; rows: number } | null;
-    landscape: { cols: number; rows: number } | null;
+  // 기기 방향별로 따로 기억한다(사용자 요청 2026-08-11): 눕혀 보면 16채널,
+  // 세로로 들면 8채널처럼 방향마다 알맞은 수가 다르다. 돌렸다 돌아오면 그
+  // 방향에서 고른 수로 복귀한다.
+  const [userCounts, setUserCounts] = useState<{
+    portrait: number | null;
+    landscape: number | null;
+  }>({ portrait: null, landscape: null });
+  // 방향별로 마지막에 잰 '자동' 개수. 시트는 두 방향을 한 화면에 같이 보여
+  // 주는데, 지금 안 보고 있는 방향은 실측할 길이 없어 마지막 값을 쓴다.
+  const autoCountSeen = useRef<{
+    portrait: number | null;
+    landscape: number | null;
   }>({ portrait: null, landscape: null });
   const [mode, setMode] = useState<"live" | "recording">("live");
   // 위아래 가짜 시스템 바 표시 여부. 가짜 바 자체를 눌러 토글한다.
@@ -233,9 +239,6 @@ export default function VariantA1({
   // innerWidth/Height 가 바뀐다. 어느 쪽이든 비율 하나로 방향이 드러난다.
   const orientKey: "portrait" | "landscape" =
     useDeviceRatio() > 1 ? "landscape" : "portrait";
-  const userGrid = userGrids[orientKey];
-  const setUserGrid = (g: { cols: number; rows: number } | null) =>
-    setUserGrids((prev) => ({ ...prev, [orientKey]: g }));
   // 영상 탭에 처음 들어왔을 때는 딤이 기본이다 — 뭘 할 수 있는지 한 번 보여주고
   // 5초 뒤 useAutoHide 가 알아서 걷어낸다. 단일 화면에 들어갔다 돌아온 다채널은
   // 해당 없음(GridView 가 매번 다시 마운트되므로 그때마다 딤이 뜨면 성가시다).
@@ -341,9 +344,19 @@ export default function VariantA1({
   };
   const [now, setNow] = useState<Date | null>(null);
 
-  const layoutDims =
-    userGrid ?? bestGridForCount(autoGridCount(gridRatio), gridRatio);
+  // 지금 방향의 자동 개수(영상 영역 비율 기준). 그 방향에 대해 사용자가 고른
+  // 값이 있으면 그게 이긴다.
+  const autoCount = autoGridCount(gridRatio);
+  autoCountSeen.current[orientKey] = autoCount;
+  const effectiveCount = userCounts[orientKey] ?? autoCount;
+  const layoutDims = bestGridForCount(effectiveCount, gridRatio);
   const pageSize = layoutDims.cols * layoutDims.rows;
+  // 시트의 두 슬라이더 시작값 — 방향마다 '지금 쓰이는 개수'.
+  const sheetCounts = {
+    portrait: userCounts.portrait ?? autoCountSeen.current.portrait ?? autoCount,
+    landscape:
+      userCounts.landscape ?? autoCountSeen.current.landscape ?? autoCount,
+  };
   const totalPages = Math.ceil(CAMERAS.length / pageSize);
 
   // 화면 맞춤(원본비율·늘리기·채우기) 상태는 여기서 들고 아래로 내려 준다.
@@ -355,12 +368,6 @@ export default function VariantA1({
   const [moreOpen, setMoreOpen] = useState(false);
   // 딤의 AI 버튼이 여는 'AI 검색 기능' 시트.
   const [aiOpen, setAiOpen] = useState(false);
-  // 가로가 '자동'일 때 LandscapeVideo 가 실제로 고른 배치. 화면 구성 시트의
-  // 슬라이더 시작값으로 쓴다 — 안 그러면 세로 기준 값이 남아 화면과 어긋난다.
-  const [landscapeAutoGrid, setLandscapeAutoGrid] = useState<{
-    cols: number;
-    rows: number;
-  } | null>(null);
   const gridFitState = useVideoFit("fill");
   const videoFitState = useVideoFit("fill");
 
@@ -400,10 +407,6 @@ export default function VariantA1({
           onGallery={() => setSheetOpen(true)}
           onMore={() => setMoreOpen(true)}
           onAi={() => setAiOpen(true)}
-          // 가로 화면 배치는 방향별로 따로 기억한 값을 그대로 쓴다.
-          // null 이면 LandscapeVideo 가 가로 영역 비율로 알아서 고른다.
-          grid={userGrid}
-          onAutoGrid={setLandscapeAutoGrid}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
@@ -451,12 +454,11 @@ export default function VariantA1({
             아예 렌더되지 않았다. */}
         <LayoutConfigSheet
           open={sheetOpen}
-          selected={userGrid}
-          resolved={userGrid ?? landscapeAutoGrid ?? layoutDims}
-          orientation={orientKey}
+          selected={userCounts}
+          resolved={sheetCounts}
           onClose={() => setSheetOpen(false)}
-          onPreview={(grid) => {
-            setUserGrid(grid);
+          onPreview={(counts) => {
+            setUserCounts(counts);
             setCurrentPage(0);
           }}
         />
@@ -586,12 +588,11 @@ export default function VariantA1({
 
       <LayoutConfigSheet
         open={sheetOpen}
-        selected={userGrid}
-        resolved={layoutDims}
-        orientation={orientKey}
+        selected={userCounts}
+        resolved={sheetCounts}
         onClose={() => setSheetOpen(false)}
-        onPreview={(grid) => {
-          setUserGrid(grid);
+        onPreview={(counts) => {
+          setUserCounts(counts);
           setCurrentPage(0);
         }}
       />
@@ -3072,62 +3073,79 @@ function FrozenImage({
 // 따라온다 — 몇 개가 어떻게 보이는지 드래그하면서 바로 눈으로 확인하며 고르는
 // 게 자연스럽다(밝기 슬라이더처럼). '취소'를 누르면 시트를 열었을 때 값으로
 // 되돌린다 — 그래서 미리보기 중 실제 상태가 바뀌어도 취소가 의미를 갖는다.
-// 슬라이더가 다룰 수 있는 범위(1~4). 자동 계산은 아주 넓은 가로 화면에서
-// 8×2 같은 값을 내놓기도 하는데, 슬라이더 시작 위치는 이 범위로 접어 넣는다.
-const AXIS_MAX = 4;
-const clampAxis = (n: number) => Math.min(AXIS_MAX, Math.max(1, n));
+// '화면 구성' 시트 — 기기 방향마다 '한 화면에 볼 채널 수'를 따로 정한다.
+// 눕혀 보면 16채널, 세로로 들면 8채널처럼 방향마다 알맞은 수가 다르다는 게
+// 사용자 요구다(2026-08-11). 두 슬라이더를 한 화면에 같이 두어, 지금 어느
+// 방향이든 두 값을 다 보고 정할 수 있게 한다.
+//
+// 여기서 정하는 건 개수뿐이다 — 그 개수를 몇 열 × 몇 행으로 나눌지는 그 화면
+// 에서 타일이 16:9 에 가장 가깝도록 bestGridForCount 가 고른다(layoutRules.ts).
+// 같은 8채널이라도 세로면 2×4, 가로면 4×2 가 되는 식이다.
+//
+// '자동'은 개수를 정하지 않고 영상 영역 비율에 맞춰(autoGridCount) 그때그때
+// 쓰겠다는 뜻 — 슬라이더를 만지면 그 순간 두 방향 모두 지금 값으로 고정된다.
+//
+// 슬라이더는 '적용'을 눌러야 반영되는 게 아니라 끄는 즉시(onPreview) 뒤 화면이
+// 따라온다 — 몇 개가 어떻게 보이는지 드래그하며 눈으로 확인하는 게 자연스럽다
+// (밝기 슬라이더처럼). '취소'는 시트를 열었을 때 값으로 되돌린다.
+type OrientCounts = { portrait: number | null; landscape: number | null };
 
 function LayoutConfigSheet({
   open,
   selected,
   resolved,
-  orientation,
   onClose,
   onPreview,
 }: {
   open: boolean;
-  /** 사용자가 직접 고른 배치. null 이면 '자동'. */
-  selected: { cols: number; rows: number } | null;
-  /** 지금 실제로 쓰이는 배치(자동이면 계산 결과) — 슬라이더 위치·라벨용. */
-  resolved: { cols: number; rows: number };
-  /** 지금 고치고 있는 게 어느 방향의 배치인지 — 제목 옆에 밝힌다. */
-  orientation: "portrait" | "landscape";
+  /** 방향별로 사용자가 직접 고른 개수. null 이면 그 방향은 '자동'. */
+  selected: OrientCounts;
+  /** 방향별로 지금 쓰이는 개수(자동이면 계산 결과) — 슬라이더 시작값. */
+  resolved: { portrait: number; landscape: number };
   onClose: () => void;
-  /** 값이 바뀔 때마다(자동 토글·슬라이더 드래그) 즉시 호출 — 그리드가 바로 따라온다. */
-  onPreview: (grid: { cols: number; rows: number } | null) => void;
+  /** 값이 바뀔 때마다 즉시 호출 — 화면이 바로 따라온다. */
+  onPreview: (counts: OrientCounts) => void;
 }) {
-  const [auto, setAuto] = useState(selected === null);
-  const [cols, setCols] = useState(clampAxis(resolved.cols));
-  const [rows, setRows] = useState(clampAxis(resolved.rows));
+  const [auto, setAuto] = useState(
+    selected.portrait === null && selected.landscape === null,
+  );
+  const [counts, setCounts] = useState({
+    portrait: resolved.portrait,
+    landscape: resolved.landscape,
+  });
   // 시트를 열었을 때의 선택값 — '취소' 누르면 이 값으로 되돌린다.
-  const originalRef = useRef<{ cols: number; rows: number } | null>(selected);
+  const originalRef = useRef<OrientCounts>(selected);
 
   useEffect(() => {
     if (open) {
-      setAuto(selected === null);
-      setCols(clampAxis(resolved.cols));
-      setRows(clampAxis(resolved.rows));
+      setAuto(selected.portrait === null && selected.landscape === null);
+      setCounts({ portrait: resolved.portrait, landscape: resolved.landscape });
       originalRef.current = selected;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // 자동인 채로 화면이 바뀌면(회전 등) 슬라이더 시작 위치도 따라간다 — 시트를
-  // 열어 둔 채 돌렸을 때 이전 방향의 값이 남아 있으면 안 된다.
+  // 자동인 채로 방향이 바뀌면(회전) 슬라이더도 새로 잰 값을 따라간다.
   useEffect(() => {
     if (!open || !auto) return;
-    setCols(clampAxis(resolved.cols));
-    setRows(clampAxis(resolved.rows));
-  }, [open, auto, resolved.cols, resolved.rows]);
+    setCounts({ portrait: resolved.portrait, landscape: resolved.landscape });
+  }, [open, auto, resolved.portrait, resolved.landscape]);
 
-  // 큰 라벨은 '지금 화면이 실제로 어떻게 나뉘어 있는지'를 말한다. 자동일 땐
-  // 계산 결과(resolved)를 그대로 쓴다 — 넓은 가로 화면에선 8×2 처럼 슬라이더
-  // 상한(4)을 넘는 배치가 나오는데, 그걸 4 로 깎아 보여 주면 화면과 어긋난다.
-  const shown = auto ? resolved : { cols, rows };
-
-  const preview = (nextAuto: boolean, c: number, r: number) => {
-    onPreview(nextAuto ? null : { cols: c, rows: r });
+  const preview = (
+    nextAuto: boolean,
+    next: { portrait: number; landscape: number },
+  ) => {
+    onPreview(nextAuto ? { portrait: null, landscape: null } : next);
   };
+
+  const ROWS = [
+    {
+      key: "portrait" as const,
+      label: "세로 화면",
+      hint: "기기를 세로로 들었을 때",
+    },
+    { key: "landscape" as const, label: "가로 화면", hint: "기기를 눕혔을 때" },
+  ];
 
   return (
     <div
@@ -3185,27 +3203,15 @@ function LayoutConfigSheet({
             className="flex items-center justify-between"
             style={{ marginBottom: "16px" }}
           >
-            {/* 시트 제목이 '화면 구성' 이라 섹션은 '화면 분할' 로 부른다 —
-                둘 다 '화면 구성' 이면 같은 말이 두 번 나온다. */}
-            {/* 배치는 기기 방향별로 따로 저장된다 — 지금 고치는 게 어느 쪽인지
-                밝혀 두지 않으면, 돌렸을 때 값이 되돌아간 것처럼 보인다. */}
-            <div className="flex items-baseline" style={{ gap: "8px" }}>
-              <h3 className="text-[20px] font-bold leading-none text-neutral-900">
-                화면 분할
-              </h3>
-              <span
-                className="text-[13px] font-medium leading-none"
-                style={{ color: "#A4A4A4" }}
-              >
-                {orientation === "landscape" ? "가로 화면 기준" : "세로 화면 기준"}
-              </span>
-            </div>
+            <h3 className="text-[20px] font-bold leading-none text-neutral-900">
+              화면 개수
+            </h3>
             <button
               type="button"
               onClick={() => {
                 const next = !auto;
                 setAuto(next);
-                preview(next, cols, rows);
+                preview(next, counts);
               }}
               className="inline-flex items-center justify-center text-[14px] font-semibold leading-none"
               style={{
@@ -3220,57 +3226,57 @@ function LayoutConfigSheet({
             </button>
           </div>
 
-          {/* 가로 × 세로를 따로 고른다(사용자 요청). 예전엔 개수 하나만 고르고
-              가로·세로는 화면 비율에서 자동으로 갈랐는데, 원하는 배치를 못
-              집어낼 때가 있었다. 최대 4×4 = 16 — 카메라가 16대라 그 위는 빈 칸이다. */}
-          <div
-            className="flex items-center justify-center text-[16px] font-semibold text-neutral-900"
-            style={{ marginBottom: "12px" }}
-          >
-            가로 {shown.cols} × 세로 {shown.rows}
-            <span style={{ color: "#A4A4A4", marginLeft: "8px" }}>
-              {shown.cols * shown.rows}개
-            </span>
-          </div>
-
-          {/* disabled 를 안 쓴다 — 자동일 때 슬라이더를 막으면 사용자가 자동을
-              먼저 꺼야만 드래그할 수 있어 한 단계가 더 든다. 항상 드래그 가능하게
-              두고 흐림(opacity)만 자동 상태를 알린다 — 만지는 순간 자동이 꺼진다.
-              여기 슬라이더는 값이 1~4 로 촘촘해서 인덱스 변환이 필요 없다
-              (개수 슬라이더는 2,3,4,6,8… 처럼 듬성듬성해 인덱스를 썼었다). */}
-          {(
-            [
-              ["가로", cols, setCols] as const,
-              ["세로", rows, setRows] as const,
-            ]
-          ).map(([label, value, set]) => (
-            <div key={label} style={{ marginBottom: "10px" }}>
-              <div
-                className="flex items-center justify-between text-[13px] font-medium"
-                style={{ color: "#7F7F7F", marginBottom: "2px" }}
-              >
-                <span>{label}</span>
-                <span className="text-neutral-900">{value}</span>
+          {/* disabled 를 안 쓴다 — 자동일 때 슬라이더를 막으면 자동을 먼저 꺼야만
+              드래그할 수 있어 한 단계가 더 든다. 항상 드래그 가능하게 두고
+              흐림(opacity)만 자동 상태를 알린다 — 만지는 순간 자동이 꺼진다.
+              슬라이더는 GRID_COUNT_OPTIONS 의 '인덱스'를 움직인다 — native range
+              의 step 은 균일 간격만 지원해 2,3,4,6,8,9,12,16 처럼 듬성듬성한
+              목록엔 못 쓴다. */}
+          {ROWS.map(({ key, label, hint }) => (
+            <div key={key} style={{ marginBottom: "18px" }}>
+              <div className="flex items-baseline justify-between">
+                <span className="text-[15px] font-semibold leading-none text-neutral-900">
+                  {label}
+                  <span
+                    className="text-[12px] font-medium"
+                    style={{ color: "#A4A4A4", marginLeft: "6px" }}
+                  >
+                    {hint}
+                  </span>
+                </span>
+                <span className="text-[15px] font-semibold leading-none text-neutral-900">
+                  {counts[key]}채널
+                </span>
               </div>
               <input
                 type="range"
-                min={1}
-                max={AXIS_MAX}
+                min={0}
+                max={GRID_COUNT_OPTIONS.length - 1}
                 step={1}
-                value={value}
+                value={nearestGridCountIndex(counts[key])}
                 onChange={(e) => {
-                  const next = Number(e.target.value);
-                  set(next);
+                  const next = {
+                    ...counts,
+                    [key]: GRID_COUNT_OPTIONS[Number(e.target.value)],
+                  };
                   setAuto(false);
-                  preview(
-                    false,
-                    label === "가로" ? next : cols,
-                    label === "세로" ? next : rows,
-                  );
+                  setCounts(next);
+                  preview(false, next);
                 }}
                 className="w-full"
-                style={{ accentColor: "#1D6CEB", opacity: auto ? 0.4 : 1 }}
+                style={{
+                  accentColor: "#1D6CEB",
+                  opacity: auto ? 0.4 : 1,
+                  marginTop: "8px",
+                }}
               />
+              <div
+                className="flex items-center justify-between text-[12px]"
+                style={{ color: "#A4A4A4" }}
+              >
+                <span>{GRID_COUNT_OPTIONS[0]}</span>
+                <span>{GRID_COUNT_OPTIONS[GRID_COUNT_OPTIONS.length - 1]}</span>
+              </div>
             </div>
           ))}
         </div>
@@ -3278,7 +3284,7 @@ function LayoutConfigSheet({
         {/* 버튼 */}
         <div
           className="flex items-center"
-          style={{ gap: "8px", padding: "0 20px", height: "90px", marginTop: "16px" }}
+          style={{ gap: "8px", padding: "0 20px", height: "90px" }}
         >
           <button
             type="button"

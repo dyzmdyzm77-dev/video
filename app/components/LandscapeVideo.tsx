@@ -88,8 +88,6 @@ export default function LandscapeVideo({
   onGallery,
   onMore,
   onAi,
-  grid,
-  onAutoGrid,
   onExpand,
   onBack,
   title,
@@ -131,10 +129,6 @@ export default function LandscapeVideo({
   onMore?: () => void;
   /** 딤의 AI 버튼. 안 주면 표시만 한다(안별 기본값 보존). */
   onAi?: () => void;
-  /** 가로 화면에서 쓸 배치. 안 주면(=자동) 가로 영역 비율로 직접 고른다. */
-  grid?: { cols: number; rows: number } | null;
-  /** 자동일 때 고른 배치를 알린다. */
-  onAutoGrid?: (grid: { cols: number; rows: number }) => void;
   /** 타일 더블탭 — 그 카메라 단일 화면으로. */
   onExpand?: (i: number) => void;
   /** 단일 화면 더블탭 — 다채널로 복귀. */
@@ -198,22 +192,13 @@ export default function LandscapeVideo({
   const ownFit = useVideoFit("fill");
   const fit = fitProp ?? ownFit.fit;
   const cycle = onFitCycle ?? ownFit.cycle;
-  // 배치(cols×rows). grid 를 주면 그 값을 그대로 쓴다 — 사용자가 '가로 화면'
-  // 기준으로 직접 고른 배치다(안이 방향별로 따로 기억한다).
-  //
-  // 안 주면(=그 방향은 아직 '자동') 가로 영역 비율로 다시 고른다. 세로에서 고른
-  // 값을 그대로 들고 오면 안 된다 — 16채널 기준 세로는 2×8 이 맞지만
-  // 가로(≈2.17:1)에서 그 배치는 타일이 0.54:1 로 길쭉해진다. 같은 영역에서
-  // 4×4 면 2.17:1 로 16:9 에 훨씬 가깝다. 판정 기준은 세로와 같은
-  // bestGridForCount 하나를 쓴다.
+  // 배치(cols×rows)는 가로 영역 비율로 다시 고른다. 세로에서 쓰던 배치를 그대로
+  // 들고 오면 안 된다 — 16채널 기준 세로는 2×8 이 맞지만 가로(≈2.17:1)에서 그
+  // 배치는 타일이 0.54:1 로 길쭉해진다. 같은 영역에서 4×4 면 2.17:1 로 16:9 에
+  // 훨씬 가깝다. 판정 기준은 세로와 같은 bestGridForCount 하나를 쓴다.
+  // (사용자가 정하는 건 '방향별 채널 수'다 — 그 수를 어떻게 나눌지는 여기 몫.)
   const [gridAreaRef, landscapeRatio] = useGridAreaRatio();
-  const autoGrid = bestGridForCount(pageSize, landscapeRatio);
-  const { cols, rows } = grid ?? autoGrid;
-  // 자동일 때 실제로 쓰인 배치를 안에 알려 준다 — '화면 구성' 시트의 슬라이더가
-  // 화면과 다른 값에서 시작하지 않게(세로 기준 값이 남아 2×4 로 보이던 문제).
-  useEffect(() => {
-    onAutoGrid?.(autoGrid);
-  }, [onAutoGrid, autoGrid.cols, autoGrid.rows]);
+  const { cols, rows } = bestGridForCount(pageSize, landscapeRatio);
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 확대(몰입) 중 영상 영역을 위/아래로 그으면 확대를 푼다(사용자 요청).
