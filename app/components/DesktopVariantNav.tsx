@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { EVENT_THUMBS_EVENT } from "./eventThumbs";
+import { exitImmersive, readImmersive } from "./immersive";
 import {
   DEVICE_ROTATE_EVENT,
   LANDSCAPE_EVENT,
+  readDeviceLandscape,
   setBarColor,
 } from "./deviceRotate";
 import {
@@ -439,13 +441,34 @@ export default function DesktopVariantNav() {
         </p>
       </div>
 
-      {/* 왼쪽으로 회전 — 디바이스를 시계반대 90° 시각적으로 회전(가로). */}
+      {/* 왼쪽으로 회전 — 디바이스를 시계반대 90° 시각적으로 회전(가로).
+          확대 중에는 더 돌리지 않는다. 확대가 이미 눕혀 놓은 상태라 거기서 또
+          돌리면 두 번 돈 꼴이 된다(사용자 결정: "눕힌 거는 이미 가로로 돌아간
+          거랑 동일하니까 회전이 더 안 되게 해 … 원복하는 거랑"). 그래서 이때는
+          확대를 풀고 원래 방향으로 되돌리기만 한다 — exitImmersive 가 확대하며
+          눕힌 것이었으면 방향도 같이 원복한다. */}
       <button
         type="button"
         className="dvn-rotate-toggle"
         data-active={rotated}
-        title={rotated ? "세로로 되돌리기" : "왼쪽으로 회전"}
-        onClick={() => setRotated((v) => !v)}
+        title={
+          readImmersive()
+            ? "원래대로"
+            : rotated
+              ? "세로로 되돌리기"
+              : "왼쪽으로 회전"
+        }
+        onClick={() => {
+          if (readImmersive()) {
+            // 확대를 끈다. 확대하며 눕힌 것이었으면 exitImmersive 가 방향까지
+            // 되돌리고, 회전해서 켜진 확대였으면 여기서 세운다 — 어느 쪽이든
+            // '원복' 하나로 끝난다(두 번 부르지 않게 아래는 idempotent).
+            exitImmersive();
+            if (readDeviceLandscape()) setRotated(false);
+            return;
+          }
+          setRotated((v) => !v);
+        }}
       >
         <span className="dvn-icon" aria-hidden>
           ⟲
