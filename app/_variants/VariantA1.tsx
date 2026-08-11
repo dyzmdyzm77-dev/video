@@ -3240,7 +3240,7 @@ function OverlayHeader({
       }}
     >
       <div
-        className="flex flex-col gap-[2px]"
+        className="flex flex-col"
         style={{ pointerEvents: visible ? "auto" : "none" }}
         {...auto.holdProps}
         onClick={(e) => {
@@ -3249,20 +3249,26 @@ function OverlayHeader({
           auto.keepAlive();
         }}
       >
+        {/* 장소명 + 지점명을 한 버튼으로 묶는다. 예전엔 첫 줄(제목+화살표)만
+            버튼이라 아래 지점명이나 화살표 옆 빈 곳을 눌러도 안 먹었다.
+            화살표를 flex-1 로 밀지 않고 그대로 둔 채, 버튼에 아래·오른쪽
+            여백을 줘서 손가락이 닿는 면적을 넓혔다(사용자 요청). */}
         <button
           type="button"
           onClick={onTitleClick}
-          className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-white"
+          className="flex flex-col items-start gap-[2px] pb-1 pr-3 text-left"
         >
-          8층 사무실 A
-          <ChevronDownIcon className="h-6 w-6 text-white" />
+          <span className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-white">
+            8층 사무실 A
+            <ChevronDownIcon className="h-6 w-6 text-white" />
+          </span>
+          <span
+            className="text-[12px] leading-none"
+            style={{ color: "rgba(255,255,255,0.75)" }}
+          >
+            에스원 본사 · N1234567
+          </span>
         </button>
-        <p
-          className="text-[12px] leading-none"
-          style={{ color: "rgba(255,255,255,0.75)" }}
-        >
-          에스원 본사 · N1234567
-        </p>
       </div>
     </div>
   );

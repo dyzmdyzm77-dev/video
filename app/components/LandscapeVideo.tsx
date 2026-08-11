@@ -415,7 +415,7 @@ export default function LandscapeVideo({
       style={{ height: `${OVERLAY_HEADER_H}px`, opacity: dim ? 1 : 0 }}
     >
       <div
-        className="flex flex-col gap-[2px]"
+        className="flex flex-col"
         style={{ pointerEvents: dim ? "auto" : "none" }}
         {...auto.holdProps}
         onClick={(e) => {
@@ -424,22 +424,26 @@ export default function LandscapeVideo({
           auto.keepAlive();
         }}
       >
+        {/* 장소명 + 지점명을 한 버튼으로 묶는다 — 첫 줄만 버튼이면 아래 지점명이나
+            화살표 옆 빈 곳을 눌러도 안 먹는다(세로 딤과 같은 규칙). */}
         <button
           type="button"
           onClick={onTitleClick}
-          className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-white"
+          className="flex flex-col items-start gap-[2px] pb-1 pr-3 text-left"
         >
-          {title}
-          <ChevronDownIcon className="h-6 w-6 text-white" />
+          <span className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-white">
+            {title}
+            <ChevronDownIcon className="h-6 w-6 text-white" />
+          </span>
+          {subtitle && (
+            <span
+              className="text-[12px] leading-none"
+              style={{ color: "rgba(255,255,255,0.75)" }}
+            >
+              {subtitle}
+            </span>
+          )}
         </button>
-        {subtitle && (
-          <p
-            className="text-[12px] leading-none"
-            style={{ color: "rgba(255,255,255,0.75)" }}
-          >
-            {subtitle}
-          </p>
-        )}
       </div>
     </div>
   ) : null;

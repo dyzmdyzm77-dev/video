@@ -720,21 +720,22 @@ function GridView({
         style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
       >
         <div className="flex w-full items-center justify-between">
-          <div className="flex flex-col gap-[2px]">
+          {/* 장소명 + 지점명을 한 버튼으로 묶는다 — 첫 줄만 버튼이면 아래
+              지점명이나 화살표 옆 빈 곳을 눌러도 안 먹는다(사용자 지적). */}
+          <div className="flex flex-col">
             <button
               type="button"
               onClick={onOpenVariantPicker}
-              className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900"
+              className="flex flex-col items-start gap-[2px] pb-1 pr-3 text-left"
             >
-              8층 사무실 A
-              <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
+              <span className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900">
+                8층 사무실 A
+                <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
+              </span>
+              <span className="text-[12px] leading-none" style={{ color: "#BFBFBF" }}>
+                에스원 본사 · N1234567
+              </span>
             </button>
-            <p
-              className="text-[12px] leading-none"
-              style={{ color: "#BFBFBF" }}
-            >
-              에스원 본사 · N1234567
-            </p>
           </div>
 
           <ModeToggle mode={mode} setMode={setMode} />
@@ -1246,21 +1247,21 @@ function ExpandedView({
         style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
       >
         <div className="flex w-full items-center justify-between">
-          <div className="flex flex-col gap-[2px]">
+          {/* 장소명 + 지점명을 한 버튼으로 — 다채널 헤더와 같은 규칙. */}
+          <div className="flex flex-col">
             <button
               type="button"
               onClick={onBack}
-              className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900"
+              className="flex flex-col items-start gap-[2px] pb-1 pr-3 text-left"
             >
-              8층 사무실 A
-              <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
+              <span className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900">
+                8층 사무실 A
+                <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
+              </span>
+              <span className="text-[12px] leading-none" style={{ color: "#BFBFBF" }}>
+                에스원 본사 · N1234567
+              </span>
             </button>
-            <p
-              className="text-[12px] leading-none"
-              style={{ color: "#BFBFBF" }}
-            >
-              에스원 본사 · N1234567
-            </p>
           </div>
 
           <ModeToggle mode={mode} setMode={setMode} />
