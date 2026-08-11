@@ -260,6 +260,7 @@ export function GridSelectionOverlay({
   totalPages = 2,
   onGallery,
   onMore,
+  onAi,
   onFit,
   fit = "fill",
   mode,
@@ -278,6 +279,8 @@ export function GridSelectionOverlay({
   onGallery?: () => void;
   /** 딤의 '더보기'(⋮). 누르면 안이 더보기 시트를 연다. 안 주면 눌러도 무반응. */
   onMore?: () => void;
+  /** AI 버튼을 누를 수 있게 한다. 안 주면 예전처럼 표시만 하는 아이콘. */
+  onAi?: () => void;
   /** 화면 맞춤 — 누를 때마다 fill → contain → cover 로 돈다(단일 화면과 동일). */
   onFit?: () => void;
   /** 지금 맞춤 상태. 버튼 아이콘이 이걸 그대로 보여준다. */
@@ -448,19 +451,24 @@ export function GridSelectionOverlay({
       {/* AI 아이콘 — 딤 오른쪽 아래. 30px 원으로 감싼다(플레이어 버튼과 같은
           결: 반투명 검정 + 흰 테두리). 원본이 이미 흰색이라 마스크·필터는 없다.
           페이지 인디케이터와 같은 높이(bottom 12)에 앉혀 한 줄로 읽히게 했다.
-          지금은 표시만 한다 — 누르면 무엇을 할지는 아직 정해지지 않았다. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute bottom-3 right-4 flex items-center justify-center rounded-full"
+          onAi 를 준 안에서만 누를 수 있다 — 안 준 안(A-2·B)은 예전처럼 표시만.
+          시트는 안이 들고 있으므로 여기선 열어 달라고만 한다(더보기와 같은 결). */}
+      <button
+        type="button"
+        aria-label="AI 검색"
+        aria-hidden={!onAi}
+        onClick={onAi}
+        className="absolute bottom-3 right-4 flex items-center justify-center rounded-full"
         style={{
           width: "34px",
           height: "34px",
           border: "1px solid rgba(255,255,255,0.35)",
           backgroundColor: "rgba(0,0,0,0.35)",
+          pointerEvents: onAi && visible ? "auto" : "none",
         }}
       >
         <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
-      </div>
+      </button>
 
       {/* 하단 페이지 인디케이터 */}
       {showPageIndicator && (

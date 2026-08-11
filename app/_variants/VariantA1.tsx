@@ -26,6 +26,7 @@ import EventKindChip from "../components/EventKindChip";
 import { useEventThumbs } from "../components/eventThumbs";
 import VariantPicker from "../components/VariantPicker";
 import MoreSheet from "../components/MoreSheet";
+import AiSearchSheet from "../components/AiSearchSheet";
 import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
 import { nextVideoFit, videoFitIcon } from "../components/videoFit";
 import { useAutoHide } from "../components/useAutoHide";
@@ -201,9 +202,15 @@ export default function VariantA1({
   // 사용자가 직접 고른 배치(가로 × 세로). null 이면 '자동' — 비율에서 개수를
   // 고르고(autoGridCount) 그 개수로 가장 16:9 에 가까운 배치를 잡는다
   // (bestGridForCount). 직접 고르면 그 값을 그대로 쓴다.
-  const [userGrid, setUserGrid] = useState<{ cols: number; rows: number } | null>(
-    null,
-  );
+  //
+  // 기기 방향별로 따로 기억한다(사용자 요청 2026-08-11). 세로로 긴 화면에서
+  // 2×4 로 잡아 놓고 가로로 눕히면 그 배치가 그대로 오면 타일이 납작해진다 —
+  // 방향마다 어울리는 배치가 다르므로 각각 고르게 하고, 돌아오면 그 방향에서
+  // 고른 값으로 복귀한다. 아직 안 고른 방향은 null(자동)이다.
+  const [userGrids, setUserGrids] = useState<{
+    portrait: { cols: number; rows: number } | null;
+    landscape: { cols: number; rows: number } | null;
+  }>({ portrait: null, landscape: null });
   const [mode, setMode] = useState<"live" | "recording">("live");
   // 위아래 가짜 시스템 바 표시 여부. 가짜 바 자체를 눌러 토글한다.
   // 단 데스크톱 진입(initialChrome)이면 켠 채로 시작한다.
@@ -218,6 +225,16 @@ export default function VariantA1({
   const [videoLoading, setVideoLoading] = useState(false);
   const landscape = useDeviceLandscape();
   const immersive = useImmersive();
+
+  // '지금 기기가 가로로 긴 상태인가'. 화면 분할을 방향별로 나눠 기억하는 기준이다.
+  // 회전 플래그(data-landscape)를 따로 볼 필요는 없다 — 데스크톱 미리보기는
+  // 회전할 때 --device-w/h 를 맞바꾸고(DesktopVariantNav), 실기기는 물리 회전에
+  // innerWidth/Height 가 바뀐다. 어느 쪽이든 비율 하나로 방향이 드러난다.
+  const orientKey: "portrait" | "landscape" =
+    useDeviceRatio() > 1 ? "landscape" : "portrait";
+  const userGrid = userGrids[orientKey];
+  const setUserGrid = (g: { cols: number; rows: number } | null) =>
+    setUserGrids((prev) => ({ ...prev, [orientKey]: g }));
   // 영상 탭에 처음 들어왔을 때는 딤이 기본이다 — 뭘 할 수 있는지 한 번 보여주고
   // 5초 뒤 useAutoHide 가 알아서 걷어낸다. 단일 화면에 들어갔다 돌아온 다채널은
   // 해당 없음(GridView 가 매번 다시 마운트되므로 그때마다 딤이 뜨면 성가시다).
@@ -335,6 +352,14 @@ export default function VariantA1({
   // 다채널·단일은 세로에서 따로 기억하던 그대로 둘로 나눠 둔다.
   // 딤의 '더보기'(⋮) 시트. 다채널·단일·가로 딤이 모두 이 하나를 연다.
   const [moreOpen, setMoreOpen] = useState(false);
+  // 딤의 AI 버튼이 여는 'AI 검색 기능' 시트.
+  const [aiOpen, setAiOpen] = useState(false);
+  // 가로가 '자동'일 때 LandscapeVideo 가 실제로 고른 배치. 화면 구성 시트의
+  // 슬라이더 시작값으로 쓴다 — 안 그러면 세로 기준 값이 남아 화면과 어긋난다.
+  const [landscapeAutoGrid, setLandscapeAutoGrid] = useState<{
+    cols: number;
+    rows: number;
+  } | null>(null);
   const gridFitState = useVideoFit("fill");
   const videoFitState = useVideoFit("fill");
 
@@ -373,6 +398,11 @@ export default function VariantA1({
           driveByPlayback={mode === "recording"}
           onGallery={() => setSheetOpen(true)}
           onMore={() => setMoreOpen(true)}
+          onAi={() => setAiOpen(true)}
+          // 가로 화면 배치는 방향별로 따로 기억한 값을 그대로 쓴다.
+          // null 이면 LandscapeVideo 가 가로 영역 비율로 알아서 고른다.
+          grid={userGrid}
+          onAutoGrid={setLandscapeAutoGrid}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
@@ -421,7 +451,8 @@ export default function VariantA1({
         <LayoutConfigSheet
           open={sheetOpen}
           selected={userGrid}
-          resolved={layoutDims}
+          resolved={userGrid ?? landscapeAutoGrid ?? layoutDims}
+          orientation={orientKey}
           onClose={() => setSheetOpen(false)}
           onPreview={(grid) => {
             setUserGrid(grid);
@@ -441,6 +472,7 @@ export default function VariantA1({
           }}
         />
         <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+        <AiSearchSheet open={aiOpen} onClose={() => setAiOpen(false)} />
         <VariantPicker
           open={variantPickerOpen}
           current="a1"
@@ -488,6 +520,7 @@ export default function VariantA1({
           dateLabel={dateLabel}
           onOpenSheet={() => setSheetOpen(true)}
           onOpenMore={() => setMoreOpen(true)}
+          onOpenAi={() => setAiOpen(true)}
           onOpenVariantPicker={() => setVariantPickerOpen(true)}
           cols={layoutDims.cols}
           rows={layoutDims.rows}
@@ -515,6 +548,7 @@ export default function VariantA1({
           index={expandedIndex}
           onBack={handleBack}
           onOpenMore={() => setMoreOpen(true)}
+          onOpenAi={() => setAiOpen(true)}
           onOpenVariantPicker={() => setVariantPickerOpen(true)}
           onSelect={setExpandedIndex}
           dateLabel={dateLabel}
@@ -553,6 +587,7 @@ export default function VariantA1({
         open={sheetOpen}
         selected={userGrid}
         resolved={layoutDims}
+        orientation={orientKey}
         onClose={() => setSheetOpen(false)}
         onPreview={(grid) => {
           setUserGrid(grid);
@@ -561,6 +596,7 @@ export default function VariantA1({
       />
 
       <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
+        <AiSearchSheet open={aiOpen} onClose={() => setAiOpen(false)} />
       <VariantPicker
         open={variantPickerOpen}
         current="a1"
@@ -596,6 +632,7 @@ function GridView({
   dateLabel,
   onOpenSheet,
   onOpenMore,
+  onOpenAi,
   onOpenVariantPicker,
   cols,
   rows,
@@ -626,6 +663,7 @@ function GridView({
   onOpenSheet: () => void;
   /** 딤의 더보기(⋮) — 안이 더보기 시트를 연다. */
   onOpenMore: () => void;
+  onOpenAi: () => void;
   onOpenVariantPicker: () => void;
   cols: number;
   rows: number;
@@ -795,6 +833,7 @@ function GridView({
           totalPages={totalPages}
           onGallery={onOpenSheet}
           onMore={onOpenMore}
+          onAi={onOpenAi}
           onFit={cycleGridFit}
           fit={gridFit}
           // 아이콘 줄은 헤더와 같은 줄 오른쪽 — 실시간/녹화 토글이 있던 자리다.
@@ -923,6 +962,7 @@ function ExpandedView({
   index,
   onBack,
   onOpenMore,
+  onOpenAi,
   onOpenVariantPicker,
   onSelect,
   dateLabel,
@@ -946,6 +986,7 @@ function ExpandedView({
   onBack: () => void;
   /** 딤의 더보기(⋮) — 안이 더보기 시트를 연다. */
   onOpenMore: () => void;
+  onOpenAi: () => void;
   /** 장소명 옆 화살표 — 다채널 화면과 똑같이 시안 목록 시트를 연다.
    *  다채널로 돌아가는 건 영상 더블탭(handleVideoClick). */
   onOpenVariantPicker: () => void;
@@ -1397,9 +1438,11 @@ function ExpandedView({
             {/* AI 아이콘 — 딤 오른쪽 아래. 원본이 이미 흰색이라 필터 없이 쓴다.
                 카메라 인디케이터와 같은 높이(bottom 12)에 앉힌다. 다채널 딤
                 (GridSelectionOverlay)에 넣은 것과 같은 자리·같은 크기다. */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute flex items-center justify-center rounded-full"
+            <button
+              type="button"
+              aria-label="AI 검색"
+              onClick={onOpenAi}
+              className="absolute flex items-center justify-center rounded-full"
               style={{
                 bottom: "12px",
                 right: "16px",
@@ -1407,10 +1450,11 @@ function ExpandedView({
                 height: "34px",
                 border: "1px solid rgba(255,255,255,0.35)",
                 backgroundColor: "rgba(0,0,0,0.35)",
+                pointerEvents: showControls ? "auto" : "none",
               }}
             >
               <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
-            </div>
+            </button>
           </div>
           <VideoSkeleton visible={videoLoading} />
           {/* 화면 맞춤 토스트 — 탐색·캡처 토스트와 같은 자리(영역 하단 20px 위). */}
@@ -3011,23 +3055,32 @@ function FrozenImage({
   return <canvas ref={canvasRef} aria-label={alt} className={className} style={style} />;
 }
 
-// '화면 구성' 시트 — 배치(2×4 같은 모양)가 아니라 '개수'(1~16)를 슬라이더로
-// 고른다. 몇 열인지보다 몇 개가 보이는지가 사용자에게 중요한 정보라서다. 고른
-// 개수의 cols×rows 는 layoutRules.ts 의 bestGridForCount(count, 영상영역비율)
-// 가 16:9 에 가장 가깝게 자동으로 고른다.
+// '화면 구성' 시트 — 가로(열) · 세로(행)를 각각 1~4 슬라이더로 고른다.
+// 예전엔 개수 하나(1~16)만 고르고 cols×rows 는 영상 영역 비율에서 자동으로
+// 갈랐는데, 원하는 배치를 못 집어낼 때가 있어 둘로 나눴다.
 //
-// '자동'은 개수를 직접 정하지 않고 영상 영역 비율에 맞춰(autoGridCount) 그때
-// 그때 최적 개수를 쓰겠다는 뜻 — 슬라이더를 만지면 자동은 즉시 꺼진다(그
-// 순간부터 사용자가 개수를 정한 것이므로).
+// 고른 값은 '지금 기기 방향'(orientation)에 대해서만 저장된다 — 세로로 긴
+// 화면과 가로로 긴 화면은 어울리는 배치가 다르고, 방향을 되돌리면 그 방향에서
+// 고른 값으로 복귀한다(호출부 VariantA1 의 userGrids).
+//
+// '자동'은 배치를 직접 정하지 않고 영상 영역 비율에 맞춰(autoGridCount +
+// bestGridForCount) 그때그때 최적 배치를 쓰겠다는 뜻 — 슬라이더를 만지면
+// 자동은 즉시 꺼진다(그 순간부터 사용자가 정한 것이므로).
 //
 // 슬라이더는 '적용'을 눌러야 반영되는 게 아니라 끄는 즉시(onPreview) 뒤 그리드가
 // 따라온다 — 몇 개가 어떻게 보이는지 드래그하면서 바로 눈으로 확인하며 고르는
 // 게 자연스럽다(밝기 슬라이더처럼). '취소'를 누르면 시트를 열었을 때 값으로
 // 되돌린다 — 그래서 미리보기 중 실제 상태가 바뀌어도 취소가 의미를 갖는다.
+// 슬라이더가 다룰 수 있는 범위(1~4). 자동 계산은 아주 넓은 가로 화면에서
+// 8×2 같은 값을 내놓기도 하는데, 슬라이더 시작 위치는 이 범위로 접어 넣는다.
+const AXIS_MAX = 4;
+const clampAxis = (n: number) => Math.min(AXIS_MAX, Math.max(1, n));
+
 function LayoutConfigSheet({
   open,
   selected,
   resolved,
+  orientation,
   onClose,
   onPreview,
 }: {
@@ -3036,25 +3089,40 @@ function LayoutConfigSheet({
   selected: { cols: number; rows: number } | null;
   /** 지금 실제로 쓰이는 배치(자동이면 계산 결과) — 슬라이더 위치·라벨용. */
   resolved: { cols: number; rows: number };
+  /** 지금 고치고 있는 게 어느 방향의 배치인지 — 제목 옆에 밝힌다. */
+  orientation: "portrait" | "landscape";
   onClose: () => void;
   /** 값이 바뀔 때마다(자동 토글·슬라이더 드래그) 즉시 호출 — 그리드가 바로 따라온다. */
   onPreview: (grid: { cols: number; rows: number } | null) => void;
 }) {
   const [auto, setAuto] = useState(selected === null);
-  const [cols, setCols] = useState(resolved.cols);
-  const [rows, setRows] = useState(resolved.rows);
+  const [cols, setCols] = useState(clampAxis(resolved.cols));
+  const [rows, setRows] = useState(clampAxis(resolved.rows));
   // 시트를 열었을 때의 선택값 — '취소' 누르면 이 값으로 되돌린다.
   const originalRef = useRef<{ cols: number; rows: number } | null>(selected);
 
   useEffect(() => {
     if (open) {
       setAuto(selected === null);
-      setCols(resolved.cols);
-      setRows(resolved.rows);
+      setCols(clampAxis(resolved.cols));
+      setRows(clampAxis(resolved.rows));
       originalRef.current = selected;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // 자동인 채로 화면이 바뀌면(회전 등) 슬라이더 시작 위치도 따라간다 — 시트를
+  // 열어 둔 채 돌렸을 때 이전 방향의 값이 남아 있으면 안 된다.
+  useEffect(() => {
+    if (!open || !auto) return;
+    setCols(clampAxis(resolved.cols));
+    setRows(clampAxis(resolved.rows));
+  }, [open, auto, resolved.cols, resolved.rows]);
+
+  // 큰 라벨은 '지금 화면이 실제로 어떻게 나뉘어 있는지'를 말한다. 자동일 땐
+  // 계산 결과(resolved)를 그대로 쓴다 — 넓은 가로 화면에선 8×2 처럼 슬라이더
+  // 상한(4)을 넘는 배치가 나오는데, 그걸 4 로 깎아 보여 주면 화면과 어긋난다.
+  const shown = auto ? resolved : { cols, rows };
 
   const preview = (nextAuto: boolean, c: number, r: number) => {
     onPreview(nextAuto ? null : { cols: c, rows: r });
@@ -3118,9 +3186,19 @@ function LayoutConfigSheet({
           >
             {/* 시트 제목이 '화면 구성' 이라 섹션은 '화면 분할' 로 부른다 —
                 둘 다 '화면 구성' 이면 같은 말이 두 번 나온다. */}
-            <h3 className="text-[20px] font-bold leading-none text-neutral-900">
-              화면 분할
-            </h3>
+            {/* 배치는 기기 방향별로 따로 저장된다 — 지금 고치는 게 어느 쪽인지
+                밝혀 두지 않으면, 돌렸을 때 값이 되돌아간 것처럼 보인다. */}
+            <div className="flex items-baseline" style={{ gap: "8px" }}>
+              <h3 className="text-[20px] font-bold leading-none text-neutral-900">
+                화면 분할
+              </h3>
+              <span
+                className="text-[13px] font-medium leading-none"
+                style={{ color: "#A4A4A4" }}
+              >
+                {orientation === "landscape" ? "가로 화면 기준" : "세로 화면 기준"}
+              </span>
+            </div>
             <button
               type="button"
               onClick={() => {
@@ -3148,9 +3226,9 @@ function LayoutConfigSheet({
             className="flex items-center justify-center text-[16px] font-semibold text-neutral-900"
             style={{ marginBottom: "12px" }}
           >
-            가로 {cols} × 세로 {rows}
+            가로 {shown.cols} × 세로 {shown.rows}
             <span style={{ color: "#A4A4A4", marginLeft: "8px" }}>
-              {cols * rows}개
+              {shown.cols * shown.rows}개
             </span>
           </div>
 
@@ -3176,7 +3254,7 @@ function LayoutConfigSheet({
               <input
                 type="range"
                 min={1}
-                max={4}
+                max={AXIS_MAX}
                 step={1}
                 value={value}
                 onChange={(e) => {
