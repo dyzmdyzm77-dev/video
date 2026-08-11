@@ -198,8 +198,12 @@ export default function VariantA1({
   // videoAreaRef 는 GridView 의 슬라이드 섹션에 달아 실측한다 — 섹션 크기는
   // cols×rows 선택과 무관해서(그 안을 나누기만 하므로) 순환 의존이 없다.
   const [videoAreaRef, gridRatio] = useGridAreaRatio();
-  const [userGridCount, setUserGridCount] = useState<number | null>(null);
-  const gridCount = userGridCount ?? autoGridCount(gridRatio);
+  // 사용자가 직접 고른 배치(가로 × 세로). null 이면 '자동' — 비율에서 개수를
+  // 고르고(autoGridCount) 그 개수로 가장 16:9 에 가까운 배치를 잡는다
+  // (bestGridForCount). 직접 고르면 그 값을 그대로 쓴다.
+  const [userGrid, setUserGrid] = useState<{ cols: number; rows: number } | null>(
+    null,
+  );
   const [mode, setMode] = useState<"live" | "recording">("live");
   // 위아래 가짜 시스템 바 표시 여부. 가짜 바 자체를 눌러 토글한다.
   // 단 데스크톱 진입(initialChrome)이면 켠 채로 시작한다.
@@ -319,7 +323,8 @@ export default function VariantA1({
   };
   const [now, setNow] = useState<Date | null>(null);
 
-  const layoutDims = bestGridForCount(gridCount, gridRatio);
+  const layoutDims =
+    userGrid ?? bestGridForCount(autoGridCount(gridRatio), gridRatio);
   const pageSize = layoutDims.cols * layoutDims.rows;
   const totalPages = Math.ceil(CAMERAS.length / pageSize);
 
@@ -415,11 +420,11 @@ export default function VariantA1({
             아예 렌더되지 않았다. */}
         <LayoutConfigSheet
           open={sheetOpen}
-          selectedCount={userGridCount}
-          resolvedCount={gridCount}
+          selected={userGrid}
+          resolved={layoutDims}
           onClose={() => setSheetOpen(false)}
-          onPreview={(count) => {
-            setUserGridCount(count);
+          onPreview={(grid) => {
+            setUserGrid(grid);
             setCurrentPage(0);
           }}
         />
@@ -546,11 +551,11 @@ export default function VariantA1({
 
       <LayoutConfigSheet
         open={sheetOpen}
-        selectedCount={userGridCount}
-        resolvedCount={gridCount}
+        selected={userGrid}
+        resolved={layoutDims}
         onClose={() => setSheetOpen(false)}
-        onPreview={(count) => {
-          setUserGridCount(count);
+        onPreview={(grid) => {
+          setUserGrid(grid);
           setCurrentPage(0);
         }}
       />
@@ -3021,36 +3026,38 @@ function FrozenImage({
 // 되돌린다 — 그래서 미리보기 중 실제 상태가 바뀌어도 취소가 의미를 갖는다.
 function LayoutConfigSheet({
   open,
-  selectedCount,
-  resolvedCount,
+  selected,
+  resolved,
   onClose,
   onPreview,
 }: {
   open: boolean;
-  /** 사용자가 직접 고른 개수. null 이면 '자동'. */
-  selectedCount: number | null;
-  /** 지금 실제로 쓰이는 개수(자동이면 autoGridCount 결과) — 슬라이더 위치·라벨용. */
-  resolvedCount: number;
+  /** 사용자가 직접 고른 배치. null 이면 '자동'. */
+  selected: { cols: number; rows: number } | null;
+  /** 지금 실제로 쓰이는 배치(자동이면 계산 결과) — 슬라이더 위치·라벨용. */
+  resolved: { cols: number; rows: number };
   onClose: () => void;
   /** 값이 바뀔 때마다(자동 토글·슬라이더 드래그) 즉시 호출 — 그리드가 바로 따라온다. */
-  onPreview: (count: number | null) => void;
+  onPreview: (grid: { cols: number; rows: number } | null) => void;
 }) {
-  const [auto, setAuto] = useState(selectedCount === null);
-  const [count, setCount] = useState(resolvedCount);
+  const [auto, setAuto] = useState(selected === null);
+  const [cols, setCols] = useState(resolved.cols);
+  const [rows, setRows] = useState(resolved.rows);
   // 시트를 열었을 때의 선택값 — '취소' 누르면 이 값으로 되돌린다.
-  const originalRef = useRef<number | null>(selectedCount);
+  const originalRef = useRef<{ cols: number; rows: number } | null>(selected);
 
   useEffect(() => {
     if (open) {
-      setAuto(selectedCount === null);
-      setCount(resolvedCount);
-      originalRef.current = selectedCount;
+      setAuto(selected === null);
+      setCols(resolved.cols);
+      setRows(resolved.rows);
+      originalRef.current = selected;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const preview = (nextAuto: boolean, nextCount: number) => {
-    onPreview(nextAuto ? null : nextCount);
+  const preview = (nextAuto: boolean, c: number, r: number) => {
+    onPreview(nextAuto ? null : { cols: c, rows: r });
   };
 
   return (
@@ -3109,15 +3116,17 @@ function LayoutConfigSheet({
             className="flex items-center justify-between"
             style={{ marginBottom: "16px" }}
           >
+            {/* 시트 제목이 '화면 구성' 이라 섹션은 '화면 분할' 로 부른다 —
+                둘 다 '화면 구성' 이면 같은 말이 두 번 나온다. */}
             <h3 className="text-[20px] font-bold leading-none text-neutral-900">
-              화면 개수
+              화면 분할
             </h3>
             <button
               type="button"
               onClick={() => {
                 const next = !auto;
                 setAuto(next);
-                preview(next, count);
+                preview(next, cols, rows);
               }}
               className="inline-flex items-center justify-center text-[14px] font-semibold leading-none"
               style={{
@@ -3132,44 +3141,59 @@ function LayoutConfigSheet({
             </button>
           </div>
 
+          {/* 가로 × 세로를 따로 고른다(사용자 요청). 예전엔 개수 하나만 고르고
+              가로·세로는 화면 비율에서 자동으로 갈랐는데, 원하는 배치를 못
+              집어낼 때가 있었다. 최대 4×4 = 16 — 카메라가 16대라 그 위는 빈 칸이다. */}
           <div
             className="flex items-center justify-center text-[16px] font-semibold text-neutral-900"
             style={{ marginBottom: "12px" }}
           >
-            {count}개
+            가로 {cols} × 세로 {rows}
+            <span style={{ color: "#A4A4A4", marginLeft: "8px" }}>
+              {cols * rows}개
+            </span>
           </div>
-          {/* disabled 를 안 쓴다 — 자동일 때 슬라이더를 막으면 사용자가 자동을 먼저
-              꺼야만 드래그할 수 있어 한 단계가 더 든다. 항상 드래그 가능하게 두고
-              흐림(opacity)만 자동 상태를 알리는 용도로 쓴다 — 만지는 순간
-              onChange 이 자동을 꺼서 자연스럽게 넘어간다.
-              슬라이더는 GRID_COUNT_OPTIONS 의 '인덱스'를 움직인다 — native range
-              의 step 은 균일 간격만 지원해 2,3,4,6,8,9,10,12,14,15,16 처럼
-              듬성듬성한 목록엔 못 쓴다. */}
-          <input
-            type="range"
-            min={0}
-            max={GRID_COUNT_OPTIONS.length - 1}
-            step={1}
-            value={nearestGridCountIndex(count)}
-            onChange={(e) => {
-              const next = GRID_COUNT_OPTIONS[Number(e.target.value)];
-              setAuto(false);
-              setCount(next);
-              preview(false, next);
-            }}
-            className="w-full"
-            style={{
-              accentColor: "#1D6CEB",
-              opacity: auto ? 0.4 : 1,
-            }}
-          />
-          <div
-            className="flex items-center justify-between text-[12px]"
-            style={{ color: "#A4A4A4", marginTop: "4px" }}
-          >
-            <span>{GRID_COUNT_OPTIONS[0]}</span>
-            <span>{GRID_COUNT_OPTIONS[GRID_COUNT_OPTIONS.length - 1]}</span>
-          </div>
+
+          {/* disabled 를 안 쓴다 — 자동일 때 슬라이더를 막으면 사용자가 자동을
+              먼저 꺼야만 드래그할 수 있어 한 단계가 더 든다. 항상 드래그 가능하게
+              두고 흐림(opacity)만 자동 상태를 알린다 — 만지는 순간 자동이 꺼진다.
+              여기 슬라이더는 값이 1~4 로 촘촘해서 인덱스 변환이 필요 없다
+              (개수 슬라이더는 2,3,4,6,8… 처럼 듬성듬성해 인덱스를 썼었다). */}
+          {(
+            [
+              ["가로", cols, setCols] as const,
+              ["세로", rows, setRows] as const,
+            ]
+          ).map(([label, value, set]) => (
+            <div key={label} style={{ marginBottom: "10px" }}>
+              <div
+                className="flex items-center justify-between text-[13px] font-medium"
+                style={{ color: "#7F7F7F", marginBottom: "2px" }}
+              >
+                <span>{label}</span>
+                <span className="text-neutral-900">{value}</span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={4}
+                step={1}
+                value={value}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  set(next);
+                  setAuto(false);
+                  preview(
+                    false,
+                    label === "가로" ? next : cols,
+                    label === "세로" ? next : rows,
+                  );
+                }}
+                className="w-full"
+                style={{ accentColor: "#1D6CEB", opacity: auto ? 0.4 : 1 }}
+              />
+            </div>
+          ))}
         </div>
 
         {/* 버튼 */}
