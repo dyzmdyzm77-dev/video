@@ -132,6 +132,26 @@ function shouldRotate(): boolean {
 // '영상이 커지느냐'는 하나의 기준으로 갈리는 것이다(AUTO_IMMERSIVE_GAIN).
 const BY_ROTATE_FLAG = "immersiveByRotate";
 
+/** 확대를 켜고 끌지 판단할 때 쓰는 '기기 자체의 방향'.
+ *
+ *  readDeviceWide 와 다르다. 그쪽은 '사용자 눈에 가로로 보이는가'라, 확대가
+ *  앱을 CSS 로 눕혀 놓은 것도 가로로 친다. 확대 판정에 그걸 쓰면, 확대(앱을
+ *  눕힘) 상태에서 폰까지 눕혔을 때 두 회전이 상쇄돼 '세로로 돌아왔다'로 읽히고
+ *  확대가 꺼진다 — CSS 회전은 켜진 채로 남아 화면이 두 번 돈 꼴이 된다
+ *  (사용자 지적: "확대 모드를 했다 세로에서? 근데 그러고 가로로 돌리잖아?
+ *   그럼 두번 회전에서 이상하게 돼").
+ *
+ *  그래서 여기선 앱의 CSS 회전을 빼고 기기 자체만 본다. 데스크톱 미리보기는
+ *  물리 기기가 없어 CSS 회전이 곧 기기 방향이므로 readDeviceWide 그대로다. */
+function deviceOwnWide(): boolean {
+  if (typeof window === "undefined") return false;
+  const desktopPreview =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (desktopPreview) return readDeviceWide();
+  return window.innerWidth > window.innerHeight;
+}
+
 /** 지금 가로 상태가 세로였을 때보다 영상이 확실히 큰가. shouldRotate 의 반대편 —
  *  이미 눕혀 놓은 상태에서 판정하므로 지금 크기가 가로, 맞바꾼 게 세로다. */
 function landscapeIsMuchBetter(): boolean {
@@ -168,7 +188,7 @@ export function noteDeviceOrientation() {
   const w = readDeviceWidth();
   const h = readDeviceHeight();
   if (lastState && w === lastState.h && h === lastState.w) return;
-  lastState = { w, h, wide: readDeviceWide() };
+  lastState = { w, h, wide: deviceOwnWide() };
 }
 
 export function syncImmersiveWithLandscape() {
@@ -176,7 +196,7 @@ export function syncImmersiveWithLandscape() {
   const root = document.documentElement;
   const w = readDeviceWidth();
   const h = readDeviceHeight();
-  const wide = readDeviceWide();
+  const wide = deviceOwnWide();
   const prev = lastState;
   lastState = { w, h, wide };
   if (prev === null || prev.wide === wide) return;
