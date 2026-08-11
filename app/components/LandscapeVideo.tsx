@@ -110,6 +110,7 @@ export default function LandscapeVideo({
   fit: fitProp,
   onFitCycle,
   onPageChange,
+  loading = false,
 }: {
   cameras: { label: string; src: string }[];
   /** 단일 화면이면 그 인덱스, 다채널이면 null. */
@@ -170,6 +171,11 @@ export default function LandscapeVideo({
    *  세로 다채널의 스와이프 페이징을 가로·확대 화면에서도 그대로 쓰기 위한 것 —
    *  '위아래는 확대 취소, 좌우는 페이지 넘김'이 원래 사양이다. */
   onPageChange?: (next: number) => void;
+  /** 화면 전환(실시간↔녹화, 다채널↔단일) 중인가. 켜면 세로와 같은 스켈레톤을
+   *  덮는다 — 세로에만 있고 여긴 없어서 확대 화면만 전환이 뚝 끊겨 보였다.
+   *  세로 것(SectionSkeleton)은 안 안에 있는 컴포넌트라 못 가져다 쓰고,
+   *  배치(cols×rows)도 가로 기준으로 다시 잡혀야 해서 여기서 직접 그린다. */
+  loading?: boolean;
 }) {
   // 가로로 들어오면 딤을 켠 채로 시작한다(사용자 결정) — 세로 영상 탭 첫 진입과
   // 같은 규칙이다(GridView 의 initialDim). 5초 뒤 자동으로 걷힌다(useAutoHide).
@@ -494,6 +500,29 @@ export default function LandscapeVideo({
       }}
     >
       {children}
+      {/* 전환 스켈레톤 — 세로와 같은 결(skeleton-shimmer, 타일 사이 2px 흰 선).
+          단일이면 화면 전체, 다채널이면 지금 가로 배치대로 칸을 나눈다. */}
+      {loading &&
+        (expandedIndex !== null ? (
+          <div
+            className="skeleton-shimmer pointer-events-none absolute inset-0 z-20"
+            aria-hidden
+          />
+        ) : (
+          <div
+            className="pointer-events-none absolute inset-0 z-20 grid bg-white"
+            style={{
+              gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+              gap: "2px",
+            }}
+            aria-hidden
+          >
+            {Array.from({ length: cols * rows }).map((_, i) => (
+              <div key={i} className="skeleton-shimmer" />
+            ))}
+          </div>
+        ))}
       {overlay}
       {header}
       {statusTop}

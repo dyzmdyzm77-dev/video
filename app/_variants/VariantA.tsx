@@ -360,6 +360,8 @@ export default function VariantA({
           driveByPlayback={mode === "recording"}
           onGallery={() => setSheetOpen(true)}
           onMore={() => setMoreOpen(true)}
+          // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
+          loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
           onBack={handleBack}
           title="8층 사무실 A"
