@@ -103,6 +103,51 @@ function shouldRotate(): boolean {
   return fitArea(h, w) / now >= ROTATE_GAIN;
 }
 
+// ── 회전하면 자동으로 확대 ──────────────────────────────────────────────
+// '왼쪽으로 회전'으로 가로가 되면 확대 모드로 들어간다(사용자 결정 2026-08-11).
+// 눕힌 화면에서 헤더·목록·탭바를 그대로 두면 영상이 오히려 작아진다 — 눕히는
+// 목적 자체가 영상을 크게 보는 것이라, 가로 = 영상만 화면으로 맞춘다.
+//
+// 다만 아무 때나는 아니다. 판정은 확대 버튼이 방향을 정할 때와 같은 기준
+// (ROTATE_GAIN)을 쓴다 — 눕혀서 영상이 확실히 커지는 기기(폰 계열)에서만
+// 그렇게 하고, 눕혀도 별로 안 커지는 넓은 기기(780×780·1080×792 등)는 회전을
+// 그냥 '방향 전환'으로 둔다. 같은 회전이 기기마다 다르게 동작하는 게 아니라,
+// '영상이 커지느냐'는 하나의 기준으로 갈리는 것이다.
+const BY_ROTATE_FLAG = "immersiveByRotate";
+
+/** 지금 가로 상태가 세로였을 때보다 영상이 확실히 큰가. shouldRotate 의 반대편 —
+ *  이미 눕혀 놓은 상태에서 판정하므로 지금 크기가 가로, 맞바꾼 게 세로다. */
+function landscapeIsMuchBetter(): boolean {
+  const w = readDeviceWidth();
+  const h = readDeviceHeight();
+  const portrait = fitArea(h, w);
+  if (!(portrait > 0)) return false;
+  return fitArea(w, h) / portrait >= ROTATE_GAIN;
+}
+
+/** 방향이 바뀔 때마다 확대 상태를 맞춘다. 가로가 되면(그리고 그게 이득이면)
+ *  확대를 켜고, 그때 켠 것이었다면 세로로 돌아올 때 끈다. 사용자가 확대
+ *  버튼으로 직접 켠 건 건드리지 않는다(플래그로 구분). */
+export function syncImmersiveWithLandscape() {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  if (readDeviceLandscape()) {
+    if (readImmersive()) return;
+    if (!landscapeIsMuchBetter()) return;
+    root.dataset.immersive = "true";
+    root.dataset[BY_ROTATE_FLAG] = "true";
+    syncFullscreen(true);
+    window.dispatchEvent(new Event(IMMERSIVE_EVENT));
+    return;
+  }
+  if (root.dataset[BY_ROTATE_FLAG] === "true") {
+    root.dataset[BY_ROTATE_FLAG] = "false";
+    root.dataset.immersive = "false";
+    syncFullscreen(false);
+    window.dispatchEvent(new Event(IMMERSIVE_EVENT));
+  }
+}
+
 /** 딤의 확대/축소 버튼에서 호출. 지금 상태를 뒤집는다.
  *  전체화면·회전은 '사용자 조작' 안에서만 허용되므로 버튼 핸들러인 여기서 바로
  *  부른다 — 상태가 바뀐 뒤 effect 에서 부르면 제스처가 끊겨 거부된다. */
@@ -126,6 +171,9 @@ export function toggleImmersive() {
 export function exitImmersive() {
   if (!readImmersive()) return;
   document.documentElement.dataset.immersive = "false";
+  // 회전으로 자동으로 켠 것이었더라도, 손으로 껐으면 그 자국은 지운다 —
+  // 안 지우면 세로로 돌아갈 때 이미 꺼진 걸 또 끄려 든다.
+  document.documentElement.dataset[BY_ROTATE_FLAG] = "false";
   syncFullscreen(false);
   if (document.documentElement.dataset[ROTATED_FLAG] === "true") {
     document.documentElement.dataset[ROTATED_FLAG] = "false";

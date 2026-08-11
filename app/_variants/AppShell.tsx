@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import VariantA from "./VariantA";
 import VariantA1 from "./VariantA1";
 import VariantB from "./VariantB";
 import { Inner as HomeScreen } from "../home/page";
 import { useVariant, type VariantKey } from "../components/variantRoute";
+import { LANDSCAPE_EVENT } from "../components/deviceRotate";
+import { syncImmersiveWithLandscape } from "../components/immersive";
 
 // 세 화면안(A · A-1 · B)과 홈 화면을 한 자리에서 갈아끼우는 껍데기.
 // /a1 · /a2 · /b (와 옛 /a) 라우트가 전부 이걸 렌더하고, 다른 건 initialVariant 뿐이다.
@@ -28,6 +30,16 @@ export default function AppShell({
   const initialChrome = params.get("chrome") === "1";
   const variant = useVariant(initialVariant);
   const [home, setHome] = useState(false);
+
+  // 방향이 바뀌면 확대 상태를 맞춘다 — 눕히면 영상만 보이는 화면으로 들어가고,
+  // 세우면 돌아온다(immersive.ts 의 syncImmersiveWithLandscape). 안이 아니라
+  // 여기서 거는 이유는, 안이 갈아끼워져도 구독이 끊기지 않아야 해서다.
+  useEffect(() => {
+    syncImmersiveWithLandscape();
+    window.addEventListener(LANDSCAPE_EVENT, syncImmersiveWithLandscape);
+    return () =>
+      window.removeEventListener(LANDSCAPE_EVENT, syncImmersiveWithLandscape);
+  }, []);
 
   if (home) return <HomeScreen onVideo={() => setHome(false)} />;
 
