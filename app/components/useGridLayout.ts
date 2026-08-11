@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { GRID_TILE_RATIO } from "./layoutRules";
+import { LANDSCAPE_EVENT } from "./deviceRotate";
+import { IMMERSIVE_EVENT } from "./immersive";
 
 // 다채널(그리드) 배치가 보는 '영상 영역 비율'(가로/세로) 하나를 안들이 공유한다.
 // 자세한 근거는 layoutRules.ts 의 GRID_AUTO_LADDER / bestGridForCount 주석 참고.
@@ -47,13 +49,26 @@ export function useGridAreaRatio() {
       const h = el.offsetHeight;
       if (w > 0 && h > 0) setRatio(w / h);
     };
+    // 방향·확대가 바뀌는 순간에는 재 봐야 소용이 없다 — 그때 이 영역은 아직
+    // 안 붙었거나(확대 화면으로 넘어가는 중) 옛 크기 그대로다. 두 프레임 뒤,
+    // React 가 새 화면을 붙이고 레이아웃이 끝난 다음에 잰다.
+    //
+    // 이걸 안 하면 실기기에서 세로 → 가로 → 세로 왕복 시 배치가 어긋났다:
+    // 물리 회전은 resize 만 쏘는데 그 시점엔 아직 세로 그리드가 붙어 있어
+    // '가로로 넓어진 세로 그리드'를 재 버리고, 그 비율이 그대로 굳어 세로로
+    // 돌아왔을 때 8채널이 2×4 가 아니라 4×2 로 잡혔다(사용자 지적).
+    const measureSoon = () =>
+      requestAnimationFrame(() => requestAnimationFrame(measure));
     const ro = new ResizeObserver(measure);
     measure();
     const evts = ["devicechange", "devicerange", "deviceresize", "resize"];
     evts.forEach((e) => window.addEventListener(e, measure));
+    const lateEvts = [LANDSCAPE_EVENT, IMMERSIVE_EVENT, "orientationchange"];
+    lateEvts.forEach((e) => window.addEventListener(e, measureSoon));
     return () => {
       ro.disconnect();
       evts.forEach((e) => window.removeEventListener(e, measure));
+      lateEvts.forEach((e) => window.removeEventListener(e, measureSoon));
     };
   }, []);
   return [areaRef, ratio] as const;
