@@ -24,6 +24,7 @@ import {
 import EventCardFace from "../components/EventCardFace";
 import { useEventThumbs } from "../components/eventThumbs";
 import VariantPicker from "../components/VariantPicker";
+import MoreSheet from "../components/MoreSheet";
 import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
 import { nextVideoFit, videoFitIcon } from "../components/videoFit";
 import { useAutoHide } from "../components/useAutoHide";
@@ -326,6 +327,8 @@ export default function VariantA1({
   // 회전하면 이 컴포넌트가 가로 분기로 빠지면서 세로 화면이 통째로 언마운트돼,
   // 원본 비율로 보고 있다가 돌리면 기본값(채우기)으로 되돌아갔다.
   // 다채널·단일은 세로에서 따로 기억하던 그대로 둘로 나눠 둔다.
+  // 딤의 '더보기'(⋮) 시트. 다채널·단일·가로 딤이 모두 이 하나를 연다.
+  const [moreOpen, setMoreOpen] = useState(false);
   const gridFitState = useVideoFit("fill");
   const videoFitState = useVideoFit("fill");
 
@@ -363,6 +366,7 @@ export default function VariantA1({
           playbackMs={playbackMs}
           driveByPlayback={mode === "recording"}
           onGallery={() => setSheetOpen(true)}
+          onMore={() => setMoreOpen(true)}
           onExpand={handleExpand}
           onBack={handleBack}
           title="8층 사무실 A"
@@ -428,6 +432,7 @@ export default function VariantA1({
             triggerTransitionSkeleton();
           }}
         />
+        <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
         <VariantPicker
           open={variantPickerOpen}
           current="a1"
@@ -474,6 +479,7 @@ export default function VariantA1({
           setCurrentPage={setCurrentPage}
           dateLabel={dateLabel}
           onOpenSheet={() => setSheetOpen(true)}
+          onOpenMore={() => setMoreOpen(true)}
           onOpenVariantPicker={() => setVariantPickerOpen(true)}
           cols={layoutDims.cols}
           rows={layoutDims.rows}
@@ -500,6 +506,7 @@ export default function VariantA1({
         <ExpandedView
           index={expandedIndex}
           onBack={handleBack}
+          onOpenMore={() => setMoreOpen(true)}
           onOpenVariantPicker={() => setVariantPickerOpen(true)}
           onSelect={setExpandedIndex}
           dateLabel={dateLabel}
@@ -545,6 +552,7 @@ export default function VariantA1({
         }}
       />
 
+      <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
       <VariantPicker
         open={variantPickerOpen}
         current="a1"
@@ -579,6 +587,7 @@ function GridView({
   setCurrentPage,
   dateLabel,
   onOpenSheet,
+  onOpenMore,
   onOpenVariantPicker,
   cols,
   rows,
@@ -607,6 +616,8 @@ function GridView({
   setCurrentPage: (fn: (prev: number) => number) => void;
   dateLabel: string;
   onOpenSheet: () => void;
+  /** 딤의 더보기(⋮) — 안이 더보기 시트를 연다. */
+  onOpenMore: () => void;
   onOpenVariantPicker: () => void;
   cols: number;
   rows: number;
@@ -775,6 +786,7 @@ function GridView({
           currentPage={currentPage}
           totalPages={totalPages}
           onGallery={onOpenSheet}
+          onMore={onOpenMore}
           onFit={cycleGridFit}
           fit={gridFit}
           // 아이콘 줄은 헤더와 같은 줄 오른쪽 — 실시간/녹화 토글이 있던 자리다.
@@ -902,6 +914,7 @@ function ExpandedSlide({
 function ExpandedView({
   index,
   onBack,
+  onOpenMore,
   onOpenVariantPicker,
   onSelect,
   dateLabel,
@@ -923,6 +936,8 @@ function ExpandedView({
 }: {
   index: number;
   onBack: () => void;
+  /** 딤의 더보기(⋮) — 안이 더보기 시트를 연다. */
+  onOpenMore: () => void;
   /** 장소명 옆 화살표 — 다채널 화면과 똑같이 시안 목록 시트를 연다.
    *  다채널로 돌아가는 건 영상 더블탭(handleVideoClick). */
   onOpenVariantPicker: () => void;
@@ -1322,7 +1337,11 @@ function ExpandedView({
                   style={{ filter: "brightness(0) invert(1)" }}
                 />
               </button>
-              <button type="button" aria-label="더보기">
+              <button
+                type="button"
+                aria-label="더보기"
+                onClick={onOpenMore}
+              >
                 <img
                   src={`${BASE}/nav/etc.svg`}
                   alt=""
@@ -1371,13 +1390,13 @@ function ExpandedView({
               style={{
                 bottom: "12px",
                 right: "16px",
-                width: "30px",
-                height: "30px",
+                width: "34px",
+                height: "34px",
                 border: "1px solid rgba(255,255,255,0.35)",
                 backgroundColor: "rgba(0,0,0,0.35)",
               }}
             >
-              <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-6 w-6" />
+              <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
             </div>
           </div>
           <VideoSkeleton visible={videoLoading} />

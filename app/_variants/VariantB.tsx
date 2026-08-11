@@ -15,6 +15,7 @@ import {
   useGifFrameCanvas,
 } from "../components/CameraFeed";
 import VariantPicker from "../components/VariantPicker";
+import MoreSheet from "../components/MoreSheet";
 import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
 import { nextVideoFit, videoFitIcon } from "../components/videoFit";
 import { useAutoHide } from "../components/useAutoHide";
@@ -294,6 +295,9 @@ export default function VariantB({
   };
   const [now, setNow] = useState<Date | null>(null);
 
+  // 딤의 '더보기'(⋮) 시트. 다채널·단일·가로 딤이 모두 이 하나를 연다.
+  const [moreOpen, setMoreOpen] = useState(false);
+
   const layoutDims = bestGridForCount(gridCount, gridRatio);
   const pageSize = layoutDims.cols * layoutDims.rows;
   const totalPages = Math.ceil(CAMERAS.length / pageSize);
@@ -333,6 +337,7 @@ export default function VariantB({
           playbackMs={playbackMs}
           driveByPlayback={mode === "recording"}
           onGallery={() => setSheetOpen(true)}
+          onMore={() => setMoreOpen(true)}
           onExpand={handleExpand}
           onBack={handleBack}
           title="8층 사무실 B"
@@ -384,6 +389,7 @@ export default function VariantB({
             triggerTransitionSkeleton();
           }}
         />
+        <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
         <VariantPicker
           open={variantPickerOpen}
           current="b"
@@ -430,6 +436,7 @@ export default function VariantB({
           setCurrentPage={setCurrentPage}
           dateLabel={dateLabel}
           onOpenSheet={() => setSheetOpen(true)}
+          onOpenMore={() => setMoreOpen(true)}
           onOpenVariantPicker={() => setVariantPickerOpen(true)}
           cols={layoutDims.cols}
           rows={layoutDims.rows}
@@ -457,6 +464,7 @@ export default function VariantB({
         <ExpandedView
           index={expandedIndex}
           onBack={handleBack}
+          onOpenMore={() => setMoreOpen(true)}
           onSelect={setExpandedIndex}
           dateLabel={dateLabel}
           mode={mode}
@@ -503,6 +511,7 @@ export default function VariantB({
         }}
       />
 
+      <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
       <VariantPicker
         open={variantPickerOpen}
         current="b"
@@ -536,6 +545,7 @@ function GridView({
   setCurrentPage,
   dateLabel,
   onOpenSheet,
+  onOpenMore,
   onOpenVariantPicker,
   cols,
   rows,
@@ -564,6 +574,8 @@ function GridView({
   setCurrentPage: (fn: (prev: number) => number) => void;
   dateLabel: string;
   onOpenSheet: () => void;
+  /** 딤의 더보기(⋮) — 안이 더보기 시트를 연다. */
+  onOpenMore: () => void;
   onOpenVariantPicker: () => void;
   cols: number;
   rows: number;
@@ -795,6 +807,7 @@ function GridView({
           currentPage={currentPage}
           totalPages={totalPages}
           onGallery={onOpenSheet}
+          onMore={onOpenMore}
           onFit={cycleGridFit}
           fit={gridFit}
           auto={gridAuto}
@@ -919,6 +932,7 @@ function ExpandedSlide({
 function ExpandedView({
   index,
   onBack,
+  onOpenMore,
   onSelect,
   dateLabel,
   mode,
@@ -941,6 +955,8 @@ function ExpandedView({
 }: {
   index: number;
   onBack: () => void;
+  /** 딤의 더보기(⋮) — 안이 더보기 시트를 연다. */
+  onOpenMore: () => void;
   onSelect: (i: number) => void;
   dateLabel: string;
   mode: "live" | "recording";
@@ -1247,7 +1263,11 @@ function ExpandedView({
                   style={{ filter: "brightness(0) invert(1)" }}
                 />
               </button>
-              <button type="button" aria-label="더보기">
+              <button
+                type="button"
+                aria-label="더보기"
+                onClick={onOpenMore}
+              >
                 <img
                   src={`${BASE}/nav/etc.svg`}
                   alt=""
@@ -1296,13 +1316,13 @@ function ExpandedView({
               style={{
                 bottom: "12px",
                 right: "16px",
-                width: "30px",
-                height: "30px",
+                width: "34px",
+                height: "34px",
                 border: "1px solid rgba(255,255,255,0.35)",
                 backgroundColor: "rgba(0,0,0,0.35)",
               }}
             >
-              <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-6 w-6" />
+              <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
             </div>
           </div>
           <VideoSkeleton visible={videoLoading} />

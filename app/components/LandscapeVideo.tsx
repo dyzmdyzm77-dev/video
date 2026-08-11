@@ -86,6 +86,7 @@ export default function LandscapeVideo({
   playbackMs,
   driveByPlayback,
   onGallery,
+  onMore,
   onExpand,
   onBack,
   title,
@@ -122,6 +123,8 @@ export default function LandscapeVideo({
   driveByPlayback?: boolean;
   /** 딤의 '갤러리' 버튼. 세로의 화면 구성 시트를 그대로 연다. */
   onGallery?: () => void;
+  /** 딤의 '더보기'(⋮). 세로와 같은 더보기 시트를 연다. */
+  onMore?: () => void;
   /** 타일 더블탭 — 그 카메라 단일 화면으로. */
   onExpand?: (i: number) => void;
   /** 단일 화면 더블탭 — 다채널로 복귀. */
@@ -447,6 +450,7 @@ export default function LandscapeVideo({
       currentPage={page}
       totalPages={expandedIndex !== null ? 1 : totalPages}
       onGallery={onGallery}
+      onMore={onMore}
       onFit={cycle}
       fit={fit}
       dimAlpha={dimAlpha}

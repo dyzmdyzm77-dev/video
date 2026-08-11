@@ -259,6 +259,7 @@ export function GridSelectionOverlay({
   currentPage = 0,
   totalPages = 2,
   onGallery,
+  onMore,
   onFit,
   fit = "fill",
   mode,
@@ -275,6 +276,8 @@ export function GridSelectionOverlay({
   currentPage?: number;
   totalPages?: number;
   onGallery?: () => void;
+  /** 딤의 '더보기'(⋮). 누르면 안이 더보기 시트를 연다. 안 주면 눌러도 무반응. */
+  onMore?: () => void;
   /** 화면 맞춤 — 누를 때마다 fill → contain → cover 로 돈다(단일 화면과 동일). */
   onFit?: () => void;
   /** 지금 맞춤 상태. 버튼 아이콘이 이걸 그대로 보여준다. */
@@ -426,7 +429,16 @@ export function GridSelectionOverlay({
             size={28}
           />
         </button>
-        <OverlayIcon src={`${BASE}/nav/etc.svg`} size={28} />
+        {/* 더보기 — 누르면 바텀시트(상세 설정·원격 지원 요청·방문 지원 요청).
+            시트는 안이 들고 있으므로 여기선 열어 달라고만 한다. */}
+        <button
+          type="button"
+          aria-label="더보기"
+          onClick={onMore}
+          style={{ pointerEvents: visible ? "auto" : "none" }}
+        >
+          <OverlayIcon src={`${BASE}/nav/etc.svg`} size={28} />
+        </button>
       </div>
 
       {/* AI 아이콘 — 딤 오른쪽 아래. 30px 원으로 감싼다(플레이어 버튼과 같은
@@ -437,13 +449,13 @@ export function GridSelectionOverlay({
         aria-hidden
         className="pointer-events-none absolute bottom-3 right-4 flex items-center justify-center rounded-full"
         style={{
-          width: "30px",
-          height: "30px",
+          width: "34px",
+          height: "34px",
           border: "1px solid rgba(255,255,255,0.35)",
           backgroundColor: "rgba(0,0,0,0.35)",
         }}
       >
-        <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-6 w-6" />
+        <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
       </div>
 
       {/* 하단 페이지 인디케이터 */}
