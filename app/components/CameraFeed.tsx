@@ -256,6 +256,7 @@ export const CameraFeed = memo(CameraFeedImpl);
 
 export function GridSelectionOverlay({
   visible,
+  hideControls = false,
   currentPage = 0,
   totalPages = 2,
   onGallery,
@@ -276,6 +277,10 @@ export function GridSelectionOverlay({
   auto,
 }: {
   visible: boolean;
+  /** 딤 그라데이션은 남기고 그 위 버튼·표시만 감출지. 시간바를 끄는 동안
+   *  쓴다 — 아래쪽 딤이 같이 사라지면 시간바가 영상 위에 맨몸으로 뜬다
+   *  (사용자 지적: "아래쪽 딤은 유지해야지"). */
+  hideControls?: boolean;
   currentPage?: number;
   totalPages?: number;
   onGallery?: () => void;
@@ -355,7 +360,8 @@ export function GridSelectionOverlay({
             top: `${12 + topInset}px`,
             left: "12px",
             gap: "8px",
-            pointerEvents: visible ? "auto" : "none",
+            opacity: hideControls ? 0 : 1,
+            pointerEvents: visible && !hideControls ? "auto" : "none",
           }}
         >
           <button
@@ -395,7 +401,11 @@ export function GridSelectionOverlay({
           pointer-events:none 이라 클릭이 영상으로 새어 버린다. */}
       <div
         className="absolute flex items-center gap-0 text-white"
-        style={{ top: `${12 + topInset}px`, right: `${edgeInset ?? 16}px` }}
+        style={{
+          top: `${12 + topInset}px`,
+          right: `${edgeInset ?? 16}px`,
+          opacity: hideControls ? 0 : 1,
+        }}
         onClick={(e) => {
           e.stopPropagation();
           auto?.keepAlive();
@@ -462,7 +472,7 @@ export function GridSelectionOverlay({
           시트는 안이 들고 있으므로 여기선 열어 달라고만 한다(더보기와 같은 결). */}
       <div
         className="absolute bottom-3 flex items-center gap-2"
-        style={{ right: `${edgeInset ?? 16}px` }}
+        style={{ right: `${edgeInset ?? 16}px`, opacity: hideControls ? 0 : 1 }}
       >
         {/* 메뉴 — AI 옆, 같은 원 스타일. onMenu 를 준 안에서만 나온다. */}
         {onMenu && (
@@ -504,7 +514,7 @@ export function GridSelectionOverlay({
             height: "34px",
             border: "1px solid rgba(255,255,255,0.35)",
             backgroundColor: "rgba(0,0,0,0.35)",
-            pointerEvents: onAi && visible ? "auto" : "none",
+            pointerEvents: onAi && visible && !hideControls ? "auto" : "none",
           }}
         >
           <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
@@ -513,7 +523,10 @@ export function GridSelectionOverlay({
 
       {/* 하단 페이지 인디케이터 */}
       {showPageIndicator && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
+        <div
+          className="absolute bottom-3 left-1/2 -translate-x-1/2"
+          style={{ opacity: hideControls ? 0 : 1 }}
+        >
           <div
             className="inline-flex items-center gap-1.5 rounded-full bg-black/45"
             style={{ height: "24px", padding: "0 10px" }}

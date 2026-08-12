@@ -99,6 +99,7 @@ export default function LandscapeVideo({
   edgeInset,
   headerAlign = "center",
   statusStyle = "segment",
+  statusActiveStyle = "brand",
   scrubbing = false,
   onExpand,
   onBack,
@@ -163,6 +164,10 @@ export default function LandscapeVideo({
    *   chips   = '실시간'·'녹화' 칩 두 개. 고른 쪽만 흰 배경 + 검정 글자
    *             (사용자 지정, A-1안 가로). */
   statusStyle?: "segment" | "chips";
+  /** 토글에서 '고른 쪽' 색.
+   *   brand = 지금까지의 기본(LIVE 빨강 · 녹화 회색, 흰 글자).
+   *   white = 흰 배경 + 검정 글자(사용자 지정, A-2안 가로). */
+  statusActiveStyle?: "brand" | "white";
   /** 타일 더블탭 — 그 카메라 단일 화면으로. */
   onExpand?: (i: number) => void;
   /** 단일 화면 더블탭 — 다채널로 복귀. */
@@ -308,8 +313,18 @@ export default function LandscapeVideo({
     paddingLeft: "10px",
     paddingRight: "10px",
     borderRadius: "9999px",
-    backgroundColor: active ? activeBg : "transparent",
-    color: active ? "#ffffff" : "rgba(255,255,255,0.7)",
+    // statusActiveStyle="white" 면 고른 쪽을 흰 배경 + 검정 글자로 채운다
+    // (사용자 지정, A-2안 가로). 기본은 예전대로 LIVE 빨강 · 녹화 회색.
+    backgroundColor: active
+      ? statusActiveStyle === "white"
+        ? "#FFFFFF"
+        : activeBg
+      : "transparent",
+    color: active
+      ? statusActiveStyle === "white"
+        ? "#262626"
+        : "#ffffff"
+      : "rgba(255,255,255,0.7)",
   });
   // 실시간/녹화 칩 + 현재 시각 한 줄. 내용은 자리와 무관하게 같고, statusPlacement
   // 가 아래 왼쪽에 둘지 위 가운데에 둘지만 정한다.
@@ -558,7 +573,8 @@ export default function LandscapeVideo({
 
   const overlay = (
     <GridSelectionOverlay
-      visible={dim && !scrubbing}
+      visible={dim}
+      hideControls={scrubbing}
       currentPage={page}
       totalPages={expandedIndex !== null ? 1 : totalPages}
       onGallery={onGallery}
