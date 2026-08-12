@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { readCssRotated } from "./useDeviceWidth";
 
 // ============================================================================
 // 화면 전환(회전) 요청 — 딤 안의 회전 버튼 → 좌측 패널의 '왼쪽으로 회전'
@@ -57,18 +58,30 @@ export function setBarColor(_landscape?: boolean) {
 
 /** 딤의 회전 버튼에서 호출. 좌측 패널이 받아서 회전 토글을 뒤집는다.
  *
- *  instant 면 회전 연출 없이 한 프레임에 갈아끼운다. 확대 중에 폰을 눕혀서
- *  앱이 자기 CSS 회전을 되감는 경우에 쓴다(immersive.ts 의 alignImmersiveRotation)
- *  — 그건 '회전'이 아니라 '이미 OS 가 돌린 만큼을 상쇄하는 것'이라, 보이면
- *  OS 회전 애니메이션과 겹쳐 두 번 도는 것처럼 읽힌다(사용자 지적: "확대모드
- *  눌러서 가로로 전환됬는데, 디바이스를 눕히면 또 돌아가려는 동작이 나오는데").
- *  체감은 '아무 일도 안 일어남'이어야 한다. */
-export function requestDeviceRotate(instant = false) {
+ *  '사용자가 누른 회전'에만 쓴다 — 확대·축소 버튼과 좌측 패널의 회전 토글.
+ *  폰을 실제로 눕힌 것은 여기로 오지 않는다. 그건 CSS 미디어쿼리가 알아서
+ *  가른다(globals.css). 한때 여기로 되감기를 보냈다가 물리 회전 한 번에 두 번
+ *  나가서 도로 돌아갔다 — 회전을 JS 로 상쇄하려 들지 말 것. */
+export function requestDeviceRotate() {
+  // 회전 연출(0.35s)은 '누른 회전'일 때만 켠다. 폰을 눕혀서 CSS 회전이 붙거나
+  // 떨어지는 건 OS 회전을 상쇄하는 것뿐이라, 거기에 트랜지션이 걸리면 화면이
+  // 한 번 더 도는 것으로 보인다(사용자 지적). 그건 즉시 끝나야 한다.
   if (typeof document !== "undefined") {
-    document.documentElement.dataset.rotateInstant = instant ? "true" : "false";
+    const root = document.documentElement;
+    root.dataset.rotateAnim = "true";
+    if (rotateAnimTimer !== null) clearTimeout(rotateAnimTimer);
+    rotateAnimTimer = setTimeout(() => {
+      rotateAnimTimer = null;
+      root.dataset.rotateAnim = "false";
+    }, ROTATE_ANIM_MS + 60);
   }
   window.dispatchEvent(new Event(DEVICE_ROTATE_EVENT));
 }
+
+/** 회전 연출 길이(ms). globals.css 의 트랜지션·DesktopVariantNav 의 단계 타이머와
+ *  같은 값이어야 한다 — 셋이 어긋나면 중간 상태가 보인다. */
+const ROTATE_ANIM_MS = 350;
+let rotateAnimTimer: ReturnType<typeof setTimeout> | null = null;
 
 // ── 가로 모드 상태 ──────────────────────────────────────────────────────────
 // 회전은 '프레임을 눕히는 연출'이 아니라 기기 크기(--device-w/h)를 맞바꾸는 것으로
@@ -107,19 +120,32 @@ export function useDeviceLandscape(): boolean {
 // 서 있다 — 거기선 보정하면 안 된다. 그래서 '터치 && 가로' 일 때만 참이다.
 export function useRotatedInput(): boolean {
   const landscape = useDeviceLandscape();
-  const [touch, setTouch] = useState(false);
+  const [rotated, setRotated] = useState(false);
   useEffect(() => {
-    if (typeof window.matchMedia !== "function") {
-      setTouch(true);
-      return;
-    }
+    // '가로 플래그'가 아니라 'CSS 회전이 실제로 걸렸나'를 본다 — 폰을 눕히면
+    // 플래그는 켜진 채로 두고 회전만 푸는 배치라(globals.css 의 방향 미디어쿼리),
+    // 플래그만 보면 눕힌 폰에서 좌표를 괜히 맞바꾼다.
+    const sync = () => setRotated(readCssRotated());
+    sync();
+    const evts = ["resize", "orientationchange", LANDSCAPE_EVENT];
+    evts.forEach((e) => window.addEventListener(e, sync));
+    const mq =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia("(hover: hover) and (pointer: fine)")
+        : null;
     // 마운트 때 한 번만 재면 안 된다 — 데스크톱 미리보기에서 개발자도구로 기기를
     // 바꾸거나, 마우스가 붙었다 떨어지는 환경에서 판정이 굳는다. 변화도 구독한다.
-    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
-    const sync = () => setTouch(!mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-  return landscape && touch;
+    mq?.addEventListener("change", sync);
+    return () => {
+      evts.forEach((e) => window.removeEventListener(e, sync));
+      mq?.removeEventListener("change", sync);
+    };
+  }, [landscape]);
+  // 데스크톱 목업은 각도를 0 으로 되돌리고 크기만 맞바꾸므로 콘텐츠가 똑바로
+  // 서 있다 — 거기선 보정하면 안 된다.
+  const desktop =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  return rotated && !desktop;
 }

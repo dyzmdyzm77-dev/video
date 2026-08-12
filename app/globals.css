@@ -131,6 +131,21 @@ body {
     padding: 0;
   }
 
+  /* CSS 로 눕히는 건 '기기가 세로일 때'만이다. 폰을 실제로 눕히면 뷰포트가 이미
+     가로라 돌릴 이유가 없다 — 그대로 두면 앱의 90° + OS 의 90° 가 겹쳐 콘텐츠가
+     옆으로 눕는다.
+     이걸 JS 로(회전 플래그를 되감아서) 하다가 계속 탈이 났다. 물리 회전 한 번에
+     resize 가 여러 번 오는데 판정은 DOM 속성으로 하니 되감기가 두 번 나가
+     도로 돌아갔고, 어떻게 막아도 React 리렌더 한 박자가 '한 번 더 도는' 것으로
+     보였다(사용자 지적: "확대 -> 폰눕히기 -> 한번 더 회전하려고해").
+     미디어쿼리로 옮기면 상태를 건드릴 일이 없다 — data-landscape 는 켜진 채
+     그대로고, 어느 방향이든 앱은 가로 배치 그대로 서 있다. 눕혀도 '그냥 냅둠'
+     이 되는 것(사용자 지정: "가로 모드로 된 경우는 그냥 냅둬야지"). */
+  html[data-landscape="true"] .app-safe-frame {
+    padding: 0;
+  }
+
+  @media (orientation: portrait) {
   html[data-landscape="true"] .app-safe-frame {
     position: fixed;
     top: 50vh;
@@ -148,9 +163,9 @@ body {
     height: 100vw;
     transform-origin: center center;
     transform: translate(-50%, -50%) rotate(90deg);
-    transition: transform 0.35s ease;
-    /* 예외는 아래 data-rotate-instant 규칙 참고 — 확대 중 폰을 눕혔을 때의
-       '되감기'만 트랜지션 없이 즉시 끝낸다. */
+    /* 트랜지션은 '누른 회전'일 때만(아래 data-rotate-anim). 폰을 눕혀서 이
+       규칙이 붙거나 떨어지는 건 OS 회전을 상쇄하는 것뿐이라 즉시 끝나야 한다 —
+       0.35s 를 그냥 켜 두면 그때마다 한 번 더 도는 것으로 보인다. */
     /* 가로에선 안전 영역을 비우지 않는다 — 영상이 화면을 가득 채워야 한다
        (사용자 결정). .app-safe-frame 의 기본 padding(위=노치, 아래=홈 인디케이터)
        을 여기서 0 으로 덮는다. 남겨 두면 상태바·홈 인디케이터 자리만큼 빈 띠가
@@ -161,14 +176,12 @@ body {
        겹치지 않는다 — 영상만 끝까지 깔린다. */
     padding: 0;
   }
+  }
 
-  /* 확대 중에 폰을 눕히면 앱은 자기 CSS 회전을 되감는다(immersive.ts 의
-     alignImmersiveRotation). 그건 OS 가 이미 돌린 만큼을 상쇄하는 것이라
-     보이면 안 된다 — 트랜지션이 남아 있으면 OS 회전과 겹쳐 두 번 도는 것처럼
-     읽힌다. 그 순간에만 끈다(deviceRotate.ts 의 requestDeviceRotate(true)).
-     확대 버튼·축소 버튼으로 도는 평소 회전은 그대로 0.35s 로 돈다. */
-  html[data-rotate-instant="true"] .app-safe-frame {
-    transition: none;
+  /* 회전 연출 — 확대·축소 버튼과 좌측 패널의 회전 토글이 누른 회전에만 켜진다
+     (deviceRotate.ts 의 requestDeviceRotate 가 350ms 동안 세운다). */
+  html[data-rotate-anim="true"] .app-safe-frame {
+    transition: transform 0.35s ease;
   }
 }
 

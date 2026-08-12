@@ -277,28 +277,6 @@ export default function DesktopVariantNav() {
     const pw = rotated ? w : h; // 세로 폭
     const ph = rotated ? h : w; // 세로 높이
 
-    // 연출 없이 한 프레임에 갈아끼우는 경로. 확대 중에 폰을 눕혀 앱이 자기 CSS
-    // 회전을 되감을 때만 온다(requestDeviceRotate(true)) — 상쇄라 보이면 안 된다.
-    // data-rotate-instant 는 실기기 쪽 트랜지션(globals.css 의 .app-safe-frame)을,
-    // data-rotating 은 데스크톱 목업 쪽을 각각 끈다.
-    if (root.dataset.rotateInstant === "true") {
-      root.dataset.rotating = "true";
-      root.style.setProperty("--device-rot-w", `${pw}px`);
-      root.style.setProperty("--device-rot-h", `${ph}px`);
-      root.style.setProperty("--device-w", `${rotated ? ph : pw}px`);
-      root.style.setProperty("--device-h", `${rotated ? pw : ph}px`);
-      root.style.setProperty("--device-rot", "0deg");
-      root.dataset.rotate = rotated ? "true" : "false";
-      root.dataset.landscape = rotated ? "true" : "false";
-      setBarColor(rotated);
-      void root.offsetHeight; // 스타일 플러시 — 여기까지가 '트랜지션 없는 구간'
-      root.dataset.rotating = "false";
-      root.dataset.rotateInstant = "false";
-      window.dispatchEvent(new Event("devicechange"));
-      window.dispatchEvent(new Event(LANDSCAPE_EVENT));
-      return;
-    }
-
     if (rotated) {
       // 세로 → 가로.
       root.style.setProperty("--device-rot-w", `${pw}px`);

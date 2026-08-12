@@ -60,9 +60,14 @@ export function readDeviceHeight(): number {
  *     그래서 비율이 이미 방향을 말해 준다.
  *   · 실기기: OS 방향은 못 바꾸므로 앱을 CSS 로 90° 돌리기만 한다
  *     (globals.css 의 터치 전용 규칙). innerWidth/Height 는 그대로라 비율은
- *     세로 그대로다 — 회전 플래그(data-landscape)를 뒤집어 줘야 맞는다.
+ *     세로 그대로다 — 그때는 뒤집어 줘야 맞는다.
  *  물리 회전(사용자가 폰을 직접 돌린 경우)은 innerWidth/Height 가 알아서
- *  바뀌고 data-landscape 는 꺼져 있으므로 같은 식이 그대로 맞는다. */
+ *  바뀌므로 뒤집지 않는다.
+ *
+ *  뒤집을지는 '플래그가 켜졌나'가 아니라 'CSS 회전이 실제로 걸렸나'로 본다.
+ *  그 규칙이 세로 방향에서만 적용되기 때문이다(globals.css 의
+ *  `@media (orientation: portrait)`). 가로로 눕힌 폰에서는 data-landscape 가
+ *  켜져 있어도 앱은 안 돌아가 있다 — 플래그만 보면 거기서 '세로'로 잘못 읽는다. */
 export function readDeviceWide(): boolean {
   if (typeof window === "undefined") return false;
   const wide = readDeviceWidth() > readDeviceHeight();
@@ -70,10 +75,23 @@ export function readDeviceWide(): boolean {
     typeof window.matchMedia === "function" &&
     window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   if (desktopPreview) return wide;
-  const rotated =
-    typeof document !== "undefined" &&
-    document.documentElement.dataset.landscape === "true";
-  return rotated ? !wide : wide;
+  return readCssRotated() ? !wide : wide;
+}
+
+/** 실기기에서 앱이 지금 CSS 로 90° 돌아가 있는가. 가로 플래그가 켜져 있고,
+ *  기기가 세로일 때만이다 — globals.css 의 미디어쿼리와 같은 조건이라 둘이
+ *  어긋나면 안 된다. 방향 판정·입력 좌표 보정이 다 이걸 본다. */
+export function readCssRotated(): boolean {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return false;
+  }
+  if (document.documentElement.dataset.landscape !== "true") return false;
+  const desktopPreview =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  // 데스크톱 목업은 프레임 크기를 맞바꾸는 방식이라 방향 조건이 없다.
+  if (desktopPreview) return true;
+  return window.innerHeight >= window.innerWidth;
 }
 
 /** readDeviceWide 를 구독한다. SSR·첫 렌더는 세로(false)로 맞춰 하이드레이션

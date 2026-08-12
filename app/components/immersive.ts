@@ -317,66 +317,17 @@ export function readImmersiveRotated(): boolean {
   );
 }
 
-/** 확대 중에는 화면이 늘 가로로 보이게 방향을 정렬한다.
+/** 확대 중 폰을 눕혀도 앱은 아무것도 안 한다 — 그냥 냅둔다(사용자 지정:
+ *  "가로 모드로 된 경우는 그냥 냅둬야지"). 나가는 길은 축소 버튼뿐이다.
  *
- *  확대는 세로로 긴 기기에서 앱을 CSS 로 90° 눕혀서 만든다. 그런데 그 상태를
- *  본 사용자는 자연스럽게 폰도 같이 눕힌다 — 그러면 CSS 회전 90° + 물리 회전
- *  90° 가 겹쳐 콘텐츠가 도로 옆으로 눕는다(사용자 지적, 두 번째: "확대 버튼
- *  누르고 가로로 전환되었다가, 기기를 눕혔더니 또 회전하네?").
+ *  전에는 여기서 CSS 회전을 되감았다(alignImmersiveRotation). 물리 회전 한 번에
+ *  resize 가 여러 번 오는데 판정은 DOM 속성으로 해서 되감기가 겹쳐 나갔고,
+ *  막아 놔도 React 리렌더 한 박자가 '한 번 더 도는' 것으로 보였다. 지금은 그
+ *  맞바꿈을 CSS 미디어쿼리가 한다(globals.css 의 `@media (orientation: portrait)`)
+ *  — 상태를 아무도 안 건드리니 눕혀도 조용하다.
  *
- *  그래서 확대 중에는 'CSS 회전 = 기기가 세로일 때만' 으로 맞춘다. 폰을 눕히면
- *  CSS 회전을 풀고(화면은 그대로 가로), 다시 세우면 CSS 회전을 켠다. 어느 쪽이든
- *  사용자 눈에는 늘 똑바로 선 가로 화면이다.
- *
- *  확대를 끌 때 방향을 되돌릴지(ROTATED_FLAG)도 여기서 같이 갱신한다 — 지금
- *  앱을 눕히고 있었다면 끌 때 세워야 하고, 이미 기기가 가로라 안 눕혔다면
- *  되돌릴 것도 없다.
- *
- *  데스크톱 미리보기는 물리 회전이 없으므로 건너뛴다 — 거기선 CSS 회전이 곧
- *  '눕힌 상태'다.
- *
- *  (한때 '실기기 확대는 안 눕힌다'로 바꾸면서 이 함수를 지웠다가, 회전을
- *   되살릴 때 같이 안 살려 증상이 재발했다. 회전을 건드릴 땐 이 짝을 같이 볼 것.) */
-// 되감기를 보내 놓고 아직 DOM(data-landscape)에 반영되기 전인가.
-// 물리 회전 한 번에 resize 가 여러 번(OS 회전 애니메이션 동안 계속) 온다.
-// 이 함수는 판정을 data-landscape 로 하는데 그건 React 이펙트에서야 바뀌므로,
-// 막지 않으면 같은 회전에 되감기를 두 번 보내 도로 돌아간다 — 사용자가 본
-// '또 도는' 동작의 실제 원인이다(사용자 지적: "야 너 아직 그거 안고쳤어?").
-let unwinding = false;
-
-/** 확대 중에는 화면이 늘 가로로 보이게 방향을 정렬한다 — 방향 잠금
- *  (lockOrientation)이 안 먹는 곳(아이폰 사파리)의 대비책이다.
- *
- *  잠금이 되는 곳에서는 폰을 눕혀도 뷰포트가 안 바뀌어 이 함수가 아예 안 불린다.
- *  안 되는 곳에서는 뷰포트가 돌아 버리므로, 앱이 걸어 둔 CSS 회전을 그만큼
- *  즉시 되감아 화면을 세워 둔다. 어느 쪽이든 사용자 눈에는 고정이다. */
-export function alignImmersiveRotation() {
-  if (typeof window === "undefined") return;
-  const desktopPreview =
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  if (desktopPreview) return;
-  if (!readImmersive()) return;
-  if (unwinding) return;
-  const physicalLandscape = window.innerWidth > window.innerHeight;
-  const cssRotated = readDeviceLandscape();
-  // 원하는 상태: 기기가 세로일 때만 앱을 눕힌다.
-  if (cssRotated === !physicalLandscape) return;
-  document.documentElement.dataset[ROTATED_FLAG] = physicalLandscape
-    ? "false"
-    : "true";
-  // 되감기가 DOM 에 반영될 때까지 문을 닫는다.
-  unwinding = true;
-  const done = () => {
-    window.removeEventListener(LANDSCAPE_EVENT, done);
-    unwinding = false;
-  };
-  window.addEventListener(LANDSCAPE_EVENT, done);
-  // 연출 없이 즉시 — 여기서 도는 건 OS 가 이미 돌린 만큼을 상쇄하는 것이라,
-  // 보이면 OS 회전과 겹쳐 '한 번 더 돈다'로 읽힌다. 눈에는 아무 일도 안
-  // 일어나야 맞다(deviceRotate.ts 의 instant 인자).
-  requestDeviceRotate(true);
-}
+ *  거기에 더해 아예 OS 방향을 잠근다(lockOrientation) — 되는 곳(안드로이드
+ *  크롬)에서는 뷰포트조차 안 돌아 정말로 고정이다. */
 
 /** 딤의 확대/축소 버튼에서 호출. 지금 상태를 뒤집는다.
  *  전체화면·회전은 '사용자 조작' 안에서만 허용되므로 버튼 핸들러인 여기서 바로

@@ -9,8 +9,6 @@ import { Inner as HomeScreen } from "../home/page";
 import { useVariant, type VariantKey } from "../components/variantRoute";
 import { LANDSCAPE_EVENT } from "../components/deviceRotate";
 import {
-  alignImmersiveRotation,
-  IMMERSIVE_EVENT,
   noteDeviceOrientation,
   syncImmersiveWithLandscape,
 } from "../components/immersive";
@@ -69,10 +67,8 @@ export default function AppShell({
     // 바꿨을 때 '이미 가로였다'로 남아, 360 에서 눕혀도 확대가 안 켜졌다.
     const noteEvts = ["devicechange", "devicerange", "deviceresize"];
     noteEvts.forEach((e) => window.addEventListener(e, noteDeviceOrientation));
-    // 확대 중에 기기를 실제로 눕히면 CSS 회전을 풀어 준다(두 번 돌지 않게).
-    // 확대에 막 들어간 순간에도 한 번 맞춘다 — 이미 기기가 가로면 안 눕혀야 한다.
-    const alignEvts = ["resize", "orientationchange", IMMERSIVE_EVENT];
-    alignEvts.forEach((e) => window.addEventListener(e, alignImmersiveRotation));
+    // 확대 중에 기기를 눕혀도 여기선 아무것도 안 한다 — CSS 회전을 켤지 말지는
+    // globals.css 의 방향 미디어쿼리가 알아서 가른다(immersive.ts 주석 참고).
     return () => {
       clearTimeout(baseline);
       evts.forEach((e) =>
@@ -80,9 +76,6 @@ export default function AppShell({
       );
       noteEvts.forEach((e) =>
         window.removeEventListener(e, noteDeviceOrientation),
-      );
-      alignEvts.forEach((e) =>
-        window.removeEventListener(e, alignImmersiveRotation),
       );
     };
   }, [home]);
