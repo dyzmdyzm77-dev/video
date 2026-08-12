@@ -415,6 +415,10 @@ export default function VariantA({
           onGallery={() => setSheetOpen(true)}
           onMore={() => setMoreOpen(true)}
           onAi={() => setAiOpen(true)}
+          // 가로에만 있는 메뉴 버튼(AI 옆) — 더보기 시트를 연다.
+          onMenu={() => setMoreOpen(true)}
+          // 실시간/녹화 칩 + 시각을 왼쪽 아래로(사용자 결정, A-2안 가로 사양).
+          statusPlacement="bottom-left"
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
@@ -437,10 +441,13 @@ export default function VariantA({
           // 플레이어·시간바를 딤 색에 맞춰 넘긴다(overlay) — 흰 바를 걷어
           // 영상이 비치게 한다.
           controlsOnDim
-          controls={
+          // 아래 시간바는 안 쓴다 — 플레이어 버튼 5개만 화면 한가운데 둔다
+          // (사용자 결정, A-2안 가로 사양).
+          centerControls={
             mode === "recording" ? (
               <RecordingControls
                 overlay
+                playerOnly
                 now={now}
                 onScrubbingChange={setIsScrubbing}
                 playbackMs={playbackMs}
@@ -3459,6 +3466,7 @@ function RecordingControls({
   onPlay,
   onSpeedChange,
   overlay = false,
+  playerOnly = false,
 }: {
   now: Date | null;
   onToggleChrome?: () => void;
@@ -3480,6 +3488,9 @@ function RecordingControls({
    *  줄을 안 그린다(가로에선 LandscapeVideo 가 같은 정보를 이미 얹는다).
    *  A-1 과 같은 규칙 — 가로 화면은 세 안이 동일해야 한다. */
   overlay?: boolean;
+  /** 플레이어 버튼 5개만 그린다(가로 딤 가운데용). 헤더 줄·시간바는 뺀다 —
+   *  A-2안 가로는 시간바 없이 버튼만 화면 한가운데 놓는 사양이다(사용자 결정). */
+  playerOnly?: boolean;
 }) {
   const VISIBLE_MINUTES = TIMELINE_VISIBLE_MIN;
   // 시간바를 끌고 있는 중인가. 가로(overlay)에서 플레이어 버튼 5개를 잠깐 감춘다.
@@ -3733,7 +3744,7 @@ function RecordingControls({
     <div className="relative flex flex-col">
       {/* 녹화 + 날짜 — 가로 딤(overlay)에선 안 그린다. LandscapeVideo 가 같은
           정보를 딤에 맞춘 색으로 이미 얹고 있어서 칩 줄이 두 번 겹친다. */}
-      {!overlay && (
+      {!overlay && !playerOnly && (
       <div
         className="relative flex items-center px-5"
         style={{ height: "48px", gap: "8px" }}
@@ -3832,6 +3843,8 @@ function RecordingControls({
       {!overlay && (
         <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
       )}
+      {!playerOnly && (
+      <>
       {/* 타임라인 */}
       <div
         ref={timelineRef}
@@ -3971,6 +3984,8 @@ function RecordingControls({
         />
       </div>
       <TimelineSkeleton visible={rowLoading} />
+      </>
+      )}
       </div>
       </>
       )}
@@ -4329,10 +4344,12 @@ function PlayerButton({
         border: overlay
           ? "1px solid rgba(255,255,255,0.35)"
           : "1px solid #D9D9D9",
+        // 가로 딤 위 버튼 배경 — 영상이 비쳐 잘 안 보인다는 지적이 있어 더
+        // 진하게 깔았다(0.35 → 0.55). 눌린 상태(active)도 같이 올린다.
         backgroundColor: overlay
           ? active
-            ? "rgba(255,255,255,0.3)"
-            : "rgba(0,0,0,0.35)"
+            ? "rgba(255,255,255,0.45)"
+            : "rgba(0,0,0,0.55)"
           : active
             ? "#F2F2F2"
             : "#FFFFFF",

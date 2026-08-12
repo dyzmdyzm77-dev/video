@@ -261,6 +261,7 @@ export function GridSelectionOverlay({
   onGallery,
   onMore,
   onAi,
+  onMenu,
   onFit,
   fit = "fill",
   mode,
@@ -281,6 +282,9 @@ export function GridSelectionOverlay({
   onMore?: () => void;
   /** AI 버튼을 누를 수 있게 한다. 안 주면 예전처럼 표시만 하는 아이콘. */
   onAi?: () => void;
+  /** AI 버튼 왼쪽에 메뉴 버튼을 하나 더 둔다. 안 주면 안 그린다 —
+   *  A-2안 가로 화면에서만 쓰는 사양이다(사용자 결정). */
+  onMenu?: () => void;
   /** 화면 맞춤 — 누를 때마다 fill → contain → cover 로 돈다(단일 화면과 동일). */
   onFit?: () => void;
   /** 지금 맞춤 상태. 버튼 아이콘이 이걸 그대로 보여준다. */
@@ -453,22 +457,53 @@ export function GridSelectionOverlay({
           페이지 인디케이터와 같은 높이(bottom 12)에 앉혀 한 줄로 읽히게 했다.
           onAi 를 준 안에서만 누를 수 있다 — 안 준 안(A-2·B)은 예전처럼 표시만.
           시트는 안이 들고 있으므로 여기선 열어 달라고만 한다(더보기와 같은 결). */}
-      <button
-        type="button"
-        aria-label="AI 검색"
-        aria-hidden={!onAi}
-        onClick={onAi}
-        className="absolute bottom-3 right-4 flex items-center justify-center rounded-full"
-        style={{
-          width: "34px",
-          height: "34px",
-          border: "1px solid rgba(255,255,255,0.35)",
-          backgroundColor: "rgba(0,0,0,0.35)",
-          pointerEvents: onAi && visible ? "auto" : "none",
-        }}
-      >
-        <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
-      </button>
+      <div className="absolute bottom-3 right-4 flex items-center gap-2">
+        {/* 메뉴 — AI 옆, 같은 원 스타일. onMenu 를 준 안에서만 나온다. */}
+        {onMenu && (
+          <button
+            type="button"
+            aria-label="메뉴"
+            onClick={onMenu}
+            className="flex items-center justify-center rounded-full"
+            style={{
+              width: "34px",
+              height: "34px",
+              border: "1px solid rgba(255,255,255,0.35)",
+              backgroundColor: "rgba(0,0,0,0.35)",
+              pointerEvents: visible ? "auto" : "none",
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#FFFFFF"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden
+            >
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
+        )}
+        <button
+          type="button"
+          aria-label="AI 검색"
+          aria-hidden={!onAi}
+          onClick={onAi}
+          className="flex items-center justify-center rounded-full"
+          style={{
+            width: "34px",
+            height: "34px",
+            border: "1px solid rgba(255,255,255,0.35)",
+            backgroundColor: "rgba(0,0,0,0.35)",
+            pointerEvents: onAi && visible ? "auto" : "none",
+          }}
+        >
+          <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
+        </button>
+      </div>
 
       {/* 하단 페이지 인디케이터 */}
       {showPageIndicator && (

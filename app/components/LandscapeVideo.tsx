@@ -88,6 +88,8 @@ export default function LandscapeVideo({
   onGallery,
   onMore,
   onAi,
+  onMenu,
+  centerControls,
   onExpand,
   onBack,
   title,
@@ -129,6 +131,11 @@ export default function LandscapeVideo({
   onMore?: () => void;
   /** 딤의 AI 버튼. 안 주면 표시만 한다(안별 기본값 보존). */
   onAi?: () => void;
+  /** 딤의 메뉴 버튼(AI 옆). 안 주면 안 그린다 — A-2안 가로 전용. */
+  onMenu?: () => void;
+  /** 화면 한가운데에 얹을 컨트롤. 아래 시간바 대신 플레이어 버튼만 가운데
+   *  두는 A-2안 가로 사양에서 쓴다. 안 주면 아무것도 안 그린다. */
+  centerControls?: React.ReactNode;
   /** 타일 더블탭 — 그 카메라 단일 화면으로. */
   onExpand?: (i: number) => void;
   /** 단일 화면 더블탭 — 다채널로 복귀. */
@@ -466,6 +473,7 @@ export default function LandscapeVideo({
       onGallery={onGallery}
       onMore={onMore}
       onAi={onAi}
+      onMenu={onMenu}
       onFit={cycle}
       fit={fit}
       dimAlpha={dimAlpha}
@@ -532,6 +540,15 @@ export default function LandscapeVideo({
       {header}
       {statusTop}
       {statusBottom}
+      {/* 가운데 컨트롤 — 딤과 같이 뜨고 같이 사라진다. 자리만 잡아 주고 내용은
+          안이 넘긴다(A-2안 가로: 시간바 없이 플레이어 버튼 5개만). */}
+      {centerControls &&
+        dimLayer(
+          "inset-0 flex items-center justify-center",
+          {},
+          <div data-no-swipe="">{centerControls}</div>,
+          true,
+        )}
     </div>
   );
 
