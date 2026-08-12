@@ -98,6 +98,7 @@ export default function LandscapeVideo({
   centerControls,
   edgeInset,
   headerAlign = "center",
+  statusStyle = "segment",
   onExpand,
   onBack,
   title,
@@ -152,6 +153,11 @@ export default function LandscapeVideo({
    *   top    = 윗변끼리 맞춘다(둘 다 top 12). 장소명이 두 줄이라 가운데 정렬이면
    *            첫 줄이 아이콘보다 살짝 위로 뜬다(A-2안 가로 사양, 사용자 요청). */
   headerAlign?: "center" | "top";
+  /** 실시간/녹화 표시 방식.
+   *   segment = 지금까지의 기본. 한 덩어리 알약 안에 LIVE·녹화(빨강/회색).
+   *   chips   = '실시간'·'녹화' 칩 두 개. 고른 쪽만 흰 배경 + 검정 글자
+   *             (사용자 지정, A-1안 가로). */
+  statusStyle?: "segment" | "chips";
   /** 타일 더블탭 — 그 카메라 단일 화면으로. */
   onExpand?: (i: number) => void;
   /** 단일 화면 더블탭 — 다채널로 복귀. */
@@ -302,8 +308,38 @@ export default function LandscapeVideo({
   });
   // 실시간/녹화 칩 + 현재 시각 한 줄. 내용은 자리와 무관하게 같고, statusPlacement
   // 가 아래 왼쪽에 둘지 위 가운데에 둘지만 정한다.
+  // 칩 두 개 방식(statusStyle="chips") — 한 덩어리 세그먼트 대신 '실시간'·'녹화'
+  // 를 따로 떼고, 고른 쪽만 흰 배경 + 검정 글자로 채운다(사용자 지정, A-1안 가로).
+  const chip = (on: boolean) => ({
+    height: "26px",
+    padding: "0 12px",
+    borderRadius: "9999px",
+    border: on ? "1px solid #FFFFFF" : "1px solid rgba(255,255,255,0.35)",
+    backgroundColor: on ? "#FFFFFF" : "rgba(0,0,0,0.35)",
+    color: on ? "#262626" : "#FFFFFF",
+  });
   const statusRow = (
     <div className="flex items-center gap-2">
+      {statusStyle === "chips" ? (
+        <div className="flex items-center" style={{ gap: "6px" }}>
+          <button
+            type="button"
+            onClick={() => setMode?.("live")}
+            className="inline-flex items-center text-[12px] font-bold leading-none transition-colors"
+            style={chip(mode === "live")}
+          >
+            실시간
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode?.("recording")}
+            className="inline-flex items-center text-[12px] font-bold leading-none transition-colors"
+            style={chip(mode === "recording")}
+          >
+            녹화
+          </button>
+        </div>
+      ) : (
       <div
         className="inline-flex items-center rounded-full"
         style={{
@@ -329,6 +365,7 @@ export default function LandscapeVideo({
           녹화
         </button>
       </div>
+      )}
       {timeLabel && (
         <span
           suppressHydrationWarning
