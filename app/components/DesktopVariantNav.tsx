@@ -3,7 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { EVENT_THUMBS_EVENT } from "./eventThumbs";
-import { useImmersive } from "./immersive";
+import {
+  exitImmersive,
+  readImmersive,
+  readImmersiveRotated,
+  useImmersive,
+} from "./immersive";
 import {
   DEVICE_ROTATE_EVENT,
   LANDSCAPE_EVENT,
@@ -443,27 +448,37 @@ export default function DesktopVariantNav() {
       </div>
 
       {/* 왼쪽으로 회전 — 디바이스를 시계반대 90° 시각적으로 회전(가로).
-          확대 중에는 아예 막는다(사용자 결정: "눕힌 거는 이미 가로로 돌아간 거랑
-          동일하니까 회전이 더 안 되게 해").
-
-          확대를 유지한 채 돌리거나, 돌리면서 확대를 끄는 식으로도 해 봤는데
-          둘 다 화면이 튀었다 — 프레임이 도는 동안 안의 콘텐츠(확대 화면 ↔ 보통
-          화면)까지 같이 바뀌기 때문이다. 확대를 먼저 끄고 돌리면 각 단계가
-          한 번씩만 움직인다. 그래서 버튼을 비활성화하고 순서를 강제한다. */}
+          확대 중에도 누를 수 있다. 한동안 막아 뒀었는데(도는 동안 콘텐츠까지
+          같이 바뀌어 화면이 튀었다), 지금은 도는 동안 안이 전환 스켈레톤으로
+          덮으므로 튀지 않는다. 다만 '확대를 유지한 채 회전'은 아니다 — 확대는
+          끄고 방향만 한 번 바꾼다(아래 onClick). */}
       <button
         type="button"
         className="dvn-rotate-toggle"
         data-active={rotated}
         title={
           immersive
-            ? "확대 중에는 회전할 수 없어요 — 확대를 먼저 끄세요"
+            ? "확대를 끄고 방향 전환"
             : rotated
               ? "세로로 되돌리기"
               : "왼쪽으로 회전"
         }
-        style={immersive ? { opacity: 0.35, cursor: "not-allowed" } : undefined}
-        disabled={immersive}
-        onClick={() => setRotated((v) => !v)}
+        onClick={() => {
+          // 확대 중이면 '확대를 끄고 방향을 한 번만 바꾼다'. 확대 화면인 채로
+          // 프레임만 돌면 돌고 나서 콘텐츠가 다시 서느라 두 번 도는 것처럼
+          // 보이기 때문 — 도는 동안은 안(VariantA1)이 스켈레톤으로 덮는다.
+          //
+          // 회전 요청이 두 번 나가지 않도록 경로를 나눈다:
+          //  · 확대가 눕혀 만든 상태 → exitImmersive 가 원래 방향으로 되돌린다.
+          //  · 제자리 확대 → 방향을 안 바꿨으므로 여기서 한 번 돌린다.
+          if (readImmersive()) {
+            const undoesRotation = readImmersiveRotated();
+            exitImmersive();
+            if (!undoesRotation) setRotated((v) => !v);
+            return;
+          }
+          setRotated((v) => !v);
+        }}
       >
         <span className="dvn-icon" aria-hidden>
           ⟲

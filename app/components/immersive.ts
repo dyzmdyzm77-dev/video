@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { readDeviceLandscape, requestDeviceRotate } from "./deviceRotate";
+import {
+  LANDSCAPE_EVENT,
+  readDeviceLandscape,
+  requestDeviceRotate,
+} from "./deviceRotate";
 import {
   readDeviceHeight,
   readDeviceWide,
@@ -242,6 +246,15 @@ export function syncImmersiveWithLandscape() {
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
 }
 
+/** 지금 확대가 '앱을 눕혀서' 만든 상태인가. 좌측 패널의 회전 버튼이 이걸 보고
+ *  '원복'(확대만 끄면 방향도 같이 돌아옴)인지 '직접 회전'인지 가른다. */
+export function readImmersiveRotated(): boolean {
+  if (typeof document === "undefined") return false;
+  return (
+    readImmersive() && document.documentElement.dataset[ROTATED_FLAG] === "true"
+  );
+}
+
 /** 딤의 확대/축소 버튼에서 호출. 지금 상태를 뒤집는다.
  *  전체화면·회전은 '사용자 조작' 안에서만 허용되므로 버튼 핸들러인 여기서 바로
  *  부른다 — 상태가 바뀐 뒤 effect 에서 부르면 제스처가 끊겨 거부된다. */
@@ -250,7 +263,6 @@ export function toggleImmersive() {
     exitImmersive();
     return;
   }
-  document.documentElement.dataset.immersive = "true";
   syncFullscreen(true);
   // 세로로 긴 프레임이면 눕혀야 영상이 커진다(ROTATE_GAIN). 이미 가로면 그대로.
   //
@@ -261,8 +273,23 @@ export function toggleImmersive() {
   // 기기에서 확대가 안 눕는 게 오히려 어색하다는 지적이 있었다.
   if (!readDeviceLandscape() && shouldRotate()) {
     document.documentElement.dataset[ROTATED_FLAG] = "true";
+    // 확대 화면은 '회전이 끝난 뒤'에 켠다. 먼저 켜면 도는 동안 세로 프레임에
+    // 가로용 확대 화면이 그려져 '제자리 확대 한 번 → 다시 가로로' 두 단계로
+    // 보인다(사용자 지적). 이러면 보통 화면이 그냥 한 번 돌고, 다 돌면 확대
+    // 화면이 된다.
+    //
+    // 전체화면(syncFullscreen)만은 위에서 미리 부른다 — 사용자 조작 안에서만
+    // 허용되는 API 라 회전이 끝난 뒤에 부르면 제스처가 끊겨 거부된다.
+    const onRotated = () => {
+      window.removeEventListener(LANDSCAPE_EVENT, onRotated);
+      document.documentElement.dataset.immersive = "true";
+      window.dispatchEvent(new Event(IMMERSIVE_EVENT));
+    };
+    window.addEventListener(LANDSCAPE_EVENT, onRotated);
     requestDeviceRotate();
+    return;
   }
+  document.documentElement.dataset.immersive = "true";
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
 }
 
