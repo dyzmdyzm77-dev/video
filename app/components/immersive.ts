@@ -51,22 +51,71 @@ import {
 //   · iPhone Safari  — requestFullscreen 이 없다(video 전용). 아무 일도 안 난다.
 //                      거기서 사파리 UI 를 걷는 건 '홈 화면에 추가'뿐이다.
 //   · 데스크톱 미리보기 — 목업이라 전체화면이면 좌측 패널까지 커진다. 건너뛴다.
-function syncFullscreen(on: boolean) {
-  if (typeof document === "undefined") return;
+function syncFullscreen(on: boolean): Promise<unknown> {
+  if (typeof document === "undefined") return Promise.resolve();
   const desktop =
     typeof window.matchMedia === "function" &&
     window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  if (desktop) return;
+  if (desktop) return Promise.resolve();
   try {
     if (on) {
       // 거부(미지원·제스처 없음)는 무시한다 — 전체화면은 덤이고, 안 되더라도
       // 확대 자체는 그대로 동작해야 한다.
-      document.documentElement
-        .requestFullscreen?.({ navigationUI: "hide" })
-        ?.catch(() => {});
+      return (
+        document.documentElement
+          .requestFullscreen?.({ navigationUI: "hide" })
+          ?.catch(() => {}) ?? Promise.resolve()
+      );
     } else if (document.fullscreenElement) {
       document.exitFullscreen?.()?.catch(() => {});
     }
+  } catch {}
+  return Promise.resolve();
+}
+
+// ── 확대 중에는 방향을 잠근다 ────────────────────────────────────────────
+// 확대는 '지금 보이는 이 화면'을 그대로 크게 보는 것이다. 그 상태에서 폰을
+// 눕혔다고 화면이 다시 돌면 안 된다 — 세로에서 확대를 눌러 가로가 된 경우가
+// 특히 그렇다. 앱이 CSS 로 90° 돌려 만든 가짜 가로라, 폰까지 눕으면 두 회전이
+// 겹친다(사용자 지정: "세로에서 확대모드 눌렀는데 가로로 전환되는 상황의
+// 경우는, 디바이스 눕혀도 고정이야 그냥").
+//
+// 그래서 OS 방향 자체를 잠근다. 잠기면 눕혀도 뷰포트가 안 바뀌므로 resize·
+// orientationchange 가 아예 안 오고, 앱은 손댈 것도 없이 그냥 고정이다.
+//
+// 앱이 CSS 로 눕힌 확대라면 잠글 방향은 '세로'다 — 기기가 세로로 있어야
+// 그 CSS 회전이 똑바로 선 가로로 보인다. 안 눕힌 확대(이미 가로거나 넓은
+// 기기)는 지금 방향 그대로 잠근다.
+//
+// 플랫폼별:
+//   · Android Chrome — 전체화면 안에서만 허용된다. syncFullscreen 뒤에 건다.
+//   · iPhone Safari  — screen.orientation.lock 이 없다. 아무 일도 안 난다.
+//                      거긴 아래 alignImmersiveRotation 이 대신 받아 준다
+//                      (앱의 CSS 회전을 즉시 되감아 화면을 세워 둔다).
+/** 데스크톱 미리보기는 물리 방향이 없다 — 잠글 것도 풀 것도 없고, 목업 프레임을
+ *  CSS 로 눕히는 쪽이라 브라우저 창 방향을 건드리면 오히려 방해가 된다. */
+function noPhysicalOrientation() {
+  return (
+    typeof window === "undefined" ||
+    (typeof window.matchMedia === "function" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches)
+  );
+}
+
+function lockOrientation(kind: "portrait" | "landscape") {
+  if (noPhysicalOrientation()) return;
+  try {
+    const so = window.screen?.orientation as
+      | (ScreenOrientation & { lock?: (o: string) => Promise<void> })
+      | undefined;
+    so?.lock?.(kind)?.catch(() => {});
+  } catch {}
+}
+
+function unlockOrientation() {
+  if (noPhysicalOrientation()) return;
+  try {
+    window.screen?.orientation?.unlock?.();
   } catch {}
 }
 
@@ -232,12 +281,25 @@ export function syncImmersiveWithLandscape() {
     return;
   }
   // 세로가 됐다. 확대 화면은 '가로로 눕힌 영상'이라 세로에 남겨 두면 위아래로
-  // 검은 띠만 남는다 — 어떻게 켠 확대였든 같이 정리하고 보통 화면으로 돌아온다.
-  // (확대 중에 회전을 한 번 더 눌러 세로로 온 경우도 여기로 온다. 예전엔 회전으로
-  //  켠 확대만 껐더니, 확대 버튼으로 켠 뒤 회전하면 '세로인데 확대 화면'이
-  //  남았다 — 사용자 지적: "그 상태에서 또 가로 또는 세로로 눕히면 또 돌아가면
-  //  어떡해".)
+  // 검은 띠만 남는다 — 눕혀서 켜진 확대는 여기서 같이 정리하고 보통 화면으로
+  // 돌아온다.
+  //
+  // 단 '확대 버튼으로 켠 확대'는 예외다. 그건 방향과 무관하게 고정이고, 나가는
+  // 길은 축소 버튼뿐이다(사용자 지정: "세로에서 확대모드 눌렀는데 가로로
+  // 전환되는 상황의 경우는, 디바이스 눕혀도 고정이야 그냥. 그리고 그 상태에서
+  // 축소모드 하면 세로로 돌아오는거고"). 실기기에선 애초에 방향을 잠가 두므로
+  // (lockOrientation) 여기까지 잘 안 오지만, 잠금이 없는 아이폰 사파리가 있다.
+  //
+  // 데스크톱 미리보기는 예전 규칙 그대로 둔다 — 거긴 물리 방향이 없고 좌측
+  // '왼쪽으로 회전'이 곧 방향이라, 안 끄면 '세로인데 확대 화면'이 남는다
+  // (사용자 지적: "그 상태에서 또 가로 또는 세로로 눕히면 또 돌아가면 어떡해").
   if (!readImmersive()) return;
+  if (
+    !noPhysicalOrientation() &&
+    root.dataset[BY_ROTATE_FLAG] !== "true"
+  ) {
+    return;
+  }
   root.dataset[BY_ROTATE_FLAG] = "false";
   // 이미 세로다 — 확대를 끄면서 방향을 또 되돌릴 일은 없다.
   root.dataset[ROTATED_FLAG] = "false";
@@ -275,6 +337,19 @@ export function readImmersiveRotated(): boolean {
  *
  *  (한때 '실기기 확대는 안 눕힌다'로 바꾸면서 이 함수를 지웠다가, 회전을
  *   되살릴 때 같이 안 살려 증상이 재발했다. 회전을 건드릴 땐 이 짝을 같이 볼 것.) */
+// 되감기를 보내 놓고 아직 DOM(data-landscape)에 반영되기 전인가.
+// 물리 회전 한 번에 resize 가 여러 번(OS 회전 애니메이션 동안 계속) 온다.
+// 이 함수는 판정을 data-landscape 로 하는데 그건 React 이펙트에서야 바뀌므로,
+// 막지 않으면 같은 회전에 되감기를 두 번 보내 도로 돌아간다 — 사용자가 본
+// '또 도는' 동작의 실제 원인이다(사용자 지적: "야 너 아직 그거 안고쳤어?").
+let unwinding = false;
+
+/** 확대 중에는 화면이 늘 가로로 보이게 방향을 정렬한다 — 방향 잠금
+ *  (lockOrientation)이 안 먹는 곳(아이폰 사파리)의 대비책이다.
+ *
+ *  잠금이 되는 곳에서는 폰을 눕혀도 뷰포트가 안 바뀌어 이 함수가 아예 안 불린다.
+ *  안 되는 곳에서는 뷰포트가 돌아 버리므로, 앱이 걸어 둔 CSS 회전을 그만큼
+ *  즉시 되감아 화면을 세워 둔다. 어느 쪽이든 사용자 눈에는 고정이다. */
 export function alignImmersiveRotation() {
   if (typeof window === "undefined") return;
   const desktopPreview =
@@ -282,6 +357,7 @@ export function alignImmersiveRotation() {
     window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   if (desktopPreview) return;
   if (!readImmersive()) return;
+  if (unwinding) return;
   const physicalLandscape = window.innerWidth > window.innerHeight;
   const cssRotated = readDeviceLandscape();
   // 원하는 상태: 기기가 세로일 때만 앱을 눕힌다.
@@ -289,6 +365,13 @@ export function alignImmersiveRotation() {
   document.documentElement.dataset[ROTATED_FLAG] = physicalLandscape
     ? "false"
     : "true";
+  // 되감기가 DOM 에 반영될 때까지 문을 닫는다.
+  unwinding = true;
+  const done = () => {
+    window.removeEventListener(LANDSCAPE_EVENT, done);
+    unwinding = false;
+  };
+  window.addEventListener(LANDSCAPE_EVENT, done);
   // 연출 없이 즉시 — 여기서 도는 건 OS 가 이미 돌린 만큼을 상쇄하는 것이라,
   // 보이면 OS 회전과 겹쳐 '한 번 더 돈다'로 읽힌다. 눈에는 아무 일도 안
   // 일어나야 맞다(deviceRotate.ts 의 instant 인자).
@@ -303,7 +386,17 @@ export function toggleImmersive() {
     exitImmersive();
     return;
   }
-  syncFullscreen(true);
+  // 확대에 들어가면 방향을 잠근다 — 눕혀도 그냥 고정이다(사용자 지정).
+  // 전체화면 안에서만 허용되므로 전체화면이 잡힌 뒤에 건다. 잠글 방향은
+  // '기기가 있어야 할 방향'이다: 앱을 CSS 로 눕혀 만든 가짜 가로라면 기기는
+  // 세로로 있어야 하고, 안 눕혔으면 지금 방향 그대로다.
+  const willRotate = !readDeviceLandscape() && shouldRotate();
+  const lockTo: "portrait" | "landscape" = willRotate
+    ? "portrait"
+    : window.innerWidth > window.innerHeight
+      ? "landscape"
+      : "portrait";
+  syncFullscreen(true).then(() => lockOrientation(lockTo));
   // 세로로 긴 프레임이면 눕혀야 영상이 커진다(ROTATE_GAIN). 이미 가로면 그대로.
   //
   // 실기기에서도 눕힌다. 잠깐 '실기기에선 안 눕힌다'로 뒀었는데 — 앱만 CSS 로
@@ -311,7 +404,7 @@ export function toggleImmersive() {
   // 전체화면을 빼 둔 동안의 이야기다. 지금은 확대가 전체화면으로 그 바들을
   // 같이 걷으므로 어긋날 상대가 없다(syncFullscreen). 360 처럼 세로로 긴
   // 기기에서 확대가 안 눕는 게 오히려 어색하다는 지적이 있었다.
-  if (!readDeviceLandscape() && shouldRotate()) {
+  if (willRotate) {
     document.documentElement.dataset[ROTATED_FLAG] = "true";
     // 확대 화면은 '회전이 끝난 뒤'에 켠다. 먼저 켜면 도는 동안 세로 프레임에
     // 가로용 확대 화면이 그려져 '제자리 확대 한 번 → 다시 가로로' 두 단계로
@@ -346,6 +439,9 @@ export function exitImmersive() {
   ds.immersive = "false";
   ds[ROTATED_FLAG] = "false";
   ds[BY_ROTATE_FLAG] = "false";
+  // 잠금은 전체화면을 나가기 전에 푼다 — 나가면서 자동으로 풀리기도 하지만,
+  // 안 풀린 채로 남으면 세로로 돌아온 뒤에도 방향이 굳는다.
+  unlockOrientation();
   syncFullscreen(false);
   // 축소하면 앱이 걸어 둔 회전은 무조건 푼다. 어떤 경로로 눕었든(확대가 눕혔든,
   // 회전으로 켜졌든, 중간에 폰을 눕혔다 세웠든) 축소 뒤에는 기기 방향 그대로

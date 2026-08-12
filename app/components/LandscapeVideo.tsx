@@ -498,8 +498,14 @@ export default function LandscapeVideo({
   const statusBottom =
     !topCenter || controls
       ? dimLayer(
-          "inset-x-0 bottom-0",
-          {},
+          "inset-x-0",
+          {
+            // 딤 아래 줄(AI·페이지 점)이 12 보다 더 떠 있으면 이 층도 같이 뜬다
+            // — 시간바만 바닥에 남으면 따로 논다(사용자 지적: "시간바는 왜 거기에
+            // 적용 안 돼? 같이 올라가야지"). 칩 줄도 이 층에 있어서 자기 pb-3(12)
+            // 위에 이 값이 더해져 AI 버튼과 같은 높이로 맞는다.
+            bottom: `${(bottomInset ?? 12) - 12}px`,
+          },
           <>
             {!topCenter && (
               <div

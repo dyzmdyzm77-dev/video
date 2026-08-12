@@ -448,6 +448,9 @@ export default function VariantA1({
           statusActiveStyle="white"
           // 딤 위 UI 좌우 여백 40 — 영상 자체는 제외, 끝까지 쓴다.
           edgeInset={40}
+          // 아래 줄(AI 버튼·페이지 점)을 12 → 32 로 띄운다(사용자 지정:
+          // "딤처리됬을때 하단 마진 20 더 주자").
+          bottomInset={32}
           // 장소명 줄을 오른쪽 아이콘 줄과 윗변 기준으로 맞춘다.
           headerAlign="top"
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
@@ -1955,9 +1958,10 @@ const TIMELINE_EVENTS = (() => {
 // 열면 영상을 밀고 옆에 선다(덮지 않는다). 닫기는 패널 안 X 버튼뿐이다
 // (사용자 결정) — 영상을 눌러 닫히면 영상 조작과 헷갈린다.
 /** 가로 확대 화면의 오른쪽 패널 — 내용이 기기 오른쪽 모서리에서 떨어지는 거리.
- *  딤 위 UI 의 edgeInset 과 같은 값이다(사용자 지정) — 같은 화면의 같은 끝이라
- *  따로 놀면 안 된다. */
-const LANDSCAPE_PANEL_EDGE = 40;
+ *  딤 위 UI 의 edgeInset(40)에서 20 을 더 줬다(사용자 지정: "우측마진 40더
+ *  줬었잖아. 20 더 줘도 되겠어"). 패널은 흰 판이라 아이콘 줄보다 더 떨어져야
+ *  같은 정도로 떨어져 보인다. */
+const LANDSCAPE_PANEL_EDGE = 60;
 /** 패널 안 탭 줄·목록이 이미 쓰고 있는 좌우 여백. 위 40 은 '모서리까지의 총
  *  거리'라, 패널에 더 붙일 몫은 그만큼 뺀 값이다 — 안 빼면 40+16=56 이 된다. */
 const LANDSCAPE_PANEL_PAD = 16;
@@ -1997,6 +2001,11 @@ function LandscapeSidePanel({
         width: `${SIDE_PANEL_W + LANDSCAPE_PANEL_EXTRA}px`,
         paddingRight: `${LANDSCAPE_PANEL_EXTRA}px`,
         borderLeft: "1px solid #EBEBEB",
+        // 왼쪽 위·아래만 둥글게 — 영상 쪽에서 흰 판이 밀고 들어오는 모양이라
+        // 바텀시트 윗변과 같은 결이다(사용자 지정). 오른쪽은 기기 모서리에
+        // 닿는 변이라 각지게 둔다. 값도 시트와 같은 10.
+        borderTopLeftRadius: "10px",
+        borderBottomLeftRadius: "10px",
       }}
     >
       {/* 탭 + 닫기 */}
@@ -2046,7 +2055,9 @@ function LandscapeSidePanel({
           <img src={`${BASE}/close.svg`} alt="" className="h-6 w-6" />
         </button>
       </div>
-      <div className="h-px flex-none" style={{ backgroundColor: "#EBEBEB" }} />
+      {/* 탭 아래 구분선은 안 그린다(사용자 지정) — 1080+ 패널에는 있지만 여긴
+          영상 위에 뜨는 판이라 선까지 있으면 답답하다. 어느 탭인지는 탭 자체의
+          밑줄이 이미 보여 준다. */}
 
       {showMotion ? (
         <SideEventTimeline
@@ -4545,13 +4556,20 @@ function PlayerButton({
       onPointerCancel={() => setPressed(false)}
       className="flex items-center justify-center rounded-full"
       style={{
-        width: "40px",
-        height: "40px",
-        border: overlay ? "1px solid rgba(255,255,255,0.35)" : "1px solid #D9D9D9",
+        // 가로 딤에선 60 — 영상 위에 떠 있는 버튼이라 세로(40)보다 커야 눌린다.
+        // 세로는 그대로 40. (A-2 와 같은 값으로 맞춘다, 사용자 지정: "5버튼도
+        // 사이즈 키우고 색상 고쳐줘. 동일하게.")
+        width: overlay ? "60px" : "40px",
+        height: overlay ? "60px" : "40px",
+        border: overlay
+          ? "1px solid rgba(255,255,255,0.35)"
+          : "1px solid #D9D9D9",
+        // 가로 딤 위 버튼 배경 — 영상이 비쳐 잘 안 보여 더 진하게(0.35 → 0.55).
+        // 눌린 상태(active)도 같이 올린다.
         backgroundColor: overlay
           ? active
-            ? "rgba(255,255,255,0.3)"
-            : "rgba(0,0,0,0.35)"
+            ? "rgba(255,255,255,0.45)"
+            : "rgba(0,0,0,0.55)"
           : active
             ? "#F2F2F2"
             : "#FFFFFF",
@@ -4560,15 +4578,22 @@ function PlayerButton({
       {label != null ? (
         <span
           style={{
-            fontSize: "14px",
+            fontSize: overlay ? "17px" : "14px",
             fontWeight: 500,
-            color: overlay ? "#FFFFFF" : "#262626",
+            // 배속 글자도 같은 규칙 — 밝은 배경(active)이면 검정.
+            color: overlay && !active ? "#FFFFFF" : "#262626",
           }}
         >
           {label}
         </span>
       ) : (
-        <PlayerIcon kind={kind} size={24} invert={overlay} />
+        <PlayerIcon
+          kind={kind}
+          size={overlay ? 32 : 24}
+          // 눌리면 배경이 밝아지므로(0.45 흰색) 아이콘은 검정으로 되돌린다 —
+          // 흰 아이콘 그대로 두면 밝은 배경에 묻힌다.
+          invert={overlay && !active}
+        />
       )}
     </button>
   );
