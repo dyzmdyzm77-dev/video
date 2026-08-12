@@ -46,8 +46,14 @@ export default function DeviceScaler() {
       // 프레임이 회전하면서 크기와 자리까지 같이 변한다. 그래서 회전 중·가로일
       // 때는 회전 기준인 세로 크기(--device-rot-w/h)로 계산한다 — 배율도 왼쪽
       // 앵커도 세로일 때 값 그대로라 "세로에 있던 그 자리"가 유지된다.
+      // 비교하기는 예외다. 두 대를 나란히 놓는데 가로가 되면 한 쌍의 폭이 배로
+      // 늘어, 세로 기준 배율·앵커를 그대로 쓰면 As Is 가 창 왼쪽으로 밀려난다.
+      // 그래서 비교하기일 때는 지금 크기(눕힌 값)로 다시 계산해 둘 다 창 안에
+      // 들어오게 한다 — '제자리 회전'은 기기 한 대만 볼 때의 규칙이다.
       const rotating =
-        root.dataset.rotate === "true" || root.dataset.landscape === "true";
+        root.dataset.compare !== "true" &&
+        (root.dataset.rotate === "true" ||
+          root.dataset.landscape === "true");
       const w =
         parseFloat(
           cs.getPropertyValue(rotating ? "--device-rot-w" : "--device-w"),

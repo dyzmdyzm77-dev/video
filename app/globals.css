@@ -314,18 +314,38 @@ body {
       rotate(var(--device-rot, 0deg));
     transition: transform 0.35s ease;
   }
+  /* 비교하기 중에는 중심을 '지금 크기'로 잡는다. 위 규칙은 세로 기준
+     (--device-rot-w/h)으로 중심을 고정해 '제자리 회전'을 만드는데, 비교하기는
+     두 대를 나란히 놓느라 가로가 되면 배율·앵커가 새로 계산되므로(DeviceScaler)
+     기준이 어긋난다. 비교하기는 제자리 회전보다 '두 대가 같이 보이는 것'이
+     우선이다(사용자 요청). 바닥 기준은 As Is 와 같아 둘이 나란히 선다. */
+  html[data-rotate="true"][data-compare="true"] .app-safe-frame,
+  html[data-rotate="true"][data-compare="true"] .device-frame {
+    top: calc(
+      100vh - var(--device-bottom-pad, 40px) - var(--device-h, 780px) *
+        var(--device-scale, 1) / 2
+    );
+    left: calc(
+      var(--device-left, 240px) + var(--device-w, 360px) *
+        var(--device-scale, 1) / 2
+    );
+  }
+
   /* 배치 스위치(flex↔fixed)·크기 갈아끼우기 순간엔 트랜지션을 꺼서 무이동으로
      딱 바꾼다. 그 뒤 각도(--device-rot)만 트랜지션돼 제자리에서 돈다. */
   html[data-rotating="true"] .app-safe-frame,
   html[data-rotating="true"] .device-frame {
     transition: none;
   }
-  /* 치수 눈금자·드래그 핸들·As Is 는 가로에서 감춘다(회전 좌표와 얽히지 않게). */
+  /* 치수 눈금자·드래그 핸들은 가로에서 감춘다(회전 좌표와 얽히지 않게). */
   html[data-rotate="true"] .device-ruler,
-  html[data-rotate="true"] .device-resizer,
-  html[data-rotate="true"] .asis-frame {
+  html[data-rotate="true"] .device-resizer {
     display: none;
   }
+
+  /* As Is 는 가로에서도 감추지 않는다(사용자 요청) — 비교하기의 요점이 두 기기를
+     나란히 놓고 보는 것이라, 돌릴 때 한쪽만 사라지면 비교가 끊긴다.
+     크기(--device-w/h)를 시안과 같이 쓰므로 회전이 끝나면 자기도 눕는다. */
 
   /* 기기 프레임의 좌·우 가장자리 드래그 영역(폭 조절). 보이는 핸들 없이 투명하며,
      hover 시에만 옅은 세로선으로 표시. 위치·높이는 프레임과 동일한 변수로 계산돼
