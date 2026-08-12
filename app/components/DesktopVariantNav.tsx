@@ -393,40 +393,39 @@ export default function DesktopVariantNav() {
           두 곳이 같은 requestVariant 를 쓰므로 어느 쪽으로 골라도 강조가 같이
           움직인다. nav 는 transform 이 없어서 fixed 자식이 overflow:hidden 에
           안 잘린다. */}
-      <div className="device-top-chips">
-        <div className="device-preset-chips">
-          {VARIANTS.map((v) => (
+      {/* 시안 칩 — 오른쪽(지금 보고 있는 안) 기기 위. */}
+      <div className="device-preset-chips dpc-right">
+        {VARIANTS.map((v) => (
+          <button
+            key={v.key}
+            type="button"
+            className="dpc-chip"
+            data-active={variant === v.key}
+            onClick={() => requestVariant(v.key)}
+          >
+            {VARIANT_LABEL[v.key]}
+          </button>
+        ))}
+      </div>
+
+      {/* 비교 대상 칩 — 왼쪽 기기 위. 각 칩 줄이 자기 기기 바로 위에 있어야
+          어느 쪽을 고르는 건지 바로 읽힌다(사용자 요청). 오른쪽은 지금 보고
+          있는 안이라 목록에서 빠진다 — 자기 자신과 비교할 일은 없다. */}
+      {compare && (
+        <div className="device-preset-chips dpc-left">
+          {COMPARE_TARGETS.filter((t) => t !== variant).map((t) => (
             <button
-              key={v.key}
+              key={t}
               type="button"
               className="dpc-chip"
-              data-active={variant === v.key}
-              onClick={() => requestVariant(v.key)}
+              data-active={compareWith === t}
+              onClick={() => requestCompareTarget(t)}
             >
-              {VARIANT_LABEL[v.key]}
+              {t === "asis" ? "As Is" : VARIANT_LABEL[t]}
             </button>
           ))}
         </div>
-        {/* 비교 대상 — 비교하기를 켰을 때만, 시안 칩 바로 아래에 같이 뜬다
-            (사용자 요청: 좌측 패널 말고 상단에서 고르게). 오른쪽은 지금 보고
-            있는 안이라 목록에서 빠진다 — 자기 자신과 비교할 일은 없다. */}
-        {compare && (
-          <div className="device-preset-chips dpc-compare">
-            <span className="dpc-lead">비교</span>
-            {COMPARE_TARGETS.filter((t) => t !== variant).map((t) => (
-              <button
-                key={t}
-                type="button"
-                className="dpc-chip"
-                data-active={compareWith === t}
-                onClick={() => requestCompareTarget(t)}
-              >
-                {t === "asis" ? "As Is" : VARIANT_LABEL[t]}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      )}
       <button
         type="button"
         className="dvn-toggle"

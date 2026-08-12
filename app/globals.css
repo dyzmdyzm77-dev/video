@@ -350,43 +350,34 @@ body {
   /* 해상도 칩 줄 — 치수 눈금자 위(화면 상단), 기기 영역 가운데 정렬.
      좌측 패널을 열고 목록에서 고르는 대신 기기 바로 위에서 바꾸라고 둔 것이라,
      패널 폭(--panel-w)을 뺀 남은 영역의 가운데에 놓는다. */
-  /* 화면 위쪽 칩 묶음 — 시안 줄(+ 비교하기를 켜면 비교 대상 줄). */
-  .device-top-chips {
+  /* 기기 위 칩 줄 — 각자 자기 기기 한가운데 위에 놓는다(오른쪽=시안,
+     왼쪽=비교 대상). 기준은 눈금자와 같은 --device-left(= 오른쪽 기기 화면 왼쪽). */
+  .device-preset-chips {
     position: fixed;
     top: 10px;
-    /* 기기 한가운데 위로 — 눈금자와 같은 기준(--device-left = 화면 왼쪽). */
-    left: calc(
-      var(--device-left, 240px) + var(--device-w, 360px) *
-        var(--device-scale, 1) / 2
-    );
-    transform: translateX(-50%);
     z-index: 13;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    max-width: calc(100vw - var(--panel-w, 200px) - 32px);
-  }
-  .device-preset-chips {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     gap: 6px;
+    transform: translateX(-50%);
   }
-  /* 비교 줄은 시안 줄과 구분되게 한 톤 낮춘다. */
-  .dpc-compare .dpc-chip {
-    height: 23px;
-    font-size: 11px;
+  .dpc-right {
+    left: calc(
+      var(--device-left, 240px) + var(--device-w, 360px) *
+        var(--device-scale, 1) / 2
+    );
   }
-  .dpc-compare .dpc-chip[data-active="true"] {
-    background: #1d6ceb;
-    border-color: #1d6ceb;
-  }
-  .dpc-lead {
-    font-size: 11px;
-    font-weight: 600;
-    color: #a4a4a4;
+  /* 왼쪽 기기(비교 프레임)의 중심 — .asis-frame 의 left 계산과 같은 식에
+     자기 바깥 폭의 절반을 더한 자리다(간격 50 은 COMPARE_GAP). */
+  .dpc-left {
+    left: calc(
+      var(--device-left, 240px) - var(--device-margin, 10px) *
+        var(--device-scale, 1) - 50px -
+        (var(--device-w, 360px) + var(--device-margin, 10px) * 2) *
+        var(--device-scale, 1) / 2
+    );
   }
   .dpc-chip {
     height: 26px;
@@ -415,7 +406,7 @@ body {
     color: #ffffff;
   }
   /* 치수 눈금자를 끄면 칩도 같이 감춘다 — 둘 다 '기기 위 보조 UI'다. */
-  html[data-show-ruler="false"] .device-top-chips {
+  html[data-show-ruler="false"] .device-preset-chips {
     display: none;
   }
 
