@@ -4,6 +4,11 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { BASE } from "../basePath";
 import AndroidNav from "./AndroidNav";
+import VariantA from "../_variants/VariantA";
+import VariantA1 from "../_variants/VariantA1";
+import VariantB from "../_variants/VariantB";
+import { useCompareTarget } from "./compareTarget";
+import { VARIANT_LABEL } from "./variantRoute";
 import { CameraFeed } from "./CameraFeed";
 import { useDeviceWidth } from "./useDeviceWidth";
 import { Inner as HomeScreen } from "../home/page";
@@ -168,6 +173,8 @@ function BatteryIcon({ className, level }: { className?: string; level: number }
 
 export default function AsIsPanel() {
   const [on, setOn] = useState(false);
+  // 왼쪽에 무엇을 놓을지 — 기본은 As Is, 시안끼리 비교할 수도 있다.
+  const compareWith = useCompareTarget();
   // 기본은 다채널(그리드, 시안과 동일) — 큰 영상 없이 목록 8개가 모두 재생된다.
   // 타일을 클릭하면 그 카메라가 큰 영상으로 올라오는 단일채널 모드로 전환되고,
   // 큰 영상을 더블클릭하면 다채널로 복귀한다(시안과 동일한 규칙).
@@ -311,6 +318,26 @@ export default function AsIsPanel() {
   }, [on, mode, featured]);
 
   if (!on) return null;
+
+  // 왼쪽이 시안이면 그 안을 프레임 안에 그대로 띄운다. As Is 마크업 대신
+  // 진짜 컴포넌트라, 오른쪽과 같은 화면 종류(다채널/단일·실시간/녹화)에서
+  // 시작하고 딤·시트도 각자 독립으로 동작한다(screenState.ts).
+  if (compareWith !== "asis") {
+    const Variant =
+      compareWith === "a1"
+        ? VariantA1
+        : compareWith === "a2"
+          ? VariantA
+          : VariantB;
+    return (
+      <div className="asis-frame">
+        <span className="asis-caption">{VARIANT_LABEL[compareWith]}</span>
+        <div className="asis-screen asis-variant">
+          <Variant platform={platform} initialChrome={chromeVisible} />
+        </div>
+      </div>
+    );
+  }
 
   // 카메라 목록 타일 하나 — 세로 2열 그리드와 620px+ 가로 바텀시트에서 공용.
   const renderTile = (cam: string, i: number) => (

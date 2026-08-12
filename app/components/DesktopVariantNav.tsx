@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { EVENT_THUMBS_EVENT } from "./eventThumbs";
 import {
+  requestCompareTarget,
+  useCompareTarget,
+  type CompareTarget,
+} from "./compareTarget";
+import {
   exitImmersive,
   readImmersive,
   readImmersiveRotated,
@@ -70,6 +75,9 @@ const DEVICES = [
   },
 ];
 // 최초 표시 기본 프리셋 — 제너릭 360px(이름 없는 첫 항목).
+// 비교하기 왼쪽에 놓을 수 있는 것들 — As Is(현행 앱) + 세 안.
+const COMPARE_TARGETS: CompareTarget[] = ["asis", "a1", "a2", "b"];
+
 const DEFAULT_PRESET = DEVICES.findIndex(
   (d) => d.label === "360px" && d.sub === "",
 );
@@ -125,6 +133,18 @@ export default function DesktopVariantNav() {
   const [rotated, setRotated] = useState(false); // 디바이스 시각적 90° 회전(가로)
   // 확대 중에는 회전을 막는다(위 버튼 주석 참고).
   const immersive = useImmersive();
+  // 비교하기 왼쪽에 놓을 대상(기본 As Is).
+  const compareWith = useCompareTarget();
+
+  // 오른쪽(시안) 캡션 — 비교 대상이 As Is 면 예전처럼 'To Be', 시안끼리 비교하면
+  // 어느 안인지 적는다(왼쪽 캡션과 짝이 맞아야 어느 쪽이 뭔지 읽힌다).
+  useEffect(() => {
+    const el = document.querySelector(".device-caption");
+    if (el) {
+      el.textContent =
+        compareWith === "asis" ? "To Be" : VARIANT_LABEL[variant];
+    }
+  }, [compareWith, variant]);
   // 움직임 감지 이벤트 카드에 썸네일을 쓸 수 있는 사양인지. 끄면 시각+타이틀만.
   const [eventThumbs, setEventThumbs] = useState(true);
   // 직접 입력(커스텀 해상도) — 가로·세로 px.
@@ -538,7 +558,7 @@ export default function DesktopVariantNav() {
         </span>
       </button>
 
-      {/* 비교하기: 시안 왼쪽에 As Is(현재 앱) 영상 화면을 나란히. */}
+      {/* 비교하기: 시안 왼쪽에 하나를 더 나란히 놓는다(기본 As Is). */}
       <button
         type="button"
         className="dvn-compare-toggle"
@@ -551,6 +571,26 @@ export default function DesktopVariantNav() {
         </span>
         <span className="dvn-label">비교하기</span>
       </button>
+
+      {/* 비교 대상 — 왼쪽에 무엇을 놓을지. As Is 뿐 아니라 시안끼리도 비교한다
+          (사용자 요청: "A-1안과 A-2안 이렇게 비교하고싶을때도 있잖아").
+          오른쪽은 지금 보고 있는 안이라 여기 목록에서 빠진다 — 자기 자신과
+          비교할 일은 없다. 비교하기를 켰을 때만 보인다. */}
+      {compare && (
+        <div className="dvn-compare-with">
+          {COMPARE_TARGETS.filter((t) => t !== variant).map((t) => (
+            <button
+              key={t}
+              type="button"
+              className="dvn-compare-chip"
+              data-active={compareWith === t}
+              onClick={() => requestCompareTarget(t)}
+            >
+              {t === "asis" ? "As Is" : VARIANT_LABEL[t]}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 움직임 감지 썸네일 온/오프 — 썸네일을 못 뽑는 기기 사양 대응 화면 확인용.
           끄면 카드 자리에 시각 + "움직임 감지" 텍스트만 남는다(카드 크기는 동일). */}

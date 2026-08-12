@@ -350,6 +350,35 @@ body {
   /* 해상도 칩 줄 — 치수 눈금자 위(화면 상단), 기기 영역 가운데 정렬.
      좌측 패널을 열고 목록에서 고르는 대신 기기 바로 위에서 바꾸라고 둔 것이라,
      패널 폭(--panel-w)을 뺀 남은 영역의 가운데에 놓는다. */
+  /* 비교 대상 칩 — 좌측 패널의 '비교하기' 바로 아래. */
+  .dvn-compare-with {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px 0 8px 34px;
+  }
+  .desktop-variant-nav[data-open="false"] .dvn-compare-with {
+    display: none;
+  }
+  .dvn-compare-chip {
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 11px;
+    border: 1px solid #e0e0e0;
+    background: #ffffff;
+    color: #7f7f7f;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .dvn-compare-chip[data-active="true"] {
+    background: #1d6ceb;
+    border-color: #1d6ceb;
+    color: #ffffff;
+  }
+
   .device-preset-chips {
     position: fixed;
     top: 10px;
@@ -1274,6 +1303,33 @@ body {
        pointer-events:none 이라 여기서 다시 켠다(영상 화면의 .asis-scroll 과 동일). */
     pointer-events: auto;
   }
+  /* 비교 프레임에 As Is 대신 '시안'을 띄운 경우. 시안은 화면 전체를 차지하도록
+     만들어져 있어(고정 배치·회전 규칙 등) 그대로 두면 프레임을 벗어난다 —
+     프레임 안에 갇히게 눌러 둔다. 홈 화면을 재사용할 때와 같은 처리다. */
+  .asis-variant {
+    /* As Is 프레임은 클릭을 막아 두는데, 시안은 눌러 보며 비교해야 한다. */
+    pointer-events: auto;
+    position: relative;
+    /* 안의 시안을 absolute 로 띄우므로 흐름에 남는 자식이 없다 — 크기를 다시
+       못 박아 준다(안 그러면 프레임이 내용 없는 상자로 쪼그라든다). */
+    width: var(--device-w, 360px);
+    height: var(--device-h, 780px);
+    flex: none;
+  }
+  .asis-variant > .app-safe-frame {
+    /* 시안 쪽 규칙(고정 배치 + 배율 transform)이 더 구체적이라 !important 로
+       누른다 — 여기서는 프레임이 곧 화면이라 배율·위치를 다시 먹이면 안 된다.
+       크기는 width/height 100% 가 아니라 inset:0 으로 잡는다: 부모가 세로
+       flex 라 자식 높이가 부모 높이에 되먹임돼 프레임이 찌그러진다. */
+    position: absolute !important;
+    inset: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    border-radius: 0 !important;
+  }
+
   .asis-home > .app-safe-frame {
     width: 100%;
     height: 100%;
