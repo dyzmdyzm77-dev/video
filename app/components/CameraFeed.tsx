@@ -262,6 +262,7 @@ export function GridSelectionOverlay({
   onMore,
   onAi,
   onMenu,
+  edgeInset,
   onFit,
   fit = "fill",
   mode,
@@ -285,6 +286,8 @@ export function GridSelectionOverlay({
   /** AI 버튼 왼쪽에 메뉴 버튼을 하나 더 둔다. 안 주면 안 그린다 —
    *  A-2안 가로 화면에서만 쓰는 사양이다(사용자 결정). */
   onMenu?: () => void;
+  /** 딤 위 UI 의 좌우 가장자리 여백(px). 안 주면 지금 값 그대로(16). */
+  edgeInset?: number;
   /** 화면 맞춤 — 누를 때마다 fill → contain → cover 로 돈다(단일 화면과 동일). */
   onFit?: () => void;
   /** 지금 맞춤 상태. 버튼 아이콘이 이걸 그대로 보여준다. */
@@ -391,8 +394,8 @@ export function GridSelectionOverlay({
           안 그러면 조준하는 사이 5초가 지나 딤이 사라지고, 그때부터 아이콘은
           pointer-events:none 이라 클릭이 영상으로 새어 버린다. */}
       <div
-        className="absolute right-4 flex items-center gap-0 text-white"
-        style={{ top: `${12 + topInset}px` }}
+        className="absolute flex items-center gap-0 text-white"
+        style={{ top: `${12 + topInset}px`, right: `${edgeInset ?? 16}px` }}
         onClick={(e) => {
           e.stopPropagation();
           auto?.keepAlive();
@@ -457,7 +460,10 @@ export function GridSelectionOverlay({
           페이지 인디케이터와 같은 높이(bottom 12)에 앉혀 한 줄로 읽히게 했다.
           onAi 를 준 안에서만 누를 수 있다 — 안 준 안(A-2·B)은 예전처럼 표시만.
           시트는 안이 들고 있으므로 여기선 열어 달라고만 한다(더보기와 같은 결). */}
-      <div className="absolute bottom-3 right-4 flex items-center gap-2">
+      <div
+        className="absolute bottom-3 flex items-center gap-2"
+        style={{ right: `${edgeInset ?? 16}px` }}
+      >
         {/* 메뉴 — AI 옆, 같은 원 스타일. onMenu 를 준 안에서만 나온다. */}
         {onMenu && (
           <button

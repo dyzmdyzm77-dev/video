@@ -90,6 +90,7 @@ export default function LandscapeVideo({
   onAi,
   onMenu,
   centerControls,
+  edgeInset,
   onExpand,
   onBack,
   title,
@@ -136,6 +137,9 @@ export default function LandscapeVideo({
   /** 화면 한가운데에 얹을 컨트롤. 아래 시간바 대신 플레이어 버튼만 가운데
    *  두는 A-2안 가로 사양에서 쓴다. 안 주면 아무것도 안 그린다. */
   centerControls?: React.ReactNode;
+  /** 딤 위 UI(장소명·아이콘 줄·칩 줄·AI/메뉴)의 좌우 가장자리 여백(px).
+   *  영상 자체는 해당 없음 — 화면을 끝까지 쓴다. 안 주면 지금 값 그대로. */
+  edgeInset?: number;
   /** 타일 더블탭 — 그 카메라 단일 화면으로. */
   onExpand?: (i: number) => void;
   /** 단일 화면 더블탭 — 다채널로 복귀. */
@@ -410,7 +414,17 @@ export default function LandscapeVideo({
           "inset-x-0 bottom-0",
           {},
           <>
-            {!topCenter && <div className="px-5 pb-3">{statusRow}</div>}
+            {!topCenter && (
+              <div
+                className="pb-3"
+                style={{
+                  paddingLeft: `${edgeInset ?? 20}px`,
+                  paddingRight: `${edgeInset ?? 20}px`,
+                }}
+              >
+                {statusRow}
+              </div>
+            )}
             {controls && (
               <div
                 data-no-swipe=""
@@ -428,8 +442,13 @@ export default function LandscapeVideo({
   // 안 그러면 같은 줄 오른쪽 딤 아이콘을 덮어 눌러도 반응하지 않는다.
   const header = title ? (
     <div
-      className="pointer-events-none absolute inset-x-0 top-0 flex items-center px-5 transition-opacity duration-300 ease-out"
-      style={{ height: `${OVERLAY_HEADER_H}px`, opacity: dim ? 1 : 0 }}
+      className="pointer-events-none absolute inset-x-0 top-0 flex items-center transition-opacity duration-300 ease-out"
+      style={{
+        height: `${OVERLAY_HEADER_H}px`,
+        opacity: dim ? 1 : 0,
+        paddingLeft: `${edgeInset ?? 20}px`,
+        paddingRight: `${edgeInset ?? 20}px`,
+      }}
     >
       <div
         className="flex flex-col"
@@ -474,6 +493,7 @@ export default function LandscapeVideo({
       onMore={onMore}
       onAi={onAi}
       onMenu={onMenu}
+      edgeInset={edgeInset}
       onFit={cycle}
       fit={fit}
       dimAlpha={dimAlpha}

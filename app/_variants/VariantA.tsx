@@ -419,6 +419,8 @@ export default function VariantA({
           onMenu={() => setMoreOpen(true)}
           // 실시간/녹화 칩 + 시각을 왼쪽 아래로(사용자 결정, A-2안 가로 사양).
           statusPlacement="bottom-left"
+          // 딤 위 UI 좌우 여백 40(사용자 지정) — 영상 자체는 제외, 끝까지 쓴다.
+          edgeInset={40}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
@@ -4339,8 +4341,10 @@ function PlayerButton({
       onPointerCancel={() => setPressed(false)}
       className="flex items-center justify-center rounded-full"
       style={{
-        width: "40px",
-        height: "40px",
+        // 가로 딤에선 60 — 영상 위에 떠 있는 버튼이라 세로(40)보다 커야 눌린다
+        // (사용자 지정, A-2안 가로 사양). 세로는 그대로 40.
+        width: overlay ? "60px" : "40px",
+        height: overlay ? "60px" : "40px",
         border: overlay
           ? "1px solid rgba(255,255,255,0.35)"
           : "1px solid #D9D9D9",
@@ -4358,7 +4362,7 @@ function PlayerButton({
       {label != null ? (
         <span
           style={{
-            fontSize: "14px",
+            fontSize: overlay ? "17px" : "14px",
             fontWeight: 500,
             color: overlay ? "#FFFFFF" : "#262626",
           }}
@@ -4366,7 +4370,7 @@ function PlayerButton({
           {label}
         </span>
       ) : (
-        <PlayerIcon kind={kind} size={24} invert={overlay} />
+        <PlayerIcon kind={kind} size={overlay ? 32 : 24} invert={overlay} />
       )}
     </button>
   );
