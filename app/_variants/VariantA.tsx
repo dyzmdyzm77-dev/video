@@ -1969,6 +1969,15 @@ const TIMELINE_EVENTS = (() => {
 //
 // 열면 영상을 밀고 옆에 선다(덮지 않는다). 닫기는 패널 안 X 버튼뿐이다
 // (사용자 결정) — 영상을 눌러 닫히면 영상 조작과 헷갈린다.
+/** 가로 확대 화면의 오른쪽 패널 — 내용이 기기 오른쪽 모서리에서 떨어지는 거리.
+ *  딤 위 UI 의 edgeInset 과 같은 값이다(사용자 지정) — 같은 화면의 같은 끝이라
+ *  따로 놀면 안 된다. */
+const LANDSCAPE_PANEL_EDGE = 40;
+/** 패널 안 탭 줄·목록이 이미 쓰고 있는 좌우 여백. 위 40 은 '모서리까지의 총
+ *  거리'라, 패널에 더 붙일 몫은 그만큼 뺀 값이다 — 안 빼면 40+16=56 이 된다. */
+const LANDSCAPE_PANEL_PAD = 16;
+const LANDSCAPE_PANEL_EXTRA = LANDSCAPE_PANEL_EDGE - LANDSCAPE_PANEL_PAD;
+
 function LandscapeSidePanel({
   mode,
   selectedIndex,
@@ -1996,7 +2005,14 @@ function LandscapeSidePanel({
   return (
     <div
       className="flex min-h-0 flex-none flex-col bg-white"
-      style={{ width: `${SIDE_PANEL_W}px`, borderLeft: "1px solid #EBEBEB" }}
+      style={{
+        // 내용 칸은 1080+ 패널과 같은 폭(SIDE_PANEL_W)으로 두고, 오른쪽에 여백만
+        // 더 붙인다 — 가로 확대는 화면 끝까지 쓰는 화면이라 패널 내용이 기기
+        // 오른쪽 모서리에 딱 붙어 있었다(사용자 지정).
+        width: `${SIDE_PANEL_W + LANDSCAPE_PANEL_EXTRA}px`,
+        paddingRight: `${LANDSCAPE_PANEL_EXTRA}px`,
+        borderLeft: "1px solid #EBEBEB",
+      }}
     >
       {/* 탭 + 닫기 */}
       <div
@@ -2056,26 +2072,29 @@ function LandscapeSidePanel({
         />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {/* 타일 생김새는 1080+ 패널의 cameraTile 과 같게 맞춘다 — 라운드 4,
+              라벨 한 개, 선택은 안쪽 파란 링. 라벨은 CameraFeed 가 이미 그리므로
+              여기서 또 얹으면 두 개가 겹쳐 보인다(사용자 지적). 선택 표시도
+              바깥 border 로 두면 1px→2px 만큼 타일이 밀려 목록이 들썩인다. */}
           {CAMERAS.map((c, i) => (
             <button
               key={c.label}
               type="button"
               onClick={() => onSelect(i)}
               className="relative aspect-video w-full flex-none overflow-hidden bg-neutral-900"
-              style={{
-                border:
-                  selectedIndex === i
-                    ? "2px solid #1D6CEB"
-                    : "1px solid #D9D9D9",
-              }}
+              style={{ borderRadius: "4px" }}
             >
               <CameraFeed label={c.label} src={c.src} />
-              <span
-                className="absolute left-1 top-1 rounded-sm px-1 text-[10px] leading-[14px] text-white"
-                style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
-              >
-                {c.label}
-              </span>
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  borderRadius: "4px",
+                  boxShadow:
+                    selectedIndex === i
+                      ? "inset 0 0 0 2px #1D6CEB"
+                      : "inset 0 0 0 1px #D9D9D9",
+                }}
+              />
             </button>
           ))}
         </div>

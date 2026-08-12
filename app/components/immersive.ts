@@ -289,7 +289,10 @@ export function alignImmersiveRotation() {
   document.documentElement.dataset[ROTATED_FLAG] = physicalLandscape
     ? "false"
     : "true";
-  requestDeviceRotate();
+  // 연출 없이 즉시 — 여기서 도는 건 OS 가 이미 돌린 만큼을 상쇄하는 것이라,
+  // 보이면 OS 회전과 겹쳐 '한 번 더 돈다'로 읽힌다. 눈에는 아무 일도 안
+  // 일어나야 맞다(deviceRotate.ts 의 instant 인자).
+  requestDeviceRotate(true);
 }
 
 /** 딤의 확대/축소 버튼에서 호출. 지금 상태를 뒤집는다.

@@ -55,8 +55,18 @@ export function setBarColor(_landscape?: boolean) {
   if (!desktop) document.documentElement.style.backgroundColor = color;
 }
 
-/** 딤의 회전 버튼에서 호출. 좌측 패널이 받아서 회전 토글을 뒤집는다. */
-export function requestDeviceRotate() {
+/** 딤의 회전 버튼에서 호출. 좌측 패널이 받아서 회전 토글을 뒤집는다.
+ *
+ *  instant 면 회전 연출 없이 한 프레임에 갈아끼운다. 확대 중에 폰을 눕혀서
+ *  앱이 자기 CSS 회전을 되감는 경우에 쓴다(immersive.ts 의 alignImmersiveRotation)
+ *  — 그건 '회전'이 아니라 '이미 OS 가 돌린 만큼을 상쇄하는 것'이라, 보이면
+ *  OS 회전 애니메이션과 겹쳐 두 번 도는 것처럼 읽힌다(사용자 지적: "확대모드
+ *  눌러서 가로로 전환됬는데, 디바이스를 눕히면 또 돌아가려는 동작이 나오는데").
+ *  체감은 '아무 일도 안 일어남'이어야 한다. */
+export function requestDeviceRotate(instant = false) {
+  if (typeof document !== "undefined") {
+    document.documentElement.dataset.rotateInstant = instant ? "true" : "false";
+  }
   window.dispatchEvent(new Event(DEVICE_ROTATE_EVENT));
 }
 
