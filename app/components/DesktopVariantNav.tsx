@@ -393,18 +393,39 @@ export default function DesktopVariantNav() {
           두 곳이 같은 requestVariant 를 쓰므로 어느 쪽으로 골라도 강조가 같이
           움직인다. nav 는 transform 이 없어서 fixed 자식이 overflow:hidden 에
           안 잘린다. */}
-      <div className="device-preset-chips">
-        {VARIANTS.map((v) => (
-          <button
-            key={v.key}
-            type="button"
-            className="dpc-chip"
-            data-active={variant === v.key}
-            onClick={() => requestVariant(v.key)}
-          >
-            {VARIANT_LABEL[v.key]}
-          </button>
-        ))}
+      <div className="device-top-chips">
+        <div className="device-preset-chips">
+          {VARIANTS.map((v) => (
+            <button
+              key={v.key}
+              type="button"
+              className="dpc-chip"
+              data-active={variant === v.key}
+              onClick={() => requestVariant(v.key)}
+            >
+              {VARIANT_LABEL[v.key]}
+            </button>
+          ))}
+        </div>
+        {/* 비교 대상 — 비교하기를 켰을 때만, 시안 칩 바로 아래에 같이 뜬다
+            (사용자 요청: 좌측 패널 말고 상단에서 고르게). 오른쪽은 지금 보고
+            있는 안이라 목록에서 빠진다 — 자기 자신과 비교할 일은 없다. */}
+        {compare && (
+          <div className="device-preset-chips dpc-compare">
+            <span className="dpc-lead">비교</span>
+            {COMPARE_TARGETS.filter((t) => t !== variant).map((t) => (
+              <button
+                key={t}
+                type="button"
+                className="dpc-chip"
+                data-active={compareWith === t}
+                onClick={() => requestCompareTarget(t)}
+              >
+                {t === "asis" ? "As Is" : VARIANT_LABEL[t]}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <button
         type="button"
@@ -572,25 +593,6 @@ export default function DesktopVariantNav() {
         <span className="dvn-label">비교하기</span>
       </button>
 
-      {/* 비교 대상 — 왼쪽에 무엇을 놓을지. As Is 뿐 아니라 시안끼리도 비교한다
-          (사용자 요청: "A-1안과 A-2안 이렇게 비교하고싶을때도 있잖아").
-          오른쪽은 지금 보고 있는 안이라 여기 목록에서 빠진다 — 자기 자신과
-          비교할 일은 없다. 비교하기를 켰을 때만 보인다. */}
-      {compare && (
-        <div className="dvn-compare-with">
-          {COMPARE_TARGETS.filter((t) => t !== variant).map((t) => (
-            <button
-              key={t}
-              type="button"
-              className="dvn-compare-chip"
-              data-active={compareWith === t}
-              onClick={() => requestCompareTarget(t)}
-            >
-              {t === "asis" ? "As Is" : VARIANT_LABEL[t]}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* 움직임 감지 썸네일 온/오프 — 썸네일을 못 뽑는 기기 사양 대응 화면 확인용.
           끄면 카드 자리에 시각 + "움직임 감지" 텍스트만 남는다(카드 크기는 동일). */}
