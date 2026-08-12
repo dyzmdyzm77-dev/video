@@ -3,6 +3,10 @@
 import { BASE } from "../basePath";
 import { readScreenState, writeScreenState } from "../components/screenState";
 import {
+  requestCompareTarget,
+  useCompareTarget,
+} from "../components/compareTarget";
+import {
   useDeviceLandscape,
   useRotatedInput,
 } from "../components/deviceRotate";
@@ -184,10 +188,15 @@ export default function VariantA({
   platform = "android",
   initialChrome = false,
   onHome,
+  inCompare = false,
 }: {
   platform?: "android" | "ios";
   initialChrome?: boolean;
   onHome?: () => void;
+  /** 비교 프레임(왼쪽) 안에 떠 있는 사본인가. 켜면 이 안에서 고른 시안이
+   *  '지금 보고 있는 안'이 아니라 '비교 대상'을 바꾼다 — 왼쪽에서 고른 게
+   *  오른쪽을 바꿔 버리면 안 된다(사용자 지적). */
+  inCompare?: boolean;
 }) {
   // 안을 바꿔도 보던 화면 종류(다채널/단일 · 실시간/녹화)는 이어진다 —
   // 문서 루트에 남겨 두고 새로 뜨는 안이 물려받는다(components/screenState.ts).
@@ -197,6 +206,7 @@ export default function VariantA({
   const [currentPage, setCurrentPage] = useState(0);
   const landscape = useDeviceLandscape();
   const immersive = useImmersive();
+  const compareTarget = useCompareTarget();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
   // 다채널 화면 개수 — 사용자가 '화면 구성'에서 직접 고르기 전엔 영상 영역
@@ -473,7 +483,12 @@ export default function VariantA({
         <AiSearchSheet open={aiOpen} onClose={() => setAiOpen(false)} />
         <VariantPicker
           open={variantPickerOpen}
-          current="a2"
+          current={
+            inCompare && compareTarget !== "asis"
+              ? compareTarget
+              : "a2"
+          }
+          onSelect={inCompare ? requestCompareTarget : undefined}
           platform={platform}
           onClose={() => setVariantPickerOpen(false)}
         />
@@ -602,7 +617,12 @@ export default function VariantA({
         <AiSearchSheet open={aiOpen} onClose={() => setAiOpen(false)} />
       <VariantPicker
         open={variantPickerOpen}
-        current="a2"
+        current={
+            inCompare && compareTarget !== "asis"
+              ? compareTarget
+              : "a2"
+          }
+          onSelect={inCompare ? requestCompareTarget : undefined}
         platform={platform}
         onClose={() => setVariantPickerOpen(false)}
       />

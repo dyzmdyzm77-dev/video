@@ -18,11 +18,16 @@ export default function VariantPicker({
   open,
   current,
   onClose,
+  onSelect,
   platform,
 }: {
   open: boolean;
   current: VariantKey;
   onClose: () => void;
+  /** 고른 안을 어디에 반영할지. 안 주면 '지금 보고 있는 안'을 바꾼다.
+   *  비교 프레임 안에서 열린 시트는 여기로 '비교 대상'을 바꾼다 — 안 그러면
+   *  왼쪽에서 고른 게 오른쪽(원안)을 바꿔 버린다(사용자 지적). */
+  onSelect?: (v: VariantKey) => void;
   /** 지금은 안 쓴다 — 안 전환이 URL 을 안 건드리므로 쿼리를 다시 붙일 일이 없다.
    *  호출부(세 안)가 전부 넘기고 있어 시그니처만 남겨 둔다. */
   platform?: "android" | "ios";
@@ -83,6 +88,7 @@ export default function VariantPicker({
                 type="button"
                 onClick={() => {
                   if (selected) onClose();
+                  else if (onSelect) onSelect(key);
                   // URL 을 안 건드리고 같은 화면 안에서 안만 갈아끼운다(AppShell).
                   // 예전엔 router.push 로 라우트를 옮겼는데, iOS 사파리가 URL 이
                   // 바뀔 때마다 접혀 있던 툴바를 다시 펼치고 이 앱은 스크롤이

@@ -333,7 +333,11 @@ export default function AsIsPanel() {
       <div className="asis-frame">
         <span className="asis-caption">{VARIANT_LABEL[compareWith]}</span>
         <div className="asis-screen asis-variant">
-          <Variant platform={platform} initialChrome={chromeVisible} />
+          <Variant
+            platform={platform}
+            initialChrome={chromeVisible}
+            inCompare
+          />
         </div>
       </div>
     );
