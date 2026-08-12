@@ -97,6 +97,7 @@ export default function LandscapeVideo({
   onMenu,
   centerControls,
   edgeInset,
+  bottomInset,
   headerAlign = "center",
   statusStyle = "segment",
   statusActiveStyle = "brand",
@@ -150,6 +151,9 @@ export default function LandscapeVideo({
   /** 딤 위 UI(장소명·아이콘 줄·칩 줄·AI/메뉴)의 좌우 가장자리 여백(px).
    *  영상 자체는 해당 없음 — 화면을 끝까지 쓴다. 안 주면 지금 값 그대로. */
   edgeInset?: number;
+  /** 딤 아래 줄(메뉴·AI · 페이지 점)이 화면 아래에서 떨어지는 거리(px).
+   *  기본 12. 아래에 시간바가 깔리는 안에서 그 위로 띄우는 용도. */
+  bottomInset?: number;
   /** 장소명 줄을 오른쪽 아이콘 줄과 어떻게 맞출지.
    *   center = 지금까지의 기본. 56 높이 안에서 세로 가운데(중심 28).
    *   top    = 윗변끼리 맞춘다(둘 다 top 12). 장소명이 두 줄이라 가운데 정렬이면
@@ -589,6 +593,7 @@ export default function LandscapeVideo({
       onAi={onAi}
       onMenu={onMenu}
       edgeInset={edgeInset}
+      {...(bottomInset != null ? { bottomInset } : null)}
       onFit={cycle}
       fit={fit}
       dimAlpha={dimAlpha}

@@ -419,6 +419,11 @@ export default function VariantA({
           statusStyle="chips"
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
           scrubbing={isScrubbing}
+          // 딤 위 UI 좌우 여백 40 — A-1 가로와 같은 값으로(사용자 지정).
+          edgeInset={40}
+          // 아래 줄(AI 버튼·페이지 점)을 12 → 32 로 띄운다. 바로 아래에 시간바가
+          // 깔려서 붙어 보이고 클릭도 겹쳤다(사용자 지정: "하단 마진도 한 20 더").
+          bottomInset={32}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
@@ -441,10 +446,31 @@ export default function VariantA({
           // 플레이어·시간바를 딤 색에 맞춰 넘긴다(overlay) — 흰 바를 걷어
           // 영상이 비치게 한다.
           controlsOnDim
+          // 아래는 시간바만, 플레이어 버튼 5개는 화면 한가운데로(사용자 지정).
+          // 둘을 따로 얹으므로 RecordingControls 를 두 벌 쓴다 — 각자 자기 몫만
+          // 그리게 timelineOnly / playerOnly 로 갈라 준다.
           controls={
             mode === "recording" ? (
               <RecordingControls
                 overlay
+                timelineOnly
+                now={now}
+                onScrubbingChange={setIsScrubbing}
+                playbackMs={playbackMs}
+                setPlaybackMs={setPlaybackMs}
+                onOpenDateTime={() => setDateTimeOpen(true)}
+                isPlaying={isPlaying}
+                onTogglePlay={() => setIsPlaying((p) => !p)}
+                onPlay={() => setIsPlaying(true)}
+                onSpeedChange={setPlaybackRate}
+              />
+            ) : null
+          }
+          centerControls={
+            mode === "recording" ? (
+              <RecordingControls
+                overlay
+                playerOnly
                 now={now}
                 onScrubbingChange={setIsScrubbing}
                 playbackMs={playbackMs}
@@ -3464,6 +3490,7 @@ function RecordingControls({
   onSpeedChange,
   overlay = false,
   playerOnly = false,
+  timelineOnly = false,
 }: {
   now: Date | null;
   onToggleChrome?: () => void;
@@ -3485,9 +3512,11 @@ function RecordingControls({
    *  줄을 안 그린다(가로에선 LandscapeVideo 가 같은 정보를 이미 얹는다).
    *  A-1 과 같은 규칙 — 가로 화면은 세 안이 동일해야 한다. */
   overlay?: boolean;
-  /** 플레이어 버튼 5개만 그린다(가로 딤 가운데용). 헤더 줄·시간바는 뺀다 —
-   *  A-2안 가로는 시간바 없이 버튼만 화면 한가운데 놓는 사양이다(사용자 결정). */
+  /** 플레이어 버튼 5개만 그린다(가로 딤 가운데용). 헤더 줄·시간바는 뺀다. */
   playerOnly?: boolean;
+  /** playerOnly 의 반대 — 시간바만 그린다. 버튼 5개는 화면 한가운데에 따로
+   *  얹으므로(centerControls) 여기선 빼야 두 벌이 안 된다(사용자 결정). */
+  timelineOnly?: boolean;
 }) {
   const VISIBLE_MINUTES = TIMELINE_VISIBLE_MIN;
   // 시간바를 끌고 있는 중인가. 가로(overlay)에서 플레이어 버튼 5개를 잠깐 감춘다.
@@ -3773,7 +3802,10 @@ function RecordingControls({
       <div className="relative">
       {/* 플레이어 컨트롤 — 시간바(타임라인) 위.
           가로(overlay)에선 시간바를 끄는 동안 잠깐 감춘다 — 손을 떼면 돌아온다.
-          자리는 그대로 두고 투명도만 바꾼다(접으면 시간바가 위로 튄다). */}
+          자리는 그대로 두고 투명도만 바꾼다(접으면 시간바가 위로 튄다).
+          timelineOnly 면 아예 안 그린다 — 버튼 5개를 화면 한가운데 따로 얹는
+          배치(가로)에서, 여기까지 그리면 같은 버튼이 두 벌이 된다. */}
+      {!timelineOnly && (
       <div
         className="flex items-center justify-center transition-opacity duration-150 ease-out"
         style={{
@@ -3835,6 +3867,7 @@ function RecordingControls({
           }}
         />
       </div>
+      )}
       {/* 구분선 — 흰 바 위(세로)에서만 그린다. 확대·가로 딤에선 영상 위에
           흰 줄이 그어져 보여 뺐다(사용자 요청). */}
       {!overlay && (

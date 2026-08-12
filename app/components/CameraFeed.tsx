@@ -270,6 +270,7 @@ export function GridSelectionOverlay({
   onBack,
   title,
   topInset = 0,
+  bottomInset = 12,
   dimAlpha = 0.6,
   topHeight = "25%",
   bottomHeight = "20%",
@@ -303,6 +304,9 @@ export function GridSelectionOverlay({
   /** 딤 상단 아이콘 줄을 아래로 내리는 여백(px). 딤 위에 헤더를 겹쳐 띄우는
    *  안(A-1)에서 헤더 높이만큼 밀어 두 줄로 만드는 용도. 기본 0 = 기존 그대로. */
   topInset?: number;
+  /** 딤 하단 줄(메뉴·AI · 페이지 점)이 아래에서 떨어지는 거리(px). 기본 12.
+   *  아래에 시간바가 깔리는 안에서 그 위로 띄우는 용도. */
+  bottomInset?: number;
   /** 위·아래 그라데이션이 '시작'하는 검정 농도(0~1). 끝은 항상 투명이다.
    *  딤 위에 헤더까지 얹는 A-1 은 글자가 묻혀 더 진하게 쓴다. 기본 0.6 = 기존 그대로. */
   dimAlpha?: number;
@@ -470,9 +474,17 @@ export function GridSelectionOverlay({
           페이지 인디케이터와 같은 높이(bottom 12)에 앉혀 한 줄로 읽히게 했다.
           onAi 를 준 안에서만 누를 수 있다 — 안 준 안(A-2·B)은 예전처럼 표시만.
           시트는 안이 들고 있으므로 여기선 열어 달라고만 한다(더보기와 같은 결). */}
+      {/* z-10 — 아래 시간바 층(LandscapeVideo 의 statusBottom)이 이 줄보다
+          나중에 그려져 같은 높이에서 클릭을 먼저 가져간다(사용자 지적: "시간바
+          드래그 때문에 AI 버튼이 안 눌리는 것 같아"). 껍데기는 이미 통과시키고
+          있지만 시간바 자체는 폭을 다 쓰므로, 겹치는 34px 만큼은 버튼이 이긴다. */}
       <div
-        className="absolute bottom-3 flex items-center gap-2"
-        style={{ right: `${edgeInset ?? 16}px`, opacity: hideControls ? 0 : 1 }}
+        className="absolute z-10 flex items-center gap-2"
+        style={{
+          right: `${edgeInset ?? 16}px`,
+          bottom: `${bottomInset}px`,
+          opacity: hideControls ? 0 : 1,
+        }}
       >
         {/* 메뉴 — AI 옆, 같은 원 스타일. onMenu 를 준 안에서만 나온다. */}
         {onMenu && (
@@ -524,8 +536,8 @@ export function GridSelectionOverlay({
       {/* 하단 페이지 인디케이터 */}
       {showPageIndicator && (
         <div
-          className="absolute bottom-3 left-1/2 -translate-x-1/2"
-          style={{ opacity: hideControls ? 0 : 1 }}
+          className="absolute left-1/2 -translate-x-1/2"
+          style={{ bottom: `${bottomInset}px`, opacity: hideControls ? 0 : 1 }}
         >
           <div
             className="inline-flex items-center gap-1.5 rounded-full bg-black/45"
