@@ -4505,13 +4505,20 @@ function PlayerButton({
           style={{
             fontSize: overlay ? "17px" : "14px",
             fontWeight: 500,
-            color: overlay ? "#FFFFFF" : "#262626",
+            // 배속 글자도 같은 규칙 — 밝은 배경(active)이면 검정.
+            color: overlay && !active ? "#FFFFFF" : "#262626",
           }}
         >
           {label}
         </span>
       ) : (
-        <PlayerIcon kind={kind} size={overlay ? 32 : 24} invert={overlay} />
+        <PlayerIcon
+          kind={kind}
+          size={overlay ? 32 : 24}
+          // 눌리면 배경이 밝아지므로(0.45 흰색) 아이콘은 검정으로 되돌린다 —
+          // 흰 아이콘 그대로 두면 밝은 배경에 묻힌다(사용자 지적).
+          invert={overlay && !active}
+        />
       )}
     </button>
   );
