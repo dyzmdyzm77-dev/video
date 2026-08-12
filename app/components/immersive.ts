@@ -297,13 +297,19 @@ export function toggleImmersive() {
  *  사용자가 직접 눕혀 둔 가로는 건드리지 않는다(플래그로 구분). */
 export function exitImmersive() {
   if (!readImmersive()) return;
-  document.documentElement.dataset.immersive = "false";
-  // 회전으로 자동으로 켠 것이었더라도, 손으로 껐으면 그 자국은 지운다 —
-  // 안 지우면 세로로 돌아갈 때 이미 꺼진 걸 또 끄려 든다.
-  document.documentElement.dataset[BY_ROTATE_FLAG] = "false";
+  const ds = document.documentElement.dataset;
+  // 확대가 눕힌 것이었나 / 눕혀서 켜진 것이었나. 둘 다 '세로에서 시작해 가로가
+  // 된' 경우라, 축소하면 세로로 돌아가야 한다(사용자 지적: "가로 회전했다가
+  // 축소 버튼 누르면 세로로 돌아가야지. 왜 가로 모드 고정되어잇어?").
+  // 예전엔 앞쪽(확대가 눕힌 경우)만 되돌려서, 회전으로 켜진 확대를 끄면 가로에
+  // 남았다.
+  const rotatedByImmersive = ds[ROTATED_FLAG] === "true";
+  const startedByRotation = ds[BY_ROTATE_FLAG] === "true";
+  ds.immersive = "false";
+  ds[ROTATED_FLAG] = "false";
+  ds[BY_ROTATE_FLAG] = "false";
   syncFullscreen(false);
-  if (document.documentElement.dataset[ROTATED_FLAG] === "true") {
-    document.documentElement.dataset[ROTATED_FLAG] = "false";
+  if (rotatedByImmersive || (startedByRotation && readDeviceLandscape())) {
     requestDeviceRotate();
   }
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
