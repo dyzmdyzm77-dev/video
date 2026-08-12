@@ -340,15 +340,16 @@ export function exitImmersive() {
   // 축소 버튼 누르면 세로로 돌아가야지. 왜 가로 모드 고정되어잇어?").
   // 예전엔 앞쪽(확대가 눕힌 경우)만 되돌려서, 회전으로 켜진 확대를 끄면 가로에
   // 남았다.
-  const rotatedByImmersive = ds[ROTATED_FLAG] === "true";
-  const startedByRotation = ds[BY_ROTATE_FLAG] === "true";
   ds.immersive = "false";
   ds[ROTATED_FLAG] = "false";
   ds[BY_ROTATE_FLAG] = "false";
   syncFullscreen(false);
-  if (rotatedByImmersive || (startedByRotation && readDeviceLandscape())) {
-    requestDeviceRotate();
-  }
+  // 축소하면 앱이 걸어 둔 회전은 무조건 푼다. 어떤 경로로 눕었든(확대가 눕혔든,
+  // 회전으로 켜졌든, 중간에 폰을 눕혔다 세웠든) 축소 뒤에는 기기 방향 그대로
+  // 돌아와야 한다 — 플래그로 경로를 따지다 보니 어떤 순서에서는 눕은 채로
+  // 남았다(사용자 지적: "눕힌 상황에서 축소하면 원래 세로 모드로 돌아와야지").
+  // 이미 안 눕어 있으면(폰을 직접 눕혀 CSS 회전이 풀린 상태) 할 일이 없다.
+  if (readDeviceLandscape()) requestDeviceRotate();
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
 }
 

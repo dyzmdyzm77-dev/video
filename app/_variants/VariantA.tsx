@@ -421,6 +421,8 @@ export default function VariantA({
           statusPlacement="bottom-left"
           // 딤 위 UI 좌우 여백 40(사용자 지정) — 영상 자체는 제외, 끝까지 쓴다.
           edgeInset={40}
+          // 장소명 줄을 오른쪽 아이콘 줄과 윗변 기준으로 맞춘다(사용자 요청).
+          headerAlign="top"
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}

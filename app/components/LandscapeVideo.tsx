@@ -91,6 +91,7 @@ export default function LandscapeVideo({
   onMenu,
   centerControls,
   edgeInset,
+  headerAlign = "center",
   onExpand,
   onBack,
   title,
@@ -140,6 +141,11 @@ export default function LandscapeVideo({
   /** 딤 위 UI(장소명·아이콘 줄·칩 줄·AI/메뉴)의 좌우 가장자리 여백(px).
    *  영상 자체는 해당 없음 — 화면을 끝까지 쓴다. 안 주면 지금 값 그대로. */
   edgeInset?: number;
+  /** 장소명 줄을 오른쪽 아이콘 줄과 어떻게 맞출지.
+   *   center = 지금까지의 기본. 56 높이 안에서 세로 가운데(중심 28).
+   *   top    = 윗변끼리 맞춘다(둘 다 top 12). 장소명이 두 줄이라 가운데 정렬이면
+   *            첫 줄이 아이콘보다 살짝 위로 뜬다(A-2안 가로 사양, 사용자 요청). */
+  headerAlign?: "center" | "top";
   /** 타일 더블탭 — 그 카메라 단일 화면으로. */
   onExpand?: (i: number) => void;
   /** 단일 화면 더블탭 — 다채널로 복귀. */
@@ -442,12 +448,16 @@ export default function LandscapeVideo({
   // 안 그러면 같은 줄 오른쪽 딤 아이콘을 덮어 눌러도 반응하지 않는다.
   const header = title ? (
     <div
-      className="pointer-events-none absolute inset-x-0 top-0 flex items-center transition-opacity duration-300 ease-out"
+      className={`pointer-events-none absolute inset-x-0 top-0 flex transition-opacity duration-300 ease-out ${
+        headerAlign === "top" ? "items-start" : "items-center"
+      }`}
       style={{
         height: `${OVERLAY_HEADER_H}px`,
         opacity: dim ? 1 : 0,
         paddingLeft: `${edgeInset ?? 20}px`,
         paddingRight: `${edgeInset ?? 20}px`,
+        // 윗변 맞춤이면 아이콘 줄과 같은 12 에서 시작한다.
+        ...(headerAlign === "top" ? { paddingTop: "12px" } : null),
       }}
     >
       <div
