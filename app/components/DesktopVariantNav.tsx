@@ -367,26 +367,22 @@ export default function DesktopVariantNav() {
       data-open={open}
       aria-label="화면안 이동"
     >
-      {/* 해상도 칩 줄 — 치수 눈금자 위, 화면 상단 가운데. 좌측 패널의 목록과
-          같은 것을 고르지만, 기기를 바꿔 가며 볼 때 패널까지 시선을 옮기지
-          않아도 되게 기기 바로 위에 둔다(사용자 요청). 두 곳이 같은 DEVICES·
-          applyPreset 을 쓰므로 어느 쪽으로 골라도 강조가 같이 움직인다.
-          nav 는 transform 이 없어서 fixed 자식이 overflow:hidden 에 안 잘린다. */}
+      {/* 화면 시안 칩 줄 — 치수 눈금자 위, 화면 상단 가운데. 좌측 패널의
+          '화면 시안' 목록과 같은 것을 고르지만, 안을 바꿔 가며 볼 때 패널까지
+          시선을 옮기지 않아도 되게 기기 바로 위에 둔다(사용자 요청).
+          두 곳이 같은 requestVariant 를 쓰므로 어느 쪽으로 골라도 강조가 같이
+          움직인다. nav 는 transform 이 없어서 fixed 자식이 overflow:hidden 에
+          안 잘린다. */}
       <div className="device-preset-chips">
-        {DEVICES.map((d, i) => (
+        {VARIANTS.map((v) => (
           <button
-            key={`${d.label}-${d.sub}`}
+            key={v.key}
             type="button"
             className="dpc-chip"
-            data-active={active === i}
-            title={
-              d.sub
-                ? `${d.label} · ${d.sub}`
-                : `${d.label}(${ratioText(d.w, d.h)})`
-            }
-            onClick={() => applyPreset(i)}
+            data-active={variant === v.key}
+            onClick={() => requestVariant(v.key)}
           >
-            {d.chip}
+            {VARIANT_LABEL[v.key]}
           </button>
         ))}
       </div>

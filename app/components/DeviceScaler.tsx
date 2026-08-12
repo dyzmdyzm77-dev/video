@@ -15,7 +15,7 @@ const MAX_SCALE = 0.8;
 const COMPARE_GAP = 50;
 // 기기 위로 비워 두는 세로 여유(px). 해상도 칩 줄 + 치수 눈금자가 여기 들어간다 —
 // 안 비워 두면 기기가 화면 꼭대기까지 올라와 칩·눈금자와 겹친다.
-const TOP_CHROME = 76;
+const TOP_CHROME = 92;
 
 // "실제 사이즈" 환산용 상수.
 // 기기 쪽: 폭 구간별 기준 실기기의 목업 윤곽(dp + 2·margin) ↔ 몸체 물리 폭(mm).

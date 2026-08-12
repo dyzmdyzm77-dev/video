@@ -7,6 +7,7 @@
 // A안을 고치면 이 파일도 같이 맞춰야 한다.
 
 import { BASE } from "../basePath";
+import { readScreenState, writeScreenState } from "../components/screenState";
 import {
   useDeviceLandscape,
   useRotatedInput,
@@ -194,7 +195,11 @@ export default function VariantA1({
   initialChrome?: boolean;
   onHome?: () => void;
 }) {
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  // 안을 바꿔도 보던 화면 종류(다채널/단일 · 실시간/녹화)는 이어진다 —
+  // 문서 루트에 남겨 두고 새로 뜨는 안이 물려받는다(components/screenState.ts).
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(
+    () => readScreenState().single,
+  );
   const [currentPage, setCurrentPage] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
@@ -222,7 +227,13 @@ export default function VariantA1({
     portrait: number | null;
     landscape: number | null;
   }>({ portrait: null, landscape: null });
-  const [mode, setMode] = useState<"live" | "recording">("live");
+  const [mode, setMode] = useState<"live" | "recording">(
+    () => readScreenState().mode,
+  );
+  // 바뀔 때마다 남겨 둔다 — 다음에 뜨는 안이 같은 화면에서 시작하게.
+  useEffect(() => {
+    writeScreenState({ single: expandedIndex, mode });
+  }, [expandedIndex, mode]);
   // 위아래 가짜 시스템 바 표시 여부. 가짜 바 자체를 눌러 토글한다.
   // 단 데스크톱 진입(initialChrome)이면 켠 채로 시작한다.
   const [chromeVisible, setChromeVisible] = useState(initialChrome);

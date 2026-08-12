@@ -352,8 +352,12 @@ body {
      패널 폭(--panel-w)을 뺀 남은 영역의 가운데에 놓는다. */
   .device-preset-chips {
     position: fixed;
-    top: 12px;
-    left: calc(var(--panel-w, 200px) + (100vw - var(--panel-w, 200px)) / 2);
+    top: 10px;
+    /* 기기 한가운데 위로 — 눈금자와 같은 기준(--device-left = 화면 왼쪽). */
+    left: calc(
+      var(--device-left, 240px) + var(--device-w, 360px) *
+        var(--device-scale, 1) / 2
+    );
     transform: translateX(-50%);
     z-index: 13;
     display: flex;

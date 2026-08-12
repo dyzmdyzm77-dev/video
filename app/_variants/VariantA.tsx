@@ -1,6 +1,7 @@
 "use client";
 
 import { BASE } from "../basePath";
+import { readScreenState, writeScreenState } from "../components/screenState";
 import {
   useDeviceLandscape,
   useRotatedInput,
@@ -188,7 +189,11 @@ export default function VariantA({
   initialChrome?: boolean;
   onHome?: () => void;
 }) {
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  // 안을 바꿔도 보던 화면 종류(다채널/단일 · 실시간/녹화)는 이어진다 —
+  // 문서 루트에 남겨 두고 새로 뜨는 안이 물려받는다(components/screenState.ts).
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(
+    () => readScreenState().single,
+  );
   const [currentPage, setCurrentPage] = useState(0);
   const landscape = useDeviceLandscape();
   const immersive = useImmersive();
@@ -227,7 +232,13 @@ export default function VariantA({
     landscape:
       userCounts.landscape ?? autoCountSeen.current.landscape ?? autoCount,
   };
-  const [mode, setMode] = useState<"live" | "recording">("live");
+  const [mode, setMode] = useState<"live" | "recording">(
+    () => readScreenState().mode,
+  );
+  // 바뀔 때마다 남겨 둔다 — 다음에 뜨는 안이 같은 화면에서 시작하게.
+  useEffect(() => {
+    writeScreenState({ single: expandedIndex, mode });
+  }, [expandedIndex, mode]);
   // 위아래 가짜 시스템 바 표시 여부. 기본은 숨긴 몰입 상태(LIVE 칩으로 토글).
   // 단 데스크톱 진입(initialChrome)이면 켠 채로 시작한다.
   const [chromeVisible, setChromeVisible] = useState(initialChrome);
