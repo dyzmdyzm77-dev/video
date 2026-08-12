@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { BASE } from "../basePath";
 import { bestGridForCount } from "./layoutRules";
 import { useGridAreaRatio } from "./useGridLayout";
 import type React from "react";
@@ -60,20 +61,25 @@ const LANDSCAPE_DIM_BOTTOM = "45%";
 // 아이콘 줄만 헤더 아래(둘째 줄)로 내린다. 장소명 + 칩줄은 둘이서는 들어간다.
 const ONE_ROW_MIN_W = 560;
 
+// 장소명 옆 화살표 — 세로 화면과 같은 에셋(More.svg)을 마스크로 찍는다.
+// 예전엔 여기서만 인라인 SVG(M6 9l6 6 6-6)로 직접 그려, 같은 자리인데 굵기와
+// 모양이 세로와 달랐다(사용자 지적). 색은 currentColor 를 따라간다.
 function ChevronDownIcon({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
+    <span
       aria-hidden
-    >
-      <path d="M6 9l6 6 6-6" />
-    </svg>
+      className={`inline-block bg-current ${className ?? ""}`}
+      style={{
+        WebkitMaskImage: `url(${BASE}/More.svg)`,
+        maskImage: `url(${BASE}/More.svg)`,
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+      }}
+    />
   );
 }
 
