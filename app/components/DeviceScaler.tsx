@@ -13,6 +13,9 @@ const MAX_SCALE = 0.8;
 // 비교하기(As Is 나란히) 시 두 기기 바깥(베젤) 사이 간격(px).
 // CSS 의 .asis-frame left 계산과 반드시 같은 값을 써야 한다.
 const COMPARE_GAP = 50;
+// 기기 위로 비워 두는 세로 여유(px). 해상도 칩 줄 + 치수 눈금자가 여기 들어간다 —
+// 안 비워 두면 기기가 화면 꼭대기까지 올라와 칩·눈금자와 겹친다.
+const TOP_CHROME = 76;
 
 // "실제 사이즈" 환산용 상수.
 // 기기 쪽: 폭 구간별 기준 실기기의 목업 윤곽(dp + 2·margin) ↔ 몸체 물리 폭(mm).
@@ -76,7 +79,7 @@ export default function DeviceScaler() {
           TF_M = 30;
         const sTF = Math.min(
           MAX_SCALE,
-          (window.innerHeight - 32) / (TF_H + TF_M * 2),
+          (window.innerHeight - TOP_CHROME) / (TF_H + TF_M * 2),
           (window.innerWidth - panel - 72) / (TF_W + TF_M * 2),
         );
         const tfOuterH = (TF_H + TF_M * 2) * sTF;
@@ -170,7 +173,7 @@ export default function DeviceScaler() {
       // 현재 기기가 창에 들어오는 최대 배율(오버플로 방지 상한).
       const sFit = Math.min(
         MAX_SCALE,
-        (window.innerHeight - 32) / (h + margin * 2),
+        (window.innerHeight - TOP_CHROME) / (h + margin * 2),
         (window.innerWidth - panel - 72 - gap) / ((w + margin * 2) * cols),
       );
       // 기본 모드도 '실제 사이즈 모드처럼' 기종 간 물리 크기 비례를 유지한다.
@@ -181,7 +184,7 @@ export default function DeviceScaler() {
       const TF_OUTER_W = 1080 + 30 * 2;
       const sTF = Math.min(
         MAX_SCALE,
-        (window.innerHeight - 32) / (792 + 30 * 2),
+        (window.innerHeight - TOP_CHROME) / (792 + 30 * 2),
         (window.innerWidth - panel - 72) / TF_OUTER_W,
       );
       const canvasPxPerMm = sTF / (214.1 / TF_OUTER_W);

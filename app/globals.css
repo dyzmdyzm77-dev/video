@@ -347,6 +347,52 @@ body {
      나란히 놓고 보는 것이라, 돌릴 때 한쪽만 사라지면 비교가 끊긴다.
      크기(--device-w/h)를 시안과 같이 쓰므로 회전이 끝나면 자기도 눕는다. */
 
+  /* 해상도 칩 줄 — 치수 눈금자 위(화면 상단), 기기 영역 가운데 정렬.
+     좌측 패널을 열고 목록에서 고르는 대신 기기 바로 위에서 바꾸라고 둔 것이라,
+     패널 폭(--panel-w)을 뺀 남은 영역의 가운데에 놓는다. */
+  .device-preset-chips {
+    position: fixed;
+    top: 12px;
+    left: calc(var(--panel-w, 200px) + (100vw - var(--panel-w, 200px)) / 2);
+    transform: translateX(-50%);
+    z-index: 13;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    max-width: calc(100vw - var(--panel-w, 200px) - 32px);
+  }
+  .dpc-chip {
+    height: 26px;
+    padding: 0 11px;
+    border-radius: 13px;
+    border: 1px solid #e0e0e0;
+    background: #ffffff;
+    color: #6b6b6b;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease;
+  }
+  .dpc-chip:hover {
+    border-color: #c8c8c8;
+    color: #333333;
+  }
+  .dpc-chip[data-active="true"] {
+    background: #111111;
+    border-color: #111111;
+    color: #ffffff;
+  }
+  /* 치수 눈금자를 끄면 칩도 같이 감춘다 — 둘 다 '기기 위 보조 UI'다. */
+  html[data-show-ruler="false"] .device-preset-chips {
+    display: none;
+  }
+
   /* 기기 프레임의 좌·우 가장자리 드래그 영역(폭 조절). 보이는 핸들 없이 투명하며,
      hover 시에만 옅은 세로선으로 표시. 위치·높이는 프레임과 동일한 변수로 계산돼
      자동으로 프레임 가장자리에 붙는다. */

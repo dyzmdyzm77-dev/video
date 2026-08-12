@@ -40,17 +40,34 @@ const VARIANTS: { key: VariantKey; icon: string }[] = [
 // m = 베젤과 화면 사이 사방 간격(px). 1080 만 30, 나머지는 10.
 // 이름 없는 폭(480/620)은 위, 실기기 이름이 붙은 것들은 아래에 디바이스별로
 // 묶어서(같은 기기의 접힘/펼침은 인접) 배치한다.
+// chip 은 상단 칩 줄에 쓰는 짧은 이름 — 열 개가 한 줄에 들어가야 해서
+// 좌측 패널의 긴 라벨(label+sub)을 그대로 못 쓴다.
 const DEVICES = [
-  { w: 360, h: 780, r: 45, m: 10, label: "360px", sub: "" },
-  { w: 480, h: 780, r: 29, m: 10, label: "480px", sub: "" },
-  { w: 620, h: 780, r: 29, m: 10, label: "620px", sub: "" },
-  { w: 780, h: 780, r: 29, m: 10, label: "780px", sub: "" },
-  { w: 1080, h: 780, r: 29, m: 10, label: "1080px", sub: "" },
-  { w: 360, h: 780, r: 45, m: 10, label: "360px", sub: "Galaxy S26" },
-  { w: 405, h: 648, r: 13, m: 10, label: "405px", sub: "Z Fold 8(접힘)" },
-  { w: 864, h: 648, r: 13, m: 10, label: "864px", sub: "Z Fold 8(펼침)" },
-  { w: 750, h: 832, r: 13, m: 10, label: "750px", sub: "Z Fold 8 울트라" },
-  { w: 1080, h: 792, r: 13, m: 30, label: "1080px", sub: "Z TriFold" },
+  { w: 360, h: 780, r: 45, m: 10, label: "360px", sub: "", chip: "360" },
+  { w: 480, h: 780, r: 29, m: 10, label: "480px", sub: "", chip: "480" },
+  { w: 620, h: 780, r: 29, m: 10, label: "620px", sub: "", chip: "620" },
+  { w: 780, h: 780, r: 29, m: 10, label: "780px", sub: "", chip: "780" },
+  { w: 1080, h: 780, r: 29, m: 10, label: "1080px", sub: "", chip: "1080" },
+  {
+    w: 360, h: 780, r: 45, m: 10, label: "360px", sub: "Galaxy S26",
+    chip: "S26",
+  },
+  {
+    w: 405, h: 648, r: 13, m: 10, label: "405px", sub: "Z Fold 8(접힘)",
+    chip: "폴드 접힘",
+  },
+  {
+    w: 864, h: 648, r: 13, m: 10, label: "864px", sub: "Z Fold 8(펼침)",
+    chip: "폴드 펼침",
+  },
+  {
+    w: 750, h: 832, r: 13, m: 10, label: "750px", sub: "Z Fold 8 울트라",
+    chip: "울트라",
+  },
+  {
+    w: 1080, h: 792, r: 13, m: 30, label: "1080px", sub: "Z TriFold",
+    chip: "트라이폴드",
+  },
 ];
 // 최초 표시 기본 프리셋 — 제너릭 360px(이름 없는 첫 항목).
 const DEFAULT_PRESET = DEVICES.findIndex(
@@ -350,6 +367,29 @@ export default function DesktopVariantNav() {
       data-open={open}
       aria-label="화면안 이동"
     >
+      {/* 해상도 칩 줄 — 치수 눈금자 위, 화면 상단 가운데. 좌측 패널의 목록과
+          같은 것을 고르지만, 기기를 바꿔 가며 볼 때 패널까지 시선을 옮기지
+          않아도 되게 기기 바로 위에 둔다(사용자 요청). 두 곳이 같은 DEVICES·
+          applyPreset 을 쓰므로 어느 쪽으로 골라도 강조가 같이 움직인다.
+          nav 는 transform 이 없어서 fixed 자식이 overflow:hidden 에 안 잘린다. */}
+      <div className="device-preset-chips">
+        {DEVICES.map((d, i) => (
+          <button
+            key={`${d.label}-${d.sub}`}
+            type="button"
+            className="dpc-chip"
+            data-active={active === i}
+            title={
+              d.sub
+                ? `${d.label} · ${d.sub}`
+                : `${d.label}(${ratioText(d.w, d.h)})`
+            }
+            onClick={() => applyPreset(i)}
+          >
+            {d.chip}
+          </button>
+        ))}
+      </div>
       <button
         type="button"
         className="dvn-toggle"
