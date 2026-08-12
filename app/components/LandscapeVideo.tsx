@@ -99,6 +99,7 @@ export default function LandscapeVideo({
   edgeInset,
   headerAlign = "center",
   statusStyle = "segment",
+  scrubbing = false,
   onExpand,
   onBack,
   title,
@@ -153,6 +154,10 @@ export default function LandscapeVideo({
    *   top    = 윗변끼리 맞춘다(둘 다 top 12). 장소명이 두 줄이라 가운데 정렬이면
    *            첫 줄이 아이콘보다 살짝 위로 뜬다(A-2안 가로 사양, 사용자 요청). */
   headerAlign?: "center" | "top";
+  /** 시간바를 끄는 중인가. 켜면 딤 위 UI(장소명·아이콘 줄·칩 줄·AI/메뉴)를
+   *  잠깐 걷어 시간바만 남긴다 — 끄는 동안 화면을 가리지 않게(사용자 요청).
+   *  손을 떼면 그대로 돌아온다. */
+  scrubbing?: boolean;
   /** 실시간/녹화 표시 방식.
    *   segment = 지금까지의 기본. 한 덩어리 알약 안에 LIVE·녹화(빨강/회색).
    *   chips   = '실시간'·'녹화' 칩 두 개. 고른 쪽만 흰 배경 + 검정 글자
@@ -388,12 +393,15 @@ export default function LandscapeVideo({
     // 폭이 좁을 때 아이콘(갤러리·화면맞춤·확대) 위를 덮어 눌러도 반응이 없다.
     // (헤더가 같은 이유로 이미 pointer-events:none 이다.)
     passThrough = false,
+    // 시간바를 끄는 동안에도 남길 층인가. 시간바 자체가 든 층만 true 다 —
+    // 나머지는 걷어야 '시간바만 남는다'가 된다.
+    keepWhileScrubbing = false,
   ) => (
     <div
       className={`absolute transition-opacity duration-300 ease-out ${className}`}
       style={{
         ...style,
-        opacity: dim ? 1 : 0,
+        opacity: dim && (keepWhileScrubbing || !scrubbing) ? 1 : 0,
         pointerEvents: passThrough ? "none" : dim ? "auto" : "none",
       }}
       {...auto.holdProps}
@@ -457,32 +465,43 @@ export default function LandscapeVideo({
   // 딤 아래 — (기본이면) 칩 줄 + 녹화 플레이어·시간바. 둘을 한 덩어리로 쌓아
   // 바 높이를 몰라도 칩 줄이 항상 그 위에 앉는다. 위 가운데로 올린 경우엔
   // 컨트롤만 남으므로, 컨트롤도 없으면 아예 그리지 않는다.
+  // 이 층은 화면 폭 전체를 덮으므로 껍데기가 클릭을 받으면 안 된다 — 오른쪽
+  // 아래 AI·메뉴 버튼이 같은 높이에 있어 통째로 삼켜졌다(사용자 지적: "메뉴
+  // 아이콘이랑 AI 아이콘도 안눌려져"). 껍데기는 통과시키고, 실제 내용(칩 줄 ·
+  // 컨트롤)만 자기 크기만큼 클릭을 받는다.
   const statusBottom =
     !topCenter || controls
       ? dimLayer(
-          "inset-x-0 bottom-0",
+          "inset-x-0 bottom-0 pointer-events-none",
           {},
           <>
             {!topCenter && (
               <div
-                className="pb-3"
+                className="pointer-events-none pb-3 transition-opacity duration-150 ease-out"
                 style={{
                   paddingLeft: `${edgeInset ?? 20}px`,
                   paddingRight: `${edgeInset ?? 20}px`,
+                  // 이 층은 시간바 때문에 남겨 두지만 칩 줄은 같이 걷는다.
+                  opacity: scrubbing ? 0 : 1,
                 }}
               >
-                {statusRow}
+                {/* 칩만 클릭을 받는다 — 줄 전체가 받으면 오른쪽 버튼을 덮는다. */}
+                <span className="pointer-events-auto inline-flex">
+                  {statusRow}
+                </span>
               </div>
             )}
             {controls && (
               <div
                 data-no-swipe=""
-                className={`w-full${controlsOnDim ? "" : " bg-white"}`}
+                className={`pointer-events-auto w-full${controlsOnDim ? "" : " bg-white"}`}
               >
                 {controls}
               </div>
             )}
           </>,
+          false,
+          true,
         )
       : null;
 
@@ -496,7 +515,7 @@ export default function LandscapeVideo({
       }`}
       style={{
         height: `${OVERLAY_HEADER_H}px`,
-        opacity: dim ? 1 : 0,
+        opacity: dim && !scrubbing ? 1 : 0,
         paddingLeft: `${edgeInset ?? 20}px`,
         paddingRight: `${edgeInset ?? 20}px`,
         // 윗변 맞춤이면 아이콘 줄과 같은 12 에서 시작한다.
@@ -539,7 +558,7 @@ export default function LandscapeVideo({
 
   const overlay = (
     <GridSelectionOverlay
-      visible={dim}
+      visible={dim && !scrubbing}
       currentPage={page}
       totalPages={expandedIndex !== null ? 1 : totalPages}
       onGallery={onGallery}

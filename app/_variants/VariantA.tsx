@@ -423,6 +423,8 @@ export default function VariantA({
           onMenu={() => setSidePanelOpen((v) => !v)}
           // 실시간/녹화 칩 + 시각을 왼쪽 아래로(사용자 결정, A-2안 가로 사양).
           statusPlacement="bottom-left"
+          // 실시간/녹화를 칩 두 개로 — 고른 쪽만 흰 배경 + 검정 글자(사용자 지정).
+          statusStyle="chips"
           // 딤 위 UI 좌우 여백 40(사용자 지정) — 영상 자체는 제외, 끝까지 쓴다.
           edgeInset={40}
           // 장소명 줄을 오른쪽 아이콘 줄과 윗변 기준으로 맞춘다(사용자 요청).

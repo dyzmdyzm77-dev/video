@@ -449,6 +449,8 @@ export default function VariantA1({
           timeLabel={dateLabel}
           // 실시간/녹화를 칩 두 개로(사용자 지정) — 고른 쪽만 흰 배경 + 검정 글자.
           statusStyle="chips"
+          // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다(사용자 요청).
+          scrubbing={isScrubbing}
           // 딤 농도·칩 위치·페이지 점은 LandscapeVideo 기본값을 그대로 쓴다
           // — 가로 화면은 세 안이 같아야 해서 그쪽에 모아 뒀다.
           // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
