@@ -403,11 +403,18 @@ export default function LandscapeVideo({
     className: string,
     style: React.CSSProperties,
     children: React.ReactNode,
-    // 껍데기는 클릭을 통과시키고 안쪽 내용만 받게 할지. 위 가운데 칩 줄처럼
-    // 딤 아이콘 줄과 같은 높이에 겹쳐 놓는 층에 쓴다 — 껍데기가 클릭을 받으면
-    // 폭이 좁을 때 아이콘(갤러리·화면맞춤·확대) 위를 덮어 눌러도 반응이 없다.
+    // 껍데기가 클릭을 통과시킬지. 딤 아이콘 줄·버튼과 같은 높이에 겹쳐 놓는
+    // 층에 쓴다 — 껍데기가 클릭을 받으면 아이콘 위를 덮어 눌러도 반응이 없다.
     // (헤더가 같은 이유로 이미 pointer-events:none 이다.)
-    passThrough = false,
+    //   "wrap"  = 껍데기는 통과, 내용을 감싼 한 겹이 대신 받는다. 내용이
+    //             자기 크기만큼만 차지하는 층(위 가운데 칩 줄, 가운데 컨트롤).
+    //   "shell" = 껍데기만 통과. 내용이 폭을 다 쓰는 층(아래 칩 줄 + 시간바)은
+    //             감싸 봐야 그 한 겹이 다시 오른쪽 버튼을 덮으므로, 내용 쪽에
+    //             박아 둔 pointer-events-auto 에 맡긴다.
+    // 반드시 인라인으로 꺼야 한다 — className 에 pointer-events-none 을 얹어도
+    // 같은 요소의 인라인 pointerEvents 가 이겨서 그대로 클릭을 삼킨다
+    // (사용자 지적: "메뉴 아이콘이랑 AI 아이콘도 안눌려져").
+    passThrough: false | "wrap" | "shell" = false,
     // 시간바를 끄는 동안에도 남길 층인가. 시간바 자체가 든 층만 true 다 —
     // 나머지는 걷어야 '시간바만 남는다'가 된다.
     keepWhileScrubbing = false,
@@ -425,7 +432,7 @@ export default function LandscapeVideo({
         auto.keepAlive();
       }}
     >
-      {passThrough ? (
+      {passThrough === "wrap" ? (
         <div style={{ pointerEvents: dim ? "auto" : "none" }}>{children}</div>
       ) : (
         children
@@ -473,7 +480,7 @@ export default function LandscapeVideo({
         "left-1/2 flex -translate-x-1/2 items-center",
         { top: "12px", height: "32px" },
         statusRow,
-        true,
+        "wrap",
       )
     : null;
 
@@ -487,7 +494,7 @@ export default function LandscapeVideo({
   const statusBottom =
     !topCenter || controls
       ? dimLayer(
-          "inset-x-0 bottom-0 pointer-events-none",
+          "inset-x-0 bottom-0",
           {},
           <>
             {!topCenter && (
@@ -515,7 +522,7 @@ export default function LandscapeVideo({
               </div>
             )}
           </>,
-          false,
+          "shell",
           true,
         )
       : null;
@@ -655,7 +662,7 @@ export default function LandscapeVideo({
           "inset-0 flex items-center justify-center",
           {},
           <div data-no-swipe="">{centerControls}</div>,
-          true,
+          "wrap",
         )}
     </div>
   );
