@@ -8,6 +8,7 @@
 
 import { BASE } from "../basePath";
 import {
+  LANDSCAPE_EVENT,
   useDeviceLandscape,
   useRotatedInput,
 } from "../components/deviceRotate";
@@ -236,6 +237,35 @@ export default function VariantA1({
   const [videoLoading, setVideoLoading] = useState(false);
   const landscape = useDeviceLandscape();
   const immersive = useImmersive();
+
+  // 확대로 들어가면서 화면이 도는 동안은 전환 스켈레톤으로 덮는다.
+  //
+  // 확대 상태가 먼저 켜지고 회전은 그 뒤에 애니메이션으로 도는데, 그 사이
+  // 세로 프레임에 가로용 확대 화면이 한 번 그려진다 — 사용자에겐 '제자리
+  // 확대 한 번 → 다시 가로로' 두 단계로 읽혔다(사용자 지적). 도는 동안
+  // 스켈레톤을 덮으면 한 동작으로 보인다.
+  //
+  // 회전을 안 하는 확대(제자리 확대 기기)는 해당 없음 — 덮을 이유가 없다.
+  useEffect(() => {
+    if (!immersive) return;
+    if (document.documentElement.dataset.immersiveRotated !== "true") return;
+    setGridLoading(true);
+    setVideoLoading(true);
+    // 회전이 끝났다는 신호(LANDSCAPE_EVENT)에 맞춰 걷는다. 고정 시간으로 하면
+    // 애니메이션이 끝나기 전에 걷혀 도는 화면이 그대로 보였다.
+    // 신호가 안 오는 경우(회전이 취소되는 등)를 위해 안전 타이머도 같이 둔다.
+    const clear = () => {
+      setGridLoading(false);
+      setVideoLoading(false);
+    };
+    const done = () => window.setTimeout(clear, 60);
+    window.addEventListener(LANDSCAPE_EVENT, done);
+    const t = setTimeout(clear, 900);
+    return () => {
+      window.removeEventListener(LANDSCAPE_EVENT, done);
+      clearTimeout(t);
+    };
+  }, [immersive]);
 
   // '지금 기기가 가로로 긴 상태인가' — 판정은 useDeviceWide 하나에 모아 뒀다
   // (데스크톱 미리보기와 실기기가 회전을 다르게 표현해서다. useDeviceWidth.ts).
