@@ -254,6 +254,9 @@ export default function VariantA1({
   const [dateTimeOpen, setDateTimeOpen] = useState(false);
   const [gridLoading, setGridLoading] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
+  // 가로 확대 화면의 오른쪽 세로 패널(카메라 목록 · 움직임 감지). 딤의 메뉴
+  // 버튼이 여닫는다.
+  const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const landscape = useDeviceLandscape();
   const immersive = useImmersive();
   const compareTarget = useCompareTarget();
@@ -423,7 +426,9 @@ export default function VariantA1({
   // 확대하면서 눕힌 경우엔 landscape 와 immersive 가 같이 켜지므로 여기로 온다.
   if (immersive) {
     return (
-      <div className="app-safe-frame h-full w-full overflow-hidden bg-black">
+      <div className="app-safe-frame flex h-full w-full overflow-hidden bg-black">
+        {/* 오른쪽 패널이 열리면 영상이 그만큼 밀린다(덮지 않는다, 사용자 결정). */}
+        <div className="relative min-h-0 flex-1 overflow-hidden">
         <LandscapeVideo
           cameras={CAMERAS}
           expandedIndex={expandedIndex}
@@ -435,6 +440,16 @@ export default function VariantA1({
           onGallery={() => setSheetOpen(true)}
           onMore={() => setMoreOpen(true)}
           onAi={() => setAiOpen(true)}
+          // 가로에만 있는 메뉴 버튼(AI 옆) — 오른쪽 세로 패널을 여닫는다.
+          onMenu={() => setSidePanelOpen((v) => !v)}
+          // 실시간/녹화 칩 + 시각을 왼쪽 아래로.
+          statusPlacement="bottom-left"
+          // 토글 형태는 그대로 두고 고른 쪽 색만 흰 배경 + 검정 글자로.
+          statusActiveStyle="white"
+          // 딤 위 UI 좌우 여백 40 — 영상 자체는 제외, 끝까지 쓴다.
+          edgeInset={40}
+          // 장소명 줄을 오른쪽 아이콘 줄과 윗변 기준으로 맞춘다.
+          headerAlign="top"
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
@@ -447,10 +462,6 @@ export default function VariantA1({
           mode={mode}
           setMode={handleSetMode}
           timeLabel={dateLabel}
-          // 실시간/녹화를 칩 두 개로(사용자 지정) — 고른 쪽만 흰 배경 + 검정 글자.
-          statusStyle="chips"
-          // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다(사용자 요청).
-          scrubbing={isScrubbing}
           // 딤 농도·칩 위치·페이지 점은 LandscapeVideo 기본값을 그대로 쓴다
           // — 가로 화면은 세 안이 같아야 해서 그쪽에 모아 뒀다.
           // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
@@ -460,13 +471,14 @@ export default function VariantA1({
           onFitCycle={
             expandedIndex !== null ? videoFitState.cycle : gridFitState.cycle
           }
-          // A-1 은 플레이어·시간바를 딤 색에 맞춰 넘긴다(overlay) — 흰 바를 걷어
-          // 영상이 비치게 한다.
+          // 플레이어를 딤 색에 맞춰 넘긴다(overlay) — 흰 바를 걷어 영상이 비치게 한다.
           controlsOnDim
-          controls={
+          // 아래 시간바는 안 쓴다 — 플레이어 버튼 5개만 화면 한가운데 둔다.
+          centerControls={
             mode === "recording" ? (
               <RecordingControls
                 overlay
+                playerOnly
                 now={now}
                 setMode={handleSetMode}
                 onScrubbingChange={setIsScrubbing}
@@ -481,6 +493,18 @@ export default function VariantA1({
             ) : null
           }
         />
+        </div>
+        {sidePanelOpen && (
+          <LandscapeSidePanel
+            mode={mode}
+            selectedIndex={expandedIndex}
+            onSelect={handleExpand}
+            playbackMs={playbackMs}
+            setPlaybackMs={setPlaybackMs}
+            onScrubbingChange={setIsScrubbing}
+            onClose={() => setSidePanelOpen(false)}
+          />
+        )}
         {/* 화면 구성 시트는 가로에서도 세로와 똑같이 뜬다. 예전엔 이 분기가
             시트보다 먼저 return 해서, 딤의 갤러리 버튼을 눌러도 열릴 시트가
             아예 렌더되지 않았다. */}
@@ -1922,6 +1946,148 @@ const TIMELINE_EVENTS = (() => {
 // 폭이 넓어야 쓸 만한데 세로 패널은 폭이 좁아서, 1080 이상 사이드 패널에서는 이걸 쓴다.
 // A-1안의 같은 컴포넌트를 그대로 가져왔다 — 안마다 컴포넌트를 복제해 두는 이 파일들의
 // 관례를 따랐다(각 안이 독립적으로 굴러가야 해서 공유 모듈로 빼지 않는다).
+// 가로 화면의 오른쪽 세로 패널 — 딤의 메뉴 버튼(AI 옆)이 여닫는다.
+//
+// 넓은 화면(1080+)에서 늘 붙어 있는 패널과 같은 구성이다: 위에 탭(카메라 목록 ·
+// 움직임 감지), 아래에 세로 목록 또는 세로 타임라인. 다만 그쪽은 단일 화면
+// 컴포넌트 안에 그 상태와 얽혀 있어 그대로 못 쓰고, 가로용으로 따로 그린다.
+//
+// 열면 영상을 밀고 옆에 선다(덮지 않는다). 닫기는 패널 안 X 버튼뿐이다
+// (사용자 결정) — 영상을 눌러 닫히면 영상 조작과 헷갈린다.
+/** 가로 확대 화면의 오른쪽 패널 — 내용이 기기 오른쪽 모서리에서 떨어지는 거리.
+ *  딤 위 UI 의 edgeInset 과 같은 값이다(사용자 지정) — 같은 화면의 같은 끝이라
+ *  따로 놀면 안 된다. */
+const LANDSCAPE_PANEL_EDGE = 40;
+/** 패널 안 탭 줄·목록이 이미 쓰고 있는 좌우 여백. 위 40 은 '모서리까지의 총
+ *  거리'라, 패널에 더 붙일 몫은 그만큼 뺀 값이다 — 안 빼면 40+16=56 이 된다. */
+const LANDSCAPE_PANEL_PAD = 16;
+const LANDSCAPE_PANEL_EXTRA = LANDSCAPE_PANEL_EDGE - LANDSCAPE_PANEL_PAD;
+
+function LandscapeSidePanel({
+  mode,
+  selectedIndex,
+  onSelect,
+  playbackMs,
+  setPlaybackMs,
+  onScrubbingChange,
+  onClose,
+}: {
+  mode: "live" | "recording";
+  /** 지금 보고 있는 카메라(단일 화면). 다채널이면 null. */
+  selectedIndex: number | null;
+  onSelect: (i: number) => void;
+  playbackMs: number | null;
+  setPlaybackMs: (
+    v: number | null | ((prev: number | null) => number | null),
+  ) => void;
+  onScrubbingChange?: (s: boolean) => void;
+  onClose: () => void;
+}) {
+  const [tab, setTab] = useState<"list" | "motion">("list");
+  // 움직임 감지는 녹화에서만 있다 — 실시간으로 돌아오면 목록으로 되돌린다.
+  const showMotion = mode === "recording" && tab === "motion";
+  const cam = CAMERAS[selectedIndex ?? 0];
+  return (
+    <div
+      className="flex min-h-0 flex-none flex-col bg-white"
+      style={{
+        // 내용 칸은 1080+ 패널과 같은 폭(SIDE_PANEL_W)으로 두고, 오른쪽에 여백만
+        // 더 붙인다 — 가로 확대는 화면 끝까지 쓰는 화면이라 패널 내용이 기기
+        // 오른쪽 모서리에 딱 붙어 있었다(사용자 지정).
+        width: `${SIDE_PANEL_W + LANDSCAPE_PANEL_EXTRA}px`,
+        paddingRight: `${LANDSCAPE_PANEL_EXTRA}px`,
+        borderLeft: "1px solid #EBEBEB",
+      }}
+    >
+      {/* 탭 + 닫기 */}
+      <div
+        className="flex flex-none items-center justify-between"
+        style={{ height: "48px", padding: "0 16px" }}
+      >
+        <div className="flex items-center" style={{ gap: "20px" }}>
+          {(
+            [
+              { key: "list", label: "카메라 목록" },
+              ...(mode === "recording"
+                ? [{ key: "motion", label: "움직임 감지" } as const]
+                : []),
+            ] as { key: "list" | "motion"; label: string }[]
+          ).map((t) => {
+            const active = (showMotion ? "motion" : "list") === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                className="relative text-[15px] font-bold leading-none"
+                style={{ color: active ? "#262626" : "#A4A4A4" }}
+              >
+                {t.label}
+                {active && (
+                  <span
+                    className="absolute left-0 right-0"
+                    style={{
+                      bottom: "-10px",
+                      height: "2px",
+                      backgroundColor: "#262626",
+                    }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          aria-label="닫기"
+          onClick={onClose}
+          className="flex h-6 w-6 flex-none items-center justify-center"
+        >
+          <img src={`${BASE}/close.svg`} alt="" className="h-6 w-6" />
+        </button>
+      </div>
+      <div className="h-px flex-none" style={{ backgroundColor: "#EBEBEB" }} />
+
+      {showMotion ? (
+        <SideEventTimeline
+          playbackMs={playbackMs}
+          setPlaybackMs={setPlaybackMs}
+          cameraSrc={cam.src}
+          onScrubbingChange={onScrubbingChange}
+        />
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {/* 타일 생김새는 1080+ 패널의 cameraTile 과 같게 맞춘다 — 라운드 4,
+              라벨 한 개, 선택은 안쪽 파란 링. 라벨은 CameraFeed 가 이미 그리므로
+              여기서 또 얹으면 두 개가 겹쳐 보인다(사용자 지적). 선택 표시도
+              바깥 border 로 두면 1px→2px 만큼 타일이 밀려 목록이 들썩인다. */}
+          {CAMERAS.map((c, i) => (
+            <button
+              key={c.label}
+              type="button"
+              onClick={() => onSelect(i)}
+              className="relative aspect-video w-full flex-none overflow-hidden bg-neutral-900"
+              style={{ borderRadius: "4px" }}
+            >
+              <CameraFeed label={c.label} src={c.src} />
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  borderRadius: "4px",
+                  boxShadow:
+                    selectedIndex === i
+                      ? "inset 0 0 0 2px #1D6CEB"
+                      : "inset 0 0 0 1px #D9D9D9",
+                }}
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SideEventTimeline({
   playbackMs,
   setPlaybackMs,
@@ -3507,6 +3673,7 @@ function RecordingControls({
   onPlay,
   onSpeedChange,
   overlay = false,
+  playerOnly = false,
 }: {
   now: Date | null;
   setMode: (m: "live" | "recording") => void;
@@ -3527,6 +3694,9 @@ function RecordingControls({
    *  같은 정보(실시간/녹화 칩 + 시각)를 딤에 맞춘 색으로 이미 얹기 때문에, 그
    *  줄까지 그리면 칩 줄이 두 번 겹쳐 보인다. */
   overlay?: boolean;
+  /** 플레이어 버튼 5개만 그린다(가로 딤 가운데용). 헤더 줄·시간바는 뺀다 —
+   *  시간바 없이 버튼만 화면 한가운데 놓는 가로 사양이다(사용자 결정). */
+  playerOnly?: boolean;
 }) {
   const VISIBLE_MINUTES = TIMELINE_VISIBLE_MIN;
   // 시간바를 끌고 있는 중인가. 가로(overlay)에서 플레이어 버튼 5개를 잠깐
@@ -3785,7 +3955,7 @@ function RecordingControls({
     <div className="relative flex flex-col">
       {/* 녹화 + 날짜 — 가로 딤(overlay)에선 안 그린다. LandscapeVideo 가 같은
           정보를 딤에 맞춘 색으로 이미 얹고 있어서 칩 줄이 두 번 겹친다. */}
-      {!overlay && (
+      {!overlay && !playerOnly && (
         <>
           <div
             className="relative flex items-center px-5"
@@ -3879,6 +4049,8 @@ function RecordingControls({
       {!overlay && (
         <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
       )}
+      {!playerOnly && (
+      <>
       {/* 타임라인 */}
       <div
         ref={timelineRef}
@@ -4020,6 +4192,8 @@ function RecordingControls({
         />
       </div>
       <TimelineSkeleton visible={rowLoading} />
+      </>
+      )}
       </div>
       {/* 탐색 토스트 — 이 블록은 영상 그리드 바로 아래에 붙으므로, 블록 상단(100%)
           기준 +20px = 영상 그리드 하단에서 20px 위(토스트 공통 규칙). */}
