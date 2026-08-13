@@ -56,18 +56,6 @@ body {
         top: calc(50vh + var(--status-h, 0px) / 2);
         width: calc(100vh - var(--status-h, 0px));
       }
-      html:not([data-landscape="true"]):not([data-immersive="true"])
-        .app-safe-frame {
-        top: 50%;
-        width: 100%;
-      }
-    }
-    @media (orientation: landscape) {
-      html:not([data-landscape="true"]):not([data-immersive="true"])
-        .app-safe-frame {
-        top: calc(50vh);
-        width: 100vh;
-      }
     }
   }
 }
@@ -179,44 +167,6 @@ body {
     background: #000;
   }
 
-  /* 보통 화면은 폰을 눕혀도 세로 그대로다 (사용자 지정: "일반 모바일에서는
-     홈화면은 가로 전환 불가야. 돌려도 바꾸지마"). 가로 영상은 확대 버튼으로만
-     간다. 눕힌 채 축소한 경우도 이 규칙이 받아서 세로로 선다.
-
-     웹앱은 아이폰 화면을 못 돌린다 — screen.orientation.lock 이 이 기기에 없다
-     (진단에서 확인). 그래서 확대가 세로에서 하는 것(아래 orientation: portrait
-     규칙)의 거울상을 건다: 화면이 가로인데 앱이 세로여야 하면 콘텐츠를 돌리고
-     폭·높이를 맞바꾼다. 앱의 폭 = 화면의 짧은 쪽(100dvh), 높이 = 긴 쪽(100vw).
-
-     확대·가로 플래그가 켜진 화면(영상만 보는 가로 배치)만 예외다 — 그때 폰이
-     누워 있으면 뷰포트를 그대로 쓰는 게 맞다(되돌리면 이중 회전).
-
-     한 번 되돌린 적이 있다 — 양옆에 흰 띠가 생겨서였는데(사용자 지적), 원인은
-     회전이 아니라 회전이 '안 걸린' 것이었다. 각도를 못 읽어 rotate(0deg) 이
-     되면서 세로 폭짜리 화면이 가로 화면 가운데 놓여 좌우가 남았다. 각도
-     계산을 고쳤다(StatusInset). */
-  @media (orientation: landscape) {
-    html:not([data-landscape="true"]):not([data-immersive="true"])
-      .app-safe-frame {
-      position: fixed;
-      top: 50vh;
-      top: 50dvh;
-      left: 50%;
-      width: 100vh;
-      width: 100dvh;
-      height: 100vw;
-      transform-origin: center center;
-      /* 돌릴 방향은 기기 각도의 반대다 — StatusInset 이 --force-rot 로 낸다. */
-      transform: translate(-50%, -50%) rotate(var(--force-rot, -90deg));
-      /* 진짜 세로 화면과 같은 위(상태바)·아래(홈 인디케이터) 여백을 준다 —
-         0 으로 밀었더니 하단 영역이 없어 "기존 세로 뷰랑 다르게 나와"(사용자
-         지적). 값은 세로에서 실측해 둔 --status-h/--home-h 다. env() 는 가로에선
-         좌우로 가 버려 여기서 못 쓴다. 좌우는 0 — 가로 인셋(59px)이 남으면
-         양옆 흰 마진이 된다(전에 실제로 그랬다). */
-      padding: var(--status-h, 0px) 0 var(--home-h, 0px);
-    }
-  }
-
   /* CSS 로 눕히는 건 '기기가 세로일 때'만이다. 폰을 실제로 눕히면 뷰포트가 이미
      가로라 돌릴 이유가 없다 — 그대로 두면 앱의 90° + OS 의 90° 가 겹쳐 콘텐츠가
      옆으로 눕는다.
@@ -290,9 +240,8 @@ body {
      뜨는거야") — 프레임 배경(검정)이 그대로 보이게 여백만 준다. 확대의 그
      자리도 검은 상태바라 같은 그림이 된다.
 
-     '눕힌 채 축소'(data-force-portrait)에는 안 건다 — 그 상태의 콘텐츠는 세로
-     화면이고, 그쪽 규칙이 자기 padding 을 관리한다. 플래그가 서면 확대·가로
-     플래그는 이미 꺼져 있어 이 선택자에 안 걸린다. */
+     확대·가로 플래그가 없는 보통 화면에는 안 건다 — 눕힌 보통 화면은 안전영역
+     env() 가 알아서 잡는다. */
   @media (orientation: landscape) {
     html[data-immersive="true"] .app-safe-frame,
     html[data-landscape="true"] .app-safe-frame {

@@ -27,13 +27,11 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "fullscreen",
     // 설치 환경이 fullscreen 을 못 쓰면 순서대로 물러난다.
     display_override: ["fullscreen", "standalone"],
-    // 세로 잠금. 사양이 "눕혀도 전환 없음, 가로는 확대 버튼으로만"으로
-    // 확정되면서(2026-08-13) 잠그는 게 맞아졌다 — 확대의 가로는 OS 회전이
-    // 아니라 앱의 CSS 회전이라 잠금과 무관하다.
-    // 아이폰은 이 필드를 무시한다(아이콘 재추가까지 확인한 실측). 거기는
-    // globals.css 의 강제 세로 규칙 + StatusInset 의 치수 맞바꿈이 대신 세운다.
-    // 안드로이드는 진짜로 잠겨 회전 모션 자체가 없다.
-    orientation: "portrait",
+    // any — 회전은 OS 에 맡긴다(사용자 확정: "그냥 가로로 돌게 해. 막지 말고").
+    // portrait 잠금·CSS 되돌림·센서 가리개로 막아 봤던 이력이 있는데 전부
+    // 걷어냈다. 아이폰은 애초에 잠금이 안 먹혔고(실측), 막는 장치들이 자꾸
+    // 다른 화면을 깨뜨렸다.
+    orientation: "any",
     background_color: "#ffffff",
     theme_color: "#ffffff",
     icons: [

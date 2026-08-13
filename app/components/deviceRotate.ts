@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { readCssRotated, readForcedPortrait } from "./useDeviceWidth";
+import { readCssRotated } from "./useDeviceWidth";
 
 // ============================================================================
 // 화면 전환(회전) 요청 — 딤 안의 회전 버튼 → 좌측 패널의 '왼쪽으로 회전'
@@ -130,10 +130,7 @@ export function useRotatedInput(): boolean {
     // '가로 플래그'가 아니라 'CSS 회전이 실제로 걸렸나'를 본다 — 폰을 눕히면
     // 플래그는 켜진 채로 두고 회전만 푸는 배치라(globals.css 의 방향 미디어쿼리),
     // 플래그만 보면 눕힌 폰에서 좌표를 괜히 맞바꾼다.
-    // 강제 세로(뷰포트 가로 + 앱을 CSS 로 세움)도 콘텐츠가 화면과 90° 어긋난
-    // 상태라 같은 보정이 필요하다. (눕힌 방향에 따라 부호가 반대인 경우가
-    // 남아 있다 — 오른쪽으로 눕힌 폰에서는 끌기가 반대로 갈 수 있다.)
-    const sync = () => setRotated(readCssRotated() || readForcedPortrait());
+    const sync = () => setRotated(readCssRotated());
     sync();
     const evts = ["resize", "orientationchange", LANDSCAPE_EVENT];
     evts.forEach((e) => window.addEventListener(e, sync));

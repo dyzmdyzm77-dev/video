@@ -254,29 +254,12 @@ export function noteDeviceOrientation() {
 export function syncImmersiveWithLandscape() {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  // 폰을 다시 세우면 '강제 세로'는 할 일이 끝난다 — 안 끄면 다음에 눕혔을 때
-  // 가로 화면 대신 세운 화면이 나온다.
-  if (window.innerHeight >= window.innerWidth) {
-    root.dataset.forcePortrait = "false";
-  }
   const w = readDeviceWidth();
   const h = readDeviceHeight();
   const wide = deviceOwnWide();
   const prev = lastState;
   lastState = { w, h, wide };
   if (prev === null || prev.wide === wide) return;
-  // 실기기는 눕혀도 아무 전환도 하지 않는다(사용자 확정: "디바이스 눕히면
-  // 전환되는 거 아예 막아"). 가로 영상은 확대 버튼으로만 간다. 보통 화면은
-  // globals.css 의 강제 세로 규칙이 세워 주고, 확대 화면은 그대로 유지된다.
-  // 아래 회전 반응 로직은 데스크톱 미리보기('왼쪽으로 회전' 토글) 전용이다.
-  if (
-    !(
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(hover: hover) and (pointer: fine)").matches
-    )
-  ) {
-    return;
-  }
   if (wide) {
     if (readImmersive()) return;
     // '눕혔다'가 아니라 '원래 방향으로 돌아왔다'면 확대할 일이 아니다.
@@ -361,8 +344,6 @@ export function toggleImmersive() {
     exitImmersive();
     return;
   }
-  // 확대로 들어가면 '강제 세로'는 무효다 — 남겨 두면 확대 화면까지 세워 버린다.
-  document.documentElement.dataset.forcePortrait = "false";
   // 확대에 들어가면 방향을 잠근다 — 눕혀도 그냥 고정이다(사용자 지정).
   // 전체화면 안에서만 허용되므로 전체화면이 잡힌 뒤에 건다. 잠글 방향은
   // '기기가 있어야 할 방향'이다: 앱을 CSS 로 눕혀 만든 가짜 가로라면 기기는
@@ -432,13 +413,6 @@ export function exitImmersive() {
   // 누르면 세로로 돌아와야지. 왜 그 가로 상태에서 축소되냐?").
   // 목표값 false 를 실어 보내므로 이미 세로면 상태가 안 바뀌어 아무 일도 안 난다.
   requestDeviceRotate(false);
-  // 폰이 실제로 누워 있으면 앱이 폰을 못 돌린다 — 콘텐츠를 CSS 로 세운다
-  // (globals.css 의 data-force-portrait). 그냥 눕히기만 한 것과 구분해야 해서
-  // 별도 플래그다.
-  if (typeof window !== "undefined") {
-    document.documentElement.dataset.forcePortrait =
-      window.innerWidth > window.innerHeight ? "true" : "false";
-  }
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
   // 상태바 색을 흰색으로 되찾는다. 확대는 검은 화면이 안전 영역까지 덮는
   // 배치라(globals.css 의 padding:0) 사파리가 상태바 색을 검정으로 잡아 두는데,
