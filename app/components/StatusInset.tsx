@@ -159,7 +159,25 @@ export default function StatusInset() {
         mask.style.opacity = "0";
       }, delay);
     };
+    // 잠금 API 가 있는 플랫폼(안드로이드)은 회전을 진짜로 잠글 수 있어 가리개가
+    // 필요 없다 — 오히려 확대 진입의 전체화면 전환 resize 를 회전으로 오해해
+    // 번쩍거렸다(사용자 지적: "안드로이드에서는 확대 누르면 막 깜빡대").
+    // 가리개 일체는 잠금이 안 되는 플랫폼(아이폰)에서만 돈다.
+    const canLock =
+      typeof (
+        window.screen?.orientation as
+          | (ScreenOrientation & { lock?: unknown })
+          | undefined
+      )?.lock === "function";
+
+    // '회전'은 뷰포트의 가로·세로가 실제로 뒤집혔을 때만이다. 아무 resize 에나
+    // 덮으면 전체화면 전환·주소창 접힘 같은 크기 변화에도 번쩍인다.
+    let lastLand = window.innerWidth > window.innerHeight;
     const onRotateStart = () => {
+      const nowLand = window.innerWidth > window.innerHeight;
+      if (nowLand === lastLand) return;
+      lastLand = nowLand;
+      if (canLock) return;
       // 회전이 이미 시작/완료된 시점의 신호 — 늦었더라도 덮고, 끝난 뒤 걷는다.
       raiseMask(true);
       dropMaskSoon(500);
@@ -177,10 +195,11 @@ export default function StatusInset() {
       const g = e.gamma;
       const b = e.beta;
       if (g === null || b === null) return;
-      // 눕는 중 판정: 좌우 기울기(gamma)가 45° 를 넘으면 가로 파지.
-      // 거의 평평하면(테이블 위) 판정 보류.
+      // 눕는 중 판정: 좌우 기울기(gamma)가 문턱을 넘으면 가로 파지.
+      // 거의 평평하면(테이블 위) 판정 보류. 문턱은 히스테리시스 — 45° 언저리에서
+      // 센서가 흔들리면 덮었다 걷었다를 반복한다(깜빡임).
       if (Math.abs(g) < 20 && Math.abs(b) < 20) return;
-      const tiltLandscape = Math.abs(g) > 45;
+      const tiltLandscape = Math.abs(g) > (sensorMasked ? 40 : 50);
       const viewportLandscape = window.innerWidth > window.innerHeight;
       if (tiltLandscape !== viewportLandscape) {
         if (!sensorMasked) {
@@ -215,10 +234,12 @@ export default function StatusInset() {
           .catch(() => {});
       }
     };
-    if (typeof DOE?.requestPermission === "function") {
-      window.addEventListener("pointerdown", armSensor, true);
-    } else {
-      window.addEventListener("deviceorientation", onTilt);
+    if (!canLock) {
+      if (typeof DOE?.requestPermission === "function") {
+        window.addEventListener("pointerdown", armSensor, true);
+      } else {
+        window.addEventListener("deviceorientation", onTilt);
+      }
     }
 
     const evts = ["resize", "orientationchange"];
