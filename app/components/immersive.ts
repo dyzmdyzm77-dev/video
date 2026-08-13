@@ -265,6 +265,17 @@ export function syncImmersiveWithLandscape() {
   const prev = lastState;
   lastState = { w, h, wide };
   if (prev === null || prev.wide === wide) return;
+  // 실기기는 회전에 아무 반응도 하지 않는다(사용자 지정: "돌려도 바꾸지마").
+  // 가로 영상은 확대 버튼으로만 간다. 이 함수의 나머지는 데스크톱 미리보기
+  // ('왼쪽으로 회전' 토글이 곧 방향)만 탄다.
+  if (
+    !(
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    )
+  ) {
+    return;
+  }
   if (wide) {
     if (readImmersive()) return;
     // '눕혔다'가 아니라 '원래 방향으로 돌아왔다'면 확대할 일이 아니다.

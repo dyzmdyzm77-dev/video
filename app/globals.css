@@ -144,25 +144,25 @@ body {
     padding: 0;
   }
 
-  /* 폰을 눕힌 채 축소하면 콘텐츠를 세운다 (사용자 지정: "그냥 세로로 돌리면
-     되잖아, 다시 되돌아가면 되는 건데").
+  /* 보통 화면은 폰을 눕혀도 세로 그대로다 (사용자 지정: "일반 모바일에서는
+     홈화면은 가로 전환 불가야. 돌려도 바꾸지마"). 가로 영상은 확대 버튼으로만
+     간다. 눕힌 채 축소한 경우도 이 규칙이 받아서 세로로 선다.
 
      웹앱은 아이폰 화면을 못 돌린다 — screen.orientation.lock 이 이 기기에 없다
      (진단에서 확인). 그래서 확대가 세로에서 하는 것(아래 orientation: portrait
      규칙)의 거울상을 건다: 화면이 가로인데 앱이 세로여야 하면 콘텐츠를 돌리고
      폭·높이를 맞바꾼다. 앱의 폭 = 화면의 짧은 쪽(100dvh), 높이 = 긴 쪽(100vw).
 
-     판정은 data-force-portrait 라는 별도 플래그다. data-landscape="false" 로
-     가르면 '그냥 폰을 눕히기만 한' 정상 상태와 값이 같아서, 눕히기만 해도 앱이
-     세로로 서 가로 화면을 못 보게 된다. 축소가 세우고, 폰을 다시 세우거나
-     확대로 들어가면 꺼진다(immersive.ts).
+     확대·가로 플래그가 켜진 화면(영상만 보는 가로 배치)만 예외다 — 그때 폰이
+     누워 있으면 뷰포트를 그대로 쓰는 게 맞다(되돌리면 이중 회전).
 
      한 번 되돌린 적이 있다 — 양옆에 흰 띠가 생겨서였는데(사용자 지적), 원인은
      회전이 아니라 회전이 '안 걸린' 것이었다. 각도를 못 읽어 rotate(0deg) 이
      되면서 세로 폭짜리 화면이 가로 화면 가운데 놓여 좌우가 남았다. 각도
      계산을 고쳤다(StatusInset). */
   @media (orientation: landscape) {
-    html[data-force-portrait="true"] .app-safe-frame {
+    html:not([data-landscape="true"]):not([data-immersive="true"])
+      .app-safe-frame {
       position: fixed;
       top: 50vh;
       top: 50dvh;
