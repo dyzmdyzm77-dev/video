@@ -259,6 +259,11 @@ export default function VariantA1({
   // 가로 확대 화면의 오른쪽 세로 패널(카메라 목록 · 움직임 감지). 딤의 메뉴
   // 버튼이 여닫는다.
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
+  const landscape = useDeviceLandscape();
+  const immersive = useImmersive();
+  const compareTarget = useCompareTarget();
+  // 가로 확대 화면의 패널 방향 판정에 쓴다(정사각형에 가까우면 아래에서).
+  const deviceRatio = useDeviceRatio();
   // 화면이 전환되면 열려 있던 패널을 상태째 끈다(사용자 지정: "단일에서 메뉴
   // 켜놨을 때 다채널로 옮겨지면 켜진 메뉴는 꺼져야지" → "화면전환이 되면
   // 꺼져야겠네"). 렌더 조건으로 숨기기만 하면 상태가 남아, 다음에 그 화면으로
@@ -267,11 +272,7 @@ export default function VariantA1({
   useEffect(() => {
     if (expandedIndex === null || !immersive) setSidePanelOpen(false);
   }, [expandedIndex, immersive]);
-  const landscape = useDeviceLandscape();
-  const immersive = useImmersive();
-  const compareTarget = useCompareTarget();
-  // 가로 확대 화면의 패널 방향 판정에 쓴다(정사각형에 가까우면 아래에서).
-  const deviceRatio = useDeviceRatio();
+
 
 
   // '지금 기기가 가로로 긴 상태인가' — 판정은 useDeviceWide 하나에 모아 뒀다
