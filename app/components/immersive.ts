@@ -406,9 +406,10 @@ export function exitImmersive() {
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
   // 상태바 색을 흰색으로 되찾는다. 확대는 검은 화면이 안전 영역까지 덮는
   // 배치라(globals.css 의 padding:0) 사파리가 상태바 색을 검정으로 잡아 두는데,
-  // 세로로 돌아와도 스스로 다시 안 잡는다. 회전을 안 하는 경로(이미 세로)도
-  // 있으므로 회전 쪽에 맡기지 않고 여기서 직접 부른다.
-  // 화면이 흰 프레임으로 다시 그려진 다음이라야 해서 한 프레임 뒤에 부른다.
+  // 확대는 폰을 실제로 돌리는 게 아니라 사파리가 다시 잴 계기가 없다 — 그래서
+  // setBarColor 가 안전영역 계산을 강제로 다시 시킨다(refreshSafeAreaTint).
+  // 회전을 안 하는 경로(이미 세로)도 있으므로 회전 쪽에 맡기지 않고 여기서
+  // 직접 부른다. 흰 프레임으로 다시 그려진 다음이라야 해서 한 프레임 뒤에.
   requestAnimationFrame(() => setBarColor(false));
 }
 

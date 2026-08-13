@@ -41,35 +41,77 @@ export const DEVICE_ROTATE_EVENT = "devicerotaterequest";
 // 캔버스(html 배경)가 칠하는데, 값을 바꾸는 것 자체가 그 영역을 다시 그리게
 // 만든다. 데스크톱 미리보기는 목업 배경(#e5e5e5)이 따로 있으니 건드리지 않는다.
 //
-// ★ 값이 늘 같으면 이 함수는 아무 일도 안 한다. theme-color 에 이미 들어 있는
-//   #ffffff 를 다시 써도 DOM 변화가 없어 사파리가 다시 안 읽고, html 배경도
-//   같은 값이라 다시 안 그린다. 그래서 확대(검정 화면)에서 잡아 둔 상태바 색이
-//   세로로 돌아와도 검정으로 남았다(사용자 지적: "세로로 돌아올 때 다시 흰색으로
-//   바뀌어야 하지 않겠어? 세로인데도 검정이니까").
-//   실제로 바뀌게 만들어야 한다 — meta 는 노드를 새로 끼우고, 배경은 한 프레임
-//   다른 값으로 흔들었다가 되돌린다.
+// ★ theme-color 는 안드로이드 크롬용이다. 아이폰 사파리는 viewport-fit=cover 인
+//   동안 이 값을 안 본다 — 그 자리(상태바 밑)는 사파리가 칠하는 게 아니라
+//   페이지가 직접 칠하는 자리라서다. 그래서 아이폰 쪽은 아래 refreshSafeAreaTint
+//   가 따로 맡는다. 여기서 meta 를 아무리 새로 끼워도 소용없었다(실패한 시도).
 export function setBarColor(_landscape?: boolean) {
   if (typeof document === "undefined") return;
   const color = "#ffffff";
-  // 같은 값을 다시 대입하는 건 소용없다 — 노드째 갈아 끼워 새로 읽게 한다.
-  document
-    .querySelectorAll('meta[name="theme-color"]')
-    .forEach((m) => m.remove());
-  const meta = document.createElement("meta");
-  meta.name = "theme-color";
+  let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.name = "theme-color";
+    document.head.appendChild(meta);
+  }
   meta.content = color;
-  document.head.appendChild(meta);
   const desktop =
     typeof window.matchMedia === "function" &&
     window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  if (desktop) return;
-  const root = document.documentElement;
-  // 눈에 안 보이는 한 끗 차이(#fffffe)로 한 프레임 흔든다. 같은 색을 다시 쓰면
-  // 리페인트가 안 걸려 안전 영역이 예전 색 그대로 남는다.
-  root.style.backgroundColor = "#fffffe";
-  requestAnimationFrame(() => {
-    root.style.backgroundColor = color;
-  });
+  if (!desktop) document.documentElement.style.backgroundColor = color;
+  refreshSafeAreaTint();
+}
+
+// 아이폰 사파리가 상태바 자리 색을 '다시 재게' 만든다.
+//
+// viewport-fit=cover 면 페이지가 상태바 밑까지 그리고, 사파리는 거기 그려진
+// 색을 그대로 상태바 배경으로 쓴다. 문제는 다시 재는 계기가 드물다는 것 —
+// 화면 회전이나 스크롤 때 재는데, 이 앱은 overflow:hidden 이라 스크롤이 없다.
+//
+// 그래서 확대(검정 화면)와 가로가 갈렸다:
+//   · 가로 — 폰을 실제로 눕힌 것이라 OS 회전이 일어난다 → 사파리가 다시 잰다
+//            → 세우면 알아서 흰색으로 돌아왔다.
+//   · 확대 — 폰은 세로 그대로고 앱만 CSS 로 90° 돈다(globals.css) → 사파리
+//            입장에선 아무 일도 안 일어났다 → 확대에서 잡은 검정을 계속 물고
+//            있었다(사용자 지적: "축소해서 세로로 돌아와도 계속 검정색 유지야").
+//
+// 회전을 흉내 낼 수는 없으니 안전영역 계산 자체를 다시 시키다 — viewport-fit 을
+// 한 프레임 contain 으로 내렸다가 cover 로 되돌린다. contain 인 동안은 사파리가
+// 안전영역 바깥을 자기가 칠하므로(그때는 theme-color=#ffffff 를 쓴다) 색이
+// 흰색으로 새로 잡히고, cover 로 돌아오면 그 상태에서 페이지 색을 다시 잰다.
+//
+// 두 프레임을 기다린다 — 한 프레임으로는 contain 배치가 커밋되기 전에 되돌아가
+// 아무 일도 안 일어난다. 되돌릴 값은 Next 가 찍어 준 원본 문자열 그대로다
+// (app/layout.tsx 의 viewport export). cover 가 아니면 할 일이 없다.
+//
+// ★ 되돌리기를 rAF 에만 맡기면 안 된다. 탭이 백그라운드면(다른 앱으로 갔다,
+//   화면을 껐다) rAF 는 아예 안 오고, 그러면 viewport-fit 이 contain 에 박혀
+//   안전영역을 영영 안 쓰게 된다 — 고치려던 것보다 나쁜 상태다. 실제로 숨은
+//   탭에서 그렇게 됐다. 타이머를 같이 걸어 어느 쪽이 먼저 오든 반드시 되돌린다.
+let tintTimer: ReturnType<typeof setTimeout> | null = null;
+
+function refreshSafeAreaTint() {
+  if (typeof document === "undefined") return;
+  const desktop =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (desktop) return; // 목업 미리보기엔 안전영역이 없다.
+  if (tintTimer !== null) return; // 이미 흔드는 중 — 겹쳐 부르면 원본을 잃는다.
+  const vp = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+  if (!vp) return;
+  const cover = vp.content;
+  if (!/viewport-fit\s*=\s*cover/.test(cover)) return;
+  vp.content = cover.replace(/viewport-fit\s*=\s*cover/, "viewport-fit=contain");
+  const restore = () => {
+    if (tintTimer === null) return; // 먼저 온 쪽이 이미 되돌렸다.
+    clearTimeout(tintTimer);
+    tintTimer = null;
+    vp.content = cover;
+  };
+  // 안전장치가 먼저다 — rAF 를 등록하기 전에 걸어 둬야 그 사이에 탭이 숨어도
+  // 되돌아온다.
+  tintTimer = setTimeout(restore, 300);
+  requestAnimationFrame(() => requestAnimationFrame(restore));
 }
 
 /** 딤의 회전 버튼에서 호출. 좌측 패널이 받아서 회전 토글을 뒤집는다.
