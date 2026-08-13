@@ -140,7 +140,13 @@ export default function StatusInset() {
     document.body.appendChild(mask);
     let maskTimer: ReturnType<typeof setTimeout> | null = null;
     const onRotateStart = () => {
-      if (root.dataset.immersive !== "true") return;
+      // 모든 화면에서 가린다(사용자 확정: "눕히는 걸 아예 막아") — 눕혀도 화면이
+      // 미동도 안 하는 것처럼 보여야 한다. 확대(검은 화면)는 검정으로, 보통
+      // 화면(흰 배경)은 흰색으로 덮어 어느 쪽이든 색이 튀지 않게 한다.
+      mask.style.background =
+        root.dataset.immersive === "true" || root.dataset.landscape === "true"
+          ? "#000"
+          : "#fff";
       mask.style.opacity = "1";
       if (maskTimer !== null) clearTimeout(maskTimer);
       // iOS 회전 애니메이션(~0.4s)이 끝난 뒤 걷는다.
