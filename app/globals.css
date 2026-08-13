@@ -166,7 +166,7 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    height: max(env(safe-area-inset-top, 0px), 12px);
+    height: max(env(safe-area-inset-top, 0px), 4px);
     background: #ffffff;
     /* 회전한 프레임(transform 으로 쌓임 맥락을 만든다)보다 반드시 위여야 한다. */
     z-index: 2147483647;
