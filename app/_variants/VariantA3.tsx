@@ -1132,7 +1132,10 @@ function ExpandedView({
   }, []);
   // A-3: 녹화 모드에서 카메라 목록/움직임 감지를 탭으로 가르지 않는다 — 플레이어
   // (5버튼) 아래에 움직임 감지(가로 시간바), 그 아래 카메라 목록을 쌓아 항상 같이
-  // 보인다(사용자 결정 2026-08-14). A-2 의 recTab 탭 상태는 그래서 없다.
+  // 보인다(사용자 결정 2026-08-14). 단, 오른쪽 사이드 패널(1080+)은 A-2 그대로
+  // 탭 + 세로 타임라인을 유지한다(사용자 결정: "오른쪽 패널은 기존 유지").
+  // recTab 은 그 사이드 패널 전용 상태다.
+  const [recTab, setRecTab] = useState<"list" | "motion">("list");
   // 가로로 넓적한 화면(가로/세로 >= SIDE_PANEL_RATIO)이면 카메라 목록·움직임 감지가
   // 화면 아래 가로 스트립이 아니라 오른쪽 끝 세로 패널로 간다(탭도 패널 안 위쪽).
   // 그런 화면은 영상이 세로에 갇혀 있어서 하단 스트립이 영상 폭을 크게 깎는다 —
@@ -1224,7 +1227,10 @@ function ExpandedView({
   useEffect(() => {
     const selectionChanged = prevIndexRef.current !== index;
     prevIndexRef.current = index;
-    // A-3: 목록은 모드와 무관하게 항상 보인다(탭 제거·적층).
+    // 목록 가시성 — 세로/가로 스트립은 항상 보인다(적층). 사이드 패널은 A-2 처럼
+    // 탭이라 '카메라 목록' 탭일 때만 보인다.
+    const listVisible = !sidePanel || mode === "live" || recTab === "list";
+    if (!listVisible) return;
     const el = listScrollRef.current;
     if (!el) return;
     const center = (behavior: ScrollBehavior) => {
@@ -1272,7 +1278,7 @@ function ExpandedView({
       clearTimeout(stop);
       ro.disconnect();
     };
-  }, [index, mode, listWide]);
+  }, [index, mode, recTab, listWide, sidePanel]);
   // 실시간↔녹화 전환 시 되감기/빨리감기 배속을 0배(기본)로 원복.
   // ExpandedView는 모드가 바뀌어도 언마운트되지 않아 배속 인덱스가 남으므로 명시적으로 리셋.
   useEffect(() => {
@@ -1740,10 +1746,43 @@ function ExpandedView({
       )}
     </>
   );
-  // A-3: 녹화 모드엔 플레이어(5버튼) 바로 아래 움직임 감지(가로 시간바) —
-  // 탭 없이 항상 보인다. 높이는 A-2 감지 탭 스트립과 같은 MOTION_MIN_H 로
-  // 고정하고, 남는 세로는 아래 카메라 목록 영역이 쓴다. 세로 타임라인은 A-3
-  // 에서 안 쓴다(사용자 결정 2026-08-14: "움직임 감지는 다 가로 버전으로").
+  // 사이드 패널(1080+) 전용 — A-2 그대로: 녹화 모드에서 카메라 목록/움직임 감지
+  // 탭을 패널 위쪽에 둔다. 세로/가로 스트립(아래 bottomStrip)은 탭 없이 적층이라
+  // 여기서만 쓴다.
+  const tabsBlock = (
+    <>
+      {mode === "recording" && (
+        <>
+          <div className="flex items-center px-5" style={{ gap: "20px" }}>
+            {([
+              { key: "list", label: "카메라 목록" },
+              { key: "motion", label: "움직임 감지" },
+            ] as const).map((t) => {
+              const active = recTab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setRecTab(t.key)}
+                  className="relative text-[15px] font-bold leading-none"
+                  style={{
+                    padding: "14px 0",
+                    color: active ? "#1D6CEB" : "#A6A6A6",
+                  }}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+        </>
+      )}
+    </>
+  );
+  // A-3(세로/가로 스트립): 녹화 모드엔 플레이어(5버튼) 바로 아래 움직임 감지
+  // (가로 시간바) — 탭 없이 항상 보인다. 높이는 A-2 감지 탭 스트립과 같은
+  // MOTION_MIN_H 로 고정하고, 남는 세로는 아래 카메라 목록 영역이 쓴다.
   const motionBlock = mode === "recording" && (
     <div
       className="relative flex flex-none flex-col"
@@ -1819,33 +1858,32 @@ function ExpandedView({
       </div>
     </>
   );
-  // 오른쪽 세로 패널 본문 — 목록은 1열 세로 스크롤(타일 폭 = 패널 폭), 감지는
-  // A-3 에선 여기도 가로 시간바(사용자 결정 2026-08-14: "다 가로 버전으로").
-  // 패널 폭(320)이 좁아 한눈에 보이는 시간 범위는 짧다 — 감수하고 통일.
+  // 오른쪽 세로 패널 본문 — A-2 그대로: 목록은 1열 세로 스크롤(타일 폭 = 패널 폭),
+  // 감지는 세로 타임라인(SideEventTimeline). 패널이 좁아 가로 시간바가 안 맞아
+  // 적층·가로 교체에서 제외했다(사용자 결정 2026-08-14: "오른쪽 패널은 기존 유지").
   const sidePanelBody = (
     <div ref={listAreaRef} className="relative flex min-h-0 flex-1 flex-col">
-      {motionBlock}
-      {/* 영역 제목 — 아래 가로 스트립과 같은 이유·같은 사양(패널이라 px-4). */}
-      {mode === "recording" && (
+      {mode === "recording" && recTab === "motion" ? (
+        <SideEventTimeline
+          playbackMs={playbackMs}
+          setPlaybackMs={setPlaybackMs}
+          cameraSrc={cam.src}
+          onScrubbingChange={onScrubbingChange}
+        />
+      ) : (
         <div
-          className="flex-none px-4 text-[15px] font-bold leading-none"
-          style={{ paddingTop: "14px", color: "#262626" }}
+          ref={listScrollRef}
+          className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
-          카메라 목록
+          {CAMERAS.map((c, i) =>
+            cameraTile(
+              c,
+              i,
+              "relative aspect-video w-full flex-none overflow-hidden bg-neutral-900",
+            ),
+          )}
         </div>
       )}
-      <div
-        ref={listScrollRef}
-        className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {CAMERAS.map((c, i) =>
-          cameraTile(
-            c,
-            i,
-            "relative aspect-video w-full flex-none overflow-hidden bg-neutral-900",
-          ),
-        )}
-      </div>
       <CameraListSkeleton visible={videoLoading} />
     </div>
   );
@@ -1854,8 +1892,8 @@ function ExpandedView({
     <>
       {headerBlock}
       {sidePanel ? (
-        // 1080+ : 왼쪽 컬럼(영상 + 날짜 + 플레이어) | 오른쪽 세로 패널
-        // (A-3: 탭 없이 감지 시간바 + 목록 적층)
+        // 1080+ : 왼쪽 컬럼(영상 + 날짜 + 플레이어) | 오른쪽 세로 패널(탭 + 본문,
+        // A-2 그대로)
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {videoBlock}
@@ -1866,6 +1904,7 @@ function ExpandedView({
             className="flex min-h-0 flex-none flex-col overflow-hidden"
             style={{ width: `${SIDE_PANEL_W}px`, borderLeft: "1px solid #EBEBEB" }}
           >
+            {tabsBlock}
             {sidePanelBody}
           </div>
         </div>
