@@ -32,6 +32,19 @@ body {
   padding: 0;
 }
 
+/* 홈화면 앱(standalone/fullscreen)에서는 svh 를 믿으면 안 된다. 투명 상태바
+   (black-translucent)와 조합하면 iOS 가 svh 를 상태바 높이만큼 작게 잘못 재서,
+   앱이 화면보다 짧아지고 바닥에 그만큼 흰 공간이 남는다(사용자 지적: "하단 탭
+   아래쪽에 흰 공간이 많이 생겨있는데") — layout.tsx 옛 주석이 말하던 '웹뷰
+   하단 잘림 버그'가 이 모습이다. 홈화면 앱은 접히는 브라우저 툴바가 없어
+   vh(큰 뷰포트)가 곧 실제 전체 높이다 — svh 로 내릴 이유 자체가 없다. */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  html,
+  body {
+    height: 100vh;
+  }
+}
+
 /* iOS/Android 안전 영역 처리. 상·하·좌·우 시스템 바(상태바·노치·홈 인디케이터·
    제스처 네비)만큼 인셋을 줘서 콘텐츠가 시스템 바와 겹치지 않게 한다. 이렇게 하면
    OS가 그리는 상단 구분선·하단 스크림이 콘텐츠를 침범하지 않는다.
