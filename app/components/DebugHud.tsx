@@ -23,7 +23,34 @@ export default function DebugHud() {
   useEffect(() => {
     // useSearchParams 를 안 쓴다 — 그걸 쓰면 Suspense 경계가 필요해져서
     // 임시 진단용으로는 과하다. 주소는 클라이언트에서 직접 읽는다.
-    if (!/[?&]debug=1/.test(window.location.search)) return;
+    //
+    // 홈화면 앱(standalone)은 저장된 주소로만 열려서 ?debug=1 을 못 붙인다.
+    // 그런데 정작 봐야 할 환경이 거기다 — 사파리와 상태바 동작이 다르다.
+    // 그래서 화면 왼쪽 위 모서리를 3초 안에 5번 두드리면 켜지게 한다.
+    let taps = 0;
+    let tapTimer: number | undefined;
+    const onTap = (e: PointerEvent) => {
+      if (e.clientX > 80 || e.clientY > 80) return;
+      taps += 1;
+      window.clearTimeout(tapTimer);
+      tapTimer = window.setTimeout(() => {
+        taps = 0;
+      }, 3000);
+      if (taps >= 5) {
+        taps = 0;
+        setOn((v) => !v);
+      }
+    };
+    window.addEventListener("pointerdown", onTap, true);
+    const cleanupTap = () => {
+      window.removeEventListener("pointerdown", onTap, true);
+      window.clearTimeout(tapTimer);
+    };
+
+    if (!/[?&]debug=1/.test(window.location.search)) {
+      // 주소로 안 켰어도 모서리 탭은 살려 둔다.
+      return cleanupTap;
+    }
     setOn(true);
 
     const read = () => {
