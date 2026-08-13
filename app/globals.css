@@ -199,7 +199,8 @@ body {
   @media (orientation: portrait) {
     html:not([data-immersive="true"]):not([data-landscape="true"])
       .app-safe-frame {
-      padding-top: max(env(safe-area-inset-top, 0px), 12px);
+      /* 12px 으로는 iOS 가 밝다고 안 잡았다 — 키운다. 잘 먹히면 줄인다. */
+      padding-top: max(env(safe-area-inset-top, 0px), 24px);
     }
   }
 
