@@ -1140,16 +1140,19 @@ function ExpandedView({
   const sidePanel = useDeviceRatio() >= SIDE_PANEL_RATIO;
   // 레이아웃 기준은 app/components/layoutRules.ts 참고 — 단일 영상은 폭과 무관하게
   // 항상 16:9, 목록 방향은 안들이 공유하는 useListLayout 이 정한다.
-  // 가로 한 줄(가로 스크롤)일 때 목록 영역은 '움직임 감지' 탭 스트립 높이
-  // (MOTION_MIN_H)로 못 박고, 남는 세로는 아래 videoAreaRef(단일 영상)가 가져간다.
-  // 그래서 목록 탭·감지 탭 스트립 높이가 정확히 같고, 스트립 아래에 빈 공간도 없다.
-  // 이때 영상은 16:9 를 넘겨 세로로 늘어난다 — 가로 스크롤일 때는 허용하기로 했다.
+  //
+  // A-2 는 pin(두 번째 인자)을 켜서 가로 한 줄일 때 목록을 MOTION_MIN_H 로 못 박고
+  // 남는 세로를 영상이 가져갔다(영상이 16:9 를 넘겨 늘어남) — 목록 탭·감지 탭
+  // 스트립 높이를 맞추기 위해서였다. A-3 은 탭이 없어(감지·목록 적층) 맞출 스트립이
+  // 없고, 실시간·녹화의 영상 크기가 같아야 한다(사용자 결정 2026-08-14: 실시간만
+  // 늘어나 녹화 단일과 어긋났다). pin 을 끄면 영상은 두 모드 모두 16:9 그대로,
+  // 실시간의 남는 세로는 목록(flex-1)이 가져간다.
   //
   // 사이드 패널일 땐 이 훅이 할 일이 없다(가로/세로 스트립 자체가 없으니까). 인자를
   // 빼서 넘기면 훅이 이전 배치에서 걸어 둔 인라인 값들을 걷어내고 손을 뗀다.
   const [listAreaRef, listRowRef, listWide, videoAreaRef] = useListLayout(
     sidePanel ? undefined : MOTION_MIN_H,
-    !sidePanel,
+    false,
   );
   // 카메라 목록 — 선택 카메라 타일을 가운데로 맞출 때 쓴다(가로면 좌우, 세로면 위아래).
   const listScrollRef = useRef<HTMLDivElement>(null);
@@ -1766,6 +1769,17 @@ function ExpandedView({
         ref={listAreaRef}
         className="relative flex min-h-0 flex-col flex-1"
       >
+      {/* 영역 제목 — 녹화 모드에서 위에 감지 타임라인이 겹쳐 쌓이면서 탭(이름표)이
+          없어졌으니 목록 쪽에만 달아준다(사용자 결정: 감지는 썸네일로 자명).
+          useListLayout 이 제목 높이를 실측해 영역 최소 높이에 더한다. */}
+      {mode === "recording" && (
+        <div
+          className="flex-none px-5 text-[15px] font-bold leading-none"
+          style={{ paddingTop: "14px", color: "#262626" }}
+        >
+          카메라 목록
+        </div>
+      )}
       <div
         ref={listWide ? undefined : listScrollRef}
         className={
@@ -1811,6 +1825,15 @@ function ExpandedView({
   const sidePanelBody = (
     <div ref={listAreaRef} className="relative flex min-h-0 flex-1 flex-col">
       {motionBlock}
+      {/* 영역 제목 — 아래 가로 스트립과 같은 이유·같은 사양(패널이라 px-4). */}
+      {mode === "recording" && (
+        <div
+          className="flex-none px-4 text-[15px] font-bold leading-none"
+          style={{ paddingTop: "14px", color: "#262626" }}
+        >
+          카메라 목록
+        </div>
+      )}
       <div
         ref={listScrollRef}
         className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
