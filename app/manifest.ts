@@ -24,15 +24,17 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "에스원 CCTV",
     description: "8층 사무실 실시간 영상",
     start_url: `${BASE}/a1`,
-    // standalone — 상태바를 남긴다(사용자 확정: "확대든 가로모드든 상태바
-    // 제외하고 영상뷰 표시해"). fullscreen 으로 설치하면 안드로이드가 상태바를
-    // 아예 없애는데, 노치(컷아웃) 자리를 OS 가 검은 레터박스로 막아 확대에서
-    // 노치 쪽에 앱이 못 칠하는 검은 띠가 남았다. standalone 은 상태바가 항상
-    // 떠 있고(색은 theme-color 를 따라 세로 흰색/확대 검정 — setBarColor),
-    // 영상은 그 아래만 쓴다. 아이폰(투명 상태바)과 같은 그림이다.
+    // fullscreen — 안드로이드 확대 중 회전 잠금이 이 설치 방식에 묶여 있다.
+    // 잠금(screen.orientation.lock)은 전체화면(또는 전체화면형 설치)에서만
+    // 허용되는데, 검은 띠를 잡으려고 잠깐 standalone 으로 바꿨더니 잠금까지
+    // 죽었다(일반 갤럭시에서 확대 중 회전됨 — 사용자 확인. 폴드가 잠겼던 건
+    // 옛 fullscreen 설치가 남아 있어서였다). 검은 띠의 실제 범인은 앱이 깔던
+    // --status-h 였고 그건 이미 안드로이드에서 껐다(StatusInset).
+    // JS requestFullscreen 은 계속 안 부른다 — "아래로 내려 나가기" 토스트의
+    // 원인이었다. 설치형 fullscreen 은 그 토스트가 없다.
     // ※ 설치 순간 박히는 값 — 아이콘을 지우고 다시 추가해야 적용된다.
-    display: "standalone",
-    display_override: ["standalone"],
+    display: "fullscreen",
+    display_override: ["fullscreen", "standalone"],
     // any — 회전은 OS 에 맡긴다(사용자 확정: "그냥 가로로 돌게 해. 막지 말고").
     // portrait 잠금·CSS 되돌림·센서 가리개로 막아 봤던 이력이 있는데 전부
     // 걷어냈다. 아이폰은 애초에 잠금이 안 먹혔고(실측), 막는 장치들이 자꾸
