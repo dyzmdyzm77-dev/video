@@ -45,6 +45,33 @@ body {
   }
 }
 
+/* 확대 프레임(세로에서 CSS 회전) 치수도 같은 버그를 탄다 — dvh 가 상태바만큼
+   작게 나와 프레임이 화면보다 59px 짧고, 그 틈에 배경이 비쳤다(위 body 검정과
+   같은 증상의 다른 절반). 홈화면 앱은 vh 가 정확하므로 vh 로 되돌린다.
+   선택자·계산식은 본 규칙(터치 미디어쿼리 안)과 같아야 한다. */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  @media not all and (hover: hover) and (pointer: fine) {
+    @media (orientation: portrait) {
+      html[data-landscape="true"] .app-safe-frame {
+        top: calc(50vh + var(--status-h, 0px) / 2);
+        width: calc(100vh - var(--status-h, 0px));
+      }
+      html:not([data-landscape="true"]):not([data-immersive="true"])
+        .app-safe-frame {
+        top: 50%;
+        width: 100%;
+      }
+    }
+    @media (orientation: landscape) {
+      html:not([data-landscape="true"]):not([data-immersive="true"])
+        .app-safe-frame {
+        top: calc(50vh);
+        width: 100vh;
+      }
+    }
+  }
+}
+
 /* iOS/Android 안전 영역 처리. 상·하·좌·우 시스템 바(상태바·노치·홈 인디케이터·
    제스처 네비)만큼 인셋을 줘서 콘텐츠가 시스템 바와 겹치지 않게 한다. 이렇게 하면
    OS가 그리는 상단 구분선·하단 스크림이 콘텐츠를 침범하지 않는다.
@@ -142,6 +169,14 @@ body {
      겹치지 않는다 — 영상만 끝까지 깔린다. */
   html[data-immersive="true"] .app-safe-frame {
     padding: 0;
+  }
+
+  /* 확대·가로에서 프레임 밖 틈(상태바 자리, 치수 오차)은 body 가 비친다 —
+     기본이 흰색이라 검은 화면 옆에 흰 띠로 보였다(사용자 지적: "확대했을 때
+     왜 iOS 는 화면 좌측에 흰색 영역이 있니"). 검은 화면일 땐 배경도 검정. */
+  html[data-immersive="true"] body,
+  html[data-landscape="true"] body {
+    background: #000;
   }
 
   /* 보통 화면은 폰을 눕혀도 세로 그대로다 (사용자 지정: "일반 모바일에서는

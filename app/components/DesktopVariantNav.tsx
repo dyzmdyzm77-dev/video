@@ -11,7 +11,6 @@ import {
 import {
   exitImmersive,
   readImmersive,
-  readImmersiveRotated,
   useImmersive,
 } from "./immersive";
 import {
@@ -548,13 +547,14 @@ export default function DesktopVariantNav() {
           // 프레임만 돌면 돌고 나서 콘텐츠가 다시 서느라 두 번 도는 것처럼
           // 보이기 때문 — 도는 동안은 안(VariantA1)이 스켈레톤으로 덮는다.
           //
-          // 회전 요청이 두 번 나가지 않도록 경로를 나눈다:
-          //  · 확대가 눕혀 만든 상태 → exitImmersive 가 원래 방향으로 되돌린다.
-          //  · 제자리 확대 → 방향을 안 바꿨으므로 여기서 한 번 돌린다.
+          // 방향 복귀는 exitImmersive 하나가 맡는다 — 지금은 무조건 '세로로'
+          // 목표값(to=false)을 실어 보내므로 여기서 또 돌리면 안 된다. 예전엔
+          // 제자리 확대만 여기서 한 번 돌렸는데(그땐 exitImmersive 가 조건부라),
+          // 그 보정이 남은 채 exitImmersive 가 무조건이 되면서 두 번 뒤집혀
+          // '가로 유지 + 확대만 꺼짐'이 됐다(사용자 지적: "왼쪽 회전된 상태에서
+          // 축소로 되어 있니"). 이미 세로면 to=false 는 아무 일도 안 한다.
           if (readImmersive()) {
-            const undoesRotation = readImmersiveRotated();
             exitImmersive();
-            if (!undoesRotation) setRotated((v) => !v);
             return;
           }
           setRotated((v) => !v);
