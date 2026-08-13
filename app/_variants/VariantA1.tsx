@@ -263,7 +263,14 @@ export default function VariantA1({
   const immersive = useImmersive();
   const compareTarget = useCompareTarget();
   // 가로 확대 화면의 패널 방향 판정에 쓴다(정사각형에 가까우면 아래에서).
-  const deviceRatio = useDeviceRatio();
+  // 실기기 확대는 폰이 세로인 채 화면만 CSS 로 돌린 것이라 뷰포트 비율이 세로
+  // 그대로다(402/874=0.46) — 그대로 쓰면 납작한 폰인데도 '정사각형'으로 읽혀
+  // 아래에서 떴다(사용자 지적: "기기가 가로 상태인데 아래에서 메뉴 뜨는 중").
+  // CSS 회전이 걸려 있으면 비율을 뒤집는다. 데스크톱 미리보기는 회전이 치수를
+  // 실제로 맞바꾸므로 그대로다(useRotatedInput 이 데스크톱에선 항상 false).
+  const rawRatio = useDeviceRatio();
+  const ratioFlipped = useRotatedInput();
+  const deviceRatio = ratioFlipped && rawRatio > 0 ? 1 / rawRatio : rawRatio;
   // 화면이 전환되면 열려 있던 패널을 상태째 끈다(사용자 지정: "단일에서 메뉴
   // 켜놨을 때 다채널로 옮겨지면 켜진 메뉴는 꺼져야지" → "화면전환이 되면
   // 꺼져야겠네"). 렌더 조건으로 숨기기만 하면 상태가 남아, 다음에 그 화면으로
