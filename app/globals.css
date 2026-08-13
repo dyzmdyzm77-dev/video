@@ -217,27 +217,6 @@ body {
     transition: transform 0.35s ease;
   }
 
-  /* 세로에서 화면 맨 위를 흰색으로 남긴다 (사용자 지정: "세로로 돌렸을 때
-     흰색이 떠야지. 가로에서는 왜 뜨는데?").
-
-     iOS 는 상태바 색을 코드로 못 정한다 — theme-color 는 사파리가 무시하고,
-     홈화면 앱도 페이지가 그린 색을 가져간다. 그래서 상태바를 흰색으로 유지하려면
-     화면 맨 위에 실제 흰 픽셀이 있어야 한다. 확대(검은 화면)를 거치면 상태바가
-     검게 굳고 축소해도 안 돌아오던 게 이것 때문이다.
-
-     덮개가 아니라 여백이라 영상이 가려지지 않고 그만큼 아래에서 시작한다.
-     프레임 배경이 흰색인 보통 화면에만 건다 — 확대·가로는 프레임이 검정이라
-     여기 넣으면 검은 띠가 되고(가로에 넣었다가 지적받아 뺐다), 확대는 프레임이
-     90° 돌아 있어 여백이 엉뚱한 변에 붙는다. */
-  @media (orientation: portrait) {
-    html:not([data-immersive="true"]):not([data-landscape="true"])
-      .app-safe-frame {
-      /* 상태바를 다 채운다 (사용자 지정: "쭉 더 올려 봐, 상태바를 다 채워야지").
-         --status-h 는 StatusInset 이 잰 실제 상태바 높이다(아이폰 16 Pro 62px).
-         못 재는 환경을 위해 24px 을 바닥값으로 둔다. */
-      padding-top: max(env(safe-area-inset-top, 0px), var(--status-h, 24px));
-    }
-  }
 
   /* CSS 로 눕히는 건 '기기가 세로일 때'만이다. 폰을 실제로 눕히면 뷰포트가 이미
      가로라 돌릴 이유가 없다 — 그대로 두면 앱의 90° + OS 의 90° 가 겹쳐 콘텐츠가
@@ -290,28 +269,6 @@ body {
      (deviceRotate.ts 의 requestDeviceRotate 가 350ms 동안 세운다). */
   html[data-rotate-anim="true"] .app-safe-frame {
     transition: transform 0.35s ease;
-  }
-
-  /* 세로에서 화면 맨 위를 흰색으로 남긴다 (사용자 지정: "세로로 돌렸을 때
-     흰색이 떠야지. 가로에서는 왜 뜨는데?").
-
-     iOS 는 상태바 색을 코드로 못 정한다 — theme-color 는 사파리가 무시하고,
-     홈화면 앱도 페이지가 그린 색을 가져간다. 그래서 상태바를 흰색으로 유지하려면
-     화면 맨 위에 실제 흰 픽셀이 있어야 한다. 확대(검은 화면)를 거치면 상태바가
-     검게 굳고 축소해도 안 돌아오던 게 이것 때문이다.
-
-     덮개가 아니라 여백이라 영상이 가려지지 않고 그만큼 아래에서 시작한다.
-     프레임 배경이 흰색인 보통 화면에만 건다 — 확대·가로는 프레임이 검정이라
-     여기 넣으면 검은 띠가 되고(가로에 넣었다가 지적받아 뺐다), 확대는 프레임이
-     90° 돌아 있어 여백이 엉뚱한 변에 붙는다. */
-  @media (orientation: portrait) {
-    html:not([data-immersive="true"]):not([data-landscape="true"])
-      .app-safe-frame {
-      /* 상태바를 다 채운다 (사용자 지정: "쭉 더 올려 봐, 상태바를 다 채워야지").
-         --status-h 는 StatusInset 이 잰 실제 상태바 높이다(아이폰 16 Pro 62px).
-         못 재는 환경을 위해 24px 을 바닥값으로 둔다. */
-      padding-top: max(env(safe-area-inset-top, 0px), var(--status-h, 24px));
-    }
   }
 
 }
