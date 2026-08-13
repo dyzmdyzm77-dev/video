@@ -139,22 +139,87 @@ export default function StatusInset() {
       "pointer-events:none;opacity:0;transition:opacity 0.12s ease;";
     document.body.appendChild(mask);
     let maskTimer: ReturnType<typeof setTimeout> | null = null;
-    const onRotateStart = () => {
-      // 모든 화면에서 가린다(사용자 확정: "눕히는 걸 아예 막아") — 눕혀도 화면이
-      // 미동도 안 하는 것처럼 보여야 한다. 확대(검은 화면)는 검정으로, 보통
-      // 화면(흰 배경)은 흰색으로 덮어 어느 쪽이든 색이 튀지 않게 한다.
+    const raiseMask = (instant: boolean) => {
+      // 확대(검은 화면)는 검정, 보통 화면(흰 배경)은 흰색 — 덮는 색이 안 튄다.
       mask.style.background =
         root.dataset.immersive === "true" || root.dataset.landscape === "true"
           ? "#000"
           : "#fff";
+      // 선제 덮기는 즉시(트랜지션 없이) — 페이드를 기다리면 OS 를 못 이긴다.
+      mask.style.transition = instant ? "none" : "opacity 0.12s ease";
       mask.style.opacity = "1";
       if (maskTimer !== null) clearTimeout(maskTimer);
-      // iOS 회전 애니메이션(~0.4s)이 끝난 뒤 걷는다.
+      maskTimer = null;
+    };
+    const dropMaskSoon = (delay: number) => {
+      if (maskTimer !== null) clearTimeout(maskTimer);
       maskTimer = setTimeout(() => {
         maskTimer = null;
+        mask.style.transition = "opacity 0.12s ease";
         mask.style.opacity = "0";
-      }, 500);
+      }, delay);
     };
+    const onRotateStart = () => {
+      // 회전이 이미 시작/완료된 시점의 신호 — 늦었더라도 덮고, 끝난 뒤 걷는다.
+      raiseMask(true);
+      dropMaskSoon(500);
+    };
+
+    // ── 기울기 센서로 회전을 '미리' 덮는다 ─────────────────────────────
+    // resize·orientationchange 는 iOS 가 회전 애니메이션을 튼 뒤에야 와서
+    // 가리개가 늦었다(사용자: "계속 돌고 있어"). 기울기는 돌기 전에 변한다 —
+    // 기기 기울기가 지금 뷰포트 방향과 어긋나는 순간(= iOS 가 곧 돌릴 상황)
+    // 화면을 먼저 덮어 버리면 도는 모습이 아예 안 보인다.
+    // 뷰포트와 기울기가 다시 일치하면(회전 완료) 걷는다. 어긋난 채 회전이 안
+    // 오면(제어센터 잠금 등) 1.5초 뒤 걷는다.
+    let sensorMasked = false;
+    const onTilt = (e: DeviceOrientationEvent) => {
+      const g = e.gamma;
+      const b = e.beta;
+      if (g === null || b === null) return;
+      // 눕는 중 판정: 좌우 기울기(gamma)가 45° 를 넘으면 가로 파지.
+      // 거의 평평하면(테이블 위) 판정 보류.
+      if (Math.abs(g) < 20 && Math.abs(b) < 20) return;
+      const tiltLandscape = Math.abs(g) > 45;
+      const viewportLandscape = window.innerWidth > window.innerHeight;
+      if (tiltLandscape !== viewportLandscape) {
+        if (!sensorMasked) {
+          sensorMasked = true;
+          raiseMask(true);
+          dropMaskSoon(1500); // 회전이 끝내 안 오면(OS 잠금 등) 걷는 안전장치
+        }
+      } else if (sensorMasked) {
+        sensorMasked = false;
+        dropMaskSoon(350); // 회전 완료 — 애니메이션 꼬리까지 덮고 걷는다
+      }
+    };
+    // iOS 13+ 는 센서 접근에 사용자 제스처 안의 허가가 필요하다. 첫 터치에서
+    // 한 번 요청하고, 허가되면 그때부터 선제 덮기가 산다. 거부되거나 API 가
+    // 없으면(안드로이드 등은 바로 등록) 사후 가리개(onRotateStart)만 남는다.
+    const DOE = (
+      window as unknown as {
+        DeviceOrientationEvent?: {
+          requestPermission?: () => Promise<string>;
+        };
+      }
+    ).DeviceOrientationEvent;
+    const armSensor = () => {
+      window.removeEventListener("pointerdown", armSensor, true);
+      if (typeof DOE?.requestPermission === "function") {
+        DOE.requestPermission()
+          .then((r) => {
+            if (r === "granted") {
+              window.addEventListener("deviceorientation", onTilt);
+            }
+          })
+          .catch(() => {});
+      }
+    };
+    if (typeof DOE?.requestPermission === "function") {
+      window.addEventListener("pointerdown", armSensor, true);
+    } else {
+      window.addEventListener("deviceorientation", onTilt);
+    }
 
     const evts = ["resize", "orientationchange"];
     evts.forEach((e) => window.addEventListener(e, sync, { passive: true }));
@@ -166,6 +231,8 @@ export default function StatusInset() {
       evts.forEach((e) => window.removeEventListener(e, sync));
       window.removeEventListener("orientationchange", onRotateStart);
       window.visualViewport?.removeEventListener("resize", onRotateStart);
+      window.removeEventListener("pointerdown", armSensor, true);
+      window.removeEventListener("deviceorientation", onTilt);
       if (maskTimer !== null) clearTimeout(maskTimer);
       mask.remove();
     };
