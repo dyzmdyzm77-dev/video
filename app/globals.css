@@ -194,8 +194,16 @@ body {
        top 도 같은 단위로 맞춰야 중심이 안 어긋난다 — 예전에 %(=lvh 기준)와
        100svh 를 섞었다가 위아래로 (lvh-svh)/2 씩 밀렸던 그 문제다.
        vh 는 dvh 를 모르는 구형 브라우저용 폴백(위 html/body 와 같은 패턴). */
-    width: 100vh;
-    width: 100dvh;
+    /* 상태바(투명 — layout.tsx 의 black-translucent) 높이만큼 물리 상단을
+       비운다. 프레임 폭(=회전 후 화면 세로 길이)을 --status-h 만큼 줄이고 중심을
+       그 절반만큼 내리면 위쪽에 딱 그만큼 남는다. 그 자리는 html 배경이 보이는데,
+       확대 중엔 setBarColor(true) 가 검정으로 칠해 두므로 검은 상태바가 된다 —
+       영상은 그 아래에서 온전하다(사용자 지정: "상태바 영역 제외한 영상 영역
+       노출"). --status-h 를 못 재는 환경(사파리 등)에선 0 이라 지금과 같다. */
+    top: calc(50vh + var(--status-h, 0px) / 2);
+    top: calc(50dvh + var(--status-h, 0px) / 2);
+    width: calc(100vh - var(--status-h, 0px));
+    width: calc(100dvh - var(--status-h, 0px));
     height: 100vw;
     transform-origin: center center;
     transform: translate(-50%, -50%) rotate(90deg);
