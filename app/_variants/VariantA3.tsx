@@ -3116,7 +3116,7 @@ function LiveBadge({ onClick }: { onClick?: () => void }) {
       }}
     >
       <span className="h-1 w-1 rounded-full bg-white" />
-      LIVE
+      실시간
     </button>
   );
 }
@@ -3445,7 +3445,7 @@ function ModeToggle({
           color: mode === "recording" ? "#ffffff" : "#7F7F7F",
         }}
       >
-        녹화
+        녹화 영상
       </button>
     </div>
   );
@@ -3470,7 +3470,7 @@ function RecBadge({ onClick }: { onClick?: () => void }) {
         className="rounded-full"
         style={{ width: "4px", height: "4px", backgroundColor: "#ffffff" }}
       />
-      녹화
+      녹화 영상
     </button>
   );
 }
