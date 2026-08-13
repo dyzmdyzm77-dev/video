@@ -315,6 +315,9 @@ export function syncImmersiveWithLandscape() {
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
   // 확대에서 잡힌 검은 상태바를 흰색으로 되찾는다(exitImmersive 와 같은 이유).
   requestAnimationFrame(() => setBarColor(false));
+  // 회전 연출(350ms) 중 검은 화면이 다시 그려지며 색이 도로 잡히는 경우가 있어
+  // 연출이 끝난 뒤 한 번 더 못 박는다.
+  setTimeout(() => setBarColor(false), 450);
 }
 
 /** 지금 확대가 '앱을 눕혀서' 만든 상태인가. 좌측 패널의 회전 버튼이 이걸 보고
@@ -432,6 +435,9 @@ export function exitImmersive() {
   // 회전을 안 하는 경로(이미 세로)도 있으므로 회전 쪽에 맡기지 않고 여기서
   // 직접 부른다. 흰 프레임으로 다시 그려진 다음이라야 해서 한 프레임 뒤에.
   requestAnimationFrame(() => setBarColor(false));
+  // 회전 연출(350ms) 중 검은 화면이 다시 그려지며 색이 도로 잡히는 경우가 있어
+  // 연출이 끝난 뒤 한 번 더 못 박는다.
+  setTimeout(() => setBarColor(false), 450);
 }
 
 /** 몰입 여부를 구독한다. SSR·첫 렌더는 꺼짐(false)으로 맞춰 하이드레이션 불일치를 막는다. */
