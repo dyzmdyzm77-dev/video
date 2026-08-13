@@ -33,6 +33,26 @@ function readInsetTop(): number {
   return h;
 }
 
+/** env() 가 0 을 주는 환경을 위한 대체 측정.
+ *
+ *  홈화면 앱은 상태바 스타일이 "default" 라 웹뷰가 상태바 아래에서 시작한다 —
+ *  화면 높이와 뷰포트 높이의 차가 곧 상태바 높이다(아이폰 16 Pro 기준 874−812=62).
+ *  이걸 쓰면 env() 가 뭘 주든 상관없이 값이 잡힌다.
+ *
+ *  사파리에서는 아래 주소창까지 빠져서 차가 훨씬 크다(874−714=160). STATUS_MAX
+ *  로 걸러 낸다 — 사파리에서는 0 이 되어 지금 동작 그대로다.
+ *  세로에서만 잰다. 가로는 상태바가 없어 차가 다른 뜻이 된다. */
+const STATUS_MAX = 90;
+
+function readStatusH(): number {
+  const env = readInsetTop();
+  if (env > 0) return env;
+  if (window.innerWidth > window.innerHeight) return 0;
+  const screenH = Math.max(window.screen.width, window.screen.height);
+  const gap = screenH - window.innerHeight;
+  return gap > 0 && gap <= STATUS_MAX ? gap : 0;
+}
+
 export default function StatusInset() {
   useEffect(() => {
     const desktop =
@@ -44,7 +64,7 @@ export default function StatusInset() {
     const root = document.documentElement;
     let best = 0;
     const sync = () => {
-      const now = readInsetTop();
+      const now = readStatusH();
       if (now <= best) return;
       best = now;
       root.style.setProperty("--status-h", `${Math.round(best)}px`);
