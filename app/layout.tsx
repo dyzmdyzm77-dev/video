@@ -5,6 +5,7 @@ import DesktopVariantNav from "./components/DesktopVariantNav";
 import DeviceScaler from "./components/DeviceScaler";
 import DeviceResizer from "./components/DeviceResizer";
 import AsIsPanel from "./components/AsIsPanel";
+import DebugHud from "./components/DebugHud";
 
 export const metadata: Metadata = {
   title: "에스원 CCTV",
@@ -59,6 +60,8 @@ export default function RootLayout({
         {children}
         <DeviceScaler />
         <DesktopVariantNav />
+        {/* 임시 진단용. 주소에 ?debug=1 을 붙였을 때만 뜬다. 확인 끝나면 지운다. */}
+        <DebugHud />
       </body>
     </html>
   );
