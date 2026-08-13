@@ -25,31 +25,23 @@ export const DEVICE_ROTATE_EVENT = "devicerotaterequest";
 // (아이폰 사파리는 애초에 requestFullscreen 이 없어 해도 아무 일도 안 났다.
 //  거기서 사파리 UI 를 걷는 방법은 '홈 화면에 추가'(standalone) 뿐이다.)
 
-// 상단 바(아이폰 상태바 영역 / 안드로이드 상태바)의 색을 못 박는다.
+// 상단 바(아이폰 상태바 영역 / 안드로이드 상태바)의 색을 화면 상태에 맞춘다.
 //
-// 사파리는 viewport-fit=cover 인 페이지에서 상단 바 색을 페이지에서 샘플링해
-// 쓰는데, 가로(영상만 있는 검정 화면)에서 잡은 색을 세로로 돌아와도 다시
-// 안 잡는 경우가 있다. theme-color 를 명시하면 샘플링 대신 이 값을 쓰므로
-// 방향이 바뀔 때마다 다시 못 박아 준다.
+// 확대·가로 = 검은 영상 화면 → 검정. 세로 보통 화면 → 흰색(사용자 지정:
+// "12px 흰색을 넣을 게 아니라 상태바 색을 바꿔야지").
 //
-// 색은 언제나 흰색이다(사용자 결정 2026-08-11). 한때 가로에선 검정으로 바꿨는데
-// — 가로가 영상만 남는 검정 화면이라 — 세로·가로를 오가다 보면 상태바가 검정인
-// 채로 남았다. 애초에 안 바꾸면 남을 것도 없다. landscape 인자는 호출부(회전
-// 연출)가 그대로 넘기고 있어 시그니처만 남겨 둔다.
-//
-// html 배경도 같이 맞춘다. body 는 100svh 라 그 바깥(상태바 아래·툴바 뒤)은
-// 캔버스(html 배경)가 칠하는데, 값을 바꾸는 것 자체가 그 영역을 다시 그리게
-// 만든다. 데스크톱 미리보기는 목업 배경(#e5e5e5)이 따로 있으니 건드리지 않는다.
-//
-// ★ 아이폰 상태바는 이 함수로 못 되돌린다. viewport-fit=cover 인 동안 상태바
-//   자리는 사파리가 칠하는 게 아니라 페이지가 직접 칠하는 자리라, theme-color 를
-//   안 본다. 두 번 헛짚었다 — meta 를 노드째 갈아 끼우기, viewport-fit 을
-//   contain 으로 흔들어 다시 재게 하기. 둘 다 아무 일도 안 났다.
-//   실제 원인은 따로였다: 확대만 그 자리를 검게 덮고 있었다. globals.css 의
-//   html[data-immersive="true"]::before 주석 참고.
-export function setBarColor(_landscape?: boolean) {
+// 아이폰 사파리는 theme-color 를 무시한다(실기기 진단으로 확인 — 검은 판으로
+// 화면을 덮어도, meta 를 노드째 갈아 끼워도 상태바가 꿈쩍 안 했다). 하지만
+// 사용자는 '홈 화면에 추가'(standalone)로 쓰고, 홈화면 앱은 이 값을 상태바
+// 배경에 쓴다. html 배경도 같이 맞춘다 — body(100svh) 바깥은 캔버스(html
+// 배경)가 칠한다. 데스크톱 미리보기는 목업 배경이 따로 있으니 안 건드린다.
+export function setBarColor(landscape?: boolean) {
   if (typeof document === "undefined") return;
-  const color = "#ffffff";
+  // 상태바 색을 상태에 맞춘다(사용자 지정: "12px 흰색을 넣을 게 아니라 상태바
+  // 색을 바꿔야지"). 확대·가로(검은 영상 화면)는 검정, 세로 보통 화면은 흰색.
+  // 사파리는 theme-color 를 무시하지만 홈화면 앱은 이 값을 상태바에 쓴다 —
+  // 사용자는 홈화면 추가로 쓰고 있다.
+  const color = landscape ? "#000000" : "#ffffff";
   let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   if (!meta) {
     meta = document.createElement("meta");

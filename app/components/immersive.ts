@@ -284,6 +284,7 @@ export function syncImmersiveWithLandscape() {
     root.dataset[BY_ROTATE_FLAG] = "true";
     syncFullscreen(true);
     window.dispatchEvent(new Event(IMMERSIVE_EVENT));
+    setBarColor(true); // 확대 화면은 검정 — 상태바도 검정으로.
     return;
   }
   // 세로가 됐다. 확대 화면은 '가로로 눕힌 영상'이라 세로에 남겨 두면 위아래로
@@ -378,6 +379,7 @@ export function toggleImmersive() {
       window.removeEventListener(LANDSCAPE_EVENT, onRotated);
       document.documentElement.dataset.immersive = "true";
       window.dispatchEvent(new Event(IMMERSIVE_EVENT));
+      setBarColor(true); // 확대 화면은 검정 — 상태바도 검정으로.
     };
     window.addEventListener(LANDSCAPE_EVENT, onRotated);
     requestDeviceRotate(true);
@@ -385,6 +387,7 @@ export function toggleImmersive() {
   }
   document.documentElement.dataset.immersive = "true";
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
+  setBarColor(true); // 확대 화면은 검정 — 상태바도 검정으로.
 }
 
 /** 몰입 모드를 끈다. 확대하면서 눕힌 거였다면 방향도 원래대로 되돌린다 —
