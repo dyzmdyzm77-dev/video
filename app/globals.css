@@ -234,7 +234,9 @@ body {
       width: 100dvh;
       height: 100vw;
       transform-origin: center center;
-      transform: translate(-50%, -50%) rotate(-90deg);
+      /* 돌릴 방향은 기기 각도의 반대다 — StatusInset 이 --force-rot 로 낸다.
+         고정값(-90deg)으로 두면 폰을 반대로 눕혔을 때 화면이 거꾸로 선다. */
+      transform: translate(-50%, -50%) rotate(var(--force-rot, -90deg));
       /* 세운 뒤에는 상태바 자리를 비울 이유가 없다 — 위 규칙을 되돌린다.
          물리 상단이 앱의 옆면이 되어 여백이 엉뚱한 변에 붙는다. */
       padding-top: 0;

@@ -64,6 +64,15 @@ export default function StatusInset() {
     const root = document.documentElement;
     let best = 0;
     const sync = () => {
+      // '눕힌 채 축소'로 콘텐츠를 세울 때(globals.css 의 data-force-portrait) 돌릴
+      // 방향. 폰을 왼쪽으로 눕혔는지 오른쪽으로 눕혔는지에 따라 반대여야 하고,
+      // 고정값으로 두면 절반의 경우에 화면이 거꾸로 선다. 기기 각도의 반대로 돌리면
+      // 콘텐츠가 똑바로 선다.
+      const angle =
+        window.screen?.orientation?.angle ??
+        ((window as unknown as { orientation?: number }).orientation || 0);
+      root.style.setProperty("--force-rot", `${-((angle + 360) % 360)}deg`);
+
       const now = readStatusH();
       if (now <= best) return;
       best = now;
