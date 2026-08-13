@@ -265,6 +265,18 @@ export function syncImmersiveWithLandscape() {
   const prev = lastState;
   lastState = { w, h, wide };
   if (prev === null || prev.wide === wide) return;
+  // 실기기는 눕혀도 아무 전환도 하지 않는다(사용자 확정: "디바이스 눕히면
+  // 전환되는 거 아예 막아"). 가로 영상은 확대 버튼으로만 간다. 보통 화면은
+  // globals.css 의 강제 세로 규칙이 세워 주고, 확대 화면은 그대로 유지된다.
+  // 아래 회전 반응 로직은 데스크톱 미리보기('왼쪽으로 회전' 토글) 전용이다.
+  if (
+    !(
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    )
+  ) {
+    return;
+  }
   if (wide) {
     if (readImmersive()) return;
     // '눕혔다'가 아니라 '원래 방향으로 돌아왔다'면 확대할 일이 아니다.
