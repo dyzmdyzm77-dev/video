@@ -83,9 +83,29 @@ export default function StatusInset() {
       root.style.setProperty("--force-rot", `${-((angle + 360) % 360)}deg`);
 
       const now = readStatusH();
-      if (now <= best) return;
-      best = now;
-      root.style.setProperty("--status-h", `${Math.round(best)}px`);
+      if (now > best) {
+        best = now;
+        root.style.setProperty("--status-h", `${Math.round(best)}px`);
+      }
+
+      // 눕힌 가로에서 비울 변은 '노치 쪽 한 변'이다 — 확대가 물리 상단 한 변만
+      // 비우는 것과 같은 그림(사용자 지적: "가로로 전환이랑 확대모드 왜 달라?").
+      // env() 는 가로에서 좌우를 대칭으로 줘서 노치 쪽을 못 가른다. 회전 각도로
+      // 가른다: 90(반시계, 노치 왼쪽) → 왼쪽만, 270/-90(시계, 노치 오른쪽) →
+      // 오른쪽만. 각도 API 가 없으면 왼쪽으로 본다(반시계가 일반적인 파지).
+      const land = window.innerWidth > window.innerHeight;
+      let l = "0px";
+      let r = "0px";
+      if (land && best > 0) {
+        const raw =
+          window.screen?.orientation?.angle ??
+          (window as unknown as { orientation?: number }).orientation;
+        const a = typeof raw === "number" ? (raw + 360) % 360 : 90;
+        if (a === 270) r = `${Math.round(best)}px`;
+        else l = `${Math.round(best)}px`;
+      }
+      root.style.setProperty("--notch-l", l);
+      root.style.setProperty("--notch-r", r);
     };
     sync();
 
