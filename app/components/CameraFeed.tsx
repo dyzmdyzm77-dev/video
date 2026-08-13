@@ -275,6 +275,7 @@ export function GridSelectionOverlay({
   topHeight = "25%",
   bottomHeight = "20%",
   showPageIndicator = true,
+  swapAiZoom = false,
   auto,
 }: {
   visible: boolean;
@@ -319,6 +320,10 @@ export function GridSelectionOverlay({
   bottomHeight?: string;
   /** 하단 페이지 인디케이터(점)를 그릴지. 기본 true = 기존 그대로. */
   showPageIndicator?: boolean;
+  /** AI 와 크게 보기 자리를 재배치한다 — AI 는 좌하단 원 버튼, 크게 보기는
+   *  우하단 원 버튼(AI 가 쓰던 자리), 우상단 줄에선 크게 보기가 빠진다.
+   *  A-3안 전용(2026-08-14). 기본 false = 기존 그대로. */
+  swapAiZoom?: boolean;
   /** 딤 자동 숨김 핸들(useAutoHide). 주면 아이콘을 만지는 동안 딤을 붙잡고,
    *  떼는 순간부터 5초를 다시 센다. 안 주면 기존 그대로(타이머 안 되돌림). */
   auto?: {
@@ -441,21 +446,24 @@ export function GridSelectionOverlay({
         {/* 크게 보기 — 상태바·헤더·하단 탭바·안드로이드 내비를 걷고 영상만 화면을
             꽉 채운다(immersive.ts). 회전이 아니라 '지금 방향 그대로 키우기'다.
             이미 가로로 눕혀 둔 상태면 그건 세로로 되돌리는 버튼이 된다 —
-            버튼 뜻은 늘 '크게 ↔ 원래대로' 하나로 읽힌다. */}
-        <button
-          type="button"
-          aria-label={landscape || immersive ? "원래 크기로" : "크게 보기"}
-          className="px-1.5 py-2"
-          // 언제나 '크게 보기 ↔ 원래대로'다. 방향은 확대가 알아서 정한다
-          // (immersive.ts) — 회전은 좌측 패널의 몫이고 이 버튼과 무관하다.
-          onClick={toggleImmersive}
-          style={{ pointerEvents: visible ? "auto" : "none" }}
-        >
-          <OverlayIcon
-            src={`${BASE}/${landscape || immersive ? "zoom_out" : "zoom_in"}.svg`}
-            size={28}
-          />
-        </button>
+            버튼 뜻은 늘 '크게 ↔ 원래대로' 하나로 읽힌다.
+            swapAiZoom(A-3)이면 이 줄에선 빠지고 우하단 원 버튼으로 내려간다. */}
+        {!swapAiZoom && (
+          <button
+            type="button"
+            aria-label={landscape || immersive ? "원래 크기로" : "크게 보기"}
+            className="px-1.5 py-2"
+            // 언제나 '크게 보기 ↔ 원래대로'다. 방향은 확대가 알아서 정한다
+            // (immersive.ts) — 회전은 좌측 패널의 몫이고 이 버튼과 무관하다.
+            onClick={toggleImmersive}
+            style={{ pointerEvents: visible ? "auto" : "none" }}
+          >
+            <OverlayIcon
+              src={`${BASE}/${landscape || immersive ? "zoom_out" : "zoom_in"}.svg`}
+              size={28}
+            />
+          </button>
+        )}
         {/* 더보기 — 누르면 바텀시트(상세 설정·원격 지원 요청·방문 지원 요청).
             시트는 안이 들고 있으므로 여기선 열어 달라고만 한다. */}
         <button
@@ -515,23 +523,75 @@ export function GridSelectionOverlay({
             </svg>
           </button>
         )}
-        <button
-          type="button"
-          aria-label="AI 검색"
-          aria-hidden={!onAi}
-          onClick={onAi}
-          className="flex items-center justify-center rounded-full"
+        {/* swapAiZoom(A-3)이면 이 원 자리에 크게 보기가 온다 — AI 는 위 줄로. */}
+        {swapAiZoom ? (
+          <button
+            type="button"
+            aria-label={landscape || immersive ? "원래 크기로" : "크게 보기"}
+            onClick={toggleImmersive}
+            className="flex items-center justify-center rounded-full text-white"
+            style={{
+              width: "34px",
+              height: "34px",
+              border: "1px solid rgba(255,255,255,0.35)",
+              backgroundColor: "rgba(0,0,0,0.35)",
+              pointerEvents: visible && !hideControls ? "auto" : "none",
+            }}
+          >
+            <OverlayIcon
+              src={`${BASE}/${landscape || immersive ? "zoom_out" : "zoom_in"}.svg`}
+              size={24}
+            />
+          </button>
+        ) : (
+          <button
+            type="button"
+            aria-label="AI 검색"
+            aria-hidden={!onAi}
+            onClick={onAi}
+            className="flex items-center justify-center rounded-full"
+            style={{
+              width: "34px",
+              height: "34px",
+              border: "1px solid rgba(255,255,255,0.35)",
+              backgroundColor: "rgba(0,0,0,0.35)",
+              pointerEvents: onAi && visible && !hideControls ? "auto" : "none",
+            }}
+          >
+            <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
+          </button>
+        )}
+      </div>
+
+      {/* swapAiZoom(A-3): AI 원 버튼은 딤 왼쪽 아래 — 우하단(크게 보기)과 같은
+          원 스타일, 페이지 인디케이터와 같은 높이. z-10 이유는 우하단 줄과 동일. */}
+      {swapAiZoom && (
+        <div
+          className="absolute z-10"
           style={{
-            width: "34px",
-            height: "34px",
-            border: "1px solid rgba(255,255,255,0.35)",
-            backgroundColor: "rgba(0,0,0,0.35)",
-            pointerEvents: onAi && visible && !hideControls ? "auto" : "none",
+            left: `${edgeInset ?? 16}px`,
+            bottom: `${bottomInset}px`,
+            opacity: hideControls ? 0 : 1,
           }}
         >
-          <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
-        </button>
-      </div>
+          <button
+            type="button"
+            aria-label="AI 검색"
+            aria-hidden={!onAi}
+            onClick={onAi}
+            className="flex items-center justify-center rounded-full"
+            style={{
+              width: "34px",
+              height: "34px",
+              border: "1px solid rgba(255,255,255,0.35)",
+              backgroundColor: "rgba(0,0,0,0.35)",
+              pointerEvents: onAi && visible && !hideControls ? "auto" : "none",
+            }}
+          >
+            <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
+          </button>
+        </div>
+      )}
 
       {/* 하단 페이지 인디케이터 */}
       {showPageIndicator && (

@@ -94,6 +94,7 @@ export default function LandscapeVideo({
   onGallery,
   onMore,
   onAi,
+  swapAiZoom = false,
   onMenu,
   centerControls,
   edgeInset,
@@ -143,6 +144,9 @@ export default function LandscapeVideo({
   onMore?: () => void;
   /** 딤의 AI 버튼. 안 주면 표시만 한다(안별 기본값 보존). */
   onAi?: () => void;
+  /** AI·크게 보기 자리 재배치(A-3 전용) — GridSelectionOverlay 로 그대로 넘긴다.
+   *  기본 false = 기존 그대로. */
+  swapAiZoom?: boolean;
   /** 딤의 메뉴 버튼(AI 옆). 안 주면 안 그린다 — A-2안 가로 전용. */
   onMenu?: () => void;
   /** 화면 한가운데에 얹을 컨트롤. 아래 시간바 대신 플레이어 버튼만 가운데
@@ -597,6 +601,7 @@ export default function LandscapeVideo({
       onGallery={onGallery}
       onMore={onMore}
       onAi={onAi}
+      swapAiZoom={swapAiZoom}
       onMenu={onMenu}
       edgeInset={edgeInset}
       {...(bottomInset != null ? { bottomInset } : null)}
