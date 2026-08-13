@@ -15,8 +15,25 @@ import { useEffect, useState } from "react";
 // 프레임 요소를 이미 들고 있는 쪽 — FLIP 애니메이션이 프레임 폭 기준이라
 // innerWidth 와 어긋나면 안 된다). 요소를 주면 관측 폭을, 숫자를 주면 그대로
 // 쓴다(ResizeObserver 콜백에서 contentRect 를 넘겨 강제 리플로우를 피한다).
+/** '축소 후 강제 세로'(폰은 누워 있는데 앱을 세로로 세워 둔 상태)인가.
+ *  exitImmersive 가 data-force-portrait 를 세우면 켜진다(globals.css 의 회전
+ *  규칙과 같은 조건). 이때 innerWidth 를 그대로 읽으면 가로 폭 기준 배치가
+ *  세로 프레임에 그려지므로, 치수를 읽는 쪽이 폭·세로를 맞바꿔야 한다. */
+export function readForcedPortrait(): boolean {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return false;
+  }
+  if (document.documentElement.dataset.forcePortrait !== "true") return false;
+  const desktopPreview =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (desktopPreview) return false;
+  return window.innerWidth > window.innerHeight;
+}
+
 export function readDeviceWidth(fallback?: number | Element | null): number {
   if (typeof window === "undefined") return 360;
+  if (readForcedPortrait()) return window.innerHeight || 360;
   const desktopPreview =
     typeof window.matchMedia === "function" &&
     window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -40,6 +57,7 @@ export function readDeviceWidth(fallback?: number | Element | null): number {
 // SIDE_PANEL_RATIO)에 쓴다. 여기 말고 딴 데서 --device-h 를 직접 읽지 말 것.
 export function readDeviceHeight(): number {
   if (typeof window === "undefined") return 780;
+  if (readForcedPortrait()) return window.innerWidth || 780;
   const desktopPreview =
     typeof window.matchMedia === "function" &&
     window.matchMedia("(hover: hover) and (pointer: fine)").matches;

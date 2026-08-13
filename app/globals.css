@@ -228,6 +228,29 @@ body {
     transition: transform 0.35s ease;
   }
 
+  /* 축소를 눌렀는데 폰이 아직 누워 있으면(아이폰 — 회전 잠금이 없어 확대·가로
+     중에 눕는 경우가 있다) 화면을 세로로 세워 둔다(사용자 지정: "가로로
+     전환됐을 때 혹은 확대 모드일 때 축소 버튼 누르면 바로 세로 화면으로").
+     exitImmersive 가 플래그를 세우고, 폰이 세로로 돌아오거나 확대로 다시
+     들어가면 끈다. 돌릴 방향(--force-rot)도 그때 기기 각도로 정해 둔다.
+     치수 계산은 useDeviceWidth 의 readForcedPortrait 가 맞바꾼다 — 안 맞바꾸면
+     가로 폭 기준 배치가 세로 프레임에 그려진다(전에 실제로 그랬다). */
+  @media (orientation: landscape) {
+    html[data-force-portrait="true"] .app-safe-frame {
+      position: fixed;
+      top: 50vh;
+      top: 50dvh;
+      left: 50%;
+      width: 100vh;
+      width: 100dvh;
+      height: 100vw;
+      transform-origin: center center;
+      transform: translate(-50%, -50%) rotate(var(--force-rot, -90deg));
+      /* 가로 인셋(양옆 59px)이 남으면 흰 마진이 된다 — 전부 0, 위만 상태바. */
+      padding: var(--status-h, 0px) 0 0;
+    }
+  }
+
   /* 폰을 눕힌 가로에서도 상태바 높이만큼 위를 비운다 — 확대모드와 같은 영상
      크기(사용자 지정: "상태바 영역 제외한 영상 영역 노출 (확대모드와 동일)").
 

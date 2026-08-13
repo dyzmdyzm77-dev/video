@@ -251,6 +251,13 @@ export function noteDeviceOrientation() {
 export function syncImmersiveWithLandscape() {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
+  // 축소가 세워 둔 '강제 세로'는 폰을 실제로 세우면 할 일이 끝난다.
+  if (window.innerHeight >= window.innerWidth) {
+    if (root.dataset.forcePortrait === "true") {
+      root.dataset.forcePortrait = "false";
+      window.dispatchEvent(new Event("resize"));
+    }
+  }
   const w = readDeviceWidth();
   const h = readDeviceHeight();
   const wide = deviceOwnWide();
@@ -341,6 +348,8 @@ export function toggleImmersive() {
     exitImmersive();
     return;
   }
+  // 확대로 들어가면 '강제 세로'는 무효 — 남으면 확대 화면까지 세워 버린다.
+  document.documentElement.dataset.forcePortrait = "false";
   // 확대에 들어가면 방향을 잠근다 — 눕혀도 그냥 고정이다(사용자 지정).
   // 전체화면 안에서만 허용되므로 전체화면이 잡힌 뒤에 건다. 잠글 방향은
   // '기기가 있어야 할 방향'이다: 앱을 CSS 로 눕혀 만든 가짜 가로라면 기기는
@@ -410,6 +419,30 @@ export function exitImmersive() {
   // 누르면 세로로 돌아와야지. 왜 그 가로 상태에서 축소되냐?").
   // 목표값 false 를 실어 보내므로 이미 세로면 상태가 안 바뀌어 아무 일도 안 난다.
   requestDeviceRotate(false);
+  // '바로' 세로로 — 축소는 회전 연출(0.35s) 없이 즉시 끝낸다(사용자 지정:
+  // "축소 버튼 누르면 바로 세로 화면으로 이동하게 해").
+  document.documentElement.dataset.rotateAnim = "false";
+  // 폰이 아직 누워 있으면(아이폰 — 잠금이 없어 확대·가로 중에 눕는다) 화면을
+  // 세로로 세워 둔다. 돌릴 방향은 기기 각도의 반대. 폰을 세우면
+  // syncImmersiveWithLandscape 가 플래그를 끈다.
+  {
+    const touch = !(
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    );
+    if (touch && window.innerWidth > window.innerHeight) {
+      const raw =
+        (window as unknown as { orientation?: number }).orientation ??
+        window.screen?.orientation?.angle ??
+        90;
+      const a = typeof raw === "number" && raw !== 0 ? raw : 90;
+      const root = document.documentElement;
+      root.style.setProperty("--force-rot", `${-((a + 360) % 360)}deg`);
+      root.dataset.forcePortrait = "true";
+      // 치수가 맞바뀌었음을 배치들이 다시 읽게 한다.
+      window.dispatchEvent(new Event("resize"));
+    }
+  }
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
   // 상태바 색을 흰색으로 되찾는다. 확대는 검은 화면이 안전 영역까지 덮는
   // 배치라(globals.css 의 padding:0) 사파리가 상태바 색을 검정으로 잡아 두는데,
