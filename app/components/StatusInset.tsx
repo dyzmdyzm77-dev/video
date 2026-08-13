@@ -109,45 +109,10 @@ export default function StatusInset() {
     };
     sync();
 
-    // ── 확대 중 회전 모션 가리개 ──────────────────────────────────────────
-    // 확대는 이미 가로 뷰라 폰을 눕혀도 결과 화면이 같은데, iOS 가 회전 때
-    // 화면 전체를 돌리는 애니메이션을 틀어서 '또 한 번 도는' 것으로 보인다
-    // (사용자 지적: "이미 가로뷰로 전환되어 있는데 왜 또 돌아가는 모션을
-    // 취하냐"). 이 앱의 대상 아이폰엔 회전 잠금 API 가 없어(진단 3차) 그
-    // 애니메이션 자체를 끌 수는 없다 — 대신 가린다. 회전이 감지되는 즉시 화면
-    // 전체를 검정으로 덮으면, 확대는 어차피 검은 화면이라 도는 동안 화면이
-    // 균일한 검정이 되어 모션이 눈에 안 띈다. 끝나면 걷는다.
-    const mask = document.createElement("div");
-    mask.style.cssText =
-      "position:fixed;inset:-50vmax;background:#000;z-index:2147483647;" +
-      "pointer-events:none;display:none;";
-    document.body.appendChild(mask);
-    let maskTimer: ReturnType<typeof setTimeout> | null = null;
-    const hideMask = () => {
-      maskTimer = null;
-      mask.style.display = "none";
-    };
-    const onRotateStart = () => {
-      if (root.dataset.immersive !== "true") return;
-      mask.style.display = "block";
-      if (maskTimer !== null) clearTimeout(maskTimer);
-      // iOS 회전 애니메이션(~0.4s)이 끝날 때까지 덮는다. 여유를 두되, 너무 길면
-      // 영상이 검게 멈춘 것으로 보인다.
-      maskTimer = setTimeout(hideMask, 650);
-    };
-
     const evts = ["resize", "orientationchange"];
     evts.forEach((e) => window.addEventListener(e, sync, { passive: true }));
-    window.addEventListener("orientationchange", onRotateStart, {
-      passive: true,
-    });
-    window.visualViewport?.addEventListener("resize", onRotateStart);
     return () => {
       evts.forEach((e) => window.removeEventListener(e, sync));
-      window.removeEventListener("orientationchange", onRotateStart);
-      window.visualViewport?.removeEventListener("resize", onRotateStart);
-      if (maskTimer !== null) clearTimeout(maskTimer);
-      mask.remove();
     };
   }, []);
 
