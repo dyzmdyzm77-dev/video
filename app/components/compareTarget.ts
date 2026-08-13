@@ -21,7 +21,7 @@ export type CompareTarget = "asis" | VariantKey;
 
 export const COMPARE_TARGET_EVENT = "comparetargetchange";
 
-const TARGETS: CompareTarget[] = ["asis", "a1", "a2", "b"];
+const TARGETS: CompareTarget[] = ["asis", "a1", "a2", "a3", "b"];
 
 export function readCompareTarget(): CompareTarget {
   if (typeof document === "undefined") return "asis";

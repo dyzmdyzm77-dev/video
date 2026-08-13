@@ -302,7 +302,7 @@ export function Inner({
   const platform = params.get("platform") === "ios" ? "ios" : "android";
   const initialChrome = params.get("chrome") === "1";
   // 진입 전 화면안. 영상 탭/최근 본 영상으로 돌아갈 때 사용한다.
-  const from = ["a", "a1", "a2", "b"].includes(params.get("from") ?? "")
+  const from = ["a", "a1", "a2", "a3", "b"].includes(params.get("from") ?? "")
     ? (params.get("from") as string)
     : "a1";
   const [chromeVisible, setChromeVisible] = useState(initialChrome);

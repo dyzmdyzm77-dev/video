@@ -21,11 +21,11 @@ import { useEffect, useState } from "react";
 // 마찬가지로 URL 의 안으로 돌아온다.
 // ============================================================================
 
-export type VariantKey = "a1" | "a2" | "b";
+export type VariantKey = "a1" | "a2" | "a3" | "b";
 
 export const VARIANT_EVENT = "variantchange";
 
-const KEYS: VariantKey[] = ["a1", "a2", "b"];
+const KEYS: VariantKey[] = ["a1", "a2", "a3", "b"];
 
 /** 안 이름. 시안 목록 시트·좌측 패널·각 안의 상단 제목이 전부 여기서 읽는다 —
  *  UT 중 지금 어느 안을 보고 있는지 화면 위에서 바로 읽히게 하려고 원래
@@ -33,6 +33,7 @@ const KEYS: VariantKey[] = ["a1", "a2", "b"];
 export const VARIANT_LABEL: Record<VariantKey, string> = {
   a1: "A-1안",
   a2: "A-2안",
+  a3: "A-3안",
   b: "B안",
 };
 

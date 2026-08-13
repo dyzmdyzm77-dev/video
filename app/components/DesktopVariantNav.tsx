@@ -36,6 +36,7 @@ import {
 const VARIANTS: { key: VariantKey; icon: string }[] = [
   { key: "a1", icon: "A-1" },
   { key: "a2", icon: "A-2" },
+  { key: "a3", icon: "A-3" },
   { key: "b", icon: "B" },
 ];
 
@@ -75,7 +76,7 @@ const DEVICES = [
 ];
 // 최초 표시 기본 프리셋 — 제너릭 360px(이름 없는 첫 항목).
 // 비교하기 왼쪽에 놓을 수 있는 것들 — As Is(현행 앱) + 세 안.
-const COMPARE_TARGETS: CompareTarget[] = ["asis", "a1", "a2", "b"];
+const COMPARE_TARGETS: CompareTarget[] = ["asis", "a1", "a2", "a3", "b"];
 
 const DEFAULT_PRESET = DEVICES.findIndex(
   (d) => d.label === "360px" && d.sub === "",
