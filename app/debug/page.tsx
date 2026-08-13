@@ -66,31 +66,80 @@ export default function DebugPage() {
     };
   }, [fakeImmersive]);
 
+  // ①②③④ 가 전부 상태바를 못 건드렸다(사용자 확인). 확대가 하는 일 중 진단
+  // 페이지가 안 하던 게 둘 남는다 — 전체화면과 방향 잠금. 주석엔 "아이폰 사파리엔
+  // 둘 다 없다"고 적혀 있지만 그건 예전 iOS 기준이라, 실제로 있는지부터 찍는다.
   useEffect(() => {
-    const probe = document.createElement("div");
-    probe.style.cssText =
-      "position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top,0px);";
-    document.body.appendChild(probe);
-    const insetTop = probe.getBoundingClientRect().height;
-    probe.remove();
+    const measure = () => {
+      const probe = document.createElement("div");
+      probe.style.cssText =
+        "position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top,0px);";
+      document.body.appendChild(probe);
+      const insetTop = probe.getBoundingClientRect().height;
+      probe.remove();
 
-    const mq = (q: string) =>
-      typeof window.matchMedia === "function" ? String(window.matchMedia(q).matches) : "?";
+      const mq = (q: string) =>
+        typeof window.matchMedia === "function" ? String(window.matchMedia(q).matches) : "?";
+      const so = window.screen?.orientation as
+        | (ScreenOrientation & { lock?: unknown })
+        | undefined;
 
-    setInfo([
-      { label: "safe-area-inset-top", value: `${insetTop}px` },
-      { label: "innerW×H", value: `${window.innerWidth}×${window.innerHeight}` },
-      { label: "screen", value: `${window.screen.width}×${window.screen.height}` },
-      {
-        label: "홈화면앱(standalone)",
-        value: String(
-          (navigator as Navigator & { standalone?: boolean }).standalone ?? false,
-        ),
-      },
-      { label: "다크모드", value: mq("(prefers-color-scheme: dark)") },
-      { label: "hover:hover & pointer:fine", value: mq("(hover: hover) and (pointer: fine)") },
-    ]);
+      setInfo([
+        { label: "safe-area-inset-top", value: `${insetTop}px` },
+        { label: "innerW×H", value: `${window.innerWidth}×${window.innerHeight}` },
+        { label: "screen", value: `${window.screen.width}×${window.screen.height}` },
+        {
+          label: "★ 지금 전체화면인가",
+          value: String(!!document.fullscreenElement),
+        },
+        {
+          label: "★ requestFullscreen 있나",
+          value: String(typeof document.documentElement.requestFullscreen === "function"),
+        },
+        { label: "★ fullscreenEnabled", value: String(document.fullscreenEnabled) },
+        { label: "★ orientation.lock 있나", value: String(typeof so?.lock === "function") },
+        {
+          label: "홈화면앱(standalone)",
+          value: String(
+            (navigator as Navigator & { standalone?: boolean }).standalone ?? false,
+          ),
+        },
+        { label: "다크모드", value: mq("(prefers-color-scheme: dark)") },
+        { label: "hover & fine", value: mq("(hover: hover) and (pointer: fine)") },
+      ]);
+    };
+    measure();
+    const evts = ["fullscreenchange", "resize", "orientationchange"];
+    evts.forEach((e) => window.addEventListener(e, measure));
+    document.addEventListener("fullscreenchange", measure);
+    return () => {
+      evts.forEach((e) => window.removeEventListener(e, measure));
+      document.removeEventListener("fullscreenchange", measure);
+    };
   }, []);
+
+  // ⑤ 전체화면 — 확대가 실제로 부르는 것과 같은 호출.
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen?.()?.catch(() => {});
+      return;
+    }
+    document.documentElement
+      .requestFullscreen?.({ navigationUI: "hide" })
+      ?.catch((e: unknown) => alert(`전체화면 거부: ${String(e)}`));
+  };
+
+  // ⑥ 방향 잠금 — 확대가 전체화면 뒤에 거는 것과 같은 호출.
+  const lockPortrait = () => {
+    const so = window.screen?.orientation as
+      | (ScreenOrientation & { lock?: (o: string) => Promise<void>; unlock?: () => void })
+      | undefined;
+    if (!so?.lock) {
+      alert("orientation.lock 없음");
+      return;
+    }
+    so.lock("portrait")?.catch((e: unknown) => alert(`잠금 거부: ${String(e)}`));
+  };
 
   const btn = (on: boolean): React.CSSProperties => ({
     padding: "14px 10px",
@@ -133,6 +182,12 @@ export default function DebugPage() {
         </button>
         <button style={btn(cover)} onClick={() => setCover((v) => !v)}>
           ④ 검정 덮기(1차에서 흰색이었던 것) {cover ? "(켜짐)" : ""}
+        </button>
+        <button style={btn(false)} onClick={toggleFullscreen}>
+          ⑤ 전체화면 켜기 / 끄기 ← 유력
+        </button>
+        <button style={btn(false)} onClick={lockPortrait}>
+          ⑥ 방향 잠금(세로)
         </button>
       </div>
 
