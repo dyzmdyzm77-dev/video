@@ -451,8 +451,16 @@ export default function VariantA1({
           onGallery={() => setSheetOpen(true)}
           onMore={() => setMoreOpen(true)}
           onAi={() => setAiOpen(true)}
-          // 가로에만 있는 메뉴 버튼(AI 옆) — 오른쪽 세로 패널을 여닫는다.
-          onMenu={() => setSidePanelOpen((v) => !v)}
+          // 가로에만 있는 메뉴 버튼(AI 옆) — 패널(카메라 목록·움직임 감지)을
+          // 여닫는다. 단일 화면일 때만 준다(안 주면 LandscapeVideo 가 안 그린다).
+          // 다채널에선 무의미하다(사용자 지정: "다채널일 때는 메뉴 버튼이
+          // 없어야겠네") — 목록은 이미 화면에 다 보이고, 감지 타임라인은 어느
+          // 카메라 기준인지 모호하다(썸네일이 0번 카메라로 나오던 문제).
+          onMenu={
+            expandedIndex !== null
+              ? () => setSidePanelOpen((v) => !v)
+              : undefined
+          }
           // 실시간/녹화 칩 + 시각을 왼쪽 아래로.
           statusPlacement="bottom-left"
           // 토글 형태는 그대로 두고 고른 쪽 색만 흰 배경 + 검정 글자로.
@@ -508,7 +516,7 @@ export default function VariantA1({
           }
         />
         </div>
-        {sidePanelOpen && (
+        {sidePanelOpen && expandedIndex !== null && (
           <LandscapeSidePanel
             mode={mode}
             position={panelBottom ? "bottom" : "right"}
