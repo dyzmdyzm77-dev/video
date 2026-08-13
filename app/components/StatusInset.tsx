@@ -64,13 +64,22 @@ export default function StatusInset() {
     const root = document.documentElement;
     let best = 0;
     const sync = () => {
-      // '눕힌 채 축소'로 콘텐츠를 세울 때(globals.css 의 data-force-portrait) 돌릴
-      // 방향. 폰을 왼쪽으로 눕혔는지 오른쪽으로 눕혔는지에 따라 반대여야 하고,
-      // 고정값으로 두면 절반의 경우에 화면이 거꾸로 선다. 기기 각도의 반대로 돌리면
-      // 콘텐츠가 똑바로 선다.
-      const angle =
+      // '눕힌 채 축소'로 콘텐츠를 세울 때 돌릴 방향(globals.css 의
+      // data-force-portrait). 기기 각도의 반대로 돌려야 똑바로 선다.
+      //
+      // 각도를 못 읽는 기기가 있다(screen.orientation 자체가 없다 — 이 앱의
+      // 대상 아이폰이 그렇다). 그때 0 으로 두면 회전이 아예 안 걸려서, 세로
+      // 폭짜리 화면이 가로 화면 가운데 놓이고 좌우에 흰 띠가 남는다(실제로 그랬다).
+      // 그래서 각도가 없으면 뷰포트로 유추한다 — 가로면 90 으로 본다.
+      const raw =
         window.screen?.orientation?.angle ??
-        ((window as unknown as { orientation?: number }).orientation || 0);
+        (window as unknown as { orientation?: number }).orientation;
+      const angle =
+        typeof raw === "number" && raw !== 0
+          ? raw
+          : window.innerWidth > window.innerHeight
+            ? 90
+            : 0;
       root.style.setProperty("--force-rot", `${-((angle + 360) % 360)}deg`);
 
       const now = readStatusH();

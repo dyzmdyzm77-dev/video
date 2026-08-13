@@ -131,6 +131,39 @@ body {
     padding: 0;
   }
 
+  /* 폰을 눕힌 채 축소하면 콘텐츠를 세운다 (사용자 지정: "그냥 세로로 돌리면
+     되잖아, 다시 되돌아가면 되는 건데").
+
+     웹앱은 아이폰 화면을 못 돌린다 — screen.orientation.lock 이 이 기기에 없다
+     (진단에서 확인). 그래서 확대가 세로에서 하는 것(아래 orientation: portrait
+     규칙)의 거울상을 건다: 화면이 가로인데 앱이 세로여야 하면 콘텐츠를 돌리고
+     폭·높이를 맞바꾼다. 앱의 폭 = 화면의 짧은 쪽(100dvh), 높이 = 긴 쪽(100vw).
+
+     판정은 data-force-portrait 라는 별도 플래그다. data-landscape="false" 로
+     가르면 '그냥 폰을 눕히기만 한' 정상 상태와 값이 같아서, 눕히기만 해도 앱이
+     세로로 서 가로 화면을 못 보게 된다. 축소가 세우고, 폰을 다시 세우거나
+     확대로 들어가면 꺼진다(immersive.ts).
+
+     한 번 되돌린 적이 있다 — 양옆에 흰 띠가 생겨서였는데(사용자 지적), 원인은
+     회전이 아니라 회전이 '안 걸린' 것이었다. 각도를 못 읽어 rotate(0deg) 이
+     되면서 세로 폭짜리 화면이 가로 화면 가운데 놓여 좌우가 남았다. 각도
+     계산을 고쳤다(StatusInset). */
+  @media (orientation: landscape) {
+    html[data-force-portrait="true"] .app-safe-frame {
+      position: fixed;
+      top: 50vh;
+      top: 50dvh;
+      left: 50%;
+      width: 100vh;
+      width: 100dvh;
+      height: 100vw;
+      transform-origin: center center;
+      /* 돌릴 방향은 기기 각도의 반대다 — StatusInset 이 --force-rot 로 낸다. */
+      transform: translate(-50%, -50%) rotate(var(--force-rot, -90deg));
+      padding-top: 0;
+    }
+  }
+
   /* CSS 로 눕히는 건 '기기가 세로일 때'만이다. 폰을 실제로 눕히면 뷰포트가 이미
      가로라 돌릴 이유가 없다 — 그대로 두면 앱의 90° + OS 의 90° 가 겹쳐 콘텐츠가
      옆으로 눕는다.
@@ -199,40 +232,88 @@ body {
   @media (orientation: portrait) {
     html:not([data-immersive="true"]):not([data-landscape="true"])
       .app-safe-frame {
-      /* 12px 으로는 iOS 가 밝다고 안 잡았다 — 키운다. 잘 먹히면 줄인다. */
-      padding-top: max(env(safe-area-inset-top, 0px), 24px);
+      /* 상태바를 다 채운다 (사용자 지정: "쭉 더 올려 봐, 상태바를 다 채워야지").
+         --status-h 는 StatusInset 이 잰 실제 상태바 높이다(아이폰 16 Pro 62px).
+         못 재는 환경을 위해 24px 을 바닥값으로 둔다. */
+      padding-top: max(env(safe-area-inset-top, 0px), var(--status-h, 24px));
     }
   }
 
-  /* 폰을 눕힌 채 축소하면 세로로 세운다 (사용자 지정: "눕힌 상태에서 축소버튼을
-     누르면 세로로 돌아가야 하는데, 눕힌 상태에서 축소된 상태").
+  /* CSS 로 눕히는 건 '기기가 세로일 때'만이다. 폰을 실제로 눕히면 뷰포트가 이미
+     가로라 돌릴 이유가 없다 — 그대로 두면 앱의 90° + OS 의 90° 가 겹쳐 콘텐츠가
+     옆으로 눕는다.
+     이걸 JS 로(회전 플래그를 되감아서) 하다가 계속 탈이 났다. 물리 회전 한 번에
+     resize 가 여러 번 오는데 판정은 DOM 속성으로 하니 되감기가 두 번 나가
+     도로 돌아갔고, 어떻게 막아도 React 리렌더 한 박자가 '한 번 더 도는' 것으로
+     보였다(사용자 지적: "확대 -> 폰눕히기 -> 한번 더 회전하려고해").
+     미디어쿼리로 옮기면 상태를 건드릴 일이 없다 — data-landscape 는 켜진 채
+     그대로고, 어느 방향이든 앱은 가로 배치 그대로 서 있다. 눕혀도 '그냥 냅둠'
+     이 되는 것(사용자 지정: "가로 모드로 된 경우는 그냥 냅둬야지"). */
+  html[data-landscape="true"] .app-safe-frame {
+    padding: 0;
+  }
 
-     앱은 폰을 못 돌리니 확대가 세로에서 하는 것(아래 orientation: portrait 규칙)의
-     거울상을 건다 — 화면이 가로인데 앱은 세로여야 하면 콘텐츠를 -90° 돌린다.
-     폭·높이도 맞바꾼다: 앱의 폭 = 화면의 짧은 쪽(100dvh), 앱의 높이 = 긴 쪽(100vw).
+  @media (orientation: portrait) {
+  html[data-landscape="true"] .app-safe-frame {
+    position: fixed;
+    top: 50vh;
+    top: 50dvh;
+    left: 50%;
+    /* 회전한 앱의 '길이'(화면 세로 방향)다. dvh 를 쓴다 — 지금 실제로 보이는
+       높이다. svh(툴바가 보일 때의 높이)로 잡으면, 이 앱처럼 툴바가 접혀 있는
+       상태에서는 앱이 화면보다 짧아 아래에 빈 띠가 남는다(사용자 지적:
+       "확대모드 했는데 왜 하단에 빈틈이 생겨?").
+       top 도 같은 단위로 맞춰야 중심이 안 어긋난다 — 예전에 %(=lvh 기준)와
+       100svh 를 섞었다가 위아래로 (lvh-svh)/2 씩 밀렸던 그 문제다.
+       vh 는 dvh 를 모르는 구형 브라우저용 폴백(위 html/body 와 같은 패턴). */
+    width: 100vh;
+    width: 100dvh;
+    height: 100vw;
+    transform-origin: center center;
+    transform: translate(-50%, -50%) rotate(90deg);
+    /* 트랜지션은 '누른 회전'일 때만(아래 data-rotate-anim). 폰을 눕혀서 이
+       규칙이 붙거나 떨어지는 건 OS 회전을 상쇄하는 것뿐이라 즉시 끝나야 한다 —
+       0.35s 를 그냥 켜 두면 그때마다 한 번 더 도는 것으로 보인다. */
+    /* 가로에선 안전 영역을 비우지 않는다 — 영상이 화면을 가득 채워야 한다
+       (사용자 결정). .app-safe-frame 의 기본 padding(위=노치, 아래=홈 인디케이터)
+       을 여기서 0 으로 덮는다. 남겨 두면 상태바·홈 인디케이터 자리만큼 빈 띠가
+       생기는데, 가로는 '영상만' 보는 화면이라 그 띠가 그대로 낭비다.
+       (한때 인셋을 회전만큼 돌려 물리 모서리에 맞춰 봤지만, 자리를 옮길 뿐
+       비는 건 마찬가지였다. 아예 안 비우는 쪽으로 정리한다.)
+       딤 위 UI 는 자기 여백(px-5 등)으로 가장자리에서 떨어져 있어 노치와 크게
+       겹치지 않는다 — 영상만 끝까지 깔린다. */
+    padding: 0;
+  }
+  }
 
-     플래그는 축소가 세운다(immersive.ts 의 exitImmersive). data-landscape="false"
-     로 가르면 안 된다 — 그건 '그냥 폰을 눕히기만 한' 정상 상태와 같은 값이라,
-     눕히기만 해도 앱이 세로로 서버려 가로 화면을 못 보게 된다. */
-  @media (orientation: landscape) {
-    html[data-force-portrait="true"] .app-safe-frame {
-      position: fixed;
-      top: 50vh;
-      top: 50dvh;
-      left: 50%;
-      width: 100vh;
-      width: 100dvh;
-      height: 100vw;
-      transform-origin: center center;
-      /* 돌릴 방향은 기기 각도의 반대다 — StatusInset 이 --force-rot 로 낸다.
-         고정값(-90deg)으로 두면 폰을 반대로 눕혔을 때 화면이 거꾸로 선다. */
-      transform: translate(-50%, -50%) rotate(var(--force-rot, -90deg));
-      /* 세운 뒤에는 상태바 자리를 비울 이유가 없다 — 위 규칙을 되돌린다.
-         물리 상단이 앱의 옆면이 되어 여백이 엉뚱한 변에 붙는다. */
-      padding-top: 0;
-      box-shadow: none;
+  /* 회전 연출 — 확대·축소 버튼과 좌측 패널의 회전 토글이 누른 회전에만 켜진다
+     (deviceRotate.ts 의 requestDeviceRotate 가 350ms 동안 세운다). */
+  html[data-rotate-anim="true"] .app-safe-frame {
+    transition: transform 0.35s ease;
+  }
+
+  /* 세로에서 화면 맨 위를 흰색으로 남긴다 (사용자 지정: "세로로 돌렸을 때
+     흰색이 떠야지. 가로에서는 왜 뜨는데?").
+
+     iOS 는 상태바 색을 코드로 못 정한다 — theme-color 는 사파리가 무시하고,
+     홈화면 앱도 페이지가 그린 색을 가져간다. 그래서 상태바를 흰색으로 유지하려면
+     화면 맨 위에 실제 흰 픽셀이 있어야 한다. 확대(검은 화면)를 거치면 상태바가
+     검게 굳고 축소해도 안 돌아오던 게 이것 때문이다.
+
+     덮개가 아니라 여백이라 영상이 가려지지 않고 그만큼 아래에서 시작한다.
+     프레임 배경이 흰색인 보통 화면에만 건다 — 확대·가로는 프레임이 검정이라
+     여기 넣으면 검은 띠가 되고(가로에 넣었다가 지적받아 뺐다), 확대는 프레임이
+     90° 돌아 있어 여백이 엉뚱한 변에 붙는다. */
+  @media (orientation: portrait) {
+    html:not([data-immersive="true"]):not([data-landscape="true"])
+      .app-safe-frame {
+      /* 상태바를 다 채운다 (사용자 지정: "쭉 더 올려 봐, 상태바를 다 채워야지").
+         --status-h 는 StatusInset 이 잰 실제 상태바 높이다(아이폰 16 Pro 62px).
+         못 재는 환경을 위해 24px 을 바닥값으로 둔다. */
+      padding-top: max(env(safe-area-inset-top, 0px), var(--status-h, 24px));
     }
   }
+
 }
 
 /* 데스크톱(마우스로 hover 가능한 정밀 포인터 환경)에선 앱을 360×780 모바일
