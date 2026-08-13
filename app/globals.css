@@ -166,7 +166,10 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    height: max(env(safe-area-inset-top, 0px), 4px);
+    /* 12px 이다. 4px 로 줄였더니 사파리가 밝다고 안 잡아서 세로 상태바가 검게
+       남았다(사용자 지적: "세로로 돌리면 검정색이야 지금"). 12px 은 실기기에서
+       흰색이 유지되던 값이다 — 함부로 줄이지 말 것. */
+    height: max(env(safe-area-inset-top, 0px), 12px);
     background: #ffffff;
     /* 회전한 프레임(transform 으로 쌓임 맥락을 만든다)보다 반드시 위여야 한다. */
     z-index: 2147483647;
