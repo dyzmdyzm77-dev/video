@@ -59,15 +59,12 @@ function syncFullscreen(on: boolean): Promise<unknown> {
     window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   if (desktop) return Promise.resolve();
   try {
-    if (on) {
-      // 거부(미지원·제스처 없음)는 무시한다 — 전체화면은 덤이고, 안 되더라도
-      // 확대 자체는 그대로 동작해야 한다.
-      return (
-        document.documentElement
-          .requestFullscreen?.({ navigationUI: "hide" })
-          ?.catch(() => {}) ?? Promise.resolve()
-      );
-    } else if (document.fullscreenElement) {
+    // 전체화면을 더 쓰지 않는다(사용자 확정: 확대에서도 상태바는 남긴다).
+    // 안드로이드에서 전체화면은 상태바를 없애고, 노치(컷아웃) 자리를 OS 가
+    // 검은 레터박스로 막아 앱이 못 칠하는 검은 띠를 만들었다. 설치 앱은
+    // manifest display: "standalone" 이 시스템 바 처리를 맡는다.
+    // 켜는 쪽은 무시하고, 어쩌다 걸려 있는 전체화면만 푼다.
+    if (!on && document.fullscreenElement) {
       document.exitFullscreen?.()?.catch(() => {});
     }
   } catch {}
