@@ -27,16 +27,13 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "fullscreen",
     // 설치 환경이 fullscreen 을 못 쓰면 순서대로 물러난다.
     display_override: ["fullscreen", "standalone"],
-    // 세로 잠금. 확대 중 폰을 눕히면 iOS 가 화면을 돌리는 모션이 보였는데
-    // (사용자 지정: "그땐 돌아가면 안 된다"), 웹에는 상태별 잠금 API 가 없어
-    // OS 수준에서 통째로 잠그는 게 유일한 차단 수단이다. 이게 먹히면 회전은
-    // 전부 앱이 CSS 로 그리는 것뿐이라 우리가 완전히 통제한다.
-    // ※ 이 값은 홈 화면에 '추가하는 순간' 박힌다 — 아이콘을 지우고 다시
-    //   추가해야 적용된다. 지난번 시도는 재추가 전에 테스트돼 검증이 안 됐다.
-    // ※ 먹히면 '눕혀서 가로'(영상 화면)는 뷰포트 회전이 안 오므로 죽는다 —
-    //   가속도 센서로 다시 살리는 게 다음 단계다. 안 먹히면(iOS 가 이 필드를
-    //   무시하면) 아이폰 웹에서 회전 차단은 불가능하다는 결론이 된다.
-    orientation: "portrait",
+    // any 다. portrait 잠금을 두 번 시도했고, 두 번째는 아이콘 재추가까지
+    // 확인한 정식 테스트였는데 아이폰이 이 필드를 무시했다(2026-08-13 실측).
+    // screen.orientation.lock 도, requestFullscreen 도 이 기기엔 없어서
+    // — 아이폰 웹에서 회전 차단은 불가능하다는 결론. 잠가 봐야 아이폰엔
+    // 무효, 안드로이드만 진짜로 잠겨 '눕혀서 가로'(영상 화면)가 죽으므로
+    // any 로 되돌린다. 다시 portrait 를 시도하지 말 것.
+    orientation: "any",
     background_color: "#ffffff",
     theme_color: "#ffffff",
     icons: [
