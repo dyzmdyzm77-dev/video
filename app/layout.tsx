@@ -6,6 +6,7 @@ import DeviceScaler from "./components/DeviceScaler";
 import DeviceResizer from "./components/DeviceResizer";
 import AsIsPanel from "./components/AsIsPanel";
 import DebugHud from "./components/DebugHud";
+import StatusInset from "./components/StatusInset";
 
 export const metadata: Metadata = {
   title: "에스원 CCTV",
@@ -60,6 +61,8 @@ export default function RootLayout({
         {children}
         <DeviceScaler />
         <DesktopVariantNav />
+        {/* 세로에서 잰 상태바 높이를 --status-h 로 내보낸다(가로에서 그만큼 비운다). */}
+        <StatusInset />
         {/* 임시 진단용. 주소에 ?debug=1 을 붙였을 때만 뜬다. 확인 끝나면 지운다. */}
         <DebugHud />
       </body>

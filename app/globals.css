@@ -183,6 +183,29 @@ body {
   html[data-rotate-anim="true"] .app-safe-frame {
     transition: transform 0.35s ease;
   }
+
+  /* 가로에서도 상태바 높이만큼은 비운다 — 확대와 같은 크기로 뜨게 (사용자 지정:
+     "동일하게 상태바 제외하고 뜨게 해").
+
+     확대와 가로가 채우는 크기가 달랐다. 앱이 아니라 iOS 차이다 — 홈화면 앱은
+     apple-mobile-web-app-status-bar-style 이 "default" 라 iOS 가 상태바 자리를
+     떼어 놓고 웹뷰를 그 아래부터 시작한다. 그래서 확대는 아무리 꽉 채워도
+     상태바 밑까지다. 반면 가로에서는 아이폰이 상태바를 안 그려서 웹뷰가 화면
+     전체를 받아 가득 찼다.
+
+     가로일 때 env(safe-area-inset-top) 은 0 이므로(노치가 옆으로 가면서 인셋도
+     좌우로 간다) 세로에서 잰 값을 쓴다 — StatusInset 이 --status-h 로 내보낸다.
+     인셋을 안 주는 환경(사파리)에서는 0 이라 지금과 똑같이 가득 찬다.
+
+     덮개가 아니라 여백이다. 영상이 그만큼 작아질 뿐 가려지지 않는다.
+     위 padding:0 규칙들(확대·회전)보다 뒤에 오고 선택자도 같은 무게라 이긴다. */
+  @media (orientation: landscape) {
+    html .app-safe-frame,
+    html[data-landscape="true"] .app-safe-frame,
+    html[data-immersive="true"] .app-safe-frame {
+      padding-top: var(--status-h, 0px);
+    }
+  }
 }
 
 /* 데스크톱(마우스로 hover 가능한 정밀 포인터 환경)에선 앱을 360×780 모바일
