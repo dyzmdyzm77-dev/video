@@ -40,20 +40,36 @@ export const DEVICE_ROTATE_EVENT = "devicerotaterequest";
 // html 배경도 같이 맞춘다. body 는 100svh 라 그 바깥(상태바 아래·툴바 뒤)은
 // 캔버스(html 배경)가 칠하는데, 값을 바꾸는 것 자체가 그 영역을 다시 그리게
 // 만든다. 데스크톱 미리보기는 목업 배경(#e5e5e5)이 따로 있으니 건드리지 않는다.
+//
+// ★ 값이 늘 같으면 이 함수는 아무 일도 안 한다. theme-color 에 이미 들어 있는
+//   #ffffff 를 다시 써도 DOM 변화가 없어 사파리가 다시 안 읽고, html 배경도
+//   같은 값이라 다시 안 그린다. 그래서 확대(검정 화면)에서 잡아 둔 상태바 색이
+//   세로로 돌아와도 검정으로 남았다(사용자 지적: "세로로 돌아올 때 다시 흰색으로
+//   바뀌어야 하지 않겠어? 세로인데도 검정이니까").
+//   실제로 바뀌게 만들어야 한다 — meta 는 노드를 새로 끼우고, 배경은 한 프레임
+//   다른 값으로 흔들었다가 되돌린다.
 export function setBarColor(_landscape?: boolean) {
   if (typeof document === "undefined") return;
   const color = "#ffffff";
-  let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-  if (!meta) {
-    meta = document.createElement("meta");
-    meta.name = "theme-color";
-    document.head.appendChild(meta);
-  }
+  // 같은 값을 다시 대입하는 건 소용없다 — 노드째 갈아 끼워 새로 읽게 한다.
+  document
+    .querySelectorAll('meta[name="theme-color"]')
+    .forEach((m) => m.remove());
+  const meta = document.createElement("meta");
+  meta.name = "theme-color";
   meta.content = color;
+  document.head.appendChild(meta);
   const desktop =
     typeof window.matchMedia === "function" &&
     window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  if (!desktop) document.documentElement.style.backgroundColor = color;
+  if (desktop) return;
+  const root = document.documentElement;
+  // 눈에 안 보이는 한 끗 차이(#fffffe)로 한 프레임 흔든다. 같은 색을 다시 쓰면
+  // 리페인트가 안 걸려 안전 영역이 예전 색 그대로 남는다.
+  root.style.backgroundColor = "#fffffe";
+  requestAnimationFrame(() => {
+    root.style.backgroundColor = color;
+  });
 }
 
 /** 딤의 회전 버튼에서 호출. 좌측 패널이 받아서 회전 토글을 뒤집는다.

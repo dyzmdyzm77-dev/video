@@ -5,6 +5,7 @@ import {
   LANDSCAPE_EVENT,
   readDeviceLandscape,
   requestDeviceRotate,
+  setBarColor,
 } from "./deviceRotate";
 import {
   readDeviceHeight,
@@ -306,6 +307,8 @@ export function syncImmersiveWithLandscape() {
   root.dataset.immersive = "false";
   syncFullscreen(false);
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
+  // 확대에서 잡힌 검은 상태바를 흰색으로 되찾는다(exitImmersive 와 같은 이유).
+  requestAnimationFrame(() => setBarColor(false));
 }
 
 /** 지금 확대가 '앱을 눕혀서' 만든 상태인가. 좌측 패널의 회전 버튼이 이걸 보고
@@ -401,6 +404,12 @@ export function exitImmersive() {
   // 이미 안 눕어 있으면(폰을 직접 눕혀 CSS 회전이 풀린 상태) 할 일이 없다.
   if (readDeviceLandscape()) requestDeviceRotate();
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
+  // 상태바 색을 흰색으로 되찾는다. 확대는 검은 화면이 안전 영역까지 덮는
+  // 배치라(globals.css 의 padding:0) 사파리가 상태바 색을 검정으로 잡아 두는데,
+  // 세로로 돌아와도 스스로 다시 안 잡는다. 회전을 안 하는 경로(이미 세로)도
+  // 있으므로 회전 쪽에 맡기지 않고 여기서 직접 부른다.
+  // 화면이 흰 프레임으로 다시 그려진 다음이라야 해서 한 프레임 뒤에 부른다.
+  requestAnimationFrame(() => setBarColor(false));
 }
 
 /** 몰입 여부를 구독한다. SSR·첫 렌더는 꺼짐(false)으로 맞춰 하이드레이션 불일치를 막는다. */
