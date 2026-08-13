@@ -2036,10 +2036,12 @@ function LandscapeSidePanel({
             }
       }
     >
-      {/* 탭 + 닫기 */}
+      {/* 탭 + 닫기. 아래 판(bottom)은 세로 화면의 하단 탭과 같은 생김새다
+          (사용자 지정: "움직임 감지랑 카메라 목록은 세로 때처럼") — 활성 파랑,
+          밑줄 없음, 아래 구분선. 오른쪽 판은 1080+ 패널 스타일 그대로. */}
       <div
         className="flex flex-none items-center justify-between"
-        style={{ height: "48px", padding: "0 16px" }}
+        style={{ height: "48px", padding: bottom ? "0 20px" : "0 16px" }}
       >
         <div className="flex items-center" style={{ gap: "20px" }}>
           {(
@@ -2057,10 +2059,18 @@ function LandscapeSidePanel({
                 type="button"
                 onClick={() => setTab(t.key)}
                 className="relative text-[15px] font-bold leading-none"
-                style={{ color: active ? "#262626" : "#A4A4A4" }}
+                style={{
+                  color: bottom
+                    ? active
+                      ? "#1D6CEB"
+                      : "#A6A6A6"
+                    : active
+                      ? "#262626"
+                      : "#A4A4A4",
+                }}
               >
                 {t.label}
-                {active && (
+                {!bottom && active && (
                   <span
                     className="absolute left-0 right-0"
                     style={{
@@ -2083,22 +2093,35 @@ function LandscapeSidePanel({
           <img src={`${BASE}/close.svg`} alt="" className="h-6 w-6" />
         </button>
       </div>
+      {/* 세로 화면 하단 탭과 같은 구분선(아래 판에만). */}
+      {bottom && <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />}
       {/* 탭 아래 구분선은 안 그린다(사용자 지정) — 1080+ 패널에는 있지만 여긴
           영상 위에 뜨는 판이라 선까지 있으면 답답하다. 어느 탭인지는 탭 자체의
           밑줄이 이미 보여 준다. */}
 
       {showMotion ? (
-        <SideEventTimeline
-          playbackMs={playbackMs}
-          setPlaybackMs={setPlaybackMs}
-          cameraSrc={cam.src}
-          onScrubbingChange={onScrubbingChange}
-        />
+        bottom ? (
+          // 세로 화면의 가로-한-줄 배치와 같은 가로 시간바(사용자 지정).
+          <RecordingEventTimeline
+            playbackMs={playbackMs}
+            setPlaybackMs={setPlaybackMs}
+            cameraSrc={cam.src}
+            onScrubbingChange={onScrubbingChange}
+          />
+        ) : (
+          <SideEventTimeline
+            playbackMs={playbackMs}
+            setPlaybackMs={setPlaybackMs}
+            cameraSrc={cam.src}
+            onScrubbingChange={onScrubbingChange}
+          />
+        )
       ) : (
         <div
           className={
             bottom
-              ? "flex min-h-0 flex-1 flex-row gap-2 overflow-x-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              ? // 세로 화면의 카메라 목록(가로 한 줄)과 같은 여백(px-5)·간격.
+                "flex min-h-0 flex-1 flex-row gap-2 overflow-x-auto overflow-y-hidden px-5 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           }
         >
