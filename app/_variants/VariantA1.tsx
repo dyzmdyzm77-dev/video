@@ -48,6 +48,8 @@ import {
   MOTION_MIN_H,
   SIDE_PANEL_RATIO,
   SIDE_PANEL_W,
+  PANEL_BOTTOM_RATIO,
+  PANEL_BOTTOM_H,
   THUMB_MAX_H,
   THUMB_MIN_H,
   autoGridCount,
@@ -260,6 +262,8 @@ export default function VariantA1({
   const landscape = useDeviceLandscape();
   const immersive = useImmersive();
   const compareTarget = useCompareTarget();
+  // 가로 확대 화면의 패널 방향 판정에 쓴다(정사각형에 가까우면 아래에서).
+  const deviceRatio = useDeviceRatio();
 
 
   // '지금 기기가 가로로 긴 상태인가' — 판정은 useDeviceWide 하나에 모아 뒀다
@@ -425,9 +429,16 @@ export default function VariantA1({
   //
   // 확대하면서 눕힌 경우엔 landscape 와 immersive 가 같이 켜지므로 여기로 온다.
   if (immersive) {
+    // 정사각형에 가까운 화면은 패널을 아래에서 꺼낸다(layoutRules 참고) —
+    // 오른쪽에서 나오면 영상 폭이 SIDE_PANEL_W 만큼 깎여 형편없이 작아진다.
+    const panelBottom = deviceRatio < PANEL_BOTTOM_RATIO;
     return (
-      <div className="app-safe-frame flex h-full w-full overflow-hidden bg-black">
-        {/* 오른쪽 패널이 열리면 영상이 그만큼 밀린다(덮지 않는다, 사용자 결정). */}
+      <div
+        className={`app-safe-frame flex h-full w-full overflow-hidden bg-black ${
+          panelBottom ? "flex-col" : ""
+        }`}
+      >
+        {/* 패널이 열리면 영상이 그만큼 밀린다(덮지 않는다, 사용자 결정). */}
         <div className="relative min-h-0 flex-1 overflow-hidden">
         <LandscapeVideo
           cameras={CAMERAS}
@@ -500,6 +511,7 @@ export default function VariantA1({
         {sidePanelOpen && (
           <LandscapeSidePanel
             mode={mode}
+            position={panelBottom ? "bottom" : "right"}
             selectedIndex={expandedIndex}
             onSelect={handleExpand}
             playbackMs={playbackMs}
@@ -1969,6 +1981,7 @@ const LANDSCAPE_PANEL_EXTRA = LANDSCAPE_PANEL_EDGE - LANDSCAPE_PANEL_PAD;
 
 function LandscapeSidePanel({
   mode,
+  position = "right",
   selectedIndex,
   onSelect,
   playbackMs,
@@ -1977,6 +1990,9 @@ function LandscapeSidePanel({
   onClose,
 }: {
   mode: "live" | "recording";
+  /** 어느 변에서 나오는가. 정사각형에 가까운 화면은 "bottom" — 오른쪽에서
+   *  나오면 영상 폭이 깎여 작아진다(layoutRules 의 PANEL_BOTTOM_RATIO). */
+  position?: "right" | "bottom";
   /** 지금 보고 있는 카메라(단일 화면). 다채널이면 null. */
   selectedIndex: number | null;
   onSelect: (i: number) => void;
@@ -1991,22 +2007,34 @@ function LandscapeSidePanel({
   // 움직임 감지는 녹화에서만 있다 — 실시간으로 돌아오면 목록으로 되돌린다.
   const showMotion = mode === "recording" && tab === "motion";
   const cam = CAMERAS[selectedIndex ?? 0];
+  const bottom = position === "bottom";
   return (
     <div
       className="flex min-h-0 flex-none flex-col bg-white"
-      style={{
-        // 내용 칸은 1080+ 패널과 같은 폭(SIDE_PANEL_W)으로 두고, 오른쪽에 여백만
-        // 더 붙인다 — 가로 확대는 화면 끝까지 쓰는 화면이라 패널 내용이 기기
-        // 오른쪽 모서리에 딱 붙어 있었다(사용자 지정).
-        width: `${SIDE_PANEL_W + LANDSCAPE_PANEL_EXTRA}px`,
-        paddingRight: `${LANDSCAPE_PANEL_EXTRA}px`,
-        borderLeft: "1px solid #EBEBEB",
-        // 왼쪽 위·아래만 둥글게 — 영상 쪽에서 흰 판이 밀고 들어오는 모양이라
-        // 바텀시트 윗변과 같은 결이다(사용자 지정). 오른쪽은 기기 모서리에
-        // 닿는 변이라 각지게 둔다. 값도 시트와 같은 10.
-        borderTopLeftRadius: "10px",
-        borderBottomLeftRadius: "10px",
-      }}
+      style={
+        bottom
+          ? {
+              // 아래에서 나오는 판 — 바텀시트와 같은 결: 윗변 둥글게, 높이 고정.
+              height: `${PANEL_BOTTOM_H}px`,
+              width: "100%",
+              borderTop: "1px solid #EBEBEB",
+              borderTopLeftRadius: "10px",
+              borderTopRightRadius: "10px",
+            }
+          : {
+              // 내용 칸은 1080+ 패널과 같은 폭(SIDE_PANEL_W)으로 두고, 오른쪽에 여백만
+              // 더 붙인다 — 가로 확대는 화면 끝까지 쓰는 화면이라 패널 내용이 기기
+              // 오른쪽 모서리에 딱 붙어 있었다(사용자 지정).
+              width: `${SIDE_PANEL_W + LANDSCAPE_PANEL_EXTRA}px`,
+              paddingRight: `${LANDSCAPE_PANEL_EXTRA}px`,
+              borderLeft: "1px solid #EBEBEB",
+              // 왼쪽 위·아래만 둥글게 — 영상 쪽에서 흰 판이 밀고 들어오는 모양이라
+              // 바텀시트 윗변과 같은 결이다(사용자 지정). 오른쪽은 기기 모서리에
+              // 닿는 변이라 각지게 둔다. 값도 시트와 같은 10.
+              borderTopLeftRadius: "10px",
+              borderBottomLeftRadius: "10px",
+            }
+      }
     >
       {/* 탭 + 닫기 */}
       <div
@@ -2067,7 +2095,13 @@ function LandscapeSidePanel({
           onScrubbingChange={onScrubbingChange}
         />
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div
+          className={
+            bottom
+              ? "flex min-h-0 flex-1 flex-row gap-2 overflow-x-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              : "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          }
+        >
           {/* 타일 생김새는 1080+ 패널의 cameraTile 과 같게 맞춘다 — 라운드 4,
               라벨 한 개, 선택은 안쪽 파란 링. 라벨은 CameraFeed 가 이미 그리므로
               여기서 또 얹으면 두 개가 겹쳐 보인다(사용자 지적). 선택 표시도
@@ -2077,7 +2111,11 @@ function LandscapeSidePanel({
               key={c.label}
               type="button"
               onClick={() => onSelect(i)}
-              className="relative aspect-video w-full flex-none overflow-hidden bg-neutral-900"
+              className={
+                bottom
+                  ? "relative aspect-video h-full flex-none overflow-hidden bg-neutral-900"
+                  : "relative aspect-video w-full flex-none overflow-hidden bg-neutral-900"
+              }
               style={{ borderRadius: "4px" }}
             >
               <CameraFeed label={c.label} src={c.src} />
