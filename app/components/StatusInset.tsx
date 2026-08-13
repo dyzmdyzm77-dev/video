@@ -44,6 +44,18 @@ function readInsetTop(): number {
  *  세로에서만 잰다. 가로는 상태바가 없어 차가 다른 뜻이 된다. */
 const STATUS_MAX = 90;
 
+/** 하단 홈 인디케이터 인셋. 세로에서만 잰다(가로는 값의 의미가 다르다).
+ *  강제 세로 화면이 진짜 세로 화면과 같은 하단 여백을 갖게 하는 데 쓴다. */
+function readHomeH(): number {
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-bottom,0px);pointer-events:none;";
+  document.body.appendChild(probe);
+  const h = probe.getBoundingClientRect().height;
+  probe.remove();
+  return window.innerWidth > window.innerHeight ? 0 : h;
+}
+
 function readStatusH(): number {
   const env = readInsetTop();
   if (env > 0) return env;
@@ -63,6 +75,7 @@ export default function StatusInset() {
 
     const root = document.documentElement;
     let best = 0;
+    let bestBottom = 0;
     const sync = () => {
       // '눕힌 채 축소'로 콘텐츠를 세울 때 돌릴 방향(globals.css 의
       // data-force-portrait). 기기 각도의 반대로 돌려야 똑바로 선다.
@@ -87,6 +100,11 @@ export default function StatusInset() {
         best = now;
         root.style.setProperty("--status-h", `${Math.round(best)}px`);
       }
+      const hb = readHomeH();
+      if (hb > bestBottom) {
+        bestBottom = hb;
+        root.style.setProperty("--home-h", `${Math.round(bestBottom)}px`);
+      }
 
       // 눕힌 가로에서 비울 변은 '노치 쪽 한 변'이다 — 확대가 물리 상단 한 변만
       // 비우는 것과 같은 그림(사용자 지적: "가로로 전환이랑 확대모드 왜 달라?").
@@ -109,10 +127,41 @@ export default function StatusInset() {
     };
     sync();
 
+    // ── 확대 중 회전 모션 가리개(페이드판) ──────────────────────────────
+    // 확대는 이미 가로 뷰라 눕혀도 결과 화면이 같은데, iOS 가 회전 애니메이션을
+    // 틀어 '또 도는' 것으로 보인다. 회전 잠금은 이 기기에서 전부 막혀 있다 —
+    // API 없음(진단 3차), manifest orientation 무시(재추가 후 실측). 그래서
+    // 모션을 빠른 페이드로 가린다. 즉시 검정(1차판)은 "무슨 검정 화면이 떠"
+    // 지적을 받아 짧은 페이드 인/아웃으로 순화했다(사용자 선택: 3번).
+    const mask = document.createElement("div");
+    mask.style.cssText =
+      "position:fixed;inset:-50vmax;background:#000;z-index:2147483647;" +
+      "pointer-events:none;opacity:0;transition:opacity 0.12s ease;";
+    document.body.appendChild(mask);
+    let maskTimer: ReturnType<typeof setTimeout> | null = null;
+    const onRotateStart = () => {
+      if (root.dataset.immersive !== "true") return;
+      mask.style.opacity = "1";
+      if (maskTimer !== null) clearTimeout(maskTimer);
+      // iOS 회전 애니메이션(~0.4s)이 끝난 뒤 걷는다.
+      maskTimer = setTimeout(() => {
+        maskTimer = null;
+        mask.style.opacity = "0";
+      }, 500);
+    };
+
     const evts = ["resize", "orientationchange"];
     evts.forEach((e) => window.addEventListener(e, sync, { passive: true }));
+    window.addEventListener("orientationchange", onRotateStart, {
+      passive: true,
+    });
+    window.visualViewport?.addEventListener("resize", onRotateStart);
     return () => {
       evts.forEach((e) => window.removeEventListener(e, sync));
+      window.removeEventListener("orientationchange", onRotateStart);
+      window.visualViewport?.removeEventListener("resize", onRotateStart);
+      if (maskTimer !== null) clearTimeout(maskTimer);
+      mask.remove();
     };
   }, []);
 

@@ -173,10 +173,12 @@ body {
       transform-origin: center center;
       /* 돌릴 방향은 기기 각도의 반대다 — StatusInset 이 --force-rot 로 낸다. */
       transform: translate(-50%, -50%) rotate(var(--force-rot, -90deg));
-      /* 전부 0 — padding-top 만 껐더니 가로에서 iOS 가 주는 좌우 인셋(59px)이
-         기본 규칙으로 남아 양옆에 흰 마진이 생겼다(사용자 지적). 세운 콘텐츠는
-         화면 전체를 써야 한다. */
-      padding: 0;
+      /* 진짜 세로 화면과 같은 위(상태바)·아래(홈 인디케이터) 여백을 준다 —
+         0 으로 밀었더니 하단 영역이 없어 "기존 세로 뷰랑 다르게 나와"(사용자
+         지적). 값은 세로에서 실측해 둔 --status-h/--home-h 다. env() 는 가로에선
+         좌우로 가 버려 여기서 못 쓴다. 좌우는 0 — 가로 인셋(59px)이 남으면
+         양옆 흰 마진이 된다(전에 실제로 그랬다). */
+      padding: var(--status-h, 0px) 0 var(--home-h, 0px);
     }
   }
 
