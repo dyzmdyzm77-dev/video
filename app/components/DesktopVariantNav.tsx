@@ -337,7 +337,11 @@ export default function DesktopVariantNav() {
   // 안들의 딤에 있는 '화면 전환' 버튼 — 이 토글을 누른 것과 똑같이 동작시킨다.
   // 회전 연출은 위 effect 하나가 전부 담당하므로 여기선 상태만 뒤집는다.
   useEffect(() => {
-    const onRotate = () => setRotated((v) => !v);
+    // 목표값이 실려 오면 그 값으로 맞춘다(축소 등). 없으면 예전처럼 뒤집는다.
+    const onRotate = (e: Event) => {
+      const to = (e as CustomEvent<{ to?: boolean }>).detail?.to;
+      setRotated((v) => (typeof to === "boolean" ? to : !v));
+    };
     window.addEventListener(DEVICE_ROTATE_EVENT, onRotate);
     return () => window.removeEventListener(DEVICE_ROTATE_EVENT, onRotate);
   }, []);

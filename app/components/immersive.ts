@@ -373,7 +373,7 @@ export function toggleImmersive() {
       window.dispatchEvent(new Event(IMMERSIVE_EVENT));
     };
     window.addEventListener(LANDSCAPE_EVENT, onRotated);
-    requestDeviceRotate();
+    requestDeviceRotate(true);
     return;
   }
   document.documentElement.dataset.immersive = "true";
@@ -401,8 +401,12 @@ export function exitImmersive() {
   // 회전으로 켜졌든, 중간에 폰을 눕혔다 세웠든) 축소 뒤에는 기기 방향 그대로
   // 돌아와야 한다 — 플래그로 경로를 따지다 보니 어떤 순서에서는 눕은 채로
   // 남았다(사용자 지적: "눕힌 상황에서 축소하면 원래 세로 모드로 돌아와야지").
-  // 이미 안 눕어 있으면(폰을 직접 눕혀 CSS 회전이 풀린 상태) 할 일이 없다.
-  if (readDeviceLandscape()) requestDeviceRotate();
+  // 조건을 걸지 않는다. 예전엔 data-landscape 가 true 일 때만 되돌렸는데, 폰을
+  // 눕혀서 켜진 확대는 그 플래그를 안 세우므로(syncImmersiveWithLandscape) 그
+  // 경로에선 축소해도 가로에 남았다(사용자 지적: "가로로 돌려졌을 때 축소버튼
+  // 누르면 세로로 돌아와야지. 왜 그 가로 상태에서 축소되냐?").
+  // 목표값 false 를 실어 보내므로 이미 세로면 상태가 안 바뀌어 아무 일도 안 난다.
+  requestDeviceRotate(false);
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
   // 상태바 색을 흰색으로 되찾는다. 확대는 검은 화면이 안전 영역까지 덮는
   // 배치라(globals.css 의 padding:0) 사파리가 상태바 색을 검정으로 잡아 두는데,

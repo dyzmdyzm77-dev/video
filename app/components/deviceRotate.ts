@@ -69,7 +69,7 @@ export function setBarColor(_landscape?: boolean) {
  *  폰을 실제로 눕힌 것은 여기로 오지 않는다. 그건 CSS 미디어쿼리가 알아서
  *  가른다(globals.css). 한때 여기로 되감기를 보냈다가 물리 회전 한 번에 두 번
  *  나가서 도로 돌아갔다 — 회전을 JS 로 상쇄하려 들지 말 것. */
-export function requestDeviceRotate() {
+export function requestDeviceRotate(to?: boolean) {
   // 회전 연출(0.35s)은 '누른 회전'일 때만 켠다. 폰을 눕혀서 CSS 회전이 붙거나
   // 떨어지는 건 OS 회전을 상쇄하는 것뿐이라, 거기에 트랜지션이 걸리면 화면이
   // 한 번 더 도는 것으로 보인다(사용자 지적). 그건 즉시 끝나야 한다.
@@ -82,7 +82,13 @@ export function requestDeviceRotate() {
       root.dataset.rotateAnim = "false";
     }, ROTATE_ANIM_MS + 60);
   }
-  window.dispatchEvent(new Event(DEVICE_ROTATE_EVENT));
+  // 목표값을 실어 보낸다. 받는 쪽이 '뒤집기'만 하면 신호를 한 번 놓치거나 두 번
+  // 받는 순간 방향이 영영 반대로 굴러간다 — 실제로 그랬다(사용자 지적: "가로로
+  // 돌려졌을 때 축소버튼 누르면 세로로 돌아와야지. 왜 그 가로 상태에서 축소되냐?").
+  // to 를 주면 '그 값으로 맞춰라', 안 주면 예전처럼 뒤집는다(좌측 패널의 회전 토글).
+  window.dispatchEvent(
+    new CustomEvent(DEVICE_ROTATE_EVENT, { detail: { to } }),
+  );
 }
 
 /** 회전 연출 길이(ms). globals.css 의 트랜지션·DesktopVariantNav 의 단계 타이머와
