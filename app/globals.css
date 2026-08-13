@@ -184,33 +184,22 @@ body {
     transition: transform 0.35s ease;
   }
 
-  /* 가로에서도 상태바 높이만큼은 비운다 — 확대와 같은 크기로 뜨게 (사용자 지정:
-     "동일하게 상태바 제외하고 뜨게 해").
+  /* 세로에서 화면 맨 위를 흰색으로 남긴다 (사용자 지정: "세로로 돌렸을 때
+     흰색이 떠야지. 가로에서는 왜 뜨는데?").
 
-     확대와 가로가 채우는 크기가 달랐다. 앱이 아니라 iOS 차이다 — 홈화면 앱은
-     apple-mobile-web-app-status-bar-style 이 "default" 라 iOS 가 상태바 자리를
-     떼어 놓고 웹뷰를 그 아래부터 시작한다. 그래서 확대는 아무리 꽉 채워도
-     상태바 밑까지다. 반면 가로에서는 아이폰이 상태바를 안 그려서 웹뷰가 화면
-     전체를 받아 가득 찼다.
+     iOS 는 상태바 색을 코드로 못 정한다 — theme-color 는 사파리가 무시하고,
+     홈화면 앱도 페이지가 그린 색을 가져간다. 그래서 상태바를 흰색으로 유지하려면
+     화면 맨 위에 실제 흰 픽셀이 있어야 한다. 확대(검은 화면)를 거치면 상태바가
+     검게 굳고 축소해도 안 돌아오던 게 이것 때문이다.
 
-     가로일 때 env(safe-area-inset-top) 은 0 이므로(노치가 옆으로 가면서 인셋도
-     좌우로 간다) 세로에서 잰 값을 쓴다 — StatusInset 이 --status-h 로 내보낸다.
-     인셋을 안 주는 환경(사파리)에서는 0 이라 지금과 똑같이 가득 찬다.
-
-     덮개가 아니라 여백이다. 영상이 그만큼 작아질 뿐 가려지지 않는다.
-     위 padding:0 규칙들(확대·회전)보다 뒤에 오고 선택자도 같은 무게라 이긴다. */
-  @media (orientation: landscape) {
-    html .app-safe-frame,
-    html[data-landscape="true"] .app-safe-frame,
-    html[data-immersive="true"] .app-safe-frame {
-      padding-top: var(--status-h, 0px);
-      /* 비운 자리를 흰색으로 칠한다. padding 은 요소 배경(가로 영상 화면은 검정)을
-         그대로 받아서, 그냥 두면 위쪽에 검은 띠가 생기고 화면만 줄어든 꼴이 된다
-         (사용자 지적: "상단에 검정색 영역이 잡히고 있어서 뷰 영역이 줄어든 상태").
-         inset 그림자는 콘텐츠 아래에 깔리므로 영상을 가리지 않는다 — 영상은 이미
-         padding 아래에서 시작한다. 흰색이라 상태바 자리처럼 보이고, iOS 가 상태바
-         색을 페이지에서 가져가는 문제도 이 흰색이 같이 받아 준다. */
-      box-shadow: inset 0 var(--status-h, 0px) 0 #ffffff;
+     덮개가 아니라 여백이라 영상이 가려지지 않고 그만큼 아래에서 시작한다.
+     프레임 배경이 흰색인 보통 화면에만 건다 — 확대·가로는 프레임이 검정이라
+     여기 넣으면 검은 띠가 되고(가로에 넣었다가 지적받아 뺐다), 확대는 프레임이
+     90° 돌아 있어 여백이 엉뚱한 변에 붙는다. */
+  @media (orientation: portrait) {
+    html:not([data-immersive="true"]):not([data-landscape="true"])
+      .app-safe-frame {
+      padding-top: max(env(safe-area-inset-top, 0px), 12px);
     }
   }
 
