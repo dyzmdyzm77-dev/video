@@ -60,6 +60,15 @@ export default function StatusInset() {
       window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     // 데스크톱 미리보기는 목업 프레임이라 상태바가 없다.
     if (desktop) return;
+    // 전체화면 API 가 있는 플랫폼(안드로이드)도 잰 값을 쓰면 안 된다. 거긴
+    // 확대가 진짜 전체화면이라 상태바가 아예 사라지는데, 전체화면이 되는 순간
+    // 노치 인셋(env)이 생겨 --status-h 가 뒤늦게 세팅되고, 상태바도 없는
+    // 화면에 검은 띠가 툭 나타났다(사용자 지적: "확대모드 했는데 왼쪽에 검정색
+    // 영역이 갑자기 툭 나오네" — 안드로이드). 상태바 자리 비우기는 상태바가
+    // 항상 떠 있는 아이폰(전체화면 API 없음, 투명 상태바) 전용이다.
+    if (typeof document.documentElement.requestFullscreen === "function") {
+      return;
+    }
 
     const root = document.documentElement;
     let best = 0;
