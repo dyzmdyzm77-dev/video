@@ -27,11 +27,11 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "fullscreen",
     // 설치 환경이 fullscreen 을 못 쓰면 순서대로 물러난다.
     display_override: ["fullscreen", "standalone"],
-    // 세로 잠금(사용자 지정: "돌려도 바꾸지 마"). 가로 영상은 확대 버튼으로만
-    // 간다(앱이 CSS 로 눕힘). 지원하는 환경(안드로이드, 일부 iOS)에선 폰을
-    // 돌려도 화면이 아예 안 돌아 이게 제일 깔끔하고, 안 먹는 환경은
-    // globals.css 의 되돌림 규칙이 받아 준다.
-    orientation: "portrait",
+    // any 다. 한때 portrait 로 잠갔는데(회전 전면 차단), 사양이 "영상 화면은
+    // 눕히면 가로로 돌아가야 한다"로 정리되면서 되돌렸다 — OS 수준에서 잠그면
+    // 그것까지 죽는다. 회전을 무시할 화면(홈 등)은 globals.css 의 되돌림 규칙이
+    // 세로로 세워 준다.
+    orientation: "any",
     background_color: "#ffffff",
     theme_color: "#ffffff",
     icons: [
