@@ -3097,21 +3097,23 @@ function RecordingEventTimeline({
             backgroundColor: "#111111",
           }}
         />
-        {/* 날짜·시간 선택 — 오른쪽 화살표와 짝이라 크기·세로 위치가 같고, 좌우
-            여백도 같은 20 이다. 화살표가 흰 배경 + 테두리인 것과 달리 이쪽은
-            채운 원(사용자 지정). 아이콘은 time.svg(색이 박혀 있어 마스크가 아니라
-            img). 시간바는 드래그로 스크럽되니 포인터를 막는다. */}
+        {/* 날짜·시간 선택 — 오른쪽 화살표와 완전히 같은 원이다(28×28 · 흰 배경 ·
+            border-neutral-300). 좌우 여백도 같은 20, 세로 중심도 같다.
+            아이콘은 16 — time.svg 는 24 박스를 거의 꽉 채우는 그림이라 24 로 넣으면
+            원에 닿아 동그라미가 안 보인다(화살표는 글리프가 작아 24 라도 여백이
+            남는다). 색이 박혀 있어 마스크가 아니라 img 로 쓴다.
+            시간바는 드래그로 스크럽되니 포인터를 막는다. */}
         {onOpenDateTime && (
           <button
             type="button"
             aria-label="날짜, 시간 선택"
-            className="absolute z-20 flex items-center justify-center rounded-full"
+            className="absolute z-20 flex items-center justify-center rounded-full border border-neutral-300"
             style={{
               left: "20px",
               top: `${PAD_TOP + (RAIL_H - 28) / 2}px`,
               width: "28px",
               height: "28px",
-              backgroundColor: "#F2F2F2",
+              backgroundColor: "#FFFFFF",
             }}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
@@ -3119,7 +3121,7 @@ function RecordingEventTimeline({
               onOpenDateTime();
             }}
           >
-            <img src={`${BASE}/time.svg`} alt="" className="h-6 w-6" />
+            <img src={`${BASE}/time.svg`} alt="" className="h-4 w-4" />
           </button>
         )}
         {/* 펼침/접기 화살표 — 접으면 아래 썸네일이 사라지고 시간바만 남는다
