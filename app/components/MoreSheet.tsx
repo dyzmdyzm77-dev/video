@@ -54,9 +54,10 @@ export default function MoreSheet({
           boxShadow: open ? undefined : "none",
         }}
       >
-        {/* 헤더 */}
+        {/* 헤더 — 세로가 모자라도 이 줄은 안 줄인다(사용자 지정 2026-08-14:
+            "괜히 타이틀 부분 마진 줄이지말고"). 모자라는 건 아래 항목이 스크롤로 먹는다. */}
         <div
-          className="flex items-center justify-between"
+          className="flex flex-none items-center justify-between"
           style={{ height: "74px", padding: "0 20px" }}
         >
           <h2 className="text-[20px] font-bold leading-none text-neutral-900">
@@ -72,8 +73,12 @@ export default function MoreSheet({
           </button>
         </div>
 
-        {/* 항목 */}
-        <div className="flex flex-col" style={{ padding: "0 20px 24px" }}>
+        {/* 항목 — 시트가 화면에 다 안 들어가면(가로 모드처럼 세로가 짧을 때)
+            여기만 스크롤한다. 스크롤바는 감춘다(앱 다른 목록과 같은 규칙). */}
+        <div
+          className="flex min-h-0 flex-1 flex-col overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          style={{ padding: "0 20px 24px" }}
+        >
           {ITEMS.map((label) => (
             <button
               key={label}

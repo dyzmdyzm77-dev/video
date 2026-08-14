@@ -10,7 +10,16 @@ const nextConfig: NextConfig = {
   // dev 서버를 localhost 외 출처(클라우드플레어 터널, 같은 Wi-Fi의 폰 등)에서
   // 열 때, Next 가 cross-origin 자원을 막아 하이드레이션이 실패한다(=터치 안 됨).
   // 모바일 미리보기용 출처를 허용한다.
-  allowedDevOrigins: ["*.trycloudflare.com", "192.168.68.122"],
+  // IP 는 공유기가 다시 나눠 주면 바뀐다 — 하나만 박아 두면 그 다음 날 폰에서
+  // 하이드레이션이 조용히 실패한다(화면은 뜨는데 아무 것도 안 눌린다).
+  // 사설망 대역을 통째로 열어 둔다. dev 서버에만 쓰이는 설정이다.
+  allowedDevOrigins: [
+    "*.trycloudflare.com",
+    "192.168.*.*",
+    "10.*.*.*",
+    "172.16.*.*",
+    "localhost",
+  ],
 };
 
 export default nextConfig;

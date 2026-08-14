@@ -426,8 +426,6 @@ export default function VariantA3({
           swapAiZoom
           // 실시간/녹화를 칩 두 개로 — 고른 쪽만 흰 배경 + 검정 글자.
           statusStyle="chips"
-          // 칩은 오른쪽 위, 딤 아이콘은 그 아래 줄로(사용자 지정 2026-08-14).
-          statusPlacement="top-right"
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 40 — A-1 가로와 같은 값으로(사용자 지정).
@@ -1595,20 +1593,6 @@ function ExpandedView({
                   "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
               }}
             />
-            {/* 카메라 이름 — 좌상단 배지가 시각으로 바뀌면서 이름이 갈 곳이 없어졌다
-                (사용자 결정 2026-08-14). 딤일 때만 좌상단에 띄운다. 위 그라데이션
-                스크림 위라 흰 글씨로 충분히 읽힌다.
-                여백은 오른쪽 아이콘 줄과 같은 규칙으로 맞춘다 — 바깥 12px, 줄 높이
-                44px(아이콘 28 + py-2 8·8), 글자에 버튼과 같은 px-1.5. 그래야 좌우
-                끝 여백과 세로 중심이 아이콘과 1px 도 안 어긋난다. */}
-            <div
-              className="absolute flex items-center"
-              style={{ top: "12px", left: "12px", height: "44px" }}
-            >
-              <span className="px-1.5 text-[14px] font-medium leading-none text-white">
-                {cam.label}
-              </span>
-            </div>
             <div
               className="absolute flex items-center"
               style={{
@@ -4330,6 +4314,25 @@ function RecordingControls({
     };
   };
 
+  // 움직임이 감지된 시각 — 단일 시간바와 같은 빨간 세로선(사용자 지적 2026-08-14:
+  // 가로 시간바엔 표시가 없었다). anchor(레일 기준 시각)에서 몇 초 떨어졌는지로
+  // 자리를 잡는다. 눈금과 같은 레일에 있어 같이 흐른다.
+  // 화면에 보이는 범위(±cull)만 그린다 — 하루 ~4900건을 다 그리면 스크롤이 죽는다.
+  const motionMarks = useMemo(() => {
+    if (anchor === null) return [] as number[];
+    const day = new Date(anchor);
+    day.setHours(0, 0, 0, 0);
+    const dayStart = day.getTime();
+    const cull = 700 / pxPerSec + 90;
+    const out: number[] = [];
+    for (const ev of TIMELINE_EVENTS) {
+      const secOffset = (dayStart + ev.at * 1000 - anchor) / 1000;
+      if (Math.abs(secOffset - playbackOffsetSec) > cull) continue;
+      out.push(secOffset);
+    }
+    return out;
+  }, [anchor, pxPerSec, playbackOffsetSec]);
+
   return (
     <div className="relative flex flex-col">
       {/* 녹화 + 날짜 — 가로 딤(overlay)에선 안 그린다. LandscapeVideo 가 같은
@@ -4512,6 +4515,20 @@ function RecordingControls({
                   : isMajor
                     ? "#797979"
                     : "#ADADAD",
+              }}
+            />
+          ))}
+          {/* 감지 표시 — 단일 시간바와 같은 규격(2×12, top 16, #E2202D). */}
+          {motionMarks.map((secOffset, i) => (
+            <div
+              key={`M${i}`}
+              className="pointer-events-none absolute rounded-[1px]"
+              style={{
+                left: `calc(50% + ${secOffset * pxPerSec}px)`,
+                top: "16px",
+                width: "2px",
+                height: "12px",
+                backgroundColor: "#E2202D",
               }}
             />
           ))}
