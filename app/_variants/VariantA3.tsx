@@ -364,7 +364,11 @@ export default function VariantA3({
 
   // 라이브에서 녹화 탭 클릭 시 바텀시트 열기 (모드는 적용 시 변경)
   const handleSetMode = (m: "live" | "recording") => {
-    if (m === "recording" && mode === "live") {
+    // '녹화 영상'은 누를 때마다 날짜·시간 시트를 연다(사용자 결정 2026-08-14).
+    // 예전엔 실시간에서 넘어올 때만 열려서, 이미 녹화 중이면 다시 눌러도 아무 일도
+    // 없었다. 시점을 다시 고르는 게 이 탭의 일이라 매번 여는 게 맞다.
+    // (시트는 지금 보던 시각에서 열린다 — initialMs 가 playbackMs 를 먼저 본다.)
+    if (m === "recording") {
       setDateTimeOpen(true);
     } else if (m !== mode) {
       setMode(m);
