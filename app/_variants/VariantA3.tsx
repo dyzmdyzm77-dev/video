@@ -2332,7 +2332,8 @@ function SideEventTimeline({
   const containerRef = useRef<HTMLDivElement>(null);
   // 썸네일을 못 뽑는 기기 사양이면 카드에 시각+타이틀만 남긴다(eventThumbs.ts).
   const eventThumbs = useEventThumbs();
-  // 줌 레벨: 픽셀/초 — 가로 타임라인과 동일하게 기본 6px/sec. 핀치/휠로 연속 조정.
+  // 줌 레벨: 픽셀/초 — 세로 타임라인(사이드 패널)이라 가로 시간바와 따로 간다.
+  // 가로는 점 간격 때문에 8 로 올렸지만 여긴 카드가 놓이는 축이라 6 그대로다.
   const [pxPerSec, setPxPerSec] = useState(6);
   const [lineY, setLineY] = useState(20);
   const isDraggingRef = useRef(false);
@@ -2911,8 +2912,12 @@ function RecordingEventTimeline({
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // 줌 레벨: 픽셀/초 — 기본 5px/sec(눈금·시간 간격을 조금 더 촘촘하게). 핀치/휠로 조정.
-  const [pxPerSec, setPxPerSec] = useState(5);
+  // 줌 레벨: 픽셀/초 — 기본 8px/sec. 핀치/휠로 조정.
+  // 5 → 8(사용자 지정 2026-08-14: "점들 디폴트 간격이 좀 좁은 거 같아").
+  // 눈금은 1초마다라 이 값이 곧 점 간격이다 — 점이 4px 이 되면서 5 로는 사이가
+  // 1px 밖에 안 남아 선처럼 붙어 보였다. 8 이면 점 4 + 여백 4 로 떨어져 읽힌다.
+  // 라벨 간격은 그대로 10초다(niceSeconds 규칙에서 10×8=80 ≥ 50).
+  const [pxPerSec, setPxPerSec] = useState(8);
   // 펼쳐진 이벤트 클러스터 (클러스터 첫 이벤트 key 기준)
   const [expandedClusters, setExpandedClusters] = useState<Set<string>>(
     () => new Set(),
@@ -4225,8 +4230,10 @@ function RecordingControls({
   const rotatedInput = useRotatedInput();
   const dragAxis = (e: { clientX: number; clientY: number }) =>
     rotatedInput ? e.clientY : e.clientX;
-  // 줌 레벨: 픽셀/초 — 핀치 너비 비율로 연속적으로 조정 (기본 6px/sec → 라벨 10초 간격)
-  const [pxPerSec, setPxPerSec] = useState(6);
+  // 줌 레벨: 픽셀/초 — 핀치 너비 비율로 연속적으로 조정.
+  // 6 → 8(사용자 지정 2026-08-14). 눈금은 1초마다라 이 값이 곧 점 간격이다.
+  // 라벨은 그대로 10초 간격(10×8=80 ≥ 60).
+  const [pxPerSec, setPxPerSec] = useState(8);
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef<{ x: number; ms: number } | null>(null);
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
