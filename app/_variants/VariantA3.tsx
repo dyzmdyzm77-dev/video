@@ -1830,8 +1830,17 @@ function ExpandedView({
       />
     </div>
   );
+  // 실시간에는 플레이어(5버튼)·시간바가 없어서 그 자리를 목록이 통째로 먹는다.
+  // 그래서 같은 기기에서 실시간 타일이 녹화보다 훨씬 커졌다(750×832 기준
+  // 423×238 vs 230×129, 사용자 지적: "왜 또 엄청 크니?").
+  // 녹화가 쓰는 만큼(5버튼 56 + 구분선 1 + 시간바 52)을 실시간에서도 비워 둬,
+  // 두 모드의 세로 구성이 같아지게 한다 — 영상도 목록도 같은 크기가 된다.
+  const PLAYER_BLOCK_H = 56 + 1 + BAR_H_CLOSED;
   const bottomStrip = (
     <>
+      {mode !== "recording" && (
+        <div aria-hidden style={{ height: `${PLAYER_BLOCK_H}px`, flex: "none" }} />
+      )}
       {motionBlock}
       {/* 카메라 목록 — 남는 공간을 채우는 영역(flex-1). 최소 높이는
           useListLayout 이 배치에 따라 잡는다 — 가로 한 줄이면 타일 세로 기준
