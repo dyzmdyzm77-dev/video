@@ -8,7 +8,7 @@ import type React from "react";
 import { CameraFeed, GridSelectionOverlay } from "./CameraFeed";
 import { useAutoHide } from "./useAutoHide";
 import { useVideoFit } from "./VideoFitToast";
-import { useRotatedInput } from "./deviceRotate";
+import { requestDeviceRotate, useRotatedInput } from "./deviceRotate";
 import { exitImmersive, useImmersive } from "./immersive";
 import type { VideoFit } from "./videoFit";
 
@@ -586,12 +586,19 @@ export default function LandscapeVideo({
             auto.keepAlive();
           }}
         >
-          {/* 뒤로가기 — 다채널로 돌아간다(단일 더블탭과 같은 동작).
+          {/* 뒤로가기 — 세로로 돌아간다(사용자 결정 2026-08-14). 보던 카메라는
+              그대로 두고 방향만 세운다. 들어온 경로가 둘이라 갈라 준다:
+              확대(크게 보기)로 눕었으면 exitImmersive 가 전체화면·방향잠금까지
+              정리하고, 회전으로 눕었으면 그건 아무 일도 안 하므로(readImmersive
+              가 false 면 즉시 return) 회전만 되돌린다.
               화살표 모양·크기는 GridSelectionOverlay 의 뒤로가기와 같은 것이다. */}
           <button
             type="button"
             aria-label="뒤로가기"
-            onClick={onBack}
+            onClick={() => {
+              if (immersive) exitImmersive();
+              else requestDeviceRotate(false);
+            }}
             className="flex h-8 w-8 items-center justify-center"
           >
             <svg
