@@ -1064,9 +1064,22 @@ function ExpandedSlide({
           opacity: driving ? 1 : paused ? 1 : 0,
         }}
       />
-      {/* 시각 배지는 여기 없다 — 딤 층의 상단 가운데로 옮겼다(사용자 지정
-          2026-08-14: "단일 영상 딤에 날짜 시간 표시 상단 센터에"). 늘 떠 있던
-          것을 딤과 같이 뜨고 지게 바꾼 것이라, 이 컴포넌트는 영상만 그린다. */}
+      {/* 시각 배지 — 영상에 붙어 늘 떠 있다(사용자 지적 2026-08-14: 딤으로 올렸다가
+          되돌렸다. 녹화 화면에서 시각은 영상의 일부라 딤과 같이 사라지면 안 된다).
+          자리는 상단 가운데. */}
+      <div
+        suppressHydrationWarning
+        className="absolute inline-flex -translate-x-1/2 items-center bg-black/55 text-[10px] font-medium leading-none text-white"
+        style={{
+          top: "4px",
+          left: "50%",
+          height: "17px",
+          padding: "0 4px",
+          borderRadius: "2px",
+        }}
+      >
+        {timeLabel ?? c.label}
+      </div>
     </>
   );
 }
@@ -1579,6 +1592,10 @@ function ExpandedView({
                     mode === "recording" && (isScrubbing || !isPlaying)
                   }
                   fit={videoFit}
+                  // 녹화면 스크럽한 시점, 실시간이면 현재 시각. 연도는 뗀다.
+                  timeLabel={stripYear(
+                    mode === "recording" ? recordingDateLabel : dateLabel,
+                  )}
                 />
               </div>
             ))}
@@ -1604,16 +1621,6 @@ function ExpandedView({
                   "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
               }}
             />
-            {/* 날짜·시각 — 딤 상단 가운데(사용자 지정 2026-08-14). 늘 떠 있던
-                영상 위 배지를 여기로 옮겼다. 딤과 같이 뜨고 지므로 영상을 볼 땐
-                화면이 깨끗하다. */}
-            <div
-              suppressHydrationWarning
-              className="absolute left-1/2 -translate-x-1/2 inline-flex items-center rounded-full bg-black/55 text-[12px] font-medium leading-none text-white"
-              style={{ top: "12px", height: "24px", padding: "0 10px" }}
-            >
-              {stripYear(mode === "recording" ? recordingDateLabel : dateLabel)}
-            </div>
             {/* 카메라 이름 — 좌상단 배지가 시각으로 바뀌면서 이름이 갈 곳이 없어졌다
                 (사용자 결정 2026-08-14). 딤일 때만 좌상단에 띄운다. 위 그라데이션
                 스크림 위라 흰 글씨로 충분히 읽힌다.
