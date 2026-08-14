@@ -1825,7 +1825,7 @@ function ExpandedView({
           같은 제목을 둔다(사용자 결정 2026-08-14) — 두 모드가 같아 보여야 한다.
           useListLayout 이 제목 높이를 실측해 영역 최소 높이에 더한다. */}
       <div
-        className="flex flex-none items-center px-5"
+        className="relative flex flex-none items-center px-5"
         // 위아래 14 로 같다 — 사이드 패널 탭(tabsBlock)의 padding 14px 0 과 같은 값.
         // 아래 여백은 예전엔 타일 행의 marginTop 12 가 대신했는데, 제목이 생기면서
         // 제목 밑 여백이 위(14)와 어긋나 제목이 직접 갖게 했다.
@@ -1839,14 +1839,18 @@ function ExpandedView({
           카메라 목록
         </span>
         {/* 화면 캡처 — 없앤 날짜 줄에 있던 그 버튼을 여기로 옮겼다(사용자 결정
-            2026-08-14). 규격도 그대로 28 원 + 아이콘 24. 오른쪽 끝은 px-5 라
-            화면 좌우 여백 20 에 맞는다. */}
+            2026-08-14). 규격도 그대로 28 원 + 아이콘 24. 오른쪽 끝은 right-5 라
+            제목의 px-5 와 같은 20 이다.
+            절대 위치인 건 줄 높이를 글자 기준으로 두기 위해서다(사용자 지정) —
+            흐름에 두면 28 짜리 버튼이 기준이 돼 위아래 14 가 글자가 아니라 버튼에
+            붙고, 줄이 43 → 56 으로 두꺼워진다. 절대 위치면 43(14+15+14) 그대로고
+            버튼은 그 안에서 세로 가운데에 앉는다. */}
         {onCapture && (
           <button
             type="button"
             aria-label="화면 캡처"
             onClick={onCapture}
-            className="ml-auto flex h-[28px] w-[28px] items-center justify-center rounded-full border border-neutral-300"
+            className="absolute right-5 top-1/2 flex h-[28px] w-[28px] -translate-y-1/2 items-center justify-center rounded-full border border-neutral-300"
           >
             <img src={`${BASE}/camera.svg`} alt="" className="h-6 w-6" />
           </button>
