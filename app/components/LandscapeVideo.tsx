@@ -98,6 +98,7 @@ export default function LandscapeVideo({
   onAi,
   swapAiZoom = false,
   showOverlayAi = true,
+  showOverlayZoom = true,
   onMenu,
   centerControls,
   edgeInset,
@@ -158,6 +159,9 @@ export default function LandscapeVideo({
   /** 딤 아래 AI 원 버튼을 그릴지. 기본 true. A-3 은 AI 를 시간바 아래 줄로
    *  옮겨서 끈다(사용자 지정 2026-08-14). */
   showOverlayAi?: boolean;
+  /** 딤 아래 '크게 보기' 원 버튼을 그릴지. 기본 true. A-3 은 그 버튼도 시간바
+   *  아래 줄로 옮겨서 끈다(사용자 지정 2026-08-14). */
+  showOverlayZoom?: boolean;
   /** 딤의 메뉴 버튼(AI 옆). 안 주면 안 그린다 — A-2안 가로 전용. */
   onMenu?: () => void;
   /** 화면 한가운데에 얹을 컨트롤. 아래 시간바 대신 플레이어 버튼만 가운데
@@ -716,6 +720,7 @@ export default function LandscapeVideo({
       onAi={onAi}
       swapAiZoom={swapAiZoom}
       showAi={showOverlayAi}
+      showZoom={showOverlayZoom}
       onMenu={onMenu}
       edgeInset={edgeInset}
       {...(bottomInset != null ? { bottomInset } : null)}

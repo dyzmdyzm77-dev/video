@@ -298,6 +298,7 @@ export function GridSelectionOverlay({
   showPageIndicator = true,
   swapAiZoom = false,
   showAi = true,
+  showZoom = true,
   auto,
 }: {
   visible: boolean;
@@ -350,6 +351,10 @@ export function GridSelectionOverlay({
    *  A-3 가로는 AI 를 시간바 아래 가운데 줄로 옮겨서 여기선 끈다
    *  (사용자 지정 2026-08-14) — 안 끄면 같은 버튼이 두 개가 된다. */
   showAi?: boolean;
+  /** 딤 아래 '크게 보기/원래 크기로' 원 버튼을 그릴지. 기본 true = 기존 그대로.
+   *  A-3 가로는 이 버튼도 시간바 아래 가운데 줄로 옮겨서 여기선 끈다
+   *  (사용자 지정 2026-08-14). */
+  showZoom?: boolean;
   /** 딤 자동 숨김 핸들(useAutoHide). 주면 아이콘을 만지는 동안 딤을 붙잡고,
    *  떼는 순간부터 5초를 다시 센다. 안 주면 기존 그대로(타이머 안 되돌림). */
   auto?: {
@@ -554,7 +559,7 @@ export function GridSelectionOverlay({
           </button>
         )}
         {/* swapAiZoom(A-3)이면 이 원 자리에 크게 보기가 온다 — AI 는 위 줄로. */}
-        {swapAiZoom ? (
+        {swapAiZoom && !showZoom ? null : swapAiZoom ? (
           <button
             type="button"
             aria-label={landscape || immersive ? "원래 크기로" : "크게 보기"}

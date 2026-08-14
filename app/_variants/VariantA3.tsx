@@ -424,20 +424,19 @@ export default function VariantA3({
           onAi={() => setAiOpen(true)}
           // A-3: 가로 딤도 세로와 같은 재배치 — 크게 보기 우하단 원.
           swapAiZoom
-          // AI 는 시간바 아래 가운데 줄로 옮겼다 — 딤 왼쪽 아래 원은 끈다.
+          // AI·크게 보기를 시간바 아래 가운데 줄로 옮겼다 — 딤 좌우 아래 원은 끈다.
           showOverlayAi={false}
+          showOverlayZoom={false}
           // 실시간/녹화를 칩 두 개로 — 고른 쪽만 흰 배경 + 검정 글자.
           statusStyle="chips"
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 40 — A-1 가로와 같은 값으로(사용자 지정).
           edgeInset={40}
-          // 아래 줄(AI 버튼·페이지 점)을 12 → 62 로 띄운다. 바로 아래에 시간바가
-          // 깔려서 붙어 보이고 클릭도 겹쳤다(사용자 지정: "하단 마진도 한 20 더").
-          // 시간바 층은 이 값에서 12 를 뺀 만큼 뜨므로 하단 마진 = 50 이 된다.
-          // 40 ↔ 50 을 몇 번 오갔고 지금은 50 이다(사용자 지정 2026-08-14).
-          // 아이콘 줄도 같은 값을 쓰므로 함께 올라간다.
-          bottomInset={62}
+          // 이 층(시간바 + 그 아래 아이콘 줄)은 이 값에서 12 를 뺀 만큼 뜬다.
+          // 32 → 아이콘 줄 아래 마진 20(사용자 지정 2026-08-14). 시간바는 그
+          // 아이콘 줄 위에 얹히므로 자연히 더 올라간다.
+          bottomInset={32}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
@@ -503,6 +502,9 @@ export default function VariantA3({
                   { key: "ai", label: "AI 검색", src: `${BASE}/ai_Icon.svg`, onClick: () => setAiOpen(true) },
                   { key: "menu", label: "메뉴", src: `${BASE}/nav/menu.svg`, onClick: undefined },
                   { key: "motion", label: "움직임 감지", src: `${BASE}/Type=Line.svg`, onClick: undefined },
+                  // 크게 보기 ↔ 원래 크기로. 가로에서만 뜨는 줄이라 늘 '원래
+                  // 크기로'다. 딤 오른쪽 아래에 있던 그 버튼을 이 줄로 옮겼다.
+                  { key: "zoom", label: "원래 크기로", src: `${BASE}/zoom_out.svg`, onClick: toggleImmersive },
                 ].map((b) => (
                   <button
                     key={b.key}
