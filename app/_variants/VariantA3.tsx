@@ -4617,15 +4617,14 @@ function PlayerButton({
         // 60 은 너무 컸다(사용자 지정 2026-08-14). 세로는 그대로 40.
         width: overlay ? "50px" : "40px",
         height: overlay ? "50px" : "40px",
-        border: overlay
-          ? "1px solid rgba(255,255,255,0.35)"
-          : "1px solid #D9D9D9",
-        // 가로 딤 위 버튼 배경 — 영상이 비쳐 잘 안 보인다는 지적이 있어 더
-        // 진하게 깔았다(0.35 → 0.55). 눌린 상태(active)도 같이 올린다.
+        // 가로 딤 위 버튼은 테두리 없이 흰색 70% 로 채운다 — 시간바 가운데 현재
+        // 시각 알약과 같은 느낌(사용자 지정 2026-08-14). 예전엔 검정 0.55 에 흰
+        // 테두리였다. 눌린 상태(active)는 한 단계 더 불투명하게.
+        border: overlay ? "none" : "1px solid #D9D9D9",
         backgroundColor: overlay
           ? active
-            ? "rgba(255,255,255,0.45)"
-            : "rgba(0,0,0,0.55)"
+            ? "rgba(255,255,255,0.9)"
+            : "rgba(255,255,255,0.7)"
           : active
             ? "#F2F2F2"
             : "#FFFFFF",
@@ -4636,8 +4635,8 @@ function PlayerButton({
           style={{
             fontSize: overlay ? "17px" : "14px",
             fontWeight: 500,
-            // 배속 글자도 같은 규칙 — 밝은 배경(active)이면 검정.
-            color: overlay && !active ? "#FFFFFF" : "#262626",
+            // 배속 글자도 같은 규칙 — 배경이 흰색 70% 라 늘 검정이다.
+            color: "#262626",
           }}
         >
           {label}
@@ -4647,9 +4646,9 @@ function PlayerButton({
           kind={kind}
           // 버튼(50)에 맞춰 32 → 27. 비율을 그대로 두면 아이콘만 꽉 차 보인다.
           size={overlay ? 27 : 24}
-          // 눌리면 배경이 밝아지므로(0.45 흰색) 아이콘은 검정으로 되돌린다 —
-          // 흰 아이콘 그대로 두면 밝은 배경에 묻힌다(사용자 지적).
-          invert={overlay && !active}
+          // 배경이 흰색 70% 라 아이콘은 늘 원래 색(어두운 쪽)이다. 예전엔 검정
+          // 배경이라 흰색으로 뒤집었는데, 이제 뒤집으면 밝은 배경에 묻힌다.
+          invert={false}
         />
       )}
     </button>
