@@ -465,8 +465,8 @@ export default function VariantA3({
           // 단일 화면 배지도 세로와 같이 카메라 이름 대신 시각.
           // (다채널 타일은 그대로 카메라 이름 — 세로에서도 타일은 안 바꿨다.)
           singleBadge={videoBadge}
-          // 자리도 세로와 같이 위 가운데.
-          singleBadgeAlign="center"
+          // 자리도 세로와 같이 왼쪽 아래 구석.
+          singleBadgeAlign="bottom-left"
           // 딤 헤더는 장소명·계약번호 대신 '뒤로가기 + 이름'. 단일은 카메라 이름,
           // 다채널은 카메라가 하나가 아니라 '서비스장소'(사용자 지정).
           singleHeaderCamera
@@ -1056,15 +1056,14 @@ function ExpandedSlide({
           opacity: driving ? 1 : paused ? 1 : 0,
         }}
       />
-      {/* 시각 배지 — 상단 가운데(사용자 결정 2026-08-14). 카메라 이름일 땐 왼쪽
-          구석이 맞았지만, 시각은 영상의 정보라 가운데가 낫다. 가로 단일도 같은
-          자리다(CameraFeed 의 badgeAlign="center"). */}
+      {/* 시각 배지 — 왼쪽 아래 구석(사용자 결정 2026-08-14). 위 가운데로 갔다가
+          여기로 왔다. 가로 단일도 같은 자리다(CameraFeed 의 badgeAlign="bottom-left"). */}
       <div
         suppressHydrationWarning
-        className="absolute inline-flex -translate-x-1/2 items-center bg-black/55 text-[10px] font-medium leading-none text-white"
+        className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
         style={{
-          top: "4px",
-          left: "50%",
+          bottom: "4px",
+          left: "4px",
           height: "17px",
           padding: "0 4px",
           borderRadius: "2px",
@@ -3128,12 +3127,11 @@ function RecordingEventTimeline({
           className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
         style={{ top: "6px", lineHeight: 0 }}
         >
-          {/* 알약 배지 — 검정 50% 배경 + 흰 글자(사용자 지정). '원'을 넣어 달라고
-              했지만 글자가 가로로 길어 정원은 안 맞는다. 높이 20 · 좌우 8 ·
-              rounded-full 이다. 테두리는 없다 — 어두운 배경엔 회색 선이 안 맞는다.
+          {/* 알약 배지 — 흰 배경 + 원래 글자색(#353535). 검정 반투명으로 갔다가
+              되돌렸다(사용자 지정). '원'을 넣어 달라고 했지만 글자가 가로로 길어
+              정원은 안 맞는다. 높이 20 · 좌우 8 · rounded-full, 테두리는 없다.
               배경을 깔아야 하는 이유는 달력 버튼과 같다: 아래로 흐르는 눈금이
-              글자에 겹쳐 지저분해진다. 반투명이라 눈금이 살짝 비치지만, 흐르는
-              게 보이는 편이 '지금 여기'를 짚는 데엔 오히려 낫다. */}
+              글자에 겹쳐 지저분해진다. */}
           <span
             suppressHydrationWarning
             className="rounded-full"
@@ -3141,8 +3139,8 @@ function RecordingEventTimeline({
               display: "inline-flex",
               alignItems: "center",
               height: "20px",
-              color: "#FFFFFF",
-              backgroundColor: "rgba(0,0,0,0.5)",
+              color: "#353535",
+              backgroundColor: "#FFFFFF",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",

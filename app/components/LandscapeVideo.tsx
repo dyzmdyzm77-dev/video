@@ -203,8 +203,8 @@ export default function LandscapeVideo({
    *  다채널 타일은 그대로 카메라 이름이다 — 세로에서도 타일은 안 바꿨다. */
   singleBadge?: string;
   /** 그 배지를 어디에 둘지. 기본 "left" = 왼쪽 위 구석(지금까지의 동작).
-   *  A-3 은 세로와 같이 위 가운데("center"). */
-  singleBadgeAlign?: "left" | "center";
+   *  A-3 은 세로와 같이 왼쪽 아래("bottom-left"). */
+  singleBadgeAlign?: "left" | "center" | "bottom-left";
   /** 단일 화면 딤 헤더를 '뒤로가기 + 카메라 이름'으로 바꿀지. 기본 false =
    *  지금까지처럼 장소명 + 지점명(계약번호). A-3 만 켠다(사용자 결정 2026-08-14) —
    *  가로 단일에서 지금 보는 게 어느 카메라인지가 장소보다 급하고, 다채널로
