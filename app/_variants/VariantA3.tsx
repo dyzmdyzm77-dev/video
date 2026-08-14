@@ -3218,8 +3218,10 @@ function RecordingEventTimeline({
                 width: "2px",
                 height: "8px",
                 // 큰 눈금은 흰색(사용자 지정 2026-08-14). 이 시간바는 흰 바탕이라
-                // 사실상 안 보이게 된다 — 작은 눈금(#C4C4C4)만 남는 셈이다.
-                backgroundColor: isMajor ? "#FFFFFF" : "#C4C4C4",
+                // 사실상 안 보이게 된다 — 작은 눈금만 남는 셈이다.
+                // 그 작은 눈금은 #C4C4C4 → #ADADAD 로 살짝 진하게(사용자 지정
+                // 2026-08-14). 흰 바탕에서 너무 옅어 눈금이 안 읽혔다.
+                backgroundColor: isMajor ? "#FFFFFF" : "#ADADAD",
               }}
             />
           ))}
@@ -4509,7 +4511,7 @@ function RecordingControls({
                     : "rgba(255,255,255,0.5)"
                   : isMajor
                     ? "#797979"
-                    : "#C4C4C4",
+                    : "#ADADAD",
               }}
             />
           ))}
