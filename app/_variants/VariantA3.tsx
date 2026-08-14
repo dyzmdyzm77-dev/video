@@ -432,9 +432,10 @@ export default function VariantA3({
           edgeInset={40}
           // 아래 줄(AI 버튼·페이지 점)을 12 → 62 로 띄운다. 바로 아래에 시간바가
           // 깔려서 붙어 보이고 클릭도 겹쳤다(사용자 지정: "하단 마진도 한 20 더").
-          // 시간바 층은 이 값에서 12 를 뺀 만큼 뜨므로 하단 마진 = 50 이 된다
-          // (40 에서 10 더 — 사용자 지정 2026-08-14).
-          bottomInset={52}
+          // 시간바 층은 이 값에서 12 를 뺀 만큼 뜨므로 하단 마진 = 50 이 된다.
+          // 40 ↔ 50 을 몇 번 오갔고 지금은 50 이다(사용자 지정 2026-08-14).
+          // 아이콘 줄도 같은 값을 쓰므로 함께 올라간다.
+          bottomInset={62}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
