@@ -535,7 +535,7 @@ export default function VariantA3({
                         // 회색 55%(사용자 지정 2026-08-14). 반투명 검정 0.35 → 불투명
                         // 회색 → 0.7 을 거쳐 여기로 왔다. 톤은 앱에 이미 쓰는
                         // 회색(#757575, 녹화 배지 배경)이고 알파만 조절한다.
-                        backgroundColor: "rgba(74,74,74,0.5)",
+                        backgroundColor: "rgba(102,102,102,0.5)",
                         backdropFilter: "blur(20px)",
                         WebkitBackdropFilter: "blur(20px)",
                       }}
@@ -1730,7 +1730,7 @@ function ExpandedView({
                 right: "16px",
                 width: "40px",
                 height: "40px",
-                backgroundColor: "rgba(74,74,74,0.5)",
+                backgroundColor: "rgba(102,102,102,0.5)",
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
                 pointerEvents: showControls ? "auto" : "none",
@@ -1775,7 +1775,7 @@ function ExpandedView({
                   style={{
                     width: "40px",
                     height: "40px",
-                    backgroundColor: "rgba(74,74,74,0.5)",
+                    backgroundColor: "rgba(102,102,102,0.5)",
                     backdropFilter: "blur(20px)",
                     WebkitBackdropFilter: "blur(20px)",
                   }}
@@ -1884,17 +1884,9 @@ function ExpandedView({
             type="button"
             aria-label="화면 캡처"
             onClick={onCapture}
-            className="ml-auto flex h-[32px] w-[32px] items-center justify-center rounded-full"
-            // 딤 버튼·시각 알약과 같은 색(#4A4A4A). 흰 바탕이라 알파는 0.85 다
-            // (사용자 지정 2026-08-14: A-3 버튼 스타일을 다 맞춘다).
-            style={{ backgroundColor: "rgba(74,74,74,0.85)" }}
+            className="ml-auto flex h-[28px] w-[28px] items-center justify-center rounded-full border border-neutral-300"
           >
-            <img
-              src={`${BASE}/camera.svg`}
-              alt=""
-              className="h-5 w-5"
-              style={{ filter: "brightness(0) invert(1)" }}
-            />
+            <img src={`${BASE}/camera.svg`} alt="" className="h-6 w-6" />
           </button>
         )}
         <RowSkeleton visible={videoLoading} />
@@ -3397,10 +3389,12 @@ function RecordingEventTimeline({
               display: "inline-flex",
               alignItems: "center",
               height: "20px",
-              // 딤 버튼·다채널 알약과 같은 색(#4A4A4A) + 흰 글자(사용자 지정
-              // 2026-08-14). 흰 바탕이라 알파는 0.85 — 0.5 면 흰 글자가 안 읽힌다.
-              color: "#FFFFFF",
-              backgroundColor: "rgba(74,74,74,0.85)",
+              // 흰 바탕이라 흰색 70% + 어두운 글자다(사용자 지정 2026-08-14:
+              // 어둡게 갔다가 되돌렸다 — 달력·캡처 버튼과 같은 결이어야 한다).
+              // 배경을 깔아야 하는 이유는 달력 버튼과 같다: 아래로 흐르는 눈금이
+              // 글자에 겹쳐 지저분해진다.
+              color: "#353535",
+              backgroundColor: "rgba(255,255,255,0.7)",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
@@ -3438,8 +3432,8 @@ function RecordingEventTimeline({
             className="absolute z-20 flex items-center"
             style={{
               left: "20px",
-              top: `${PAD_TOP + (RAIL_H - 40) / 2}px`,
-              height: "40px",
+              top: `${PAD_TOP + (RAIL_H - 34) / 2}px`,
+              height: "34px",
               gap: "12px",
               backgroundColor: "#FFFFFF",
             }}
@@ -3448,20 +3442,14 @@ function RecordingEventTimeline({
             <button
               type="button"
               aria-label="날짜, 시간 선택"
-              className="flex h-[40px] w-[40px] items-center justify-center rounded-full"
-              // 딤 버튼·시각 알약과 같은 색(#4A4A4A). 흰 바탕이라 알파는 0.85.
-              style={{ backgroundColor: "rgba(74,74,74,0.85)" }}
+              className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-neutral-300"
+              style={{ backgroundColor: "#FFFFFF" }}
               onClick={(e) => {
                 e.stopPropagation();
                 onOpenDateTime();
               }}
             >
-              <img
-                src={`${BASE}/time.svg`}
-                alt=""
-                className="h-6 w-6"
-                style={{ filter: "brightness(0) invert(1)" }}
-              />
+              <img src={`${BASE}/time.svg`} alt="" className="h-6 w-6" />
             </button>
             <span
               aria-hidden
@@ -4712,14 +4700,14 @@ function RecordingControls({
               display: "inline-flex",
               alignItems: "center",
               height: "20px",
-              // 딤 버튼과 같은 색(#4A4A4A) + 흰 글자로 맞춘다(사용자 지정
-              // 2026-08-14). 알파만 바탕에 따라 다르다: 딤 위(가로)는 뒤가 어둡고
-              // 블러도 깔려 0.5 로 충분하지만, 흰 바탕에서 0.5 면 실제 색이
-              // #A4A4A4 라 흰 글자가 2:1 밖에 안 나온다. 0.85 면 5.6:1 로 읽힌다.
-              color: "#FFFFFF",
+              // 딤 위(가로)는 아래 버튼들과 같은 #4A4A4A 50% + 흰 글자.
+              // 흰 바탕(세로·사이드 패널)은 흰색 70% + 어두운 글자로 되돌렸다
+              // (사용자 지정 2026-08-14) — 거긴 달력·캡처 버튼도 흰 원이라
+              // 어두운 알약만 튀었다.
+              color: overlay ? "#FFFFFF" : "#353535",
               backgroundColor: overlay
-                ? "rgba(74,74,74,0.5)"
-                : "rgba(74,74,74,0.85)",
+                ? "rgba(102,102,102,0.5)"
+                : "rgba(255,255,255,0.7)",
               ...(overlay
                 ? {
                     backdropFilter: "blur(20px)",
@@ -5109,8 +5097,8 @@ function PlayerButton({
         // 60 은 너무 컸다(사용자 지정 2026-08-14). 세로는 그대로 40.
         width: overlay ? "50px" : "40px",
         height: overlay ? "50px" : "40px",
-        // 가로 딤 위 버튼은 테두리 없이 #4A4A4A 50% + 흰 아이콘(사용자 지정 2026-08-14).
-        // #2B2B2B 에서 색을 한 단계 밝게 올린 값이다(투명도가 아니라 색).
+        // 가로 딤 위 버튼은 테두리 없이 #666666 50% + 흰 아이콘(사용자 지정 2026-08-14).
+        // #2B2B2B → #4A4A4A → #666666 으로 색을 올려 왔다(투명도가 아니라 색).
         // 검정 반투명에서 아래 아이콘 원과 같은 회색으로 맞췄다 — 같은 화면에
         // 있는 것끼리 결을 맞춘다. 아이콘 그림자와 아래 딤 60% 가 밝은 영상
         // 위에서도 안 묻히게 받쳐 준다. 눌린 상태는 한 단계 진하게(0.75).
@@ -5121,8 +5109,8 @@ function PlayerButton({
         border: overlay ? "none" : "1px solid #D9D9D9",
         backgroundColor: overlay
           ? active
-            ? "rgba(74,74,74,0.7)"
-            : "rgba(74,74,74,0.5)"
+            ? "rgba(102,102,102,0.7)"
+            : "rgba(102,102,102,0.5)"
           : active
             ? "#F2F2F2"
             : "#FFFFFF",
