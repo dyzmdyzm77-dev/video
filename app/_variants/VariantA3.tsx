@@ -106,6 +106,19 @@ function ChevronDownIcon({ className }: { className?: string }) {
   );
 }
 
+// 달력 — 시간바 왼쪽 버튼용. 에셋이 없어 여기서 그린다(HomeIcon 과 같은 방식).
+function CalendarIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+      <path d="M7 2.5a.9.9 0 0 1 .9.9V4.5h8.2V3.4a.9.9 0 0 1 1.8 0V4.5H19a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2h1.1V3.4a.9.9 0 0 1 .9-.9zM4.8 9.4v9.1c0 .1.1.2.2.2h14c.1 0 .2-.1.2-.2V9.4H4.8z" />
+      <rect x="6.8" y="11.4" width="3.2" height="2.6" rx="0.5" />
+      <rect x="11.4" y="11.4" width="3.2" height="2.6" rx="0.5" />
+      <rect x="6.8" y="15.2" width="3.2" height="2.6" rx="0.5" />
+      <rect x="11.4" y="15.2" width="3.2" height="2.6" rx="0.5" />
+    </svg>
+  );
+}
+
 function HomeIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
@@ -1806,6 +1819,7 @@ function ExpandedView({
         onScrubbingChange={onScrubbingChange}
         open={motionOpen}
         onToggleOpen={() => setMotionOpen((v) => !v)}
+        onOpenDateTime={onOpenDateTime}
       />
     </div>
   );
@@ -2569,6 +2583,7 @@ function RecordingEventTimeline({
   onScrubbingChange,
   open = true,
   onToggleOpen,
+  onOpenDateTime,
 }: {
   playbackMs: number | null;
   setPlaybackMs: (
@@ -2580,6 +2595,9 @@ function RecordingEventTimeline({
   open?: boolean;
   /** 시간바 오른쪽 화살표 — 넘기면 버튼이 생긴다. */
   onToggleOpen?: () => void;
+  /** 시간바 왼쪽 달력 버튼 — 날짜·시간 선택 시트를 연다. 넘기면 버튼이 생긴다.
+   *  영상 아래 날짜 줄을 없애면서 사라졌던 진입점이 여기로 돌아온다. */
+  onOpenDateTime?: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   // 썸네일을 못 뽑는 기기 사양이면 카드에 시각+타이틀만 남긴다(eventThumbs.ts).
@@ -3092,6 +3110,30 @@ function RecordingEventTimeline({
             backgroundColor: "#111111",
           }}
         />
+        {/* 날짜·시간 선택 — 오른쪽 화살표와 짝이라 크기·세로 위치가 같고, 좌우
+            여백도 같은 20 이다. 화살표가 흰 배경 + 테두리인 것과 달리 이쪽은
+            채운 원(사용자 지정). 시간바는 드래그로 스크럽되니 포인터를 막는다. */}
+        {onOpenDateTime && (
+          <button
+            type="button"
+            aria-label="날짜, 시간 선택"
+            className="absolute z-20 flex items-center justify-center rounded-full"
+            style={{
+              left: "20px",
+              top: `${PAD_TOP + (RAIL_H - 28) / 2}px`,
+              width: "28px",
+              height: "28px",
+              backgroundColor: "#F2F2F2",
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenDateTime();
+            }}
+          >
+            <CalendarIcon className="h-[18px] w-[18px] text-[#262626]" />
+          </button>
+        )}
         {/* 펼침/접기 화살표 — 접으면 아래 썸네일이 사라지고 시간바만 남는다
             (사용자 결정 2026-08-14). 오른쪽 페이드 위에 얹으므로 z-20.
             원 테두리 28×28 + 아이콘 24 는 없앤 캡처 버튼과 같은 규격이다.
