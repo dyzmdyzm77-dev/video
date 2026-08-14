@@ -528,8 +528,8 @@ export default function VariantA3({
                       onClick={b.onClick}
                       className="flex items-center justify-center rounded-full"
                       style={{
-                        width: "34px",
-                        height: "34px",
+                        width: "40px",
+                        height: "40px",
                         // 테두리는 없다(사용자 지정) — 배경이 회색 70% 라 원 모양이
                         // 이미 잡히고, 흰 선까지 있으면 아이콘보다 테두리가 먼저 보였다.
                         // 회색 55%(사용자 지정 2026-08-14). 반투명 검정 0.35 → 불투명
@@ -1728,8 +1728,8 @@ function ExpandedView({
               style={{
                 bottom: "12px",
                 right: "16px",
-                width: "34px",
-                height: "34px",
+                width: "40px",
+                height: "40px",
                 backgroundColor: "rgba(74,74,74,0.5)",
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
@@ -1773,8 +1773,8 @@ function ExpandedView({
                   onClick={b.onClick}
                   className="flex items-center justify-center rounded-full"
                   style={{
-                    width: "34px",
-                    height: "34px",
+                    width: "40px",
+                    height: "40px",
                     backgroundColor: "rgba(74,74,74,0.5)",
                     backdropFilter: "blur(20px)",
                     WebkitBackdropFilter: "blur(20px)",
@@ -1884,9 +1884,17 @@ function ExpandedView({
             type="button"
             aria-label="화면 캡처"
             onClick={onCapture}
-            className="ml-auto flex h-[28px] w-[28px] items-center justify-center rounded-full border border-neutral-300"
+            className="ml-auto flex h-[32px] w-[32px] items-center justify-center rounded-full"
+            // 딤 버튼·시각 알약과 같은 색(#4A4A4A). 흰 바탕이라 알파는 0.85 다
+            // (사용자 지정 2026-08-14: A-3 버튼 스타일을 다 맞춘다).
+            style={{ backgroundColor: "rgba(74,74,74,0.85)" }}
           >
-            <img src={`${BASE}/camera.svg`} alt="" className="h-6 w-6" />
+            <img
+              src={`${BASE}/camera.svg`}
+              alt=""
+              className="h-5 w-5"
+              style={{ filter: "brightness(0) invert(1)" }}
+            />
           </button>
         )}
         <RowSkeleton visible={videoLoading} />
@@ -3430,8 +3438,8 @@ function RecordingEventTimeline({
             className="absolute z-20 flex items-center"
             style={{
               left: "20px",
-              top: `${PAD_TOP + (RAIL_H - 34) / 2}px`,
-              height: "34px",
+              top: `${PAD_TOP + (RAIL_H - 40) / 2}px`,
+              height: "40px",
               gap: "12px",
               backgroundColor: "#FFFFFF",
             }}
@@ -3440,14 +3448,20 @@ function RecordingEventTimeline({
             <button
               type="button"
               aria-label="날짜, 시간 선택"
-              className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-neutral-300"
-              style={{ backgroundColor: "#FFFFFF" }}
+              className="flex h-[40px] w-[40px] items-center justify-center rounded-full"
+              // 딤 버튼·시각 알약과 같은 색(#4A4A4A). 흰 바탕이라 알파는 0.85.
+              style={{ backgroundColor: "rgba(74,74,74,0.85)" }}
               onClick={(e) => {
                 e.stopPropagation();
                 onOpenDateTime();
               }}
             >
-              <img src={`${BASE}/time.svg`} alt="" className="h-6 w-6" />
+              <img
+                src={`${BASE}/time.svg`}
+                alt=""
+                className="h-6 w-6"
+                style={{ filter: "brightness(0) invert(1)" }}
+              />
             </button>
             <span
               aria-hidden
