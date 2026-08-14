@@ -1945,16 +1945,19 @@ function ExpandedView({
     </>
   );
   // 오른쪽 세로 패널 본문 — A-2 그대로: 목록은 1열 세로 스크롤(타일 폭 = 패널 폭),
-  // 감지는 세로 타임라인(SideEventTimeline). 패널이 좁아 가로 시간바가 안 맞아
+  // 감지는 아래 스트립과 같은 리스트(MotionEventList). 패널이 좁아 가로 시간바가 안 맞아
   // 적층·가로 교체에서 제외했다(사용자 결정 2026-08-14: "오른쪽 패널은 기존 유지").
   const sidePanelBody = (
     <div ref={listAreaRef} className="relative flex min-h-0 flex-1 flex-col">
       {mode === "recording" && recTab === "motion" ? (
-        <SideEventTimeline
+        // 세로 타임라인(SideEventTimeline)이 아니라 아래 스트립과 같은 리스트다
+        // (사용자 결정 2026-08-14). 패널이 좁고 세로로 길어 리스트가 잘 맞고,
+        // 무엇보다 같은 안에서 감지 화면이 두 종류면 안 된다.
+        // 패널은 세로로 길어 항상 세로 리스트다 — wide 를 안 넘긴다.
+        <MotionEventList
           playbackMs={playbackMs}
           setPlaybackMs={setPlaybackMs}
           cameraSrc={cam.src}
-          onScrubbingChange={onScrubbingChange}
         />
       ) : (
         <div
