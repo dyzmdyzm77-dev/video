@@ -495,14 +495,23 @@ export default function VariantA3({
                   AI 는 원래 딤 왼쪽 아래에 있던 그 버튼이라, 그쪽은 껐다
                   (showOverlayAi={false}) — 안 끄면 같은 버튼이 두 개가 된다. */}
               <div
-                className="pointer-events-auto flex items-center justify-between"
+                className="pointer-events-auto flex items-center justify-between transition-opacity duration-150 ease-out"
                 // 시간바와 붙인다 — 12 → 4(사용자 지정 2026-08-14). 시간바 자체가
                 // 아래 여백(paddingBottom 12)을 갖고 있어 실제로는 그만큼 더 뜬다.
                 // 자리를 둘로 나눈다: AI·메뉴·움직임 감지는 왼쪽, 축소는 오른쪽
                 // (사용자 지정). 좌우 여백은 30 을 더 줘 딤의 다른 요소(장소명·
                 // 우상단 아이콘)가 쓰는 40 에 맞춘다 — 감싼 층이 이미 10 을 갖고
                 // 있어서 30 만 더하면 된다. 화면 끝에 붙으면 손가락이 걸린다.
-                style={{ paddingTop: "4px", paddingLeft: "30px", paddingRight: "30px" }}
+                style={{
+                  paddingTop: "4px",
+                  paddingLeft: "30px",
+                  paddingRight: "30px",
+                  // 시간바를 끄는 동안엔 같이 걷는다(사용자 지정 2026-08-14).
+                  // 이 줄은 시간바와 한 층에 있어서, 그 층이 스크럽 중에도 남는
+                  // 규칙(keepWhileScrubbing)을 그대로 물려받아 혼자 남아 있었다.
+                  opacity: isScrubbing ? 0 : 1,
+                  pointerEvents: isScrubbing ? "none" : "auto",
+                }}
               >
                 {(() => {
                   const btn = (b: {
@@ -4642,10 +4651,13 @@ function RecordingControls({
               display: "inline-flex",
               alignItems: "center",
               height: "20px",
-              // 흰색 70% + 어두운 글자(사용자 지정). 50% 는 흰 바탕에 묻혀 흐렸고
-              // 검정 반투명은 너무 셌다 — 70% 면 눈금을 덮으면서 바 톤도 안 깬다.
-              color: "#353535",
-              backgroundColor: "rgba(255,255,255,0.7)",
+              // 흰 바탕(세로·사이드 패널)에선 흰색 70% + 어두운 글자. 딤 위(가로)
+              // 에선 아래 아이콘 원과 같은 회색 55% + 흰 글자다(사용자 지정
+              // 2026-08-14) — 같은 화면에 있는 것끼리 결을 맞춘다.
+              color: overlay ? "#FFFFFF" : "#353535",
+              backgroundColor: overlay
+                ? "rgba(117,117,117,0.55)"
+                : "rgba(255,255,255,0.7)",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
@@ -5029,9 +5041,10 @@ function PlayerButton({
         // 60 은 너무 컸다(사용자 지정 2026-08-14). 세로는 그대로 40.
         width: overlay ? "50px" : "40px",
         height: overlay ? "50px" : "40px",
-        // 가로 딤 위 버튼은 테두리 없이 검정 50% + 흰 아이콘(사용자 지정 2026-08-14).
-        // 70% 에서 낮췄다 — 대신 아이콘에 그림자를 깔고 아래 딤을 60% 로 넓혀
-        // 밝은 영상 위에서도 안 묻히게 받쳤다.
+        // 가로 딤 위 버튼은 테두리 없이 회색 55% + 흰 아이콘(사용자 지정 2026-08-14).
+        // 검정 반투명에서 아래 아이콘 원과 같은 회색으로 맞췄다 — 같은 화면에
+        // 있는 것끼리 결을 맞춘다. 아이콘 그림자와 아래 딤 60% 가 밝은 영상
+        // 위에서도 안 묻히게 받쳐 준다. 눌린 상태는 한 단계 진하게(0.75).
         // 흰색 채우기(70% → 50%)를 거쳐 여기로 왔다 — 반투명 흰 배경은 밝은 영상
         // 위에서 아이콘 대비가 무너진다(흰 아이콘 1.2:1, 그레이도 배경과 붙는다).
         // 검정 쪽은 영상이 밝든 어둡든 흰 아이콘이 또렷하다.
@@ -5039,8 +5052,8 @@ function PlayerButton({
         border: overlay ? "none" : "1px solid #D9D9D9",
         backgroundColor: overlay
           ? active
-            ? "rgba(0,0,0,0.3)"
-            : "rgba(0,0,0,0.5)"
+            ? "rgba(117,117,117,0.75)"
+            : "rgba(117,117,117,0.55)"
           : active
             ? "#F2F2F2"
             : "#FFFFFF",
