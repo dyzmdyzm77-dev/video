@@ -1900,6 +1900,8 @@ function ExpandedView({
           // 세로가 모자라면(카메라 목록이 가로 한 줄로 넘어간 그 판정) 감지도
           // 가로 스크롤로 간다 — 같은 영역이라 판정을 새로 만들지 않고 나눠 쓴다.
           wide={listWide}
+          // 감지 탭일 때도 훅이 잴 '행'이 있어야 판정이 계속 돈다.
+          rowRef={listRowRef}
         />
       ) : (
       <div
@@ -3259,10 +3261,17 @@ function MotionEventList({
   setPlaybackMs,
   cameraSrc,
   wide = false,
+  rowRef,
 }: {
   playbackMs: number | null;
   setPlaybackMs: (v: number | null) => void;
   cameraSrc: string;
+  /** useListLayout 의 '타일 행' 자리. 감지 탭일 때도 배치 판정이 계속 돌게 하려고
+   *  이 컨테이너를 대신 물려 준다 — 안 물리면 훅이 행을 못 찾아 판정을 건너뛰고,
+   *  그동안 화면이 바뀌어도 방향이 그대로 굳는다(사용자 지적: 기준이 적용 안 됨).
+   *  판정 자체는 영역 폭에서 나오는 카메라 타일 기하를 쓰므로, 여기 뭐가 들었든
+   *  카메라 목록과 같은 답이 나온다. */
+  rowRef?: React.Ref<HTMLDivElement>;
   /** 세로로 쌓을 자리가 없나. 켜면 한 덩어리씩 가로로 나열하고 가로 스크롤한다
    *  (사용자 결정 2026-08-14). 판정은 카메라 목록과 같은 것(useListLayout)을 쓴다 —
    *  같은 영역을 두 탭이 나눠 쓰므로 기준이 갈리면 안 된다. */
@@ -3320,33 +3329,66 @@ function MotionEventList({
   // getBoundingClientRect 를 쓰면 안 된다 — 데스크톱 목업은 프레임을 CSS
   // transform 으로 축소해 두는데, rect 는 축소된 값을, scrollLeft/clientWidth 는
   // 축소 전 값을 준다. 둘을 섞으면 엉뚱한 데로 간다.
-  // behavior 기본값이 "auto"(즉시)인 건 이 화면에서 "smooth" 가 아예 안 먹기
-  // 때문이다 — 녹화 틱(150ms)이 계속 리렌더를 돌려 스크롤 애니메이션이 매번
-  // 취소된다(실측: smooth 로 5000 을 주면 1.2초 뒤에도 0, auto 면 바로 5000).
-  const centerOn = (ms: number, behavior: ScrollBehavior = "auto") => {
+  // 부드러운 이동은 프레임마다 값을 직접 넣어 만든다. 브라우저 기본
+  // behavior:"smooth" 는 이 화면에서 아예 안 먹는다 — 녹화 틱(150ms)이 계속
+  // 리렌더를 돌려 스크롤 애니메이션이 매번 취소된다(실측: smooth 로 5000 을 주면
+  // 1.2초 뒤에도 0, auto 면 바로 5000). 매 프레임 대입하는 쪽은 리렌더가 끼어도
+  // 그다음 프레임에 다시 넣으므로 끊기지 않는다.
+  const tweenRef = useRef<number | null>(null);
+  useEffect(() => {
+    return () => {
+      if (tweenRef.current !== null) cancelAnimationFrame(tweenRef.current);
+    };
+  }, []);
+  const centerOn = (ms: number, smooth = true) => {
     const el = scrollRef.current;
     const target = el?.querySelector<HTMLElement>(`[data-ms="${ms}"]`);
     if (!el || !target) return;
-    // 움직임을 줄이는 설정이면 부드러운 스크롤을 안 쓴다(카메라 목록과 같은 규칙).
+    // 좌표는 offsetLeft/offsetTop 으로 잡는다(컨테이너가 relative 라 그 기준이다).
+    // getBoundingClientRect 를 쓰면 안 된다 — 데스크톱 목업은 프레임을 CSS
+    // transform 으로 축소해 두는데, rect 는 축소된 값을, scrollLeft/clientWidth 는
+    // 축소 전 값을 준다. 둘을 섞으면 엉뚱한 데로 간다.
+    const to = wide
+      ? Math.max(0, target.offsetLeft - (el.clientWidth - target.offsetWidth) / 2)
+      : Math.max(0, target.offsetTop - (el.clientHeight - target.offsetHeight) / 2);
+    const read = () => (wide ? el.scrollLeft : el.scrollTop);
+    const write = (v: number) => {
+      if (wide) el.scrollLeft = v;
+      else el.scrollTop = v;
+    };
+    if (tweenRef.current !== null) cancelAnimationFrame(tweenRef.current);
+    const from = read();
+    const dist = to - from;
+    if (Math.abs(dist) < 1) return;
+    // 움직임을 줄이는 설정이면 즉시 이동한다(카메라 목록과 같은 규칙).
     const reduce = window.matchMedia?.(
       "(prefers-reduced-motion: reduce)",
     ).matches;
-    const how: ScrollBehavior = reduce ? "auto" : behavior;
-    if (wide) {
-      const to = Math.max(
-        0,
-        target.offsetLeft - (el.clientWidth - target.offsetWidth) / 2,
-      );
-      if (Math.abs(el.scrollLeft - to) < 1) return;
-      el.scrollTo({ left: to, behavior: how });
-    } else {
-      const to = Math.max(
-        0,
-        target.offsetTop - (el.clientHeight - target.offsetHeight) / 2,
-      );
-      if (Math.abs(el.scrollTop - to) < 1) return;
-      el.scrollTo({ top: to, behavior: how });
+    if (!smooth || reduce) {
+      write(to);
+      return;
     }
+    // 320ms · easeOutCubic — 위 큰 영상 전환(300ms)과 결이 같다.
+    const DUR = 320;
+    const t0 = performance.now();
+    let done = false;
+    const step = (now: number) => {
+      const t = Math.min(1, (now - t0) / DUR);
+      write(from + dist * (1 - Math.pow(1 - t, 3)));
+      if (t < 1) tweenRef.current = requestAnimationFrame(step);
+      else {
+        tweenRef.current = null;
+        done = true;
+      }
+    };
+    tweenRef.current = requestAnimationFrame(step);
+    // 안전장치 — 화면이 안 보이는 탭에서는 requestAnimationFrame 이 아예 안 돈다
+    // (실측: 백그라운드 탭에서 700ms 동안 0프레임). 그때도 자리는 맞아야 하니
+    // 시간이 지나면 목적지로 스냅한다. 눈에 보이는 상태면 이미 도착해 있어
+    // 아무 일도 안 한다.
+    window.setTimeout(() => {
+      if (!done) write(to);
+    }, DUR + 80);
   };
   // 스크롤은 '사용자가 고를 때'만 움직인다 — 카메라 목록과 같은 규칙이다.
   // 재생이 이벤트를 지날 때마다 따라가게 뒀더니 목록이 몇 초마다 저절로 튀었다
@@ -3361,20 +3403,24 @@ function MotionEventList({
   useEffect(() => {
     if (openedRef.current || activeMs === null) return;
     openedRef.current = true;
-    const raf = requestAnimationFrame(() => centerOn(activeMs, "auto"));
+    const raf = requestAnimationFrame(() => centerOn(activeMs, false));
     return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMs, wide]);
 
   return (
     <div
-      ref={scrollRef}
+      ref={(el) => {
+        scrollRef.current = el;
+        if (typeof rowRef === "function") rowRef(el);
+        else if (rowRef) (rowRef as React.RefObject<HTMLDivElement | null>).current = el;
+      }}
       className={
         wide
           ? // 가로 한 줄 — 한 덩어리씩 옆으로 나열하고 가로 스크롤(사용자 결정).
             // 세로로 쌓을 자리가 없을 때다. 좌우 여백(px-5)은 스크롤 안쪽 패딩이라
             // 첫/마지막만 20px 띄운다 — 카메라 목록 가로 배치와 같은 규칙.
-            "relative flex min-h-0 flex-1 items-center gap-2 px-5 pb-3 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            "relative flex min-h-0 flex-1 items-stretch gap-2 px-5 pb-3 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           : "relative flex min-h-0 flex-1 flex-col overflow-y-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       }
     >
@@ -3397,15 +3443,18 @@ function MotionEventList({
             }}
             className={
               wide
-                ? "flex flex-none items-center gap-2 text-left"
+                ? "flex h-full flex-none items-center gap-2 text-left"
                 : "flex flex-none items-center gap-3 px-5 text-left"
             }
             style={
               wide
                 ? {
-                    // 가로 덩어리 — 썸네일(96) + 글자. 라운드는 타일과 같은 4px.
+                    // 가로 덩어리 — 고른 것만 파란 테두리, 나머지는 회색
+                    // (사용자 지정 2026-08-14). 썸네일 쪽 파란 테두리는 뺐다 —
+                    // 덩어리 테두리와 겹쳐 두 겹으로 보였다.
                     padding: "6px 8px",
                     borderRadius: "4px",
+                    border: active ? "1px solid #1D6CEB" : "1px solid #EBEBEB",
                     backgroundColor: active
                       ? "rgba(29,108,235,0.08)"
                       : undefined,
@@ -3422,9 +3471,25 @@ function MotionEventList({
             {/* 썸네일 — 카메라 목록 타일과 같은 16:9 · 같은 4px 라운드.
                 움직이는 GIF 를 그대로 쓰면 한 화면에 수십 장이 동시에 디코딩되니
                 첫 프레임만 그리는 FrozenImage 를 쓴다(목록 타일과 같은 이유). */}
+            {/* 썸네일 — 가로일 땐 높이를 덩어리(= 목록 영역)에 맞춘다. 카메라 목록
+                타일도 같은 기준(h-full aspect-video)이라 두 탭의 그림 높이가 같아
+                보인다. 덩어리 안쪽 여백(6)만큼만 타일보다 작다(사용자 지정).
+                세로일 땐 예전처럼 폭 96 고정. */}
             <div
-              className="relative flex-none overflow-hidden bg-neutral-900"
-              style={{ width: "96px", aspectRatio: "16 / 9", borderRadius: "4px" }}
+              className={
+                wide
+                  ? "relative h-full flex-none overflow-hidden bg-neutral-900"
+                  : "relative flex-none overflow-hidden bg-neutral-900"
+              }
+              style={
+                wide
+                  ? { aspectRatio: "16 / 9", borderRadius: "4px" }
+                  : {
+                      width: "96px",
+                      aspectRatio: "16 / 9",
+                      borderRadius: "4px",
+                    }
+              }
             >
               <FrozenImage
                 src={cameraSrc}
@@ -3432,15 +3497,6 @@ function MotionEventList({
                 className="absolute inset-0 h-full w-full"
                 style={{ objectFit: "cover" }}
               />
-              {active && (
-                <div
-                  className="pointer-events-none absolute inset-0"
-                  style={{
-                    boxShadow: "inset 0 0 0 2px #1D6CEB",
-                    borderRadius: "4px",
-                  }}
-                />
-              )}
             </div>
             {/* 유형 + 시각. 유형은 이상 상황(넘어짐·폭행)만 빨강 — 썸네일 위 칩
                 (EventKindChip)과 같은 규칙이라 화면을 훑을 때 눈이 같은 것에 걸린다. */}
