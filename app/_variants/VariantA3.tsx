@@ -4210,20 +4210,28 @@ function RecordingControls({
         />
         </>
         )}
-        {/* 중앙 고정 현재 시간 — 사이드 라벨과 베이스라인 정렬 */}
+        {/* 중앙 고정 현재 시간 — 단일채널 시간바와 같은 알약 배지(사용자 지정:
+            "다채널도 시간바 동일하게"). 흰 배경 + #353535, 높이 20 · 좌우 8 ·
+            rounded-full, 테두리 없음. 딤 위(overlay)에서도 같은 배지다 — 흰 글자만
+            띄우던 걸 배지로 바꿨다. 두 화면이 달라 보이면 안 된다.
+            top 은 10 → 6: 배지가 20 이 되면서 아래 현재시각 마커(27~41)와 겹쳤다. */}
         <div
           className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
-          style={{ top: "10px", lineHeight: 0 }}
+          style={{ top: "6px", lineHeight: 0 }}
         >
           <span
             suppressHydrationWarning
+            className="rounded-full"
             style={{
-              display: "inline-block",
-              color: overlay ? "#FFFFFF" : "#353535",
+              display: "inline-flex",
+              alignItems: "center",
+              height: "20px",
+              color: "#353535",
+              backgroundColor: "#FFFFFF",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
-              padding: "0 6px",
+              padding: "0 8px",
               verticalAlign: "top",
             }}
           >
