@@ -3152,34 +3152,46 @@ function RecordingEventTimeline({
             backgroundColor: "#111111",
           }}
         />
-        {/* 날짜·시간 선택 — 오른쪽 화살표와 완전히 같은 원이다(28×28 · 흰 배경 ·
-            border-neutral-300). 좌우 여백도 같은 20, 세로 중심도 같다.
-            아이콘은 20 — time.svg 는 24 박스를 거의 꽉 채우는 그림이라 24 로 넣으면
-            원에 닿아 동그라미가 안 보이고, 16 으로 줄였더니 이번엔 너무 작았다
-            (사용자 지적). 20 이면 사방 4 가 남아 원도 보이고 아이콘도 제 크기다.
-            화살표 쪽은 글리프가 작아 24 라도 여백이 남는다.
-            색이 박혀 있어 마스크가 아니라 img 로 쓴다.
+        {/* 날짜·시간 선택 — 원(테두리·흰 배경)을 뺐다(사용자 결정 2026-08-14).
+            대신 오른쪽에 세로 구분선을 세워 흐르는 눈금과 갈라 준다. 원이 없으니
+            아이콘은 앱 기본 크기 24(camera.svg 등과 같다)로 되돌린다.
+            아이콘 왼쪽 끝은 화면 좌우 여백 20, 세로는 눈금 레일(RAIL_H) 가운데.
+            구분선 색은 앱 공용 #EBEBEB, 높이는 눈금(8)보다 길고 레일(28)보다 짧은 16.
+            흰 배경을 깐 건 아래로 흐르는 눈금이 아이콘·선에 겹쳐 지저분해지는 걸
+            막기 위해서다(왼쪽 페이드만으로는 눈금이 비친다).
             시간바는 드래그로 스크럽되니 포인터를 막는다. */}
         {onOpenDateTime && (
-          <button
-            type="button"
-            aria-label="날짜, 시간 선택"
-            className="absolute z-20 flex items-center justify-center rounded-full border border-neutral-300"
+          <div
+            className="absolute z-20 flex items-center"
             style={{
               left: "20px",
-              top: `${PAD_TOP + (RAIL_H - 28) / 2}px`,
-              width: "28px",
-              height: "28px",
+              top: `${PAD_TOP + (RAIL_H - 24) / 2}px`,
+              height: "24px",
+              gap: "12px",
               backgroundColor: "#FFFFFF",
             }}
             onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenDateTime();
-            }}
           >
-            <img src={`${BASE}/time.svg`} alt="" className="h-5 w-5" />
-          </button>
+            <button
+              type="button"
+              aria-label="날짜, 시간 선택"
+              className="flex h-6 w-6 items-center justify-center"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenDateTime();
+              }}
+            >
+              <img src={`${BASE}/time.svg`} alt="" className="h-6 w-6" />
+            </button>
+            <span
+              aria-hidden
+              style={{
+                width: "1px",
+                height: "16px",
+                backgroundColor: "#EBEBEB",
+              }}
+            />
+          </div>
         )}
       </div>
 
