@@ -1825,14 +1825,32 @@ function ExpandedView({
           같은 제목을 둔다(사용자 결정 2026-08-14) — 두 모드가 같아 보여야 한다.
           useListLayout 이 제목 높이를 실측해 영역 최소 높이에 더한다. */}
       <div
-        className="flex-none px-5 text-[15px] font-bold leading-none"
+        className="flex flex-none items-center px-5"
         // 위아래 14 로 같다 — 사이드 패널 탭(tabsBlock)의 padding 14px 0 과 같은 값.
         // 아래 여백은 예전엔 타일 행의 marginTop 12 가 대신했는데, 제목이 생기면서
         // 제목 밑 여백이 위(14)와 어긋나 제목이 직접 갖게 했다.
         // (좌우는 px-5 가 잡는다 — 인라인 padding 축약형을 쓰면 그걸 덮어쓴다.)
-        style={{ paddingTop: "14px", paddingBottom: "14px", color: "#262626" }}
+        style={{ paddingTop: "14px", paddingBottom: "14px" }}
       >
-        카메라 목록
+        <span
+          className="text-[15px] font-bold leading-none"
+          style={{ color: "#262626" }}
+        >
+          카메라 목록
+        </span>
+        {/* 화면 캡처 — 없앤 날짜 줄에 있던 그 버튼을 여기로 옮겼다(사용자 결정
+            2026-08-14). 규격도 그대로 28 원 + 아이콘 24. 오른쪽 끝은 px-5 라
+            화면 좌우 여백 20 에 맞는다. */}
+        {onCapture && (
+          <button
+            type="button"
+            aria-label="화면 캡처"
+            onClick={onCapture}
+            className="ml-auto flex h-[28px] w-[28px] items-center justify-center rounded-full border border-neutral-300"
+          >
+            <img src={`${BASE}/camera.svg`} alt="" className="h-6 w-6" />
+          </button>
+        )}
       </div>
       <div
         ref={listWide ? undefined : listScrollRef}
