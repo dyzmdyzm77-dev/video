@@ -1475,14 +1475,18 @@ function ExpandedView({
               }}
             />
             {/* 카메라 이름 — 좌상단 배지가 시각으로 바뀌면서 이름이 갈 곳이 없어졌다
-                (사용자 결정 2026-08-14). 딤일 때만 좌상단에 띄운다. 시각 배지가
-                top 4 · height 17 로 위를 쓰고 있어 그 바로 아래에, 왼쪽 선을 맞춰
-                놓는다. 위 그라데이션 스크림 위라 흰 글씨로 충분히 읽힌다. */}
+                (사용자 결정 2026-08-14). 딤일 때만 좌상단에 띄운다. 위 그라데이션
+                스크림 위라 흰 글씨로 충분히 읽힌다.
+                여백은 오른쪽 아이콘 줄과 같은 규칙으로 맞춘다 — 바깥 12px, 줄 높이
+                44px(아이콘 28 + py-2 8·8), 글자에 버튼과 같은 px-1.5. 그래야 좌우
+                끝 여백과 세로 중심이 아이콘과 1px 도 안 어긋난다. */}
             <div
-              className="absolute text-[14px] font-medium leading-none text-white"
-              style={{ top: "27px", left: "4px" }}
+              className="absolute flex items-center"
+              style={{ top: "12px", left: "12px", height: "44px" }}
             >
-              {cam.label}
+              <span className="px-1.5 text-[14px] font-medium leading-none text-white">
+                {cam.label}
+              </span>
             </div>
             <div
               className="absolute flex items-center"
