@@ -114,6 +114,7 @@ export default function LandscapeVideo({
   recordingLabel = "녹화",
   singleBadge,
   singleBadgeAlign,
+  singleHeaderCamera = false,
   controls,
   controlsOnDim = false,
   // ── 아래 넷은 '가로 화면' 자체의 사양이라 안이 정하지 않는다 ──────────────
@@ -203,6 +204,12 @@ export default function LandscapeVideo({
   /** 그 배지를 어디에 둘지. 기본 "left" = 왼쪽 위 구석(지금까지의 동작).
    *  A-3 은 세로와 같이 위 가운데("center"). */
   singleBadgeAlign?: "left" | "center";
+  /** 단일 화면 딤 헤더를 '뒤로가기 + 카메라 이름'으로 바꿀지. 기본 false =
+   *  지금까지처럼 장소명 + 지점명(계약번호). A-3 만 켠다(사용자 결정 2026-08-14) —
+   *  가로 단일에서 지금 보는 게 어느 카메라인지가 장소보다 급하고, 다채널로
+   *  돌아가는 길이 더블탭뿐이라 버튼이 필요하다.
+   *  다채널일 땐 켜도 그대로 장소명이다 — 거긴 카메라가 하나가 아니다. */
+  singleHeaderCamera?: boolean;
   /** 녹화일 때 딤 하단에 얹는 플레이어 버튼 + 시간바. 안마다 컴포넌트가 달라
    *  여기서 만들지 않고 받아서 자리만 잡는다(세로에서 쓰던 그것을 그대로 넘긴다).
    *  기본은 흰 바 위 — 세로와 같은 밝은 UI 를 그대로 넘기는 안(A·B)을 위해서다. */
@@ -557,7 +564,58 @@ export default function LandscapeVideo({
   // 딤 위 헤더 — 딤과 같이 뜨고 같이 사라진다(세로 A-1 OverlayHeader 와 동일).
   // 껍데기는 가로 전체를 덮는 띠라 클릭을 통과시켜야 한다(pointer-events: none).
   // 안 그러면 같은 줄 오른쪽 딤 아이콘을 덮어 눌러도 반응하지 않는다.
-  const header = title ? (
+  // 단일 화면 헤더를 '뒤로가기 + 카메라 이름'으로 바꾼 경우(singleHeaderCamera).
+  // 장소명/지점명 대신이라 자리·높이·여백은 아래 기본 헤더와 같게 두고 내용만 바꾼다.
+  const cameraHeader =
+    singleHeaderCamera && expandedIndex !== null && cameras[expandedIndex] ? (
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 flex items-center transition-opacity duration-300 ease-out"
+        style={{
+          height: `${OVERLAY_HEADER_H}px`,
+          opacity: dim && !scrubbing ? 1 : 0,
+          paddingLeft: `${edgeInset ?? 20}px`,
+          paddingRight: `${edgeInset ?? 20}px`,
+        }}
+      >
+        <div
+          className="flex items-center"
+          style={{ gap: "8px", pointerEvents: dim ? "auto" : "none" }}
+          {...auto.holdProps}
+          onClick={(e) => {
+            e.stopPropagation();
+            auto.keepAlive();
+          }}
+        >
+          {/* 뒤로가기 — 다채널로 돌아간다(단일 더블탭과 같은 동작).
+              화살표 모양·크기는 GridSelectionOverlay 의 뒤로가기와 같은 것이다. */}
+          <button
+            type="button"
+            aria-label="뒤로가기"
+            onClick={onBack}
+            className="flex h-8 w-8 items-center justify-center"
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M15 5l-7 7 7 7" />
+            </svg>
+          </button>
+          <span className="text-[18px] font-bold leading-none text-white">
+            {cameras[expandedIndex].label}
+          </span>
+        </div>
+      </div>
+    ) : null;
+
+  const header = cameraHeader ?? (title ? (
     <div
       className={`pointer-events-none absolute inset-x-0 top-0 flex transition-opacity duration-300 ease-out ${
         headerAlign === "top" ? "items-start" : "items-center"
@@ -603,7 +661,7 @@ export default function LandscapeVideo({
         </button>
       </div>
     </div>
-  ) : null;
+  ) : null);
 
   const overlay = (
     <GridSelectionOverlay
