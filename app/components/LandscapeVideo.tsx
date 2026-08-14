@@ -195,7 +195,7 @@ export default function LandscapeVideo({
   mode?: "live" | "recording";
   setMode?: (m: "live" | "recording") => void;
   timeLabel?: string;
-  /** 녹화 쪽 칩 문구. 기본 "녹화" — 세로 토글을 "녹화 영상"으로 바꾼 안(A-3)만
+  /** 녹화 쪽 칩 문구. 기본 "녹화" — 세로 토글을 "녹화영상"으로 바꾼 안(A-3)만
    *  같은 말로 맞춘다(사용자 지적: 가로만 말이 달랐다). */
   recordingLabel?: string;
   /** 단일 화면 영상 배지 문구. 안 주면 카메라 이름(지금까지의 동작).

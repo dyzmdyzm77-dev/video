@@ -364,7 +364,7 @@ export default function VariantA3({
 
   // 라이브에서 녹화 탭 클릭 시 바텀시트 열기 (모드는 적용 시 변경)
   const handleSetMode = (m: "live" | "recording") => {
-    // '녹화 영상'은 누를 때마다 날짜·시간 시트를 연다(사용자 결정 2026-08-14).
+    // '녹화영상'은 누를 때마다 날짜·시간 시트를 연다(사용자 결정 2026-08-14).
     // 예전엔 실시간에서 넘어올 때만 열려서, 이미 녹화 중이면 다시 눌러도 아무 일도
     // 없었다. 시점을 다시 고르는 게 이 탭의 일이라 매번 여는 게 맞다.
     // (시트는 지금 보던 시각에서 열린다 — initialMs 가 playbackMs 를 먼저 본다.)
@@ -461,7 +461,7 @@ export default function VariantA3({
           // 붙어 있으면 가운데 정렬도 칩 기준이 아니라 '칩+시각' 기준이라
           // 칩이 왼쪽으로 밀려 보였다. 빼면 칩만 남아 정확히 가운데에 온다.
           // 세로 토글과 같은 말로 — 가로만 '녹화'라 어긋났다(사용자 지적).
-          recordingLabel="녹화 영상"
+          recordingLabel="녹화영상"
           // 단일 화면 배지도 세로와 같이 카메라 이름 대신 시각.
           // (다채널 타일은 그대로 카메라 이름 — 세로에서도 타일은 안 바꿨다.)
           singleBadge={videoBadge}
@@ -3672,7 +3672,7 @@ function ModeToggle({
           color: mode === "recording" ? "#ffffff" : "#7F7F7F",
         }}
       >
-        녹화 영상
+        녹화영상
       </button>
     </div>
   );
@@ -3697,7 +3697,7 @@ function RecBadge({ onClick }: { onClick?: () => void }) {
         className="rounded-full"
         style={{ width: "4px", height: "4px", backgroundColor: "#ffffff" }}
       />
-      녹화 영상
+      녹화영상
     </button>
   );
 }
