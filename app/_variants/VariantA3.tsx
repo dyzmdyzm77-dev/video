@@ -3373,23 +3373,34 @@ function MotionEventList({
       if (!done) write(to);
     }, DUR + 80);
   };
-  // 스크롤은 '사용자가 고를 때'만 움직인다 — 카메라 목록과 같은 규칙이다.
-  // 재생이 이벤트를 지날 때마다 따라가게 뒀더니 목록이 몇 초마다 저절로 튀었다
-  // (사용자 지적: "너무 띡띡 선택되는거아니야?"). 지금 재생 중인 이벤트는
-  // 파란 배경으로만 알리고 자리는 안 건드린다.
-  // 탭에 들어온 순간(과 배치가 바뀔 때)만 한 번 맞춰 둔다 — 그때는 이미 가운데
-  // 있어야 하는 상태라 즉시 이동이다. 그림이 그려진 뒤에 재야 해서 한 프레임 미룬다.
+  // 재생이 이벤트를 만나면(시간바의 빨간 선과 겹치는 순간) 그 항목이 선택되고,
+  // 자리도 가운데로 따라온다(사용자 지적 2026-08-14: "위치도 가운데로 와야지").
+  // 예전에 이걸 껐던 건 즉시 이동이라 몇 초마다 툭툭 끊겨 보였기 때문이다 —
+  // 지금은 320ms 로 미끄러지므로 따라와도 눈에 거슬리지 않는다.
+  // 탭에 처음 들어온 순간만 즉시 맞춘다(그때는 이미 가운데 있어야 하는 상태다).
+  // 그림이 그려진 뒤에 재야 해서 한 프레임 미룬다.
   const openedRef = useRef(false);
   useEffect(() => {
     openedRef.current = false;
   }, [wide]);
   useEffect(() => {
-    if (openedRef.current || activeMs === null) return;
+    if (activeMs === null) return;
+    const first = !openedRef.current;
     openedRef.current = true;
-    const raf = requestAnimationFrame(() => centerOn(activeMs, false));
-    return () => cancelAnimationFrame(raf);
+    // 한 프레임 미룬다 — 그림이 그려진 뒤에 offset 을 재야 한다. rAF 가 아니라
+    // setTimeout 인 건, 화면이 안 보이는 탭에서 rAF 가 아예 안 돌아 호출 자체가
+    // 사라지기 때문이다(실측: 그 상태에서 재생이 다음 이벤트로 넘어가도 목록이
+    // 그대로 있었다).
+    const t = window.setTimeout(() => centerOn(activeMs, !first), 0);
+    return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMs, wide]);
+
+  // 가로로 나열할 땐 오른쪽이 최신이다 — 시간바와 같은 방향(오른쪽 = 최신,
+  // 왼쪽 = 과거)이라야 둘이 같은 축으로 읽힌다(사용자 지적 2026-08-14).
+  // rows 는 최신순(내림차순)이라 가로일 때만 뒤집는다. 세로로 쌓을 땐 최신이
+  // 맨 위인 게 목록의 상식이라 그대로 둔다.
+  const ordered = wide ? [...rows].reverse() : rows;
 
   return (
     // 바깥 껍데기 — 카메라 목록과 같은 구조다(껍데기가 pb-3, 그 안이 '행').
@@ -3413,7 +3424,7 @@ function MotionEventList({
           : "relative flex min-h-0 flex-1 flex-col overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       }
     >
-      {rows.map((r) => {
+      {ordered.map((r) => {
         // 지금 재생 중인 이벤트인가. 구간(ms ~ ms+dur)만 보고 각자 판정하면 둘이
         // 같이 켜진다 — 이벤트가 4~8초 간격으로 묶여 나오고 길이가 4~15초라
         // 구간이 겹친다(사용자 지적: "리스트 두개가 선택되는건 뭐지?").
@@ -4797,7 +4808,9 @@ function PlayerButton({
         // 60 은 너무 컸다(사용자 지정 2026-08-14). 세로는 그대로 40.
         width: overlay ? "50px" : "40px",
         height: overlay ? "50px" : "40px",
-        // 가로 딤 위 버튼은 테두리 없이 검정 70% + 흰 아이콘(사용자 결정 2026-08-14).
+        // 가로 딤 위 버튼은 테두리 없이 검정 50% + 흰 아이콘(사용자 지정 2026-08-14).
+        // 70% 에서 낮췄다 — 대신 아이콘에 그림자를 깔고 아래 딤을 60% 로 넓혀
+        // 밝은 영상 위에서도 안 묻히게 받쳤다.
         // 흰색 채우기(70% → 50%)를 거쳐 여기로 왔다 — 반투명 흰 배경은 밝은 영상
         // 위에서 아이콘 대비가 무너진다(흰 아이콘 1.2:1, 그레이도 배경과 붙는다).
         // 검정 쪽은 영상이 밝든 어둡든 흰 아이콘이 또렷하다.
@@ -4805,8 +4818,8 @@ function PlayerButton({
         border: overlay ? "none" : "1px solid #D9D9D9",
         backgroundColor: overlay
           ? active
-            ? "rgba(0,0,0,0.45)"
-            : "rgba(0,0,0,0.7)"
+            ? "rgba(0,0,0,0.3)"
+            : "rgba(0,0,0,0.5)"
           : active
             ? "#F2F2F2"
             : "#FFFFFF",
@@ -4817,8 +4830,9 @@ function PlayerButton({
           style={{
             fontSize: overlay ? "17px" : "14px",
             fontWeight: 500,
-            // 배속 글자도 아이콘과 같은 색 — 가로 딤은 흰색.
+            // 배속 글자도 아이콘과 같은 규칙 — 가로 딤이면 흰색 + 같은 그림자.
             color: overlay ? "#FFFFFF" : "#262626",
+            textShadow: overlay ? "0 1px 2px rgba(0,0,0,0.5)" : undefined,
           }}
         >
           {label}
@@ -4866,7 +4880,12 @@ function PlayerIcon({
         height: `${size}px`,
         marginLeft,
         marginRight,
-        filter: invert ? "brightness(0) invert(1)" : undefined,
+        // 뒤집을 때(가로 딤의 흰 아이콘) 뒤에 그림자를 깐다(사용자 지정) —
+        // 버튼 배경이 검정 50% 라 밝은 영상 위에서는 아이콘이 묻힌다.
+        // drop-shadow 는 filter 체인이라 invert 뒤에 이어 붙인다.
+        filter: invert
+          ? "brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
+          : undefined,
       }}
     />
   );
