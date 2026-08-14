@@ -498,10 +498,11 @@ export default function VariantA3({
                 className="pointer-events-auto flex items-center justify-between"
                 // 시간바와 붙인다 — 12 → 4(사용자 지정 2026-08-14). 시간바 자체가
                 // 아래 여백(paddingBottom 12)을 갖고 있어 실제로는 그만큼 더 뜬다.
-                // 자리를 둘로 나눈다: AI·메뉴·움직임 감지는 왼쪽 끝, 축소는
-                // 오른쪽 끝(사용자 지정). 좌우 끝은 이 줄을 감싼 층의 10 이라
-                // 시간바 좌우 끝과 같은 선에 선다.
-                style={{ paddingTop: "4px" }}
+                // 자리를 둘로 나눈다: AI·메뉴·움직임 감지는 왼쪽, 축소는 오른쪽
+                // (사용자 지정). 좌우 여백은 30 을 더 줘 딤의 다른 요소(장소명·
+                // 우상단 아이콘)가 쓰는 40 에 맞춘다 — 감싼 층이 이미 10 을 갖고
+                // 있어서 30 만 더하면 된다. 화면 끝에 붙으면 손가락이 걸린다.
+                style={{ paddingTop: "4px", paddingLeft: "30px", paddingRight: "30px" }}
               >
                 {(() => {
                   const btn = (b: {
