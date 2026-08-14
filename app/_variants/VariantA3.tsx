@@ -1802,7 +1802,11 @@ function ExpandedView({
       {mode === "recording" && (
         <div
           className="flex-none px-5 text-[15px] font-bold leading-none"
-          style={{ paddingTop: "14px", color: "#262626" }}
+          // 위아래 14 로 같다 — 사이드 패널 탭(tabsBlock)의 padding 14px 0 과 같은 값.
+          // 아래 여백은 예전엔 타일 행의 marginTop 12 가 대신했는데, 그건 제목이
+          // 없는 실시간용이라 제목 밑 여백이 위(14)와 어긋났다.
+          // (좌우는 px-5 가 잡는다 — 인라인 padding 축약형을 쓰면 그걸 덮어쓴다.)
+          style={{ paddingTop: "14px", paddingBottom: "14px", color: "#262626" }}
         >
           카메라 목록
         </div>
@@ -1829,7 +1833,9 @@ function ExpandedView({
               ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "grid grid-cols-2 gap-2 px-5"
           }
-          style={{ marginTop: "12px" }}
+          // 녹화면 위 제목이 아래 여백(14)을 이미 갖고 있으니 겹쳐 주지 않는다.
+          // 실시간은 제목이 없어 이 값이 유일한 위 여백이다.
+          style={{ marginTop: mode === "recording" ? "0px" : "12px" }}
         >
           {CAMERAS.map((c, i) =>
             cameraTile(
