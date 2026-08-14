@@ -1648,3 +1648,29 @@ html[data-punch="fold8"] .punch-hole {
   right: auto;
   transform: translateX(-50%);
 }
+
+/* ===== 가로 =====
+   펀치홀은 화면이 아니라 '기기'에 뚫린 구멍이다. 화면만 도는 게 아니라 기기가
+   눕는 것이므로 구멍도 기기를 따라가야 하는데, 상단 바 자리에 붙여 둬서 가로에서도
+   위쪽 가운데에 그대로 남아 있었다(사용자 지적 2026-08-14: "홀이 디바이스 따라서
+   돌아가야하는데 상태바에 붙어있어서 잘못 돌아가네").
+   회전은 -90°(반시계) 다 — 세로의 위쪽 변이 왼쪽 변이 되고, 세로의 가로축
+   (왼→오)은 아래→위가 된다. 그래서 top ↔ left, left ↔ bottom 으로 뒤집는다. */
+html[data-landscape="true"] .punch-hole {
+  left: 5.5px;
+  right: auto;
+  top: auto;
+  bottom: 50%;
+  transform: translateY(50%);
+}
+/* 트라이폴드 — 세로에서 오른쪽 167 = 가로에선 위에서 167. */
+html[data-landscape="true"][data-punch="trifold"] .punch-hole {
+  bottom: auto;
+  top: 167px;
+  transform: none;
+}
+/* Fold 8 — 세로에서 왼쪽 75% = 가로에선 아래에서 75%. */
+html[data-landscape="true"][data-punch="fold8"] .punch-hole {
+  bottom: 75%;
+  transform: translateY(50%);
+}

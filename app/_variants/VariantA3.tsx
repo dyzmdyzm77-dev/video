@@ -32,7 +32,7 @@ import MoreSheet from "../components/MoreSheet";
 import AiSearchSheet from "../components/AiSearchSheet";
 import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
 import { nextVideoFit, videoFitIcon } from "../components/videoFit";
-import { useAutoHide } from "../components/useAutoHide";
+import { AUTO_HIDE_MS, useAutoHide } from "../components/useAutoHide";
 import AndroidNav from "../components/AndroidNav";
 import {
   useDeviceRatio,
@@ -260,6 +260,17 @@ export default function VariantA3({
   // 보임. 헤더의 REC+날짜 행은 이 상태와 무관하게 항상 남아 다시 누를 수 있다.
   const [timelineVisible, setTimelineVisible] = useState(true);
   const [isScrubbing, setIsScrubbing] = useState(false);
+  // 가로 딤에서 5버튼을 누른 직후 — 5버튼과 시간바만 남기고 나머지는 걷는다
+  // (사용자 지정 2026-08-14). 딤 자체는 useAutoHide 가 마지막 조작 5초 뒤에
+  // 걷으므로, 여기서도 같은 5초를 세어 상태를 되돌린다. 그러면 '5버튼만 →
+  // 아무것도 없음' 순서로 보인다.
+  const [playerFocus, setPlayerFocus] = useState(false);
+  const notePlayerAction = useCallback(() => setPlayerFocus(true), []);
+  useEffect(() => {
+    if (!playerFocus) return;
+    const t = setTimeout(() => setPlayerFocus(false), AUTO_HIDE_MS);
+    return () => clearTimeout(t);
+  }, [playerFocus]);
   const [playbackMs, setPlaybackMs] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   // 배속(부호 포함): 1=기본, 2/4/16=빨리감기, 음수=되감기. 타임라인 진행 속도에 반영.
@@ -424,6 +435,8 @@ export default function VariantA3({
           onAi={() => setAiOpen(true)}
           // A-3: 가로 딤도 세로와 같은 재배치 — 크게 보기 우하단 원.
           swapAiZoom
+          // 다채널 딤 버튼도 단일 화면과 같은 규격으로(사용자 지정 2026-08-14).
+          dimStyle="a3"
           // AI·크게 보기를 시간바 아래 가운데 줄로 옮겼다 — 딤 좌우 아래 원은 끈다.
           showOverlayAi={false}
           showOverlayZoom={false}
@@ -433,10 +446,12 @@ export default function VariantA3({
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 40 — A-1 가로와 같은 값으로(사용자 지정).
           edgeInset={40}
+          // 위쪽 요소(장소명·칩 줄·아이콘 줄)를 10 올린다(사용자 지정 2026-08-14).
+          topInset={-10}
           // 이 층(시간바 + 그 아래 아이콘 줄)은 이 값에서 12 를 뺀 만큼 뜬다.
-          // 32 → 아이콘 줄 아래 마진 20(사용자 지정 2026-08-14). 시간바는 그
-          // 아이콘 줄 위에 얹히므로 자연히 더 올라간다.
-          bottomInset={32}
+          // 22 → 아이콘 줄 아래 마진 10(사용자 지정 2026-08-14: 20 에서 10 더 내림).
+          // 시간바는 그 아이콘 줄 위에 얹히므로 같이 내려간다.
+          bottomInset={22}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
@@ -507,14 +522,17 @@ export default function VariantA3({
                 // 우상단 아이콘)가 쓰는 40 에 맞춘다 — 감싼 층이 이미 10 을 갖고
                 // 있어서 30 만 더하면 된다. 화면 끝에 붙으면 손가락이 걸린다.
                 style={{
-                  paddingTop: "4px",
+                  // 시간바와의 간격을 6 줄인다 = 시간바가 그만큼 내려온다
+                  // (사용자 지정 2026-08-14). 아이콘 줄은 아래에 고정이라
+                  // 위쪽 시간바만 따라 내려온다.
+                  marginTop: "-2px",
                   paddingLeft: "30px",
                   paddingRight: "30px",
                   // 시간바를 끄는 동안엔 같이 걷는다(사용자 지정 2026-08-14).
                   // 이 줄은 시간바와 한 층에 있어서, 그 층이 스크럽 중에도 남는
                   // 규칙(keepWhileScrubbing)을 그대로 물려받아 혼자 남아 있었다.
-                  opacity: isScrubbing ? 0 : 1,
-                  pointerEvents: isScrubbing ? "none" : "auto",
+                  opacity: isScrubbing || playerFocus ? 0 : 1,
+                  pointerEvents: isScrubbing || playerFocus ? "none" : "auto",
                 }}
               >
                 {(() => {
@@ -535,10 +553,11 @@ export default function VariantA3({
                         height: "40px",
                         // 테두리는 없다(사용자 지정) — 배경이 회색 70% 라 원 모양이
                         // 이미 잡히고, 흰 선까지 있으면 아이콘보다 테두리가 먼저 보였다.
-                        // 회색 55%(사용자 지정 2026-08-14). 반투명 검정 0.35 → 불투명
-                        // 회색 → 0.7 을 거쳐 여기로 왔다. 톤은 앱에 이미 쓰는
+                        // 회색 40%(사용자 지정 2026-08-14). 반투명 검정 0.35 → 불투명
+                        // 회색 → 0.7 → 0.5 을 거쳐 여기로 왔다. 톤은 앱에 이미 쓰는
                         // 회색(#757575, 녹화 배지 배경)이고 알파만 조절한다.
-                        backgroundColor: "rgba(102,102,102,0.5)",
+                        // A-3 의 딤 버튼·시간바 알약은 전부 이 값 하나로 맞춘다.
+                        backgroundColor: "rgba(102,102,102,0.4)",
                         backdropFilter: "blur(20px)",
                         WebkitBackdropFilter: "blur(20px)",
                       }}
@@ -570,11 +589,13 @@ export default function VariantA3({
               </div>
             </div>
           }
+          auxHidden={playerFocus}
           centerControls={
             mode === "recording" ? (
               <RecordingControls
                 overlay
                 playerOnly
+                onPlayerAction={notePlayerAction}
                 now={now}
                 onScrubbingChange={setIsScrubbing}
                 playbackMs={playbackMs}
@@ -1025,6 +1046,7 @@ function GridView({
           auto={gridAuto}
           // A-3: AI 는 우상단 아이콘 줄로, 크게 보기는 우하단 원 버튼으로 맞바꾼다.
           swapAiZoom
+          dimStyle="a3"
         />
         <VideoFitToast text={gridFitToast} toastKey={gridFitToastKey} />
         <SectionSkeleton visible={gridLoading} cols={cols} rows={rows} />
@@ -1734,7 +1756,7 @@ function ExpandedView({
                 right: "16px",
                 width: "40px",
                 height: "40px",
-                backgroundColor: "rgba(102,102,102,0.5)",
+                backgroundColor: "rgba(102,102,102,0.4)",
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
                 pointerEvents: showControls ? "auto" : "none",
@@ -1779,7 +1801,7 @@ function ExpandedView({
                   style={{
                     width: "40px",
                     height: "40px",
-                    backgroundColor: "rgba(102,102,102,0.5)",
+                    backgroundColor: "rgba(102,102,102,0.4)",
                     backdropFilter: "blur(20px)",
                     WebkitBackdropFilter: "blur(20px)",
                   }}
@@ -4157,6 +4179,7 @@ function RecordingControls({
   onSpeedChange,
   overlay = false,
   playerOnly = false,
+  onPlayerAction,
   timelineOnly = false,
 }: {
   now: Date | null;
@@ -4181,6 +4204,9 @@ function RecordingControls({
   overlay?: boolean;
   /** 플레이어 버튼 5개만 그린다(가로 딤 가운데용). 헤더 줄·시간바는 뺀다. */
   playerOnly?: boolean;
+  /** 5버튼 중 아무거나 눌렀을 때. 가로 딤에서 '5버튼 + 시간바'만 남기려고
+   *  안이 쓴다(사용자 지정 2026-08-14). */
+  onPlayerAction?: () => void;
   /** playerOnly 의 반대 — 시간바만 그린다. 버튼 5개는 화면 한가운데에 따로
    *  얹으므로(centerControls) 여기선 빼야 두 벌이 안 된다(사용자 결정). */
   timelineOnly?: boolean;
@@ -4501,6 +4527,9 @@ function RecordingControls({
           opacity: overlay && scrubbing ? 0 : 1,
           pointerEvents: overlay && scrubbing ? "none" : undefined,
         }}
+        // 다섯 개 중 뭘 눌렀든 한 곳에서 받는다 — 버튼마다 붙이면 하나
+        // 빠뜨리기 쉽다. capture 라 각 버튼의 onClick 보다 먼저 온다.
+        onClickCapture={onPlayerAction}
       >
         <PlayerButton
           overlay={overlay}
@@ -4710,7 +4739,7 @@ function RecordingControls({
               // 어두운 알약만 튀었다.
               color: overlay ? "#FFFFFF" : "#353535",
               backgroundColor: overlay
-                ? "rgba(102,102,102,0.5)"
+                ? "rgba(102,102,102,0.4)"
                 : "rgba(255,255,255,0.7)",
               ...(overlay
                 ? {
@@ -5113,8 +5142,8 @@ function PlayerButton({
         border: overlay ? "none" : "1px solid #D9D9D9",
         backgroundColor: overlay
           ? active
-            ? "rgba(102,102,102,0.7)"
-            : "rgba(102,102,102,0.5)"
+            ? "rgba(102,102,102,0.6)"
+            : "rgba(102,102,102,0.4)"
           : active
             ? "#F2F2F2"
             : "#FFFFFF",

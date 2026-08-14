@@ -99,6 +99,8 @@ export default function LandscapeVideo({
   swapAiZoom = false,
   showOverlayAi = true,
   showOverlayZoom = true,
+  topInset = 0,
+  dimStyle,
   onMenu,
   centerControls,
   edgeInset,
@@ -107,6 +109,7 @@ export default function LandscapeVideo({
   statusStyle = "segment",
   statusActiveStyle = "brand",
   scrubbing = false,
+  auxHidden = false,
   onExpand,
   onBack,
   title,
@@ -162,6 +165,13 @@ export default function LandscapeVideo({
   /** 딤 아래 '크게 보기' 원 버튼을 그릴지. 기본 true. A-3 은 그 버튼도 시간바
    *  아래 줄로 옮겨서 끈다(사용자 지정 2026-08-14). */
   showOverlayZoom?: boolean;
+  /** 딤 위쪽 요소(장소명·칩 줄·아이콘 줄)를 위아래로 옮기는 값(px).
+   *  기본 0 = 지금까지의 자리(top 12). 음수면 위로 올라간다.
+   *  A-3 은 -10 을 넘긴다(사용자 지정 2026-08-14). */
+  topInset?: number;
+  /** 딤 위 원 버튼 스타일 — GridSelectionOverlay 로 그대로 넘긴다. "a3" 면
+   *  A-3안 규격(40px · #666666 50% · blur 20). 안 주면 기존 그대로. */
+  dimStyle?: "a3";
   /** 딤의 메뉴 버튼(AI 옆). 안 주면 안 그린다 — A-2안 가로 전용. */
   onMenu?: () => void;
   /** 화면 한가운데에 얹을 컨트롤. 아래 시간바 대신 플레이어 버튼만 가운데
@@ -182,6 +192,11 @@ export default function LandscapeVideo({
    *  잠깐 걷어 시간바만 남긴다 — 끄는 동안 화면을 가리지 않게(사용자 요청).
    *  손을 떼면 그대로 돌아온다. */
   scrubbing?: boolean;
+  /** 딤에서 '가운데 5버튼 + 아래 시간바'만 남기고 나머지(장소명·칩 줄·우상단
+   *  아이콘·페이지 점)를 걷는다. A-3 이 플레이어 버튼을 누른 직후 켠다
+   *  (사용자 지정 2026-08-14: "5버튼 누를 때는 5버튼만 남기고 나머지는 사라지고").
+   *  스크럽과 달리 가운데 컨트롤은 살려 둔다. 기본 false = 기존 그대로. */
+  auxHidden?: boolean;
   /** 실시간/녹화 표시 방식.
    *   segment = 지금까지의 기본. 한 덩어리 알약 안에 LIVE·녹화(빨강/회색).
    *   chips   = '실시간'·'녹화' 칩 두 개. 고른 쪽만 흰 배경 + 검정 글자
@@ -458,6 +473,9 @@ export default function LandscapeVideo({
 
   // 딤 위에 얹는 덩어리 공통 처리 — 딤과 같이 뜨고, 만지는 동안 자동 숨김 타이머를
   // 붙잡고, 클릭이 영상 탭(딤 토글·더블탭 전환)으로 새어나가지 않게 막는다.
+  // 딤의 '보조' UI(장소명·칩 줄·우상단 아이콘·페이지 점)를 걷는 조건.
+  // 스크럽 중이거나, 안이 5버튼만 남기라고 할 때(auxHidden).
+  const auxOff = scrubbing || auxHidden;
   const dimLayer = (
     className: string,
     style: React.CSSProperties,
@@ -547,7 +565,7 @@ export default function LandscapeVideo({
   const statusTop = topCenter
     ? dimLayer(
         "left-1/2 flex -translate-x-1/2 items-center",
-        { top: "12px", height: "32px" },
+        { top: `${12 + topInset}px`, height: "32px" },
         statusRow,
         "wrap",
       )
@@ -586,7 +604,7 @@ export default function LandscapeVideo({
                   paddingLeft: `${edgeInset ?? 20}px`,
                   paddingRight: `${edgeInset ?? 20}px`,
                   // 이 층은 시간바 때문에 남겨 두지만 칩 줄은 같이 걷는다.
-                  opacity: scrubbing ? 0 : 1,
+                  opacity: auxOff ? 0 : 1,
                 }}
               >
                 {/* 칩만 클릭을 받는다 — 줄 전체가 받으면 오른쪽 버튼을 덮는다. */}
@@ -628,9 +646,10 @@ export default function LandscapeVideo({
         className="pointer-events-none absolute inset-x-0 top-0 flex items-center transition-opacity duration-300 ease-out"
         style={{
           height: `${OVERLAY_HEADER_H}px`,
-          opacity: dim && !scrubbing ? 1 : 0,
+          opacity: dim && !auxOff ? 1 : 0,
           paddingLeft: `${edgeInset ?? 20}px`,
           paddingRight: `${edgeInset ?? 20}px`,
+          marginTop: `${topInset}px`,
         }}
       >
         <div
@@ -688,9 +707,10 @@ export default function LandscapeVideo({
       }`}
       style={{
         height: `${OVERLAY_HEADER_H}px`,
-        opacity: dim && !scrubbing ? 1 : 0,
+        opacity: dim && !auxOff ? 1 : 0,
         paddingLeft: `${edgeInset ?? 20}px`,
         paddingRight: `${edgeInset ?? 20}px`,
+        marginTop: `${topInset}px`,
         // 윗변 맞춤이면 아이콘 줄과 같은 12 에서 시작한다.
         ...(headerAlign === "top" ? { paddingTop: "12px" } : null),
       }}
@@ -732,7 +752,7 @@ export default function LandscapeVideo({
   const overlay = (
     <GridSelectionOverlay
       visible={dim}
-      hideControls={scrubbing}
+      hideControls={auxOff}
       currentPage={page}
       totalPages={expandedIndex !== null ? 1 : totalPages}
       onGallery={onGallery}
@@ -741,11 +761,12 @@ export default function LandscapeVideo({
       swapAiZoom={swapAiZoom}
       showAi={showOverlayAi}
       showZoom={showOverlayZoom}
+      dimStyle={dimStyle}
       onMenu={onMenu}
       edgeInset={edgeInset}
       {...(bottomInset != null ? { bottomInset } : null)}
       // 칩을 오른쪽 위로 올린 안(A-3)에선 아이콘 줄이 그만큼 아래로 내려간다.
-      topInset={topRight ? ICON_ROW_DROP : 0}
+      topInset={(topRight ? ICON_ROW_DROP : 0) + topInset}
       onFit={cycle}
       fit={fit}
       dimAlpha={dimAlpha}

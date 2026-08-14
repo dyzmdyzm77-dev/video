@@ -302,6 +302,7 @@ export function GridSelectionOverlay({
   swapAiZoom = false,
   showAi = true,
   showZoom = true,
+  dimStyle,
   auto,
 }: {
   visible: boolean;
@@ -358,6 +359,11 @@ export function GridSelectionOverlay({
    *  A-3 가로는 이 버튼도 시간바 아래 가운데 줄로 옮겨서 여기선 끈다
    *  (사용자 지정 2026-08-14). */
   showZoom?: boolean;
+  /** 딤 위 버튼 스타일. "a3" 면 A-3안 규격 — 40px 원 · 배경 #666666 50% ·
+   *  blur(20px) · 테두리 없음 · 아이콘에 중앙 그림자(사용자 지정 2026-08-14).
+   *  안 주면 예전 그대로(34px · 검정 35% · 흰 테두리) — 다른 안은 안 건드린다.
+   *  우상단 아이콘 줄 간격도 이 값일 때만 벌린다. */
+  dimStyle?: "a3";
   /** 딤 자동 숨김 핸들(useAutoHide). 주면 아이콘을 만지는 동안 딤을 붙잡고,
    *  떼는 순간부터 5초를 다시 센다. 안 주면 기존 그대로(타이머 안 되돌림). */
   auto?: {
@@ -373,6 +379,28 @@ export function GridSelectionOverlay({
   // 평소면 확대(zoom_in), 이미 커져 있으면 되돌리기(zoom_out).
   const landscape = useDeviceLandscape();
   const immersive = useImmersive();
+  // 딤 위 원 버튼 규격. A-3 은 단일 화면(5버튼·시간바 아래 줄)과 같은 값으로
+  // 맞춘다 — 다채널만 옛 스타일로 남아 있었다(사용자 지적 2026-08-14).
+  const a3 = dimStyle === "a3";
+  const circle: React.CSSProperties = a3
+    ? {
+        width: "40px",
+        height: "40px",
+        border: "none",
+        backgroundColor: "rgba(102,102,102,0.4)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+      }
+    : {
+        width: "34px",
+        height: "34px",
+        border: "1px solid rgba(255,255,255,0.35)",
+        backgroundColor: "rgba(0,0,0,0.35)",
+      };
+  // 아이콘 뒤 그림자 — 원 안에서 가운데로 퍼지게(단일 화면과 같은 값).
+  const iconShadow = a3
+    ? { filter: "drop-shadow(0 0 4px rgba(0,0,0,0.6))" }
+    : undefined;
   return (
     <div
       className="pointer-events-none absolute inset-0 transition-opacity duration-300 ease-out"
@@ -447,7 +475,9 @@ export function GridSelectionOverlay({
           안 그러면 조준하는 사이 5초가 지나 딤이 사라지고, 그때부터 아이콘은
           pointer-events:none 이라 클릭이 영상으로 새어 버린다. */}
       <div
-        className="absolute flex items-center gap-0 text-white"
+        // A-3 은 아이콘 사이를 살짝 벌린다(사용자 지정 2026-08-14) —
+        // 버튼끼리 붙어 있어 세 개가 한 덩어리로 읽혔다.
+        className={`absolute flex items-center text-white ${a3 ? "gap-2" : "gap-0"}`}
         style={{
           top: `${12 + topInset}px`,
           right: `${edgeInset ?? 16}px`,
@@ -540,14 +570,12 @@ export function GridSelectionOverlay({
             onClick={onMenu}
             className="flex items-center justify-center rounded-full"
             style={{
-              width: "34px",
-              height: "34px",
-              border: "1px solid rgba(255,255,255,0.35)",
-              backgroundColor: "rgba(0,0,0,0.35)",
+              ...circle,
               pointerEvents: visible ? "auto" : "none",
             }}
           >
             <svg
+              style={iconShadow}
               width="20"
               height="20"
               viewBox="0 0 24 24"
@@ -569,17 +597,16 @@ export function GridSelectionOverlay({
             onClick={toggleImmersive}
             className="flex items-center justify-center rounded-full text-white"
             style={{
-              width: "34px",
-              height: "34px",
-              border: "1px solid rgba(255,255,255,0.35)",
-              backgroundColor: "rgba(0,0,0,0.35)",
+              ...circle,
               pointerEvents: visible && !hideControls ? "auto" : "none",
             }}
           >
-            <OverlayIcon
-              src={`${BASE}/${landscape || immersive ? "zoom_out" : "zoom_in"}.svg`}
-              size={24}
-            />
+            <span style={iconShadow} className="flex">
+              <OverlayIcon
+                src={`${BASE}/${landscape || immersive ? "zoom_out" : "zoom_in"}.svg`}
+                size={a3 ? 28 : 24}
+              />
+            </span>
           </button>
         ) : (
           <button
@@ -589,14 +616,16 @@ export function GridSelectionOverlay({
             onClick={onAi}
             className="flex items-center justify-center rounded-full"
             style={{
-              width: "34px",
-              height: "34px",
-              border: "1px solid rgba(255,255,255,0.35)",
-              backgroundColor: "rgba(0,0,0,0.35)",
+              ...circle,
               pointerEvents: onAi && visible && !hideControls ? "auto" : "none",
             }}
           >
-            <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
+            <img
+              src={`${BASE}/ai_Icon.svg`}
+              alt=""
+              className="h-7 w-7"
+              style={iconShadow}
+            />
           </button>
         )}
       </div>
@@ -619,14 +648,16 @@ export function GridSelectionOverlay({
             onClick={onAi}
             className="flex items-center justify-center rounded-full"
             style={{
-              width: "34px",
-              height: "34px",
-              border: "1px solid rgba(255,255,255,0.35)",
-              backgroundColor: "rgba(0,0,0,0.35)",
+              ...circle,
               pointerEvents: onAi && visible && !hideControls ? "auto" : "none",
             }}
           >
-            <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
+            <img
+              src={`${BASE}/ai_Icon.svg`}
+              alt=""
+              className="h-7 w-7"
+              style={iconShadow}
+            />
           </button>
         </div>
       )}
