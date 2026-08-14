@@ -3330,14 +3330,15 @@ function RecordingEventTimeline({
               className="pointer-events-none absolute rounded-full"
               style={{
                 left: `calc(50% + ${xOf(secOffset)}px)`,
-                // 눈금은 가로세로가 같은 3px 점이다(사용자 지정 2026-08-14:
-                // "가로세로 동일하게 점처럼"). 2×8 세로 막대였는데, 눈금 간격이
-                // 6px 이라 3 이 상한 — 4 면 사이가 2px 밖에 안 남아 붙어 보인다.
+                // 눈금은 가로세로가 같은 4px 점이다(사용자 지정 2026-08-14:
+                // "가로세로 동일하게 점처럼" → "살짝 더 두꺼워도 좋을듯").
+                // 2×8 세로 막대 → 3 → 4. 눈금 간격이 6px 라 4 가 상한이다 —
+                // 점 사이가 2px 만 남아서, 더 키우면 붙어서 선으로 보인다.
                 // 대/소는 길이가 아니라 색으로만 가른다.
                 // 라벨(top 0~10) 아래, 옛 막대(18~26)의 가운데 즈음인 20.
                 top: "20px",
-                width: "3px",
-                height: "3px",
+                width: "4px",
+                height: "4px",
                 // 세로(흰 바탕)의 큰 눈금은 검정 계열(#353535 — 시간 글자와 같은 색).
                 // 한동안 흰색이었는데 흰 바탕에서 아예 안 보였다. 눈금이 세로 막대일
                 // 땐 그래도 됐지만 점으로 바뀌면서 큰/작은 구분이 통째로 사라졌다
@@ -3350,7 +3351,7 @@ function RecordingEventTimeline({
           ))}
           {/* 움직임이 감지된 시각 — 빨간 세로선(사용자 요청 2026-08-14).
               눈금과 같은 레일에 있어 같이 흐른다. 크기는 작은 눈금과 똑같이
-              3×3 점 · top 20 이다(사용자 지정 2026-08-14) — 모양·크기로
+              4×4 점 · top 20 이다(사용자 지정 2026-08-14) — 모양·크기로
               구분하지 않고 색으로만 구분한다.
               색은 노랑과 주황 사이(#F59E0B, 사용자 지정). 빨강(#E2202D)이었는데
               감지 유형 칩의 '이상 상황' 빨강과 뜻이 겹쳐 보였다.
@@ -3367,8 +3368,8 @@ function RecordingEventTimeline({
               style={{
                 left: `calc(50% + ${xOf(c.secOffset)}px)`,
                 top: "20px",
-                width: "3px",
-                height: "3px",
+                width: "4px",
+                height: "4px",
                 backgroundColor: "#F59E0B",
               }}
             />
@@ -4483,6 +4484,64 @@ function RecordingControls({
     return out;
   }, [anchor, pxPerSec, playbackOffsetSec]);
 
+  // 중앙 고정 현재 시각 알약. 딤 위(overlay)에서는 이 알약을 시간바 바깥에
+  // 형제로 내보낸다 — 시간바에 좌우 페이드용 mask 가 걸려 있어서, 그 안에
+  // 있으면 backdrop-filter 가 마스크 안쪽만 배경으로 삼아 블러가 사실상
+  // 안 걸린다(사용자 지적 2026-08-14: "그 배경도 블러된 거 맞아?").
+  // 마스크·필터·opacity 가 걸린 조상은 backdrop-root 가 되기 때문이다.
+  // overlay 에선 시간바가 이 컴포넌트의 첫 자식이라 top 6 이 그대로 맞는다.
+  // 흰 바탕(세로)은 블러를 안 쓰므로 원래 자리에 그대로 둔다 — 밖으로
+  // 빼면 위에 있는 날짜 줄·플레이어 버튼 높이만큼 어긋난다.
+  const centerPill = (
+    <>
+    {/* 중앙 고정 현재 시간 — 단일채널 시간바와 같은 알약 배지(사용자 지정:
+        "다채널도 시간바 동일하게"). 흰 배경 + #353535, 높이 20 · 좌우 8 ·
+        rounded-full, 테두리 없음. 딤 위(overlay)에서도 같은 배지다 — 흰 글자만
+        띄우던 걸 배지로 바꿨다. 두 화면이 달라 보이면 안 된다.
+        top 은 10 → 6: 배지가 20 이 되면서 아래 현재시각 마커(27~41)와 겹쳤다. */}
+    <div
+      className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
+      style={{ top: "6px", lineHeight: 0 }}
+    >
+      <span
+        suppressHydrationWarning
+        className="rounded-full"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          height: "20px",
+          // 딤 위(가로)는 아래 버튼들과 같은 값 하나를 그대로 쓴다 —
+          // #666666 40% + blur(20) + 테두리 없음 + 흰 글자 + 같은 그림자.
+          // 흰 바탕(세로·사이드 패널)은 흰색 70% + 어두운 글자로 되돌렸다
+          // (사용자 지정 2026-08-14) — 거긴 달력·캡처 버튼도 흰 원이라
+          // 어두운 알약만 튀었다.
+          color: overlay ? "#FFFFFF" : "#353535",
+          backgroundColor: overlay
+            ? "rgba(102,102,102,0.4)"
+            : "rgba(255,255,255,0.7)",
+          ...(overlay
+            ? {
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                // 버튼 규격을 따라간다면 끝까지 따라간다(사용자 지정
+                // 2026-08-14: "버튼이랑 같은 스타일할 꺼면 똑같이 가").
+                // 원 버튼 아이콘이 쓰는 그 그림자 — 가운데에서 퍼지는
+                // 0 0 4px 검정 60%. 글자라 drop-shadow 대신 textShadow 다.
+                textShadow: "0 0 4px rgba(0,0,0,0.6)",
+              }
+            : null),
+          fontSize: "12px",
+          fontWeight: 700,
+          lineHeight: "12px",
+          padding: "0 8px",
+          verticalAlign: "top",
+        }}
+      >
+        {centerLabel}
+      </span>
+    </div>
+    </>
+  );
   return (
     <div className="relative flex flex-col">
       {/* 녹화 + 날짜 — 가로 딤(overlay)에선 안 그린다. LandscapeVideo 가 같은
@@ -4656,14 +4715,15 @@ function RecordingControls({
               className="absolute rounded-full"
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                // 눈금은 가로세로가 같은 3px 점이다(사용자 지정 2026-08-14:
-                // "가로세로 동일하게 점처럼"). 2×8 세로 막대였는데, 눈금 간격이
-                // 6px 이라 3 이 상한 — 4 면 사이가 2px 밖에 안 남아 붙어 보인다.
+                // 눈금은 가로세로가 같은 4px 점이다(사용자 지정 2026-08-14:
+                // "가로세로 동일하게 점처럼" → "살짝 더 두꺼워도 좋을듯").
+                // 2×8 세로 막대 → 3 → 4. 눈금 간격이 6px 라 4 가 상한이다 —
+                // 점 사이가 2px 만 남아서, 더 키우면 붙어서 선으로 보인다.
                 // 대/소는 길이가 아니라 색으로만 가른다.
                 // 라벨(top 0~10) 아래, 옛 막대(18~26)의 가운데 즈음인 20.
                 top: "20px",
-                width: "3px",
-                height: "3px",
+                width: "4px",
+                height: "4px",
                 // 딤 위(가로): 큰 눈금은 흰색, 작은 눈금은 불투명 회색(#999999).
                 // 흰색 50% 였던 걸 투명도만 빼려다 둘 다 흰색이 돼 구분이 사라졌다
                 // (사용자 지적: "너무 연해져서 아예 하얀색이 되버렸어").
@@ -4681,7 +4741,7 @@ function RecordingControls({
               }}
             />
           ))}
-          {/* 감지 표시 — 작은 눈금과 같은 규격(3×3 점, top 20)에 색만 #F59E0B. */}
+          {/* 감지 표시 — 작은 눈금과 같은 규격(4×4 점, top 20)에 색만 #F59E0B. */}
           {motionMarks.map((secOffset, i) => (
             <div
               key={`M${i}`}
@@ -4689,8 +4749,8 @@ function RecordingControls({
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
                 top: "20px",
-                width: "3px",
-                height: "3px",
+                width: "4px",
+                height: "4px",
                 backgroundColor: "#F59E0B",
               }}
             />
@@ -4728,52 +4788,7 @@ function RecordingControls({
         />
         </>
         )}
-        {/* 중앙 고정 현재 시간 — 단일채널 시간바와 같은 알약 배지(사용자 지정:
-            "다채널도 시간바 동일하게"). 흰 배경 + #353535, 높이 20 · 좌우 8 ·
-            rounded-full, 테두리 없음. 딤 위(overlay)에서도 같은 배지다 — 흰 글자만
-            띄우던 걸 배지로 바꿨다. 두 화면이 달라 보이면 안 된다.
-            top 은 10 → 6: 배지가 20 이 되면서 아래 현재시각 마커(27~41)와 겹쳤다. */}
-        <div
-          className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
-          style={{ top: "6px", lineHeight: 0 }}
-        >
-          <span
-            suppressHydrationWarning
-            className="rounded-full"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              height: "20px",
-              // 딤 위(가로)는 아래 버튼들과 같은 값 하나를 그대로 쓴다 —
-              // #666666 40% + blur(20) + 테두리 없음 + 흰 글자 + 같은 그림자.
-              // 흰 바탕(세로·사이드 패널)은 흰색 70% + 어두운 글자로 되돌렸다
-              // (사용자 지정 2026-08-14) — 거긴 달력·캡처 버튼도 흰 원이라
-              // 어두운 알약만 튀었다.
-              color: overlay ? "#FFFFFF" : "#353535",
-              backgroundColor: overlay
-                ? "rgba(102,102,102,0.4)"
-                : "rgba(255,255,255,0.7)",
-              ...(overlay
-                ? {
-                    backdropFilter: "blur(20px)",
-                    WebkitBackdropFilter: "blur(20px)",
-                    // 버튼 규격을 따라간다면 끝까지 따라간다(사용자 지정
-                    // 2026-08-14: "버튼이랑 같은 스타일할 꺼면 똑같이 가").
-                    // 원 버튼 아이콘이 쓰는 그 그림자 — 가운데에서 퍼지는
-                    // 0 0 4px 검정 60%. 글자라 drop-shadow 대신 textShadow 다.
-                    textShadow: "0 0 4px rgba(0,0,0,0.6)",
-                  }
-                : null),
-              fontSize: "12px",
-              fontWeight: 700,
-              lineHeight: "12px",
-              padding: "0 8px",
-              verticalAlign: "top",
-            }}
-          >
-            {centerLabel}
-          </span>
-        </div>
+        {!overlay && centerPill}
         {/* 중앙 고정 현재 시각 선 — 단일채널 RecordingEventTimeline 과 동일한 마커.
             눈금(top 30~38)보다 위아래로 살짝 긴 27~41. 예전엔 삼각형(Polygon 1.svg)
             이었는데 단일채널만 선으로 바꿔서 두 화면이 달라 보였다. */}
@@ -4787,6 +4802,7 @@ function RecordingControls({
           }}
         />
       </div>
+      {overlay && centerPill}
       <TimelineSkeleton visible={rowLoading} />
       </>
       )}
