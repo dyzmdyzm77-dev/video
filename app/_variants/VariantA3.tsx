@@ -3140,7 +3140,8 @@ function RecordingEventTimeline({
               alignItems: "center",
               height: "20px",
               color: "#353535",
-              backgroundColor: "#FFFFFF",
+              // 흰색 50% — 아래로 흐르는 눈금이 살짝 비친다(사용자 지정).
+              backgroundColor: "rgba(255,255,255,0.5)",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
@@ -4227,7 +4228,8 @@ function RecordingControls({
               alignItems: "center",
               height: "20px",
               color: "#353535",
-              backgroundColor: "#FFFFFF",
+              // 흰색 50% — 아래로 흐르는 눈금이 살짝 비친다(사용자 지정).
+              backgroundColor: "rgba(255,255,255,0.5)",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
