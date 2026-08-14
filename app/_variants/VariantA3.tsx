@@ -521,7 +521,11 @@ export default function VariantA3({
                         width: "34px",
                         height: "34px",
                         border: "1px solid rgba(255,255,255,0.35)",
-                        backgroundColor: "rgba(0,0,0,0.35)",
+                        // 회색 70%(사용자 지정 2026-08-14). 반투명 검정 0.35 → 불투명
+                        // 회색을 거쳐 여기로 왔다 — 불투명은 너무 무겁고, 0.35 는
+                        // 밝은 영상 위에서 원이 흐려 아이콘이 떠 보였다.
+                        // 톤은 앱에 이미 쓰는 회색(#757575, 녹화 배지 배경).
+                        backgroundColor: "rgba(117,117,117,0.7)",
                       }}
                     >
                       <img
