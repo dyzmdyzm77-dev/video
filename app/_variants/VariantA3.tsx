@@ -495,40 +495,55 @@ export default function VariantA3({
                   AI 는 원래 딤 왼쪽 아래에 있던 그 버튼이라, 그쪽은 껐다
                   (showOverlayAi={false}) — 안 끄면 같은 버튼이 두 개가 된다. */}
               <div
-                className="pointer-events-auto flex items-center justify-center"
+                className="pointer-events-auto flex items-center justify-between"
                 // 시간바와 붙인다 — 12 → 4(사용자 지정 2026-08-14). 시간바 자체가
                 // 아래 여백(paddingBottom 12)을 갖고 있어 실제로는 그만큼 더 뜬다.
-                style={{ gap: "16px", paddingTop: "4px" }}
+                // 자리를 둘로 나눈다: AI·메뉴·움직임 감지는 왼쪽 끝, 축소는
+                // 오른쪽 끝(사용자 지정). 좌우 끝은 이 줄을 감싼 층의 10 이라
+                // 시간바 좌우 끝과 같은 선에 선다.
+                style={{ paddingTop: "4px" }}
               >
-                {[
-                  { key: "ai", label: "AI 검색", src: `${BASE}/ai_Icon.svg`, onClick: () => setAiOpen(true) },
-                  { key: "menu", label: "메뉴", src: `${BASE}/nav/menu.svg`, onClick: undefined },
-                  { key: "motion", label: "움직임 감지", src: `${BASE}/Type=Line.svg`, onClick: undefined },
-                  // 크게 보기 ↔ 원래 크기로. 가로에서만 뜨는 줄이라 늘 '원래
-                  // 크기로'다. 딤 오른쪽 아래에 있던 그 버튼을 이 줄로 옮겼다.
-                  { key: "zoom", label: "원래 크기로", src: `${BASE}/zoom_out.svg`, onClick: toggleImmersive },
-                ].map((b) => (
-                  <button
-                    key={b.key}
-                    type="button"
-                    aria-label={b.label}
-                    onClick={b.onClick}
-                    className="flex items-center justify-center rounded-full"
-                    style={{
-                      width: "34px",
-                      height: "34px",
-                      border: "1px solid rgba(255,255,255,0.35)",
-                      backgroundColor: "rgba(0,0,0,0.35)",
-                    }}
-                  >
-                    <img
-                      src={b.src}
-                      alt=""
-                      className="h-7 w-7"
-                      style={{ filter: "brightness(0) invert(1)" }}
-                    />
-                  </button>
-                ))}
+                {(() => {
+                  const btn = (b: {
+                    key: string;
+                    label: string;
+                    src: string;
+                    onClick?: () => void;
+                  }) => (
+                    <button
+                      key={b.key}
+                      type="button"
+                      aria-label={b.label}
+                      onClick={b.onClick}
+                      className="flex items-center justify-center rounded-full"
+                      style={{
+                        width: "34px",
+                        height: "34px",
+                        border: "1px solid rgba(255,255,255,0.35)",
+                        backgroundColor: "rgba(0,0,0,0.35)",
+                      }}
+                    >
+                      <img
+                        src={b.src}
+                        alt=""
+                        className="h-7 w-7"
+                        style={{ filter: "brightness(0) invert(1)" }}
+                      />
+                    </button>
+                  );
+                  return (
+                    <>
+                      <div className="flex items-center" style={{ gap: "16px" }}>
+                        {btn({ key: "ai", label: "AI 검색", src: `${BASE}/ai_Icon.svg`, onClick: () => setAiOpen(true) })}
+                        {btn({ key: "menu", label: "메뉴", src: `${BASE}/nav/menu.svg` })}
+                        {btn({ key: "motion", label: "움직임 감지", src: `${BASE}/Type=Line.svg` })}
+                      </div>
+                      {/* 크게 보기 ↔ 원래 크기로. 가로에서만 뜨는 줄이라 늘
+                          '원래 크기로'다. 딤 오른쪽 아래에 있던 그 버튼이다. */}
+                      {btn({ key: "zoom", label: "원래 크기로", src: `${BASE}/zoom_out.svg`, onClick: toggleImmersive })}
+                    </>
+                  );
+                })()}
               </div>
               </div>
             ) : null
