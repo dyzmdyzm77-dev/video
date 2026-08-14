@@ -3416,6 +3416,12 @@ function MotionEventList({
   }, [activeMs, wide]);
 
   return (
+    // 바깥 껍데기 — 카메라 목록과 같은 구조다(껍데기가 pb-3, 그 안이 '행').
+    // useListLayout 은 chrome 을 '행의 offsetTop + 껍데기의 아래 여백'으로 재는데,
+    // 스크롤 컨테이너에 직접 rowRef 를 물리면 그 컨테이너 자기 여백이 chrome 에서
+    // 빠져 감지 쪽 영역만 12 작아진다(131 vs 143). 그러면 카드 높이도 카메라
+    // 타일보다 작아진다(사용자 지적: "항목 높이를 카메라 목록 썸네일에 맞추라니까").
+    <div className="flex min-h-0 flex-1 flex-col pb-3">
     <div
       ref={(el) => {
         scrollRef.current = el;
@@ -3427,8 +3433,8 @@ function MotionEventList({
           ? // 가로 한 줄 — 한 덩어리씩 옆으로 나열하고 가로 스크롤(사용자 결정).
             // 세로로 쌓을 자리가 없을 때다. 좌우 여백(px-5)은 스크롤 안쪽 패딩이라
             // 첫/마지막만 20px 띄운다 — 카메라 목록 가로 배치와 같은 규칙.
-            "relative flex min-h-0 flex-1 items-stretch gap-2 px-5 pb-3 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          : "relative flex min-h-0 flex-1 flex-col overflow-y-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            "relative flex min-h-0 flex-1 items-stretch gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          : "relative flex min-h-0 flex-1 flex-col overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       }
     >
       {rows.map((r) => {
@@ -3526,6 +3532,7 @@ function MotionEventList({
           </button>
         );
       })}
+    </div>
     </div>
   );
 }
