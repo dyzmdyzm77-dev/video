@@ -534,7 +534,7 @@ export default function VariantA3({
                         // 회색 55%(사용자 지정 2026-08-14). 반투명 검정 0.35 → 불투명
                         // 회색 → 0.7 을 거쳐 여기로 왔다. 톤은 앱에 이미 쓰는
                         // 회색(#757575, 녹화 배지 배경)이고 알파만 조절한다.
-                        backgroundColor: "rgba(117,117,117,0.55)",
+                        backgroundColor: "rgba(117,117,117,0.65)",
                       }}
                     >
                       <img
@@ -5052,8 +5052,8 @@ function PlayerButton({
         border: overlay ? "none" : "1px solid #D9D9D9",
         backgroundColor: overlay
           ? active
-            ? "rgba(117,117,117,0.75)"
-            : "rgba(117,117,117,0.55)"
+            ? "rgba(117,117,117,0.85)"
+            : "rgba(117,117,117,0.65)"
           : active
             ? "#F2F2F2"
             : "#FFFFFF",
@@ -5066,7 +5066,7 @@ function PlayerButton({
             fontWeight: 500,
             // 배속 글자도 아이콘과 같은 규칙 — 가로 딤이면 흰색 + 같은 그림자.
             color: overlay ? "#FFFFFF" : "#262626",
-            textShadow: overlay ? "0 1px 2px rgba(0,0,0,0.5)" : undefined,
+            textShadow: overlay ? "0 0 4px rgba(0,0,0,0.6)" : undefined,
           }}
         >
           {label}
@@ -5115,10 +5115,11 @@ function PlayerIcon({
         marginLeft,
         marginRight,
         // 뒤집을 때(가로 딤의 흰 아이콘) 뒤에 그림자를 깐다(사용자 지정) —
-        // 버튼 배경이 검정 50% 라 밝은 영상 위에서는 아이콘이 묻힌다.
-        // drop-shadow 는 filter 체인이라 invert 뒤에 이어 붙인다.
+        // 밝은 영상 위에서 아이콘이 묻히지 않게 받쳐 준다.
+        // 아래로 떨어뜨리지 않고 가운데에서 퍼지게 한다(오프셋 0 · 반경 4,
+        // 사용자 지정 2026-08-14). drop-shadow 는 filter 체인이라 invert 뒤에 붙인다.
         filter: invert
-          ? "brightness(0) invert(1) drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
+          ? "brightness(0) invert(1) drop-shadow(0 0 4px rgba(0,0,0,0.6))"
           : undefined,
       }}
     />
