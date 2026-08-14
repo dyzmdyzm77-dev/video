@@ -1448,6 +1448,10 @@ function ExpandedView({
         // 훅이 쓰는 data-fill 과 속성을 나눠 둔 건, 배치가 바뀔 때 React 가 건 값과
         // 훅이 건 값이 서로를 못 지우고 남는 걸 막기 위해서다.
         data-side={sidePanel ? "true" : undefined}
+        // 영역이 16:9 보다 낮아져도 폭은 꽉 채운다(사용자 결정 2026-08-14:
+        // "그냥 다 채웠으면"). 규칙은 globals.css 의 [data-wide="fill"] 참고.
+        // 사이드 패널은 data-side 가 이미 폭까지 채우므로 겹쳐 걸지 않는다.
+        data-wide={sidePanel ? undefined : "fill"}
       >
         <div
           className="single-video-box relative cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
@@ -1893,6 +1897,9 @@ function ExpandedView({
           playbackMs={playbackMs}
           setPlaybackMs={setPlaybackMs}
           cameraSrc={cam.src}
+          // 세로가 모자라면(카메라 목록이 가로 한 줄로 넘어간 그 판정) 감지도
+          // 가로 스크롤로 간다 — 같은 영역이라 판정을 새로 만들지 않고 나눠 쓴다.
+          wide={listWide}
         />
       ) : (
       <div
@@ -3231,10 +3238,15 @@ function MotionEventList({
   playbackMs,
   setPlaybackMs,
   cameraSrc,
+  wide = false,
 }: {
   playbackMs: number | null;
   setPlaybackMs: (v: number | null) => void;
   cameraSrc: string;
+  /** 세로로 쌓을 자리가 없나. 켜면 한 덩어리씩 가로로 나열하고 가로 스크롤한다
+   *  (사용자 결정 2026-08-14). 판정은 카메라 목록과 같은 것(useListLayout)을 쓴다 —
+   *  같은 영역을 두 탭이 나눠 쓰므로 기준이 갈리면 안 된다. */
+  wide?: boolean;
 }) {
   // 그 날 0시(로컬). 이벤트의 at 은 자정으로부터의 초라 여기에 더하면 실제 시각이 된다.
   const dayStart = (() => {
@@ -3266,8 +3278,53 @@ function MotionEventList({
     return out;
   }, [dayStart, cutoff]);
 
+  // 고른 항목을 가운데로 맞춘다 — 카메라 목록과 같은 규칙(사용자 요청).
+  // 가로 배치면 좌우, 세로면 위아래. scrollIntoView 대신 직접 계산하는 것도
+  // 카메라 목록과 같은 이유다: 그쪽은 부모까지 같이 스크롤해 화면이 튄다.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const activeMs = useMemo(() => {
+    if (playbackMs === null) return null;
+    const hit = rows.find(
+      (r) => playbackMs >= r.ms && playbackMs < r.ms + r.dur * 1000,
+    );
+    return hit ? hit.ms : null;
+  }, [rows, playbackMs]);
+  // scrollIntoView 를 쓴다 — 직접 계산하면 안 맞는다. 데스크톱 목업은 프레임을
+  // CSS transform 으로 축소해 두는데, getBoundingClientRect 는 축소된 값을,
+  // scrollLeft/clientWidth 는 축소 전 값을 준다. 둘을 섞으면 엉뚱한 데로 간다
+  // (실제로 그래서 안 움직였다). 브라우저가 변형을 감안해 계산하게 맡긴다.
+  // 스크롤 축이 아닌 쪽은 "nearest" — 부모까지 같이 움직여 화면이 튀는 걸 막는다.
+  const centerOn = (ms: number) => {
+    const el = scrollRef.current;
+    const target = el?.querySelector<HTMLElement>(`[data-ms="${ms}"]`);
+    // behavior 는 "auto"(즉시)다. "smooth" 는 이 화면에서 아예 안 먹는다 —
+    // 녹화 틱이 150ms 마다 리렌더를 돌려 부드러운 스크롤 애니메이션이 매번
+    // 취소된다(실측: smooth 면 scrollLeft 가 0 에서 안 움직이고, auto 면 정확히
+    // 가운데로 간다). 카메라 목록 쪽도 즉시 이동이라 조작감이 같다.
+    target?.scrollIntoView({
+      behavior: "auto",
+      inline: wide ? "center" : "nearest",
+      block: wide ? "nearest" : "center",
+    });
+  };
+  // 재생이 다음 이벤트로 넘어가면 그쪽을 가운데로 따라간다.
+  useEffect(() => {
+    if (activeMs !== null) centerOn(activeMs);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMs, wide]);
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div
+      ref={scrollRef}
+      className={
+        wide
+          ? // 가로 한 줄 — 한 덩어리씩 옆으로 나열하고 가로 스크롤(사용자 결정).
+            // 세로로 쌓을 자리가 없을 때다. 좌우 여백(px-5)은 스크롤 안쪽 패딩이라
+            // 첫/마지막만 20px 띄운다 — 카메라 목록 가로 배치와 같은 규칙.
+            "flex min-h-0 flex-1 items-center gap-2 px-5 pb-3 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      }
+    >
       {rows.map((r) => {
         // 지금 재생 중인 이벤트인가 — 그 구간 안에 있는 동안만. 시간바 썸네일의
         // isActiveEvent 와 같은 판정이라 두 화면이 같은 것을 짚는다.
@@ -3278,14 +3335,37 @@ function MotionEventList({
         return (
           <button
             key={r.ms}
+            data-ms={r.ms}
             type="button"
-            onClick={() => setPlaybackMs(r.ms)}
-            className="flex flex-none items-center gap-3 px-5 text-left"
-            style={{
-              paddingTop: "8px",
-              paddingBottom: "8px",
-              backgroundColor: active ? "rgba(29,108,235,0.08)" : undefined,
+            onClick={() => {
+              setPlaybackMs(r.ms);
+              // 이미 활성인 항목을 다시 눌러도 가운데로 와야 한다 — 그때는
+              // activeMs 가 안 바뀌어 위 효과가 안 돈다(사용자 요청).
+              centerOn(r.ms);
             }}
+            className={
+              wide
+                ? "flex flex-none items-center gap-2 text-left"
+                : "flex flex-none items-center gap-3 px-5 text-left"
+            }
+            style={
+              wide
+                ? {
+                    // 가로 덩어리 — 썸네일(96) + 글자. 라운드는 타일과 같은 4px.
+                    padding: "6px 8px",
+                    borderRadius: "4px",
+                    backgroundColor: active
+                      ? "rgba(29,108,235,0.08)"
+                      : undefined,
+                  }
+                : {
+                    paddingTop: "8px",
+                    paddingBottom: "8px",
+                    backgroundColor: active
+                      ? "rgba(29,108,235,0.08)"
+                      : undefined,
+                  }
+            }
           >
             {/* 썸네일 — 카메라 목록 타일과 같은 16:9 · 같은 4px 라운드.
                 움직이는 GIF 를 그대로 쓰면 한 화면에 수십 장이 동시에 디코딩되니
