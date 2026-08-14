@@ -442,9 +442,11 @@ export default function VariantA3({
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 40 — A-1 가로와 같은 값으로(사용자 지정).
           edgeInset={40}
-          // 아래 줄(AI 버튼·페이지 점)을 12 → 32 로 띄운다. 바로 아래에 시간바가
+          // 아래 줄(AI 버튼·페이지 점)을 12 → 52 로 띄운다. 바로 아래에 시간바가
           // 깔려서 붙어 보이고 클릭도 겹쳤다(사용자 지정: "하단 마진도 한 20 더").
-          bottomInset={32}
+          // 시간바 층은 이 값에서 12 를 뺀 만큼 뜨므로 하단 마진 = 40 이 된다
+          // (사용자 지정 2026-08-14: "시간바 하단 마진 40으로 줘").
+          bottomInset={52}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
@@ -4611,10 +4613,10 @@ function PlayerButton({
       onPointerCancel={() => setPressed(false)}
       className="flex items-center justify-center rounded-full"
       style={{
-        // 가로 딤에선 60 — 영상 위에 떠 있는 버튼이라 세로(40)보다 커야 눌린다
-        // (사용자 지정, A-2안 가로 사양). 세로는 그대로 40.
-        width: overlay ? "60px" : "40px",
-        height: overlay ? "60px" : "40px",
+        // 가로 딤은 50 — 영상 위에 떠 있는 버튼이라 세로(40)보다는 커야 눌리는데,
+        // 60 은 너무 컸다(사용자 지정 2026-08-14). 세로는 그대로 40.
+        width: overlay ? "50px" : "40px",
+        height: overlay ? "50px" : "40px",
         border: overlay
           ? "1px solid rgba(255,255,255,0.35)"
           : "1px solid #D9D9D9",
@@ -4643,7 +4645,8 @@ function PlayerButton({
       ) : (
         <PlayerIcon
           kind={kind}
-          size={overlay ? 32 : 24}
+          // 버튼(50)에 맞춰 32 → 27. 비율을 그대로 두면 아이콘만 꽉 차 보인다.
+          size={overlay ? 27 : 24}
           // 눌리면 배경이 밝아지므로(0.45 흰색) 아이콘은 검정으로 되돌린다 —
           // 흰 아이콘 그대로 두면 밝은 배경에 묻힌다(사용자 지적).
           invert={overlay && !active}
