@@ -23,7 +23,7 @@ import {
   GridSelectionOverlay,
   useGifFrameCanvas,
 } from "../components/CameraFeed";
-import EventCardFace from "../components/EventCardFace";
+import EventCardFace, { formatEventTime } from "../components/EventCardFace";
 import EventKindChip from "../components/EventKindChip";
 import { useEventThumbs } from "../components/eventThumbs";
 import VariantPicker from "../components/VariantPicker";
@@ -1133,10 +1133,6 @@ function ExpandedView({
 }) {
   const cam = CAMERAS[index];
   const [showControls, setShowControls] = useState(false);
-  // 움직임 감지 썸네일을 펼친 상태인지 — 시간바 오른쪽 화살표로 접고 편다.
-  // 기본은 접힘(사용자 결정 2026-08-14): 처음엔 시간바만 보이고, 화살표를 눌러야
-  // 썸네일이 나온다. 접힌 만큼 남는 세로는 아래 카메라 목록이 가져간다.
-  const [motionOpen, setMotionOpen] = useState(false);
   // 영상 맞춤 모드 — 딤(showControls) 상태의 화면맞춤 버튼으로 돌린다.
   //   fill    : 영상 뷰 영역을 가득 채운다(원본 비율 무시, 늘어남/찌그러짐).
   //   contain : 원본 비율 그대로, 빈 공간은 검정으로 채운다(레터박스/필러박스).
@@ -1176,6 +1172,9 @@ function ExpandedView({
   // 탭 + 세로 타임라인을 유지한다(사용자 결정: "오른쪽 패널은 기존 유지").
   // recTab 은 그 사이드 패널 전용 상태다.
   const [recTab, setRecTab] = useState<"list" | "motion">("list");
+  // 아래 스트립에서 '움직임 감지' 탭을 보고 있나(사용자 결정 2026-08-14 — 탭이
+  // 아래에도 생겼다). 실시간엔 감지 탭 자체가 없으니 녹화일 때만이다.
+  const motionTab = mode === "recording" && recTab === "motion";
   // 가로로 넓적한 화면(가로/세로 >= SIDE_PANEL_RATIO)이면 카메라 목록·움직임 감지가
   // 화면 아래 가로 스트립이 아니라 오른쪽 끝 세로 패널로 간다(탭도 패널 안 위쪽).
   // 그런 화면은 영상이 세로에 갇혀 있어서 하단 스트립이 영상 폭을 크게 깎는다 —
@@ -1801,14 +1800,16 @@ function ExpandedView({
   // A-3(세로/가로 스트립): 녹화 모드엔 플레이어(5버튼) 바로 아래 움직임 감지
   // (가로 시간바) — 탭 없이 항상 보인다. 높이는 A-2 감지 탭 스트립과 같은
   // MOTION_MIN_H 로 고정하고, 남는 세로는 아래 카메라 목록 영역이 쓴다.
+  // 시간바 — 탭 위에 늘 있다(사용자 결정 2026-08-14). 재생 위치를 잡는 조작기라
+  // 어느 탭을 보든 쓸 수 있어야 하고, 달력 버튼도 여기 얹혀 있다.
+  // 썸네일 줄은 여기서 빠져 '움직임 감지' 탭의 리스트로 갔다 — 그래서 접기
+  // 화살표도 없앴다(접을 게 없다). 높이는 위아래 여백을 맞춘 BAR_H_CLOSED.
   const motionBlock = mode === "recording" && (
     <div
       className="relative flex flex-none flex-col"
       style={{
-        // 접으면 시간바만 남는다(위아래 여백을 맞춘 BAR_H_CLOSED) — 남는 세로는
-        // 아래 카메라 목록이 가져간다.
-        height: `${motionOpen ? MOTION_MIN_H : BAR_H_CLOSED}px`,
-        // 아래 구분선 — 감지 타임라인과 카메라 목록의 경계(사용자 요청).
+        height: `${BAR_H_CLOSED}px`,
+        // 아래 구분선 — 시간바와 탭의 경계(사용자 요청).
         // 색·두께는 A-2 탭 스트립 밑줄과 같은 #EBEBEB 1px.
         borderBottom: "1px solid #EBEBEB",
       }}
@@ -1818,8 +1819,6 @@ function ExpandedView({
         setPlaybackMs={setPlaybackMs}
         cameraSrc={cam.src}
         onScrubbingChange={onScrubbingChange}
-        open={motionOpen}
-        onToggleOpen={() => setMotionOpen((v) => !v)}
         onOpenDateTime={onOpenDateTime}
       />
     </div>
@@ -1834,24 +1833,40 @@ function ExpandedView({
         ref={listAreaRef}
         className="relative flex min-h-0 flex-col flex-1"
       >
-      {/* 영역 제목 — 녹화 모드에서 위에 감지 타임라인이 겹쳐 쌓이면서 탭(이름표)이
-          없어졌으니 목록에 달아준다(사용자 결정: 감지는 썸네일로 자명). 실시간에도
-          같은 제목을 둔다(사용자 결정 2026-08-14) — 두 모드가 같아 보여야 한다.
-          useListLayout 이 제목 높이를 실측해 영역 최소 높이에 더한다. */}
+      {/* 탭 줄 — 녹화면 '카메라 목록 | 움직임 감지' 두 탭(사용자 결정 2026-08-14),
+          실시간이면 감지가 없으니 '카메라 목록' 제목 하나만.
+          위아래 14 로 같다 — 사이드 패널 탭(tabsBlock)의 padding 14px 0 과 같은 값.
+          그 여백의 기준은 버튼이 아니라 글자다(사용자 지정) — 그래서 캡처 버튼은
+          흐름이 아니라 절대 위치다. 아래 참고.
+          useListLayout 이 이 줄 높이를 실측해 영역 최소 높이에 더한다. */}
       <div
         className="relative flex flex-none items-center px-5"
-        // 위아래 14 로 같다 — 사이드 패널 탭(tabsBlock)의 padding 14px 0 과 같은 값.
-        // 아래 여백은 예전엔 타일 행의 marginTop 12 가 대신했는데, 제목이 생기면서
-        // 제목 밑 여백이 위(14)와 어긋나 제목이 직접 갖게 했다.
         // (좌우는 px-5 가 잡는다 — 인라인 padding 축약형을 쓰면 그걸 덮어쓴다.)
-        style={{ paddingTop: "14px", paddingBottom: "14px" }}
+        style={{ paddingTop: "14px", paddingBottom: "14px", gap: "20px" }}
       >
-        <span
-          className="text-[15px] font-bold leading-none"
-          style={{ color: "#262626" }}
-        >
-          카메라 목록
-        </span>
+        {mode === "recording" ? (
+          ([
+            { key: "list", label: "카메라 목록" },
+            { key: "motion", label: "움직임 감지" },
+          ] as const).map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setRecTab(t.key)}
+              className="text-[15px] font-bold leading-none"
+              style={{ color: recTab === t.key ? "#1D6CEB" : "#A6A6A6" }}
+            >
+              {t.label}
+            </button>
+          ))
+        ) : (
+          <span
+            className="text-[15px] font-bold leading-none"
+            style={{ color: "#262626" }}
+          >
+            카메라 목록
+          </span>
+        )}
         {/* 화면 캡처 — 없앤 날짜 줄에 있던 그 버튼을 여기로 옮겼다(사용자 결정
             2026-08-14). 규격도 그대로 28 원 + 아이콘 24. 오른쪽 끝은 right-5 라
             제목의 px-5 와 같은 20 이다.
@@ -1870,6 +1885,13 @@ function ExpandedView({
           </button>
         )}
       </div>
+      {motionTab ? (
+        <MotionEventList
+          playbackMs={playbackMs}
+          setPlaybackMs={setPlaybackMs}
+          cameraSrc={cam.src}
+        />
+      ) : (
       <div
         ref={listWide ? undefined : listScrollRef}
         className={
@@ -1905,6 +1927,7 @@ function ExpandedView({
           )}
         </div>
       </div>
+      )}
       <CameraListSkeleton visible={videoLoading} />
       </div>
     </>
@@ -2604,8 +2627,6 @@ function RecordingEventTimeline({
   setPlaybackMs,
   cameraSrc,
   onScrubbingChange,
-  open = true,
-  onToggleOpen,
   onOpenDateTime,
 }: {
   playbackMs: number | null;
@@ -2614,10 +2635,6 @@ function RecordingEventTimeline({
   ) => void;
   cameraSrc: string;
   onScrubbingChange?: (s: boolean) => void;
-  /** 썸네일을 펼친 상태인지. 접으면 시간바만 남는다(사용자 결정 2026-08-14). */
-  open?: boolean;
-  /** 시간바 오른쪽 화살표 — 넘기면 버튼이 생긴다. */
-  onToggleOpen?: () => void;
   /** 시간바 왼쪽 달력 버튼 — 날짜·시간 선택 시트를 연다. 넘기면 버튼이 생긴다.
    *  영상 아래 날짜 줄을 없애면서 사라졌던 진입점이 여기로 돌아온다. */
   onOpenDateTime?: () => void;
@@ -3029,7 +3046,7 @@ function RecordingEventTimeline({
       <div
         className="relative flex-none overflow-hidden"
         style={{
-          height: `${open ? BAR_H : BAR_H_CLOSED}px`,
+          height: `${BAR_H_CLOSED}px`,
           paddingTop: `${PAD_TOP}px`,
         }}
       >
@@ -3162,108 +3179,114 @@ function RecordingEventTimeline({
             <img src={`${BASE}/time.svg`} alt="" className="h-5 w-5" />
           </button>
         )}
-        {/* 펼침/접기 화살표 — 접으면 아래 썸네일이 사라지고 시간바만 남는다
-            (사용자 결정 2026-08-14). 오른쪽 페이드 위에 얹으므로 z-20.
-            원 테두리 28×28 + 아이콘 24 는 없앤 캡처 버튼과 같은 규격이다.
-            원 오른쪽 끝을 화면 좌우 여백(px-5 = 20)에 맞추고, 세로는 눈금 레일
-            (RAIL_H) 가운데. 시간바는 드래그로 스크럽되니 버튼에서 시작한
-            포인터는 막는다. */}
-        {onToggleOpen && (
-          <button
-            type="button"
-            aria-label={open ? "움직임 감지 접기" : "움직임 감지 펼치기"}
-            aria-expanded={open}
-            className="absolute z-20 flex items-center justify-center rounded-full border border-neutral-300"
-            style={{
-              right: "20px",
-              top: `${PAD_TOP + (RAIL_H - 28) / 2}px`,
-              width: "28px",
-              height: "28px",
-              backgroundColor: "#FFFFFF",
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleOpen();
-            }}
-          >
-            <ChevronDownIcon
-              className={`h-6 w-6 text-[#262626] ${open ? "rotate-180" : ""}`}
-            />
-          </button>
-        )}
       </div>
 
-      {/* ── 썸네일 영역(시간바 아래 남는 세로 공간). 카드 높이는 CSS min(60px,100%)
-          라 이 영역보다 절대 커지지 않는다(짧은 화면에서도 잘리지 않고 줄어든다).
-          접으면(open=false) 아예 안 그린다 — 부모가 높이를 BAR_H 로 줄인다. ── */}
-      {open && (
-      <div ref={thumbAreaRef} className="relative min-h-0 flex-1">
-        {/* 레일 — 영역 전체 높이(top0 bottom0)를 갖고 시간바와 같은 translateX 로 흐른다 */}
-        <div
-          className="absolute left-0 right-0"
-          style={{
-            top: 0,
-            bottom: 0,
-            transform: railTransform,
-            transition: railTransition,
-          }}
-        >
-          {/* 움직임 이벤트 썸네일 — 위치마다 단일 카드 하나만(겹침·묶음·개수배지 없음).
-              가까운 이벤트는 클러스터로 묶여 한 자리에 대표 1개만 나온다. 탭하면 그 시각으로 이동. */}
-          {clusters.filter((c) => inView(c.secOffset)).map((cluster) => (
+    </div>
+  );
+}
+
+// 움직임 감지 리스트 — 아래 스트립의 '움직임 감지' 탭 내용(사용자 결정 2026-08-14).
+// 예전엔 시간바 아래 가로 썸네일 줄이었는데, 한 줄이라 몇 개 못 보고 잘렸다.
+// 세로 리스트로 바꾸면서 한 줄에 담는 정보도 늘렸다 — 왼쪽 썸네일, 오른쪽에
+// 감지 유형과 시각.
+//
+// 보여 주는 범위는 '보고 있는 그 날'이다. 재생 시각(playbackMs)이 속한 날의
+// 0시부터를 최신순으로 쌓되, 아직 오지 않은 시각은 뺀다(녹화가 없다).
+// 하루치가 ~4900건이라 다 그리면 스크롤이 버벅인다 — 상한을 두고 그만큼만 그린다.
+const MOTION_LIST_MAX = 200;
+
+function MotionEventList({
+  playbackMs,
+  setPlaybackMs,
+  cameraSrc,
+}: {
+  playbackMs: number | null;
+  setPlaybackMs: (v: number | null) => void;
+  cameraSrc: string;
+}) {
+  const base = playbackMs ?? Date.now();
+  // 그 날 0시(로컬). 이벤트의 at 은 자정으로부터의 초라 여기에 더하면 실제 시각이 된다.
+  const dayStart = (() => {
+    const d = new Date(base);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  })();
+  const rows = useMemo(() => {
+    const out: { ms: number; dur: number; kind: EventKind }[] = [];
+    // 뒤에서부터(최신) 훑어 상한만큼만 담는다 — 앞에서 담고 자르면 새벽 것만 남는다.
+    for (let i = TIMELINE_EVENTS.length - 1; i >= 0; i--) {
+      const ev = TIMELINE_EVENTS[i];
+      const ms = dayStart + ev.at * 1000;
+      if (ms > base) continue; // 아직 안 온 시각
+      out.push({ ms, dur: ev.dur, kind: ev.kind });
+      if (out.length >= MOTION_LIST_MAX) break;
+    }
+    return out;
+  }, [dayStart, base]);
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {rows.map((r) => {
+        // 지금 재생 중인 이벤트인가 — 그 구간 안에 있는 동안만. 시간바 썸네일의
+        // isActiveEvent 와 같은 판정이라 두 화면이 같은 것을 짚는다.
+        const active =
+          playbackMs !== null &&
+          playbackMs >= r.ms &&
+          playbackMs < r.ms + r.dur * 1000;
+        return (
+          <button
+            key={r.ms}
+            type="button"
+            onClick={() => setPlaybackMs(r.ms)}
+            className="flex flex-none items-center gap-3 px-5 text-left"
+            style={{
+              paddingTop: "8px",
+              paddingBottom: "8px",
+              backgroundColor: active ? "rgba(29,108,235,0.08)" : undefined,
+            }}
+          >
+            {/* 썸네일 — 카메라 목록 타일과 같은 16:9 · 같은 4px 라운드.
+                움직이는 GIF 를 그대로 쓰면 한 화면에 수십 장이 동시에 디코딩되니
+                첫 프레임만 그리는 FrozenImage 를 쓴다(목록 타일과 같은 이유). */}
             <div
-              key={`E${cluster.key}`}
-              data-event-ms={cluster.ms}
-              className="absolute flex items-start"
-              style={{
-                left: `calc(50% + ${xOf(cluster.secOffset)}px)`,
-                top: "4px",
-                // 아래 여백은 시간바 위 여백(PAD_TOP 12)과 같게 — 세로가 빡빡한
-                // 실기기에서 위는 12, 아래는 4로 붙어 보이던 걸 맞춘 값이다.
-                bottom: `${PAD_TOP}px`,
-                // 카드의 '왼쪽 끝'이 자기 시각에 오게 둔다(가운데 정렬 아님).
-                // 탭하면 그 시각이 중앙 파란선으로 오므로, 결과적으로 썸네일
-                // 왼쪽 끝이 선에 맞는다(사용자 요청).
-                // 카드 위에서도 드래그가 통과하도록 stopPropagation 하지 않음.
-                pointerEvents: "auto",
-                cursor: "pointer",
-              }}
+              className="relative flex-none overflow-hidden bg-neutral-900"
+              style={{ width: "96px", aspectRatio: "16 / 9", borderRadius: "4px" }}
             >
-              <div
-                className={`relative overflow-hidden rounded-md ${eventThumbs ? "bg-neutral-900" : ""}`}
-                style={{
-                  // 높이는 thumbH 하나만 본다 — 예전엔 CSS min(48px,100%) 로
-                  // 따로 정해서 폭 계산(thumbW)의 근거인 thumbH 와 어긋날 수
-                  // 있었다(THUMB_MIN_H 가 실제 높이엔 안 걸렸음).
-                  height: `${thumbH}px`,
-                  aspectRatio: "16 / 9",
-                  // 지금 재생 중인 이벤트면 파란 테두리(썸네일 끈 사양과 동일 규칙).
-                  ...(eventThumbs && isActiveEvent(cluster.ms, cluster.durSec)
-                    ? { border: "2px solid #1D6CEB" }
-                    : null),
-                }}
-              >
-                {eventThumbs && <EventKindChip kind={cluster.kind} />}
-                {eventThumbs ? (
-                  <FrozenImage
-                    src={cameraSrc}
-                    alt=""
-                    className="h-full w-full"
-                    style={{ objectFit: "cover" }}
-                  />
-                ) : (
-                  <EventCardFace
-                    ms={cluster.ms}
-                    active={isActiveEvent(cluster.ms, cluster.durSec)}
-                  />
-                )}
-              </div>
+              <FrozenImage
+                src={cameraSrc}
+                alt=""
+                className="absolute inset-0 h-full w-full"
+                style={{ objectFit: "cover" }}
+              />
+              {active && (
+                <div
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    boxShadow: "inset 0 0 0 2px #1D6CEB",
+                    borderRadius: "4px",
+                  }}
+                />
+              )}
             </div>
-          ))}
-        </div>
-      </div>
-      )}
+            {/* 유형 + 시각. 유형은 이상 상황(넘어짐·폭행)만 빨강 — 썸네일 위 칩
+                (EventKindChip)과 같은 규칙이라 화면을 훑을 때 눈이 같은 것에 걸린다. */}
+            <div className="flex min-w-0 flex-col gap-[6px]">
+              <span
+                className="text-[14px] font-bold leading-none"
+                style={{ color: r.kind === "움직임" ? "#262626" : "#E2202D" }}
+              >
+                {r.kind}
+              </span>
+              <span
+                className="text-[12px] leading-none"
+                style={{ color: "#8C8C8C" }}
+              >
+                {formatEventTime(r.ms)}
+              </span>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
