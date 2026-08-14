@@ -3342,7 +3342,9 @@ function RecordingEventTimeline({
             left: 0,
             top: 0,
             bottom: 0,
-            width: "39%",
+            // 좌우 페이드 폭 — 39% 는 너무 넓어 눈금이 가운데만 또렷했다.
+            // 20% 로 줄인다(사용자 지정 2026-08-14).
+            width: "20%",
             background:
               "linear-gradient(to left, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
           }}
@@ -3353,7 +3355,9 @@ function RecordingEventTimeline({
             right: 0,
             top: 0,
             bottom: 0,
-            width: "39%",
+            // 좌우 페이드 폭 — 39% 는 너무 넓어 눈금이 가운데만 또렷했다.
+            // 20% 로 줄인다(사용자 지정 2026-08-14).
+            width: "20%",
             background:
               "linear-gradient(to right, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
           }}
@@ -4554,9 +4558,9 @@ function RecordingControls({
           ...(overlay
             ? {
                 WebkitMaskImage:
-                  "linear-gradient(to right, transparent 3.9%, #000 39%, #000 61%, transparent 96.1%)",
+                  "linear-gradient(to right, transparent 2%, #000 20%, #000 80%, transparent 98%)",
                 maskImage:
-                  "linear-gradient(to right, transparent 3.9%, #000 39%, #000 61%, transparent 96.1%)",
+                  "linear-gradient(to right, transparent 2%, #000 20%, #000 80%, transparent 98%)",
               }
             : null),
           // 위아래 같은 여백. 단일채널 감지 탭 시간바는 아래가 4 인데(PAD_BOTTOM),
@@ -4645,7 +4649,9 @@ function RecordingControls({
             left: 0,
             top: 0,
             bottom: 0,
-            width: "39%",
+            // 좌우 페이드 폭 — 39% 는 너무 넓어 눈금이 가운데만 또렷했다.
+            // 20% 로 줄인다(사용자 지정 2026-08-14).
+            width: "20%",
             background:
               "linear-gradient(to left, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
           }}
@@ -4656,7 +4662,9 @@ function RecordingControls({
             right: 0,
             top: 0,
             bottom: 0,
-            width: "39%",
+            // 좌우 페이드 폭 — 39% 는 너무 넓어 눈금이 가운데만 또렷했다.
+            // 20% 로 줄인다(사용자 지정 2026-08-14).
+            width: "20%",
             background:
               "linear-gradient(to right, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
           }}
