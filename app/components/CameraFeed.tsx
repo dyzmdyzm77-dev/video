@@ -10,6 +10,10 @@ type CameraFeedProps = {
   // A-3 가로 단일은 카메라 이름 대신 시각을 띄운다(사용자 결정 2026-08-14).
   // alt 는 label 을 그대로 쓴다 — 배지 문구가 바뀌어도 무엇을 찍은 화면인지는 같다.
   badge?: string;
+  /** 배지를 어디에 둘지. 기본 "left" = 왼쪽 위 구석(지금까지의 동작).
+   *  "center" 는 위 가운데 — 카메라 이름이 아니라 시각을 띄우는 A-3 단일 화면용
+   *  (사용자 결정 2026-08-14). 다채널 타일은 그대로 왼쪽이다. */
+  badgeAlign?: "left" | "center";
   src: string;
   paused?: boolean;
   // 녹화 모드: 타임라인 시각(playbackMs)에 해당하는 프레임을 직접 그려
@@ -167,6 +171,7 @@ export function useGifFrameCanvas(
 function CameraFeedImpl({
   label,
   badge,
+  badgeAlign = "left",
   src,
   paused = false,
   playbackMs = null,
@@ -243,10 +248,12 @@ function CameraFeedImpl({
       {/* 라벨 */}
       <div
         suppressHydrationWarning
-        className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
+        className={`absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white${
+          badgeAlign === "center" ? " -translate-x-1/2" : ""
+        }`}
         style={{
           top: "4px",
-          left: "4px",
+          left: badgeAlign === "center" ? "50%" : "4px",
           height: "17px",
           padding: "0 4px",
           borderRadius: "2px",

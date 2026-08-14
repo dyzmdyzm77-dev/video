@@ -462,6 +462,8 @@ export default function VariantA3({
           // 단일 화면 배지도 세로와 같이 카메라 이름 대신 시각.
           // (다채널 타일은 그대로 카메라 이름 — 세로에서도 타일은 안 바꿨다.)
           singleBadge={videoBadge}
+          // 자리도 세로와 같이 위 가운데.
+          singleBadgeAlign="center"
           // 딤 농도·칩 위치·페이지 점은 LandscapeVideo 기본값을 그대로 쓴다
           // — 가로 화면은 세 안이 같아야 해서 그쪽에 모아 뒀다.
           // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
@@ -1047,12 +1049,15 @@ function ExpandedSlide({
           opacity: driving ? 1 : paused ? 1 : 0,
         }}
       />
+      {/* 시각 배지 — 상단 가운데(사용자 결정 2026-08-14). 카메라 이름일 땐 왼쪽
+          구석이 맞았지만, 시각은 영상의 정보라 가운데가 낫다. 가로 단일도 같은
+          자리다(CameraFeed 의 badgeAlign="center"). */}
       <div
         suppressHydrationWarning
-        className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
+        className="absolute inline-flex -translate-x-1/2 items-center bg-black/55 text-[10px] font-medium leading-none text-white"
         style={{
           top: "4px",
-          left: "4px",
+          left: "50%",
           height: "17px",
           padding: "0 4px",
           borderRadius: "2px",
