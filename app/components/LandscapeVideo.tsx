@@ -278,6 +278,18 @@ export default function LandscapeVideo({
   const ownFit = useVideoFit("fill");
   const fit = fitProp ?? ownFit.fit;
   const cycle = onFitCycle ?? ownFit.cycle;
+  // 화면 맞춤이 '가득 채우기·늘리기'면 상태바 자리까지 영상이 덮는다(사용자 결정
+  // 2026-08-14). '원본 비율 유지'는 그대로 — 상태바를 뺀 영역 안에서 비율을 맞춘다.
+  // 실제 치수는 globals.css 가 잡는다(프레임 폭에서 --status-h 를 빼느냐 마느냐).
+  // 자식을 프레임 밖으로 넘기는 방식은 안 됐다 — 프레임에 overflow:hidden 이라 잘린다.
+  useEffect(() => {
+    const ds = document.documentElement.dataset;
+    if (fit === "contain") delete ds.videoBleed;
+    else ds.videoBleed = "true";
+    return () => {
+      delete document.documentElement.dataset.videoBleed;
+    };
+  }, [fit]);
   // 배치(cols×rows)는 가로 영역 비율로 다시 고른다. 세로에서 쓰던 배치를 그대로
   // 들고 오면 안 된다 — 16채널 기준 세로는 2×8 이 맞지만 가로(≈2.17:1)에서 그
   // 배치는 타일이 0.54:1 로 길쭉해진다. 같은 영역에서 4×4 면 2.17:1 로 16:9 에
@@ -807,14 +819,7 @@ export default function LandscapeVideo({
   if (expandedIndex !== null) {
     const cam = cameras[expandedIndex];
     return shell(
-      // 가득 채우기·늘리기면 상태바 자리까지 덮는다(globals.css 의
-      // [data-landscape-video="bleed"] 참고). 원본 비율 유지는 그대로 — 상태바를
-      // 뺀 영역 안에서 비율을 맞춰 가운데 정렬한다(사용자 결정 2026-08-14).
-      <div
-        className="h-full w-full bg-black"
-        data-landscape-video={fit === "contain" ? undefined : "bleed"}
-        onClick={() => handleTap(null)}
-      >
+      <div className="h-full w-full bg-black" onClick={() => handleTap(null)}>
         <CameraFeed
           label={cam.label}
           badge={singleBadge}
@@ -835,7 +840,6 @@ export default function LandscapeVideo({
     <div
       ref={gridAreaRef as React.RefObject<HTMLDivElement>}
       className="grid h-full w-full bg-white"
-      data-landscape-video={fit === "contain" ? undefined : "bleed"}
       style={{
         gridTemplateColumns: `repeat(${cols}, 1fr)`,
         gridTemplateRows: `repeat(${rows}, 1fr)`,

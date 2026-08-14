@@ -1714,10 +1714,10 @@ function ExpandedView({
                 />
               </button>
             </div>
-            {/* 크게 보기 — 딤 오른쪽 아래, 원래 AI 가 쓰던 원 버튼 자리(A-3 에서
-                자리 맞바꿈). 원 스타일(반투명 검정 + 흰 테두리)은 그대로 물려받고,
-                아이콘 원본이 진회색이라 흰색으로 뒤집는다. 다채널 딤
-                (GridSelectionOverlay swapAiZoom)과 같은 자리·같은 크기다. */}
+            {/* 크게 보기 — 딤 오른쪽 아래. 원 스타일은 왼쪽 아래 줄·가로 딤과
+                같다(회색 75% · 테두리 없음 · 아이콘 흰색 + 퍼지는 그림자,
+                사용자 지정 2026-08-14). 아이콘만 24 인 건 zoom_in.svg 가 박스를
+                덜 채우는 그림이라 28 로 키우면 다른 아이콘보다 커 보여서다. */}
             <button
               type="button"
               aria-label="크게 보기"
@@ -1728,8 +1728,7 @@ function ExpandedView({
                 right: "16px",
                 width: "34px",
                 height: "34px",
-                border: "1px solid rgba(255,255,255,0.35)",
-                backgroundColor: "rgba(0,0,0,0.35)",
+                backgroundColor: "rgba(117,117,117,0.75)",
                 pointerEvents: showControls ? "auto" : "none",
               }}
             >
@@ -1737,7 +1736,10 @@ function ExpandedView({
                 src={`${BASE}/zoom_in.svg`}
                 alt=""
                 className="h-6 w-6"
-                style={{ filter: "brightness(0) invert(1)" }}
+                style={{
+                  filter:
+                    "brightness(0) invert(1) drop-shadow(0 0 4px rgba(0,0,0,0.6))",
+                }}
               />
             </button>
             {/* 딤 왼쪽 아래 — AI · 메뉴 · 움직임 감지. 가로 딤의 같은 줄과 구성을

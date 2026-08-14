@@ -56,6 +56,11 @@ body {
         top: calc(50vh + var(--status-h, 0px) / 2);
         width: calc(100vh - var(--status-h, 0px));
       }
+      /* 가득 채우기·늘리기면 상태바 자리까지 덮는다(아래 data-video-bleed 참고). */
+      html[data-landscape="true"][data-video-bleed="true"] .app-safe-frame {
+        top: 50vh;
+        width: 100vh;
+      }
     }
   }
 }
@@ -209,9 +214,15 @@ body {
      상단은 로컬 x=0 쪽(왼쪽)이므로, 왼쪽으로 --status-h 만큼 넘겨 그린다.
      프레임 자체를 안 건드리는 건 딤·컨트롤이 같이 밀리면 안 되기 때문이다 —
      영상 컨테이너 한 겹만 넘긴다. */
-  html[data-landscape="true"] [data-landscape-video="bleed"] {
-    margin-left: calc(var(--status-h, 0px) * -1);
-    width: calc(100% + var(--status-h, 0px));
+  /* 자식을 프레임 밖으로 넘기는 방식은 안 된다 — 가로 프레임에 overflow:hidden 이
+     걸려 있어 그대로 잘린다(실기기에서 확인). 대신 프레임이 상태바 자리를 비우던
+     것을 되돌린다: 폭에서 --status-h 를 빼지 않고 중심도 안 내린다.
+     data-video-bleed 는 LandscapeVideo 가 화면 맞춤에 따라 켜고 끈다. */
+  html[data-landscape="true"][data-video-bleed="true"] .app-safe-frame {
+    top: 50vh;
+    top: 50dvh;
+    width: 100vh;
+    width: 100dvh;
   }
 
   @media (orientation: portrait) {
