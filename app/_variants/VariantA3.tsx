@@ -4733,7 +4733,8 @@ function RecordingControls({
               display: "inline-flex",
               alignItems: "center",
               height: "20px",
-              // 딤 위(가로)는 아래 버튼들과 같은 #4A4A4A 50% + 흰 글자.
+              // 딤 위(가로)는 아래 버튼들과 같은 값 하나를 그대로 쓴다 —
+              // #666666 40% + blur(20) + 테두리 없음 + 흰 글자 + 같은 그림자.
               // 흰 바탕(세로·사이드 패널)은 흰색 70% + 어두운 글자로 되돌렸다
               // (사용자 지정 2026-08-14) — 거긴 달력·캡처 버튼도 흰 원이라
               // 어두운 알약만 튀었다.
@@ -4745,6 +4746,11 @@ function RecordingControls({
                 ? {
                     backdropFilter: "blur(20px)",
                     WebkitBackdropFilter: "blur(20px)",
+                    // 버튼 규격을 따라간다면 끝까지 따라간다(사용자 지정
+                    // 2026-08-14: "버튼이랑 같은 스타일할 꺼면 똑같이 가").
+                    // 원 버튼 아이콘이 쓰는 그 그림자 — 가운데에서 퍼지는
+                    // 0 0 4px 검정 60%. 글자라 drop-shadow 대신 textShadow 다.
+                    textShadow: "0 0 4px rgba(0,0,0,0.6)",
                   }
                 : null),
               fontSize: "12px",

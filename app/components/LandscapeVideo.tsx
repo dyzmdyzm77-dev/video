@@ -404,13 +404,33 @@ export default function LandscapeVideo({
   // 가 아래 왼쪽에 둘지 위 가운데에 둘지만 정한다.
   // 칩 두 개 방식(statusStyle="chips") — 한 덩어리 세그먼트 대신 '실시간'·'녹화'
   // 를 따로 떼고, 고른 쪽만 흰 배경 + 검정 글자로 채운다(사용자 지정, A-1안 가로).
-  const chip = (on: boolean) => ({
+  // 고른 쪽은 흰 알약, 안 고른 쪽은 딤 위 버튼과 같은 규격.
+  // A-3(dimStyle="a3")은 그 '버튼과 같은 규격'이 원 버튼과 완전히 같은 값이다 —
+  // #666666 40% + blur(20) + 테두리 없음 + 흰 글자 + 같은 그림자
+  // (사용자 지정 2026-08-14: "미선택된 경우는 버튼이랑 똑같은 스타일로 가자").
+  // 다른 안은 예전 그대로(검정 35% + 흰 테두리).
+  const chip = (on: boolean): React.CSSProperties => ({
     height: "26px",
     padding: "0 12px",
     borderRadius: "9999px",
-    border: on ? "1px solid #FFFFFF" : "1px solid rgba(255,255,255,0.35)",
-    backgroundColor: on ? "#FFFFFF" : "rgba(0,0,0,0.35)",
+    border: on
+      ? "1px solid #FFFFFF"
+      : dimStyle === "a3"
+        ? "none"
+        : "1px solid rgba(255,255,255,0.35)",
+    backgroundColor: on
+      ? "#FFFFFF"
+      : dimStyle === "a3"
+        ? "rgba(102,102,102,0.4)"
+        : "rgba(0,0,0,0.35)",
     color: on ? "#262626" : "#FFFFFF",
+    ...(!on && dimStyle === "a3"
+      ? {
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          textShadow: "0 0 4px rgba(0,0,0,0.6)",
+        }
+      : null),
   });
   const statusRow = (
     <div className="flex items-center gap-2">
