@@ -535,9 +535,9 @@ export default function VariantA3({
                         // 회색 55%(사용자 지정 2026-08-14). 반투명 검정 0.35 → 불투명
                         // 회색 → 0.7 을 거쳐 여기로 왔다. 톤은 앱에 이미 쓰는
                         // 회색(#757575, 녹화 배지 배경)이고 알파만 조절한다.
-                        backgroundColor: "rgba(117,117,117,0.75)",
-                        backdropFilter: "blur(8px)",
-                        WebkitBackdropFilter: "blur(8px)",
+                        backgroundColor: "rgba(43,43,43,0.5)",
+                        backdropFilter: "blur(20px)",
+                        WebkitBackdropFilter: "blur(20px)",
                       }}
                     >
                       <img
@@ -1730,9 +1730,9 @@ function ExpandedView({
                 right: "16px",
                 width: "34px",
                 height: "34px",
-                backgroundColor: "rgba(117,117,117,0.75)",
-                backdropFilter: "blur(8px)",
-                WebkitBackdropFilter: "blur(8px)",
+                backgroundColor: "rgba(43,43,43,0.5)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
                 pointerEvents: showControls ? "auto" : "none",
               }}
             >
@@ -1775,9 +1775,9 @@ function ExpandedView({
                   style={{
                     width: "34px",
                     height: "34px",
-                    backgroundColor: "rgba(117,117,117,0.75)",
-                    backdropFilter: "blur(8px)",
-                    WebkitBackdropFilter: "blur(8px)",
+                    backgroundColor: "rgba(43,43,43,0.5)",
+                    backdropFilter: "blur(20px)",
+                    WebkitBackdropFilter: "blur(20px)",
                   }}
                 >
                   <img
@@ -4700,12 +4700,12 @@ function RecordingControls({
               // 2026-08-14) — 같은 화면에 있는 것끼리 결을 맞춘다.
               color: overlay ? "#FFFFFF" : "#353535",
               backgroundColor: overlay
-                ? "rgba(117,117,117,0.75)"
+                ? "rgba(43,43,43,0.5)"
                 : "rgba(255,255,255,0.7)",
               ...(overlay
                 ? {
-                    backdropFilter: "blur(8px)",
-                    WebkitBackdropFilter: "blur(8px)",
+                    backdropFilter: "blur(20px)",
+                    WebkitBackdropFilter: "blur(20px)",
                   }
                 : null),
               fontSize: "12px",
@@ -5091,7 +5091,7 @@ function PlayerButton({
         // 60 은 너무 컸다(사용자 지정 2026-08-14). 세로는 그대로 40.
         width: overlay ? "50px" : "40px",
         height: overlay ? "50px" : "40px",
-        // 가로 딤 위 버튼은 테두리 없이 회색 55% + 흰 아이콘(사용자 지정 2026-08-14).
+        // 가로 딤 위 버튼은 테두리 없이 #2B2B2B 50% + 흰 아이콘(사용자 지정 2026-08-14).
         // 검정 반투명에서 아래 아이콘 원과 같은 회색으로 맞췄다 — 같은 화면에
         // 있는 것끼리 결을 맞춘다. 아이콘 그림자와 아래 딤 60% 가 밝은 영상
         // 위에서도 안 묻히게 받쳐 준다. 눌린 상태는 한 단계 진하게(0.75).
@@ -5102,8 +5102,8 @@ function PlayerButton({
         border: overlay ? "none" : "1px solid #D9D9D9",
         backgroundColor: overlay
           ? active
-            ? "rgba(117,117,117,0.9)"
-            : "rgba(117,117,117,0.75)"
+            ? "rgba(43,43,43,0.7)"
+            : "rgba(43,43,43,0.5)"
           : active
             ? "#F2F2F2"
             : "#FFFFFF",
@@ -5111,8 +5111,8 @@ function PlayerButton({
         // 영상 무늬가 그대로 비쳐 아이콘이 어수선해 보인다. -webkit- 접두사는 사파리용.
         ...(overlay
           ? {
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
             }
           : null),
       }}
