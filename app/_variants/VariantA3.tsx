@@ -536,6 +536,8 @@ export default function VariantA3({
                         // 회색 → 0.7 을 거쳐 여기로 왔다. 톤은 앱에 이미 쓰는
                         // 회색(#757575, 녹화 배지 배경)이고 알파만 조절한다.
                         backgroundColor: "rgba(117,117,117,0.75)",
+                        backdropFilter: "blur(8px)",
+                        WebkitBackdropFilter: "blur(8px)",
                       }}
                     >
                       <img
@@ -1729,6 +1731,8 @@ function ExpandedView({
                 width: "34px",
                 height: "34px",
                 backgroundColor: "rgba(117,117,117,0.75)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
                 pointerEvents: showControls ? "auto" : "none",
               }}
             >
@@ -1772,6 +1776,8 @@ function ExpandedView({
                     width: "34px",
                     height: "34px",
                     backgroundColor: "rgba(117,117,117,0.75)",
+                    backdropFilter: "blur(8px)",
+                    WebkitBackdropFilter: "blur(8px)",
                   }}
                 >
                   <img
@@ -4696,6 +4702,12 @@ function RecordingControls({
               backgroundColor: overlay
                 ? "rgba(117,117,117,0.75)"
                 : "rgba(255,255,255,0.7)",
+              ...(overlay
+                ? {
+                    backdropFilter: "blur(8px)",
+                    WebkitBackdropFilter: "blur(8px)",
+                  }
+                : null),
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
@@ -5095,6 +5107,14 @@ function PlayerButton({
           : active
             ? "#F2F2F2"
             : "#FFFFFF",
+        // 딤 위 버튼은 뒤 영상을 흐린다(사용자 요청 2026-08-14) — 반투명 회색만으로는
+        // 영상 무늬가 그대로 비쳐 아이콘이 어수선해 보인다. -webkit- 접두사는 사파리용.
+        ...(overlay
+          ? {
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+            }
+          : null),
       }}
     >
       {label != null ? (
