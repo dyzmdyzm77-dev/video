@@ -602,7 +602,9 @@ export default function LandscapeVideo({
               확대(크게 보기)로 눕었으면 exitImmersive 가 전체화면·방향잠금까지
               정리하고, 회전으로 눕었으면 그건 아무 일도 안 하므로(readImmersive
               가 false 면 즉시 return) 회전만 되돌린다.
-              화살표 모양·크기는 GridSelectionOverlay 의 뒤로가기와 같은 것이다. */}
+              화살표는 받은 에셋(Property 1=Solid.svg). 파일 자체 색은 #757575 인데
+              딤 위에서 옆 글자(흰색)와 어긋나므로, img 가 아니라 마스크로 찍어
+              흰색을 입힌다 — 같은 파일에 있는 ChevronDownIcon 과 같은 방식이다. */}
           <button
             type="button"
             aria-label="뒤로가기"
@@ -612,19 +614,20 @@ export default function LandscapeVideo({
             }}
             className="flex h-8 w-8 items-center justify-center"
           >
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#ffffff"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+            <span
               aria-hidden
-            >
-              <path d="M15 5l-7 7 7 7" />
-            </svg>
+              className="inline-block h-7 w-7 bg-white"
+              style={{
+                WebkitMaskImage: `url("${BASE}/Property 1=Solid.svg")`,
+                maskImage: `url("${BASE}/Property 1=Solid.svg")`,
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+              }}
+            />
           </button>
           <span className="text-[18px] font-bold leading-none text-white">
             {backHeaderLabel}
