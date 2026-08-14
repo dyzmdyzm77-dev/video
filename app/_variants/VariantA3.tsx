@@ -3113,8 +3113,12 @@ function RecordingEventTimeline({
               길이보다 색으로 구분되게 두는 쪽이 낫다.
               색은 감지 유형 칩(EventKindChip)의 이상 상황 빨강과 같은 #E2202D.
               눈금과 마찬가지로 화면에 보이는 범위만 그린다 — 하루 ~4900건이라
-              다 그리면 스크롤이 죽는다. */}
-          {clusters.filter((c) => inView(c.secOffset)).map((c) => (
+              다 그리면 스크롤이 죽는다.
+              묶음(clusters)이 아니라 낱개(eventOccurrences)로 긋는다 — 묶음은
+              썸네일 카드가 겹치지 않게 만든 것이라 가까운 이벤트 여럿이 대표
+              하나로 접힌다. 그러면 감지 목록에는 있는데 시간바엔 선이 없는 게
+              생긴다(사용자 지적: "그 지점에 빨간 선이 있어야지"). */}
+          {eventOccurrences.filter((c) => inView(c.secOffset)).map((c) => (
             <div
               key={`M${c.key}`}
               className="pointer-events-none absolute rounded-[1px]"
@@ -3452,8 +3456,10 @@ function MotionEventList({
                     // 가로 덩어리 — 고른 것만 파란 테두리, 나머지는 회색
                     // (사용자 지정 2026-08-14). 썸네일 쪽 파란 테두리는 뺐다 —
                     // 덩어리 테두리와 겹쳐 두 겹으로 보였다.
+                    // 라운드는 8 — 4 는 각져 보였다(사용자 지정). 안쪽 썸네일은
+                    // 카메라 목록 타일과 같은 4 로 둔다(덩어리 안쪽이라 안 겹친다).
                     padding: "6px 8px",
-                    borderRadius: "4px",
+                    borderRadius: "8px",
                     border: active ? "1px solid #1D6CEB" : "1px solid #EBEBEB",
                     backgroundColor: active
                       ? "rgba(29,108,235,0.08)"
