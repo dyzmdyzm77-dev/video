@@ -1339,7 +1339,7 @@ function ExpandedView({
   // 확대해 놓고 구석을 보려는 게 자연스러운 다음 동작이라서다.
   // 데스크톱에서는 휠(트랙패드 핀치 포함)로도 조절된다.
   const ZOOM_MIN = 1;
-  const ZOOM_MAX = 4;
+  const ZOOM_MAX = 5;
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   // 화면에 닿아 있는 포인터들. 두 개가 되면 그 사이 거리로 배율을 잡는다.
@@ -1365,6 +1365,11 @@ function ExpandedView({
     setZoom(clamped);
     const p = nextPan ?? pan;
     setPan(clamped <= 1 ? { x: 0, y: 0 } : clampPan(clamped, p.x, p.y));
+    // 배율 토스트 — 되감기·배속과 같은 토스트를 쓴다(사용자 요청 2026-08-14).
+    // 원래 크기면 숫자 대신 '원본'이라고 적는다.
+    showSeekToast(
+      clamped <= ZOOM_MIN ? "원본" : `${clamped.toFixed(1)}X`,
+    );
   };
   // 카메라를 바꾸거나 실시간↔녹화로 넘어가면 원래 크기로 돌린다 —
   // 확대한 채로 다른 화면에 들어가면 어디를 보는지 알 수 없다.
