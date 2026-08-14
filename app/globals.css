@@ -199,6 +199,21 @@ body {
     padding: 0;
   }
 
+  /* ===== 가로에서 상태바 자리까지 영상이 덮는 경우 =====
+     가로 프레임은 폭(=회전 후 화면 세로 길이)을 --status-h 만큼 줄여 물리 상단에
+     상태바 자리를 비워 둔다(위 .app-safe-frame 규칙). 화면 맞춤이 '가득 채우기'
+     ·'늘리기'일 때는 그 자리까지 영상이 덮어야 한다(사용자 결정 2026-08-14).
+     '원본 비율 유지'는 그대로 — 상태바를 뺀 영역 안에서 비율을 맞춘다.
+
+     프레임은 rotate(90deg) 라 로컬 x 축이 화면 아래쪽을 향한다. 비어 있는 물리
+     상단은 로컬 x=0 쪽(왼쪽)이므로, 왼쪽으로 --status-h 만큼 넘겨 그린다.
+     프레임 자체를 안 건드리는 건 딤·컨트롤이 같이 밀리면 안 되기 때문이다 —
+     영상 컨테이너 한 겹만 넘긴다. */
+  html[data-landscape="true"] [data-landscape-video="bleed"] {
+    margin-left: calc(var(--status-h, 0px) * -1);
+    width: calc(100% + var(--status-h, 0px));
+  }
+
   @media (orientation: portrait) {
   html[data-landscape="true"] .app-safe-frame {
     position: fixed;

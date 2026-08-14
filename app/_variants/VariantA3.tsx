@@ -472,10 +472,10 @@ export default function VariantA3({
           // 둘을 따로 얹으므로 RecordingControls 를 두 벌 쓴다 — 각자 자기 몫만
           // 그리게 timelineOnly / playerOnly 로 갈라 준다.
           controls={
-            mode === "recording" ? (
-              // 좌우 10 씩 안으로 — 시간바가 화면 끝까지 가면 아래 구석의
-              // 크게 보기 아이콘과 같은 띠에서 만난다(사용자 지정 2026-08-14).
-              <div style={{ paddingLeft: "10px", paddingRight: "10px" }}>
+            // 실시간에도 아래 아이콘 줄은 나온다(사용자 지적: 녹화에만 있었다).
+            // 시간바만 녹화 전용이다.
+            <div style={{ paddingLeft: "10px", paddingRight: "10px" }}>
+              {mode === "recording" && (
               <RecordingControls
                 overlay
                 timelineOnly
@@ -489,6 +489,7 @@ export default function VariantA3({
                 onPlay={() => setIsPlaying(true)}
                 onSpeedChange={setPlaybackRate}
               />
+              )}
               {/* 시간바 아래 아이콘 줄 — AI · 메뉴 · 움직임 감지 셋을 가운데로
                   모은다(사용자 지정 2026-08-14). 원 모양은 딤의 다른 원 버튼
                   (34 · 반투명 검정 + 흰 테두리)과 같은 규격이다.
@@ -534,7 +535,7 @@ export default function VariantA3({
                         // 회색 55%(사용자 지정 2026-08-14). 반투명 검정 0.35 → 불투명
                         // 회색 → 0.7 을 거쳐 여기로 왔다. 톤은 앱에 이미 쓰는
                         // 회색(#757575, 녹화 배지 배경)이고 알파만 조절한다.
-                        backgroundColor: "rgba(117,117,117,0.65)",
+                        backgroundColor: "rgba(117,117,117,0.75)",
                       }}
                     >
                       <img
@@ -550,7 +551,10 @@ export default function VariantA3({
                       <div className="flex items-center" style={{ gap: "16px" }}>
                         {btn({ key: "ai", label: "AI 검색", src: `${BASE}/ai_Icon.svg`, onClick: () => setAiOpen(true) })}
                         {btn({ key: "menu", label: "메뉴", src: `${BASE}/nav/menu.svg` })}
-                        {btn({ key: "motion", label: "움직임 감지", src: `${BASE}/Type=Line.svg` })}
+                        {/* 움직임 감지는 녹화에만 — 실시간엔 지나간 이벤트가 없다
+                            (사용자 지적 2026-08-14). */}
+                        {mode === "recording" &&
+                          btn({ key: "motion", label: "움직임 감지", src: `${BASE}/Type=Line.svg` })}
                       </div>
                       {/* 크게 보기 ↔ 원래 크기로. 가로에서만 뜨는 줄이라 늘
                           '원래 크기로'다. 딤 오른쪽 아래에 있던 그 버튼이다. */}
@@ -559,8 +563,7 @@ export default function VariantA3({
                   );
                 })()}
               </div>
-              </div>
-            ) : null
+            </div>
           }
           centerControls={
             mode === "recording" ? (
@@ -1737,25 +1740,50 @@ function ExpandedView({
                 style={{ filter: "brightness(0) invert(1)" }}
               />
             </button>
-            {/* AI — 딤 왼쪽 아래(A-3, 사용자 결정). 원 스타일은 원래 그대로,
-                카메라 인디케이터·크게 보기와 같은 높이(bottom 12)에 앉힌다. */}
-            <button
-              type="button"
-              aria-label="AI 검색"
-              onClick={onOpenAi}
-              className="absolute flex items-center justify-center rounded-full"
+            {/* 딤 왼쪽 아래 — AI · 메뉴 · 움직임 감지. 가로 딤의 같은 줄과 구성을
+                맞춘다(사용자 지정 2026-08-14). 오른쪽 아래 크게 보기와 같은
+                높이(bottom 12)에 앉는다. 움직임 감지는 녹화에만 — 실시간엔
+                지나간 이벤트가 없다. */}
+            <div
+              className="absolute flex items-center"
               style={{
                 bottom: "12px",
                 left: "16px",
-                width: "34px",
-                height: "34px",
-                border: "1px solid rgba(255,255,255,0.35)",
-                backgroundColor: "rgba(0,0,0,0.35)",
+                gap: "12px",
                 pointerEvents: showControls ? "auto" : "none",
               }}
             >
-              <img src={`${BASE}/ai_Icon.svg`} alt="" className="h-7 w-7" />
-            </button>
+              {[
+                { key: "ai", label: "AI 검색", src: `${BASE}/ai_Icon.svg`, onClick: onOpenAi },
+                { key: "menu", label: "메뉴", src: `${BASE}/nav/menu.svg`, onClick: undefined },
+                ...(mode === "recording"
+                  ? [{ key: "motion", label: "움직임 감지", src: `${BASE}/Type=Line.svg`, onClick: undefined }]
+                  : []),
+              ].map((b) => (
+                <button
+                  key={b.key}
+                  type="button"
+                  aria-label={b.label}
+                  onClick={b.onClick}
+                  className="flex items-center justify-center rounded-full"
+                  style={{
+                    width: "34px",
+                    height: "34px",
+                    backgroundColor: "rgba(117,117,117,0.75)",
+                  }}
+                >
+                  <img
+                    src={b.src}
+                    alt=""
+                    className="h-7 w-7"
+                    style={{
+                      filter:
+                        "brightness(0) invert(1) drop-shadow(0 0 4px rgba(0,0,0,0.6))",
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
           </div>
           <VideoSkeleton visible={videoLoading} />
           {/* 화면 맞춤 토스트 — 탐색·캡처 토스트와 같은 자리(영역 하단 20px 위). */}
@@ -4656,7 +4684,7 @@ function RecordingControls({
               // 2026-08-14) — 같은 화면에 있는 것끼리 결을 맞춘다.
               color: overlay ? "#FFFFFF" : "#353535",
               backgroundColor: overlay
-                ? "rgba(117,117,117,0.55)"
+                ? "rgba(117,117,117,0.75)"
                 : "rgba(255,255,255,0.7)",
               fontSize: "12px",
               fontWeight: 700,
@@ -5052,8 +5080,8 @@ function PlayerButton({
         border: overlay ? "none" : "1px solid #D9D9D9",
         backgroundColor: overlay
           ? active
-            ? "rgba(117,117,117,0.85)"
-            : "rgba(117,117,117,0.65)"
+            ? "rgba(117,117,117,0.9)"
+            : "rgba(117,117,117,0.75)"
           : active
             ? "#F2F2F2"
             : "#FFFFFF",

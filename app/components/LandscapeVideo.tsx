@@ -807,7 +807,14 @@ export default function LandscapeVideo({
   if (expandedIndex !== null) {
     const cam = cameras[expandedIndex];
     return shell(
-      <div className="h-full w-full bg-black" onClick={() => handleTap(null)}>
+      // 가득 채우기·늘리기면 상태바 자리까지 덮는다(globals.css 의
+      // [data-landscape-video="bleed"] 참고). 원본 비율 유지는 그대로 — 상태바를
+      // 뺀 영역 안에서 비율을 맞춰 가운데 정렬한다(사용자 결정 2026-08-14).
+      <div
+        className="h-full w-full bg-black"
+        data-landscape-video={fit === "contain" ? undefined : "bleed"}
+        onClick={() => handleTap(null)}
+      >
         <CameraFeed
           label={cam.label}
           badge={singleBadge}
@@ -828,6 +835,7 @@ export default function LandscapeVideo({
     <div
       ref={gridAreaRef as React.RefObject<HTMLDivElement>}
       className="grid h-full w-full bg-white"
+      data-landscape-video={fit === "contain" ? undefined : "bleed"}
       style={{
         gridTemplateColumns: `repeat(${cols}, 1fr)`,
         gridTemplateRows: `repeat(${rows}, 1fr)`,
