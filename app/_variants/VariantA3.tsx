@@ -3099,9 +3099,11 @@ function RecordingEventTimeline({
         />
         {/* 날짜·시간 선택 — 오른쪽 화살표와 완전히 같은 원이다(28×28 · 흰 배경 ·
             border-neutral-300). 좌우 여백도 같은 20, 세로 중심도 같다.
-            아이콘은 16 — time.svg 는 24 박스를 거의 꽉 채우는 그림이라 24 로 넣으면
-            원에 닿아 동그라미가 안 보인다(화살표는 글리프가 작아 24 라도 여백이
-            남는다). 색이 박혀 있어 마스크가 아니라 img 로 쓴다.
+            아이콘은 20 — time.svg 는 24 박스를 거의 꽉 채우는 그림이라 24 로 넣으면
+            원에 닿아 동그라미가 안 보이고, 16 으로 줄였더니 이번엔 너무 작았다
+            (사용자 지적). 20 이면 사방 4 가 남아 원도 보이고 아이콘도 제 크기다.
+            화살표 쪽은 글리프가 작아 24 라도 여백이 남는다.
+            색이 박혀 있어 마스크가 아니라 img 로 쓴다.
             시간바는 드래그로 스크럽되니 포인터를 막는다. */}
         {onOpenDateTime && (
           <button
@@ -3121,7 +3123,7 @@ function RecordingEventTimeline({
               onOpenDateTime();
             }}
           >
-            <img src={`${BASE}/time.svg`} alt="" className="h-4 w-4" />
+            <img src={`${BASE}/time.svg`} alt="" className="h-5 w-5" />
           </button>
         )}
         {/* 펼침/접기 화살표 — 접으면 아래 썸네일이 사라지고 시간바만 남는다
