@@ -454,6 +454,9 @@ export default function VariantA3({
           // 칩이 왼쪽으로 밀려 보였다. 빼면 칩만 남아 정확히 가운데에 온다.
           // 세로 토글과 같은 말로 — 가로만 '녹화'라 어긋났다(사용자 지적).
           recordingLabel="녹화영상"
+          // 단일 화면 영상 위 배지는 끈다 — 딤 헤더에 이름이 있다(사용자 지정
+          // 2026-08-14, 세로와 같은 규칙). 빈 문자열이면 배지 자리도 안 잡는다.
+          singleBadge=""
           // 딤 헤더는 계약번호(지점명) 없이 '뒤로가기 + 이름'. 단일은 카메라 이름,
           // 다채널은 위 title 과 같은 장소명을 그대로 쓴다(사용자 지적: 다채널에
           // 리터럴을 박아 뒀더니 세로 헤더와 말이 달랐다).
@@ -1118,21 +1121,9 @@ function ExpandedSlide({
           opacity: driving ? 1 : paused ? 1 : 0,
         }}
       />
-      {/* 라벨 — 카메라 이름, 왼쪽 위 구석. 한동안 시각을 띄웠다가(상단 가운데 →
-          왼쪽 아래 → 상단 가운데 → 딤) 원래대로 돌아왔다(사용자 지정 2026-08-14).
-          시각은 영상 아래 날짜 바가 맡는다. */}
-      <div
-        className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
-        style={{
-          top: "4px",
-          left: "4px",
-          height: "17px",
-          padding: "0 4px",
-          borderRadius: "2px",
-        }}
-      >
-        {c.label}
-      </div>
+      {/* 단일 화면에선 영상 위에 카메라 이름을 안 띄운다 — 딤 왼쪽 위로 옮겼다
+          (사용자 지정 2026-08-14). 영상만 볼 땐 화면이 깨끗하고, 어느 카메라인지는
+          딤을 켜면 바로 보인다. 다채널 타일은 그대로 이름을 단다. */}
     </>
   );
 }
@@ -1670,6 +1661,19 @@ function ExpandedView({
                   "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
               }}
             />
+            {/* 카메라 이름 — 딤 왼쪽 위(사용자 지정 2026-08-14). 영상 위 라벨을
+                여기로 옮긴 것이라, 딤을 켤 때만 보인다. 위 그라데이션 스크림
+                위라 흰 글씨로 읽힌다. */}
+            <div
+              className="absolute text-[18px] font-bold leading-none text-white"
+              style={{
+                top: "20px",
+                left: "16px",
+                textShadow: "0 0 4px rgba(0,0,0,0.6)",
+              }}
+            >
+              {cam.label}
+            </div>
             <div
               className="absolute flex items-center"
               style={{

@@ -246,7 +246,9 @@ function CameraFeedImpl({
         }}
       />
 
-      {/* 라벨 */}
+      {/* 라벨 — badge 에 빈 문자열을 주면 아예 안 그린다(A-3 단일 화면: 이름은
+          딤 헤더가 맡는다). 안 주면 지금까지처럼 카메라 이름이다. */}
+      {badge !== "" && (
       <div
         suppressHydrationWarning
         className={`absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white${
@@ -269,6 +271,7 @@ function CameraFeedImpl({
       >
         {badge ?? label}
       </div>
+      )}
     </div>
   );
 }
