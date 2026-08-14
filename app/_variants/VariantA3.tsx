@@ -3254,7 +3254,8 @@ function RecordingEventTimeline({
               눈금과 같은 레일에 있어 같이 흐른다. 크기는 작은 눈금과 똑같이
               2×8 · top 18 이다(사용자 지정 2026-08-14) — 길이로 구분하지 않고
               색으로만 구분한다.
-              색은 감지 유형 칩(EventKindChip)의 이상 상황 빨강과 같은 #E2202D.
+              색은 노랑과 주황 사이(#F59E0B, 사용자 지정). 빨강(#E2202D)이었는데
+              감지 유형 칩의 '이상 상황' 빨강과 뜻이 겹쳐 보였다.
               눈금과 마찬가지로 화면에 보이는 범위만 그린다 — 하루 ~4900건이라
               다 그리면 스크롤이 죽는다.
               묶음(clusters)이 아니라 낱개(eventOccurrences)로 긋는다 — 묶음은
@@ -3270,7 +3271,7 @@ function RecordingEventTimeline({
                 top: "18px",
                 width: "2px",
                 height: "8px",
-                backgroundColor: "#E2202D",
+                backgroundColor: "#F59E0B",
               }}
             />
           ))}
@@ -4549,17 +4550,18 @@ function RecordingControls({
                 top: "18px",
                 width: "2px",
                 height: "8px",
+                // 딤 위(가로) 작은 눈금은 흰색 50% 였는데 투명도를 뺐다
+                // (사용자 지정 2026-08-14). 큰 눈금과 같은 흰색이라 이제 둘은
+                // 길이·색이 같다 — 구분은 라벨이 한다.
                 backgroundColor: overlay
-                  ? isMajor
-                    ? "#FFFFFF"
-                    : "rgba(255,255,255,0.5)"
+                  ? "#FFFFFF"
                   : isMajor
                     ? "#797979"
                     : "#ADADAD",
               }}
             />
           ))}
-          {/* 감지 표시 — 작은 눈금과 같은 규격(2×8, top 18)에 색만 #E2202D. */}
+          {/* 감지 표시 — 작은 눈금과 같은 규격(2×8, top 18)에 색만 #F59E0B. */}
           {motionMarks.map((secOffset, i) => (
             <div
               key={`M${i}`}
@@ -4569,7 +4571,7 @@ function RecordingControls({
                 top: "18px",
                 width: "2px",
                 height: "8px",
-                backgroundColor: "#E2202D",
+                backgroundColor: "#F59E0B",
               }}
             />
           ))}
