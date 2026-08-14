@@ -456,7 +456,10 @@ export default function VariantA3({
           onTitleClick={() => setVariantPickerOpen(true)}
           mode={mode}
           setMode={handleSetMode}
-          timeLabel={dateLabel}
+          // timeLabel 을 안 넘긴다 — 딤 상단의 시각 표시를 없앤다(사용자 결정
+          // 2026-08-14). 시각은 영상 위 배지에 있어서 둘이 겹쳤고, 칩 옆에 시각이
+          // 붙어 있으면 가운데 정렬도 칩 기준이 아니라 '칩+시각' 기준이라
+          // 칩이 왼쪽으로 밀려 보였다. 빼면 칩만 남아 정확히 가운데에 온다.
           // 세로 토글과 같은 말로 — 가로만 '녹화'라 어긋났다(사용자 지적).
           recordingLabel="녹화 영상"
           // 단일 화면 배지도 세로와 같이 카메라 이름 대신 시각.
