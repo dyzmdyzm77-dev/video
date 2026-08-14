@@ -446,7 +446,7 @@ export default function VariantA3({
           // 깔려서 붙어 보이고 클릭도 겹쳤다(사용자 지정: "하단 마진도 한 20 더").
           // 시간바 층은 이 값에서 12 를 뺀 만큼 뜨므로 하단 마진 = 50 이 된다
           // (40 에서 10 더 — 사용자 지정 2026-08-14).
-          bottomInset={62}
+          bottomInset={52}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
@@ -488,6 +488,9 @@ export default function VariantA3({
           // 그리게 timelineOnly / playerOnly 로 갈라 준다.
           controls={
             mode === "recording" ? (
+              // 좌우 10 씩 안으로 — 시간바가 화면 끝까지 가면 아래 구석의
+              // AI·크게 보기 아이콘과 같은 띠에서 만난다(사용자 지정 2026-08-14).
+              <div style={{ paddingLeft: "10px", paddingRight: "10px" }}>
               <RecordingControls
                 overlay
                 timelineOnly
@@ -501,6 +504,7 @@ export default function VariantA3({
                 onPlay={() => setIsPlaying(true)}
                 onSpeedChange={setPlaybackRate}
               />
+              </div>
             ) : null
           }
           centerControls={
