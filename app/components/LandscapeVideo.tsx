@@ -212,8 +212,8 @@ export default function LandscapeVideo({
    *  다채널일 땐 켜도 그대로 장소명이다 — 거긴 카메라가 하나가 아니다. */
   singleHeaderCamera?: boolean;
   /** singleHeaderCamera 를 켠 안에서, 다채널일 때 그 자리에 쓸 글자.
-   *  안 주면 다채널은 예전처럼 장소명 + 지점명 그대로다.
-   *  A-3 은 "서비스장소" — 카메라가 하나가 아니라 이름을 못 쓴다(사용자 지정). */
+   *  안 주면 장소명(title)을 그대로 쓴다 — 세로 헤더와 같은 값이라 두 화면이
+   *  같은 말을 한다. 다채널은 카메라가 하나가 아니라 카메라 이름을 못 쓴다. */
   gridHeaderLabel?: string;
   /** 녹화일 때 딤 하단에 얹는 플레이어 버튼 + 시간바. 안마다 컴포넌트가 달라
    *  여기서 만들지 않고 받아서 자리만 잡는다(세로에서 쓰던 그것을 그대로 넘긴다).
@@ -571,11 +571,12 @@ export default function LandscapeVideo({
   // 안 그러면 같은 줄 오른쪽 딤 아이콘을 덮어 눌러도 반응하지 않는다.
   // 단일 화면 헤더를 '뒤로가기 + 카메라 이름'으로 바꾼 경우(singleHeaderCamera).
   // 장소명/지점명 대신이라 자리·높이·여백은 아래 기본 헤더와 같게 두고 내용만 바꾼다.
-  // 다채널이면 카메라가 하나가 아니라 이름을 못 쓴다 — 대신 받은 글자(A-3: "서비스장소").
+  // 다채널이면 카메라가 하나가 아니라 이름을 못 쓴다 — 기본은 장소명(title),
+  // 따로 받은 글자가 있으면 그걸 쓴다.
   const backHeaderLabel =
     expandedIndex !== null
       ? cameras[expandedIndex]?.label
-      : gridHeaderLabel;
+      : (gridHeaderLabel ?? title);
   const cameraHeader =
     singleHeaderCamera && backHeaderLabel ? (
       <div

@@ -467,10 +467,10 @@ export default function VariantA3({
           singleBadge={videoBadge}
           // 자리도 세로와 같이 왼쪽 아래 구석.
           singleBadgeAlign="bottom-left"
-          // 딤 헤더는 장소명·계약번호 대신 '뒤로가기 + 이름'. 단일은 카메라 이름,
-          // 다채널은 카메라가 하나가 아니라 '서비스장소'(사용자 지정).
+          // 딤 헤더는 계약번호(지점명) 없이 '뒤로가기 + 이름'. 단일은 카메라 이름,
+          // 다채널은 위 title 과 같은 장소명을 그대로 쓴다(사용자 지적: 다채널에
+          // 리터럴을 박아 뒀더니 세로 헤더와 말이 달랐다).
           singleHeaderCamera
-          gridHeaderLabel="서비스장소"
           // 딤 농도·칩 위치·페이지 점은 LandscapeVideo 기본값을 그대로 쓴다
           // — 가로 화면은 세 안이 같아야 해서 그쪽에 모아 뒀다.
           // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
