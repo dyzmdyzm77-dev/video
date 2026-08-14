@@ -1792,13 +1792,15 @@ function ExpandedView({
           <LiveBadge onClick={onToggleChrome} />
         )}
         {mode === "recording" ? (
+          // 시각 옆 아래 화살표는 뺐다(사용자 지정 2026-08-14). 날짜·시간 선택으로
+          // 들어가는 길은 시간바 왼쪽 달력 버튼과 '녹화영상' 탭이 이미 있어서,
+          // 여기 화살표는 같은 말을 세 번 하는 셈이었다. 글자는 그대로 누를 수 있다.
           <button
             type="button"
             onClick={onOpenDateTime}
-            className="ml-2 flex items-center gap-0 text-[14px] font-medium leading-none text-[#353535]"
+            className="ml-2 flex items-center text-[14px] font-medium leading-none text-[#353535]"
           >
             <span suppressHydrationWarning>{recordingDateLabel}</span>
-            <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
           </button>
         ) : (
           <span
@@ -1807,6 +1809,19 @@ function ExpandedView({
           >
             {dateLabel}
           </span>
+        )}
+        {/* 화면 캡처 — 이 줄 오른쪽 끝으로 복귀(사용자 지정 2026-08-14).
+            그 사이 '카메라 목록' 탭 줄에 가 있었는데, 원래 자리인 여기로 돌렸다.
+            규격은 그대로 28 원 + 아이콘 24. */}
+        {onCapture && (
+          <button
+            type="button"
+            aria-label="화면 캡처"
+            onClick={onCapture}
+            className="ml-auto flex h-[28px] w-[28px] items-center justify-center rounded-full border border-neutral-300"
+          >
+            <img src={`${BASE}/camera.svg`} alt="" className="h-6 w-6" />
+          </button>
         )}
         <RowSkeleton visible={videoLoading} />
       </div>
@@ -2006,23 +2021,6 @@ function ExpandedView({
           >
             카메라 목록
           </span>
-        )}
-        {/* 화면 캡처 — 없앤 날짜 줄에 있던 그 버튼을 여기로 옮겼다(사용자 결정
-            2026-08-14). 규격도 그대로 28 원 + 아이콘 24. 오른쪽 끝은 right-5 라
-            제목의 px-5 와 같은 20 이다.
-            절대 위치인 건 줄 높이를 글자 기준으로 두기 위해서다(사용자 지정) —
-            흐름에 두면 28 짜리 버튼이 기준이 돼 위아래 14 가 글자가 아니라 버튼에
-            붙고, 줄이 43 → 56 으로 두꺼워진다. 절대 위치면 43(14+15+14) 그대로고
-            버튼은 그 안에서 세로 가운데에 앉는다. */}
-        {onCapture && (
-          <button
-            type="button"
-            aria-label="화면 캡처"
-            onClick={onCapture}
-            className="absolute right-5 top-1/2 flex h-[28px] w-[28px] -translate-y-1/2 items-center justify-center rounded-full border border-neutral-300"
-          >
-            <img src={`${BASE}/camera.svg`} alt="" className="h-6 w-6" />
-          </button>
         )}
       </div>
       {motionTab ? (
