@@ -1107,6 +1107,10 @@ function ExpandedView({
 }) {
   const cam = CAMERAS[index];
   const [showControls, setShowControls] = useState(false);
+  // 움직임 감지 썸네일을 펼친 상태인지 — 시간바 오른쪽 화살표로 접고 편다.
+  // 기본은 펼침(지금까지 보이던 모습 그대로). 접으면 시간바만 남고, 비는 세로는
+  // 아래 카메라 목록이 가져간다.
+  const [motionOpen, setMotionOpen] = useState(true);
   // 영상 맞춤 모드 — 딤(showControls) 상태의 화면맞춤 버튼으로 돌린다.
   //   fill    : 영상 뷰 영역을 가득 채운다(원본 비율 무시, 늘어남/찌그러짐).
   //   contain : 원본 비율 그대로, 빈 공간은 검정으로 채운다(레터박스/필러박스).
@@ -1774,15 +1778,21 @@ function ExpandedView({
   const motionBlock = mode === "recording" && (
     <div
       className="relative flex flex-none flex-col"
-      // 아래 구분선 — 감지 타임라인과 카메라 목록의 경계(사용자 요청).
-      // 색·두께는 A-2 탭 스트립 밑줄과 같은 #EBEBEB 1px.
-      style={{ height: `${MOTION_MIN_H}px`, borderBottom: "1px solid #EBEBEB" }}
+      style={{
+        // 접으면 시간바만 남는다(BAR_H) — 남는 세로는 아래 카메라 목록이 가져간다.
+        height: `${motionOpen ? MOTION_MIN_H : BAR_H}px`,
+        // 아래 구분선 — 감지 타임라인과 카메라 목록의 경계(사용자 요청).
+        // 색·두께는 A-2 탭 스트립 밑줄과 같은 #EBEBEB 1px.
+        borderBottom: "1px solid #EBEBEB",
+      }}
     >
       <RecordingEventTimeline
         playbackMs={playbackMs}
         setPlaybackMs={setPlaybackMs}
         cameraSrc={cam.src}
         onScrubbingChange={onScrubbingChange}
+        open={motionOpen}
+        onToggleOpen={() => setMotionOpen((v) => !v)}
       />
     </div>
   );
@@ -1797,20 +1807,19 @@ function ExpandedView({
         className="relative flex min-h-0 flex-col flex-1"
       >
       {/* 영역 제목 — 녹화 모드에서 위에 감지 타임라인이 겹쳐 쌓이면서 탭(이름표)이
-          없어졌으니 목록 쪽에만 달아준다(사용자 결정: 감지는 썸네일로 자명).
+          없어졌으니 목록에 달아준다(사용자 결정: 감지는 썸네일로 자명). 실시간에도
+          같은 제목을 둔다(사용자 결정 2026-08-14) — 두 모드가 같아 보여야 한다.
           useListLayout 이 제목 높이를 실측해 영역 최소 높이에 더한다. */}
-      {mode === "recording" && (
-        <div
-          className="flex-none px-5 text-[15px] font-bold leading-none"
-          // 위아래 14 로 같다 — 사이드 패널 탭(tabsBlock)의 padding 14px 0 과 같은 값.
-          // 아래 여백은 예전엔 타일 행의 marginTop 12 가 대신했는데, 그건 제목이
-          // 없는 실시간용이라 제목 밑 여백이 위(14)와 어긋났다.
-          // (좌우는 px-5 가 잡는다 — 인라인 padding 축약형을 쓰면 그걸 덮어쓴다.)
-          style={{ paddingTop: "14px", paddingBottom: "14px", color: "#262626" }}
-        >
-          카메라 목록
-        </div>
-      )}
+      <div
+        className="flex-none px-5 text-[15px] font-bold leading-none"
+        // 위아래 14 로 같다 — 사이드 패널 탭(tabsBlock)의 padding 14px 0 과 같은 값.
+        // 아래 여백은 예전엔 타일 행의 marginTop 12 가 대신했는데, 제목이 생기면서
+        // 제목 밑 여백이 위(14)와 어긋나 제목이 직접 갖게 했다.
+        // (좌우는 px-5 가 잡는다 — 인라인 padding 축약형을 쓰면 그걸 덮어쓴다.)
+        style={{ paddingTop: "14px", paddingBottom: "14px", color: "#262626" }}
+      >
+        카메라 목록
+      </div>
       <div
         ref={listWide ? undefined : listScrollRef}
         className={
@@ -1833,9 +1842,7 @@ function ExpandedView({
               ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "grid grid-cols-2 gap-2 px-5"
           }
-          // 녹화면 위 제목이 아래 여백(14)을 이미 갖고 있으니 겹쳐 주지 않는다.
-          // 실시간은 제목이 없어 이 값이 유일한 위 여백이다.
-          style={{ marginTop: mode === "recording" ? "0px" : "12px" }}
+          // 위 제목이 아래 여백(14)을 이미 갖고 있으니 겹쳐 주지 않는다.
         >
           {CAMERAS.map((c, i) =>
             cameraTile(
@@ -2531,11 +2538,21 @@ function SideEventTimeline({
 }
 
 
+// 시간바 블록 치수(px) — 다채널 RecordingControls 시간바와 같은 값이다.
+// 컴포넌트 안에 있던 걸 밖으로 뺐다: 썸네일을 접으면 감지 영역 높이가 딱 BAR_H 가
+// 되는데, 그 높이를 부모(motionBlock)가 알아야 해서다.
+const PAD_TOP = 12; // 시간바 위 여백
+const PAD_BOTTOM = 4; // 시간바 아래 여백. 삼각형 제거로 줄여 썸네일을 위로 붙인다.
+const RAIL_H = 28; // 라벨+눈금 영역 높이. 눈금 아래 빈 공간 줄여 썸네일을 위로.
+const BAR_H = PAD_TOP + RAIL_H + PAD_BOTTOM; // 시간바 블록 전체 높이(=44)
+
 function RecordingEventTimeline({
   playbackMs,
   setPlaybackMs,
   cameraSrc,
   onScrubbingChange,
+  open = true,
+  onToggleOpen,
 }: {
   playbackMs: number | null;
   setPlaybackMs: (
@@ -2543,6 +2560,10 @@ function RecordingEventTimeline({
   ) => void;
   cameraSrc: string;
   onScrubbingChange?: (s: boolean) => void;
+  /** 썸네일을 펼친 상태인지. 접으면 시간바만 남는다(사용자 결정 2026-08-14). */
+  open?: boolean;
+  /** 시간바 오른쪽 화살표 — 넘기면 버튼이 생긴다. */
+  onToggleOpen?: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   // 썸네일을 못 뽑는 기기 사양이면 카드에 시각+타이틀만 남긴다(eventThumbs.ts).
@@ -2914,10 +2935,6 @@ function RecordingEventTimeline({
 
   // 레이아웃(px) — 다채널 RecordingControls 시간바 블록과 완전히 동일한 치수로
   // 시간바(라벨+눈금)를 그리고, 그 아래에 썸네일만 별도 레일로 붙인다.
-  const PAD_TOP = 12; // 시간바 위 여백(다채널과 동일)
-  const PAD_BOTTOM = 4; // 시간바 아래 여백. 삼각형 제거로 줄여 썸네일을 위로 붙인다.
-  const RAIL_H = 28; // 라벨+눈금 영역 높이. 눈금 아래 빈 공간 줄여 썸네일을 위로.
-  const BAR_H = PAD_TOP + RAIL_H + PAD_BOTTOM; // 시간바 블록 전체 높이(=62)
   const CARD_TOP = 8; // 썸네일 레일 기준 카드 윗변(시간바 바로 아래 약간 띄움)
 
   const currentTimeLabel = playbackMs
@@ -3056,10 +3073,41 @@ function RecordingEventTimeline({
             backgroundColor: "#111111",
           }}
         />
+        {/* 펼침/접기 화살표 — 접으면 아래 썸네일이 사라지고 시간바만 남는다
+            (사용자 결정 2026-08-14). 오른쪽 페이드 위에 얹으므로 z-20.
+            글자 오른쪽 끝이 화면 좌우 여백(px-5 = 20)에 맞게 32 버튼을 right 16 에
+            둔다(아이콘 24 → 16 + (32−24)/2 = 20). 시간바는 드래그로 스크럽되니
+            버튼에서 시작한 포인터는 막는다. */}
+        {onToggleOpen && (
+          <button
+            type="button"
+            aria-label={open ? "움직임 감지 접기" : "움직임 감지 펼치기"}
+            aria-expanded={open}
+            className="absolute z-20 flex items-center justify-center rounded-full"
+            style={{
+              right: "16px",
+              top: `${PAD_TOP + (RAIL_H - 32) / 2}px`,
+              width: "32px",
+              height: "32px",
+              backgroundColor: "#FFFFFF",
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleOpen();
+            }}
+          >
+            <ChevronDownIcon
+              className={`h-6 w-6 text-[#262626] ${open ? "rotate-180" : ""}`}
+            />
+          </button>
+        )}
       </div>
 
       {/* ── 썸네일 영역(시간바 아래 남는 세로 공간). 카드 높이는 CSS min(60px,100%)
-          라 이 영역보다 절대 커지지 않는다(짧은 화면에서도 잘리지 않고 줄어든다). ── */}
+          라 이 영역보다 절대 커지지 않는다(짧은 화면에서도 잘리지 않고 줄어든다).
+          접으면(open=false) 아예 안 그린다 — 부모가 높이를 BAR_H 로 줄인다. ── */}
+      {open && (
       <div ref={thumbAreaRef} className="relative min-h-0 flex-1">
         {/* 레일 — 영역 전체 높이(top0 bottom0)를 갖고 시간바와 같은 translateX 로 흐른다 */}
         <div
@@ -3125,6 +3173,7 @@ function RecordingEventTimeline({
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 }
