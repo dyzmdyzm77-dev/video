@@ -422,8 +422,10 @@ export default function VariantA3({
           onGallery={() => setSheetOpen(true)}
           onMore={() => setMoreOpen(true)}
           onAi={() => setAiOpen(true)}
-          // A-3: 가로 딤도 세로와 같은 재배치 — AI 좌하단 원, 크게 보기 우하단 원.
+          // A-3: 가로 딤도 세로와 같은 재배치 — 크게 보기 우하단 원.
           swapAiZoom
+          // AI 는 시간바 아래 가운데 줄로 옮겼다 — 딤 왼쪽 아래 원은 끈다.
+          showOverlayAi={false}
           // 실시간/녹화를 칩 두 개로 — 고른 쪽만 흰 배경 + 검정 글자.
           statusStyle="chips"
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
@@ -473,7 +475,7 @@ export default function VariantA3({
           controls={
             mode === "recording" ? (
               // 좌우 10 씩 안으로 — 시간바가 화면 끝까지 가면 아래 구석의
-              // AI·크게 보기 아이콘과 같은 띠에서 만난다(사용자 지정 2026-08-14).
+              // 크게 보기 아이콘과 같은 띠에서 만난다(사용자 지정 2026-08-14).
               <div style={{ paddingLeft: "10px", paddingRight: "10px" }}>
               <RecordingControls
                 overlay
@@ -488,6 +490,42 @@ export default function VariantA3({
                 onPlay={() => setIsPlaying(true)}
                 onSpeedChange={setPlaybackRate}
               />
+              {/* 시간바 아래 아이콘 줄 — AI · 메뉴 · 움직임 감지 셋을 가운데로
+                  모은다(사용자 지정 2026-08-14). 원 모양은 딤의 다른 원 버튼
+                  (34 · 반투명 검정 + 흰 테두리)과 같은 규격이다.
+                  AI 는 원래 딤 왼쪽 아래에 있던 그 버튼이라, 그쪽은 껐다
+                  (showOverlayAi={false}) — 안 끄면 같은 버튼이 두 개가 된다. */}
+              <div
+                className="pointer-events-auto flex items-center justify-center"
+                style={{ gap: "16px", paddingTop: "12px" }}
+              >
+                {[
+                  { key: "ai", label: "AI 검색", src: `${BASE}/ai_Icon.svg`, onClick: () => setAiOpen(true) },
+                  { key: "menu", label: "메뉴", src: `${BASE}/nav/menu.svg`, onClick: undefined },
+                  { key: "motion", label: "움직임 감지", src: `${BASE}/Type=Line.svg`, onClick: undefined },
+                ].map((b) => (
+                  <button
+                    key={b.key}
+                    type="button"
+                    aria-label={b.label}
+                    onClick={b.onClick}
+                    className="flex items-center justify-center rounded-full"
+                    style={{
+                      width: "34px",
+                      height: "34px",
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      backgroundColor: "rgba(0,0,0,0.35)",
+                    }}
+                  >
+                    <img
+                      src={b.src}
+                      alt=""
+                      className="h-7 w-7"
+                      style={{ filter: "brightness(0) invert(1)" }}
+                    />
+                  </button>
+                ))}
+              </div>
               </div>
             ) : null
           }

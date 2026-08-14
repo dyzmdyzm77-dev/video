@@ -297,6 +297,7 @@ export function GridSelectionOverlay({
   bottomHeight = "20%",
   showPageIndicator = true,
   swapAiZoom = false,
+  showAi = true,
   auto,
 }: {
   visible: boolean;
@@ -345,6 +346,10 @@ export function GridSelectionOverlay({
    *  우하단 원 버튼(AI 가 쓰던 자리), 우상단 줄에선 크게 보기가 빠진다.
    *  A-3안 전용(2026-08-14). 기본 false = 기존 그대로. */
   swapAiZoom?: boolean;
+  /** 딤 아래 AI 원 버튼을 그릴지. 기본 true = 기존 그대로.
+   *  A-3 가로는 AI 를 시간바 아래 가운데 줄로 옮겨서 여기선 끈다
+   *  (사용자 지정 2026-08-14) — 안 끄면 같은 버튼이 두 개가 된다. */
+  showAi?: boolean;
   /** 딤 자동 숨김 핸들(useAutoHide). 주면 아이콘을 만지는 동안 딤을 붙잡고,
    *  떼는 순간부터 5초를 다시 센다. 안 주면 기존 그대로(타이머 안 되돌림). */
   auto?: {
@@ -590,7 +595,7 @@ export function GridSelectionOverlay({
 
       {/* swapAiZoom(A-3): AI 원 버튼은 딤 왼쪽 아래 — 우하단(크게 보기)과 같은
           원 스타일, 페이지 인디케이터와 같은 높이. z-10 이유는 우하단 줄과 동일. */}
-      {swapAiZoom && (
+      {swapAiZoom && showAi && (
         <div
           className="absolute z-10"
           style={{
