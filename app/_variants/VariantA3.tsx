@@ -3232,25 +3232,35 @@ function MotionEventList({
   setPlaybackMs: (v: number | null) => void;
   cameraSrc: string;
 }) {
-  const base = playbackMs ?? Date.now();
   // 그 날 0시(로컬). 이벤트의 at 은 자정으로부터의 초라 여기에 더하면 실제 시각이 된다.
   const dayStart = (() => {
-    const d = new Date(base);
+    const d = new Date(playbackMs ?? Date.now());
     d.setHours(0, 0, 0, 0);
     return d.getTime();
   })();
+  // 목록을 어디까지 담을지 — '그 날을 열어 본 시점'에 한 번만 정하고 붙잡는다.
+  // playbackMs 를 기준으로 삼으면 안 된다: 항목을 고르는 순간 그 시각이 새 기준이
+  // 되어 그 뒤 이벤트가 통째로 잘리고, 고른 게 최신이 되어 맨 위로 올라간다
+  // (사용자 지적: "왜 선택하면 맨위로 가니?"). 재생 중에도 매 틱 다시 계산돼
+  // 목록이 계속 밀렸다. 날짜가 바뀔 때만 다시 잡는다.
+  const [cutoff, setCutoff] = useState(() => Date.now());
+  useEffect(() => {
+    setCutoff(Date.now());
+  }, [dayStart]);
   const rows = useMemo(() => {
+    // 지난 날이면 그 날 끝까지, 오늘이면 지금까지(아직 안 온 시각은 녹화가 없다).
+    const until = Math.min(cutoff, dayStart + 86400000);
     const out: { ms: number; dur: number; kind: EventKind }[] = [];
     // 뒤에서부터(최신) 훑어 상한만큼만 담는다 — 앞에서 담고 자르면 새벽 것만 남는다.
     for (let i = TIMELINE_EVENTS.length - 1; i >= 0; i--) {
       const ev = TIMELINE_EVENTS[i];
       const ms = dayStart + ev.at * 1000;
-      if (ms > base) continue; // 아직 안 온 시각
+      if (ms > until) continue;
       out.push({ ms, dur: ev.dur, kind: ev.kind });
       if (out.length >= MOTION_LIST_MAX) break;
     }
     return out;
-  }, [dayStart, base]);
+  }, [dayStart, cutoff]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
