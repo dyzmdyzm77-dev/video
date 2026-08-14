@@ -1386,23 +1386,6 @@ function ExpandedView({
       })()
     : dateLabel;
 
-  const MAX_DOTS = 7;
-  const totalDots = CAMERAS.length;
-  const dotSizeByAbsOffset = [6, 5, 4, 3, 2];
-  const desiredOffsets = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
-  const visibleOffsets: number[] = desiredOffsets.filter(
-    (o) => index + o >= 0 && index + o < totalDots,
-  );
-  while (visibleOffsets.length > MAX_DOTS) {
-    if (
-      Math.abs(visibleOffsets[0]) >=
-      Math.abs(visibleOffsets[visibleOffsets.length - 1])
-    ) {
-      visibleOffsets.shift();
-    } else {
-      visibleOffsets.pop();
-    }
-  }
   const headerBlock = (
     <>
       {/* 확대뷰 헤더 — 다채널 화면과 동일. 녹화 모드에서도 항상 표시 */}
@@ -1569,37 +1552,6 @@ function ExpandedView({
                   style={{ filter: "brightness(0) invert(1)" }}
                 />
               </button>
-            </div>
-            <div
-              className="absolute left-1/2 -translate-x-1/2 flex items-center rounded-full"
-              style={{
-                bottom: "12px",
-                backgroundColor: "rgba(0,0,0,0.55)",
-                padding: "8px 14px",
-                gap: "8px",
-              }}
-            >
-              {visibleOffsets.map((offset) => {
-                const camIdx = index + offset;
-                const size =
-                  dotSizeByAbsOffset[
-                    Math.min(Math.abs(offset), dotSizeByAbsOffset.length - 1)
-                  ];
-                const isActive = offset === 0;
-                return (
-                  <span
-                    key={camIdx}
-                    className="rounded-full transition-all duration-200 ease-out"
-                    style={{
-                      width: `${size}px`,
-                      height: `${size}px`,
-                      backgroundColor: isActive
-                        ? "#ffffff"
-                        : "rgba(255,255,255,0.4)",
-                    }}
-                  />
-                );
-              })}
             </div>
             {/* 크게 보기 — 딤 오른쪽 아래, 원래 AI 가 쓰던 원 버튼 자리(A-3 에서
                 자리 맞바꿈). 원 스타일(반투명 검정 + 흰 테두리)은 그대로 물려받고,
