@@ -3327,14 +3327,17 @@ function RecordingEventTimeline({
           {ticks.filter(({ secOffset }) => inView(secOffset)).map(({ secOffset, isMajor }) => (
             <div
               key={`T${secOffset}`}
-              className="pointer-events-none absolute rounded-[1px]"
+              className="pointer-events-none absolute rounded-full"
               style={{
                 left: `calc(50% + ${xOf(secOffset)}px)`,
-                // 대/소 눈금 길이를 짧은 것(8px)으로 통일. 소 눈금 색만 밝은 그레이.
-                // 라벨(top 0~10)과 눈금 사이 간격을 좁히려 top 26→18.
-                top: "18px",
-                width: "2px",
-                height: "8px",
+                // 눈금은 가로세로가 같은 3px 점이다(사용자 지정 2026-08-14:
+                // "가로세로 동일하게 점처럼"). 2×8 세로 막대였는데, 눈금 간격이
+                // 6px 이라 3 이 상한 — 4 면 사이가 2px 밖에 안 남아 붙어 보인다.
+                // 대/소는 길이가 아니라 색으로만 가른다.
+                // 라벨(top 0~10) 아래, 옛 막대(18~26)의 가운데 즈음인 20.
+                top: "20px",
+                width: "3px",
+                height: "3px",
                 // 큰 눈금은 흰색(사용자 지정 2026-08-14). 이 시간바는 흰 바탕이라
                 // 사실상 안 보이게 된다 — 작은 눈금만 남는 셈이다.
                 // 그 작은 눈금은 #C4C4C4 → #ADADAD 로 살짝 진하게(사용자 지정
@@ -3345,8 +3348,8 @@ function RecordingEventTimeline({
           ))}
           {/* 움직임이 감지된 시각 — 빨간 세로선(사용자 요청 2026-08-14).
               눈금과 같은 레일에 있어 같이 흐른다. 크기는 작은 눈금과 똑같이
-              2×8 · top 18 이다(사용자 지정 2026-08-14) — 길이로 구분하지 않고
-              색으로만 구분한다.
+              3×3 점 · top 20 이다(사용자 지정 2026-08-14) — 모양·크기로
+              구분하지 않고 색으로만 구분한다.
               색은 노랑과 주황 사이(#F59E0B, 사용자 지정). 빨강(#E2202D)이었는데
               감지 유형 칩의 '이상 상황' 빨강과 뜻이 겹쳐 보였다.
               눈금과 마찬가지로 화면에 보이는 범위만 그린다 — 하루 ~4900건이라
@@ -3358,12 +3361,12 @@ function RecordingEventTimeline({
           {eventOccurrences.filter((c) => inView(c.secOffset)).map((c) => (
             <div
               key={`M${c.key}`}
-              className="pointer-events-none absolute rounded-[1px]"
+              className="pointer-events-none absolute rounded-full"
               style={{
                 left: `calc(50% + ${xOf(c.secOffset)}px)`,
-                top: "18px",
-                width: "2px",
-                height: "8px",
+                top: "20px",
+                width: "3px",
+                height: "3px",
                 backgroundColor: "#F59E0B",
               }}
             />
@@ -4648,14 +4651,17 @@ function RecordingControls({
           {ticks.map(({ secOffset, isMajor }) => (
             <div
               key={`T${secOffset}`}
-              className="absolute rounded-[1px]"
+              className="absolute rounded-full"
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                // 대/소 눈금 길이를 짧은 것(8px)으로 통일. 소 눈금 색만 밝은 그레이.
-                // 라벨(top 0~10)과 눈금 사이 간격을 좁히려 top 26→18.
-                top: "18px",
-                width: "2px",
-                height: "8px",
+                // 눈금은 가로세로가 같은 3px 점이다(사용자 지정 2026-08-14:
+                // "가로세로 동일하게 점처럼"). 2×8 세로 막대였는데, 눈금 간격이
+                // 6px 이라 3 이 상한 — 4 면 사이가 2px 밖에 안 남아 붙어 보인다.
+                // 대/소는 길이가 아니라 색으로만 가른다.
+                // 라벨(top 0~10) 아래, 옛 막대(18~26)의 가운데 즈음인 20.
+                top: "20px",
+                width: "3px",
+                height: "3px",
                 // 딤 위(가로): 큰 눈금은 흰색, 작은 눈금은 불투명 연회색(#BFBFBF).
                 // 흰색 50% 였던 걸 투명도만 빼려다 둘 다 흰색이 돼 구분이 사라졌다
                 // (사용자 지적: "너무 연해져서 아예 하얀색이 되버렸어").
@@ -4670,16 +4676,16 @@ function RecordingControls({
               }}
             />
           ))}
-          {/* 감지 표시 — 작은 눈금과 같은 규격(2×8, top 18)에 색만 #F59E0B. */}
+          {/* 감지 표시 — 작은 눈금과 같은 규격(3×3 점, top 20)에 색만 #F59E0B. */}
           {motionMarks.map((secOffset, i) => (
             <div
               key={`M${i}`}
-              className="pointer-events-none absolute rounded-[1px]"
+              className="pointer-events-none absolute rounded-full"
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                top: "18px",
-                width: "2px",
-                height: "8px",
+                top: "20px",
+                width: "3px",
+                height: "3px",
                 backgroundColor: "#F59E0B",
               }}
             />
