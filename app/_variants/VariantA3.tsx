@@ -3105,6 +3105,25 @@ function RecordingEventTimeline({
               }}
             />
           ))}
+          {/* 움직임이 감지된 시각 — 빨간 세로선(사용자 요청 2026-08-14).
+              눈금과 같은 레일에 있어 같이 흐른다. 눈금(top 18~26)보다 위아래로
+              길게(14~32) 그어 회색 눈금 사이에서 바로 눈에 걸리게 한다.
+              색은 감지 유형 칩(EventKindChip)의 이상 상황 빨강과 같은 #E2202D.
+              눈금과 마찬가지로 화면에 보이는 범위만 그린다 — 하루 ~4900건이라
+              다 그리면 스크롤이 죽는다. */}
+          {clusters.filter((c) => inView(c.secOffset)).map((c) => (
+            <div
+              key={`M${c.key}`}
+              className="pointer-events-none absolute rounded-[1px]"
+              style={{
+                left: `calc(50% + ${xOf(c.secOffset)}px)`,
+                top: "14px",
+                width: "2px",
+                height: "18px",
+                backgroundColor: "#E2202D",
+              }}
+            />
+          ))}
         </div>
         {/* 좌우 페이드(다채널과 동일 — 블록 전체 높이) */}
         <div
