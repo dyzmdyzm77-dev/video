@@ -1761,11 +1761,10 @@ function ExpandedView({
               }}
             />
           </div>
-          {/* 사이드 패널에선 탭이 오른쪽으로 빠져 이 선 바로 아래가 하단 탭바다.
-              탭바가 이미 위 테두리를 갖고 있어서 두 줄이 붙어 2px 로 보인다. */}
-          {!sidePanel && (
-            <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
-          )}
+          {/* 5버튼 아래 구분선. 사이드 패널에서도 이제는 그린다 — 예전엔 이 선
+              바로 아래가 하단 탭바(위 테두리 있음)라 두 줄이 2px 로 붙어서 껐는데,
+              지금은 그 아래에 시간바가 들어온다(사용자 지적: "왜 구분선은 없지"). */}
+          <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
         </>
       )}
     </>
@@ -1775,6 +1774,25 @@ function ExpandedView({
   // 여기서만 쓴다.
   const tabsBlock = (
     <>
+      {mode !== "recording" && (
+        // 실시간엔 감지가 없어 탭이 아니라 제목 하나다 — 아래 스트립과 같은 규칙
+        // (사용자 지정 2026-08-14). 예전엔 패널 위가 아예 비어 있어서 오른쪽에
+        // 뭐가 있는지 이름표가 없었다. 서식·여백(14/14)은 탭과 같다.
+        <>
+          <div
+            className="flex items-center px-5"
+            style={{ paddingTop: "14px", paddingBottom: "14px" }}
+          >
+            <span
+              className="text-[15px] font-bold leading-none"
+              style={{ color: "#262626" }}
+            >
+              카메라 목록
+            </span>
+          </div>
+          <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+        </>
+      )}
       {mode === "recording" && (
         <>
           <div className="flex items-center px-5" style={{ gap: "20px" }}>
@@ -1818,7 +1836,9 @@ function ExpandedView({
         height: `${BAR_H_CLOSED}px`,
         // 아래 구분선 — 시간바와 탭의 경계(사용자 요청).
         // 색·두께는 A-2 탭 스트립 밑줄과 같은 #EBEBEB 1px.
-        borderBottom: "1px solid #EBEBEB",
+        // 사이드 패널에선 이게 왼쪽 컬럼의 마지막이라 바로 아래가 하단 탭바다.
+        // 탭바가 이미 위 테두리를 갖고 있어 두 줄이 2px 로 붙는다 — 그때만 뺀다.
+        borderBottom: sidePanel ? undefined : "1px solid #EBEBEB",
       }}
     >
       <RecordingEventTimeline
