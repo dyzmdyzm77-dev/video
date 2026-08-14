@@ -3152,9 +3152,11 @@ function RecordingEventTimeline({
             backgroundColor: "#111111",
           }}
         />
-        {/* 날짜·시간 선택 — 원(28×28 · 흰 배경 · border-neutral-300)을 도로 넣었다
-            (사용자 결정 2026-08-14). 아이콘은 20 — time.svg 는 24 박스를 거의 꽉
-            채우는 그림이라 24 로 넣으면 원에 닿아 동그라미가 안 보인다.
+        {/* 날짜·시간 선택 — 원(흰 배경 · border-neutral-300)을 도로 넣었다
+            (사용자 결정 2026-08-14). 크기는 딤의 확대·AI 원 버튼과 같은 34
+            (사용자 지정: "확대 아이콘 마냥"). 아이콘은 24 — 확대 쪽은 28 을 쓰지만
+            그 에셋은 안쪽 여백이 있고 time.svg 는 박스를 거의 꽉 채우는 그림이라,
+            28 로 넣으면 원에 닿아 동그라미가 안 보인다. 24 면 사방 5 가 남는다.
             그 오른쪽 세로 구분선은 그대로 둔다 — 흐르는 눈금과 갈라 준다.
             원 왼쪽 끝은 화면 좌우 여백 20, 세로는 눈금 레일(RAIL_H) 가운데.
             구분선 색은 앱 공용 #EBEBEB, 높이는 눈금(8)보다 길고 레일(28)보다 짧은 16.
@@ -3166,8 +3168,8 @@ function RecordingEventTimeline({
             className="absolute z-20 flex items-center"
             style={{
               left: "20px",
-              top: `${PAD_TOP + (RAIL_H - 28) / 2}px`,
-              height: "28px",
+              top: `${PAD_TOP + (RAIL_H - 34) / 2}px`,
+              height: "34px",
               gap: "12px",
               backgroundColor: "#FFFFFF",
             }}
@@ -3176,14 +3178,14 @@ function RecordingEventTimeline({
             <button
               type="button"
               aria-label="날짜, 시간 선택"
-              className="flex h-[28px] w-[28px] items-center justify-center rounded-full border border-neutral-300"
+              className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-neutral-300"
               style={{ backgroundColor: "#FFFFFF" }}
               onClick={(e) => {
                 e.stopPropagation();
                 onOpenDateTime();
               }}
             >
-              <img src={`${BASE}/time.svg`} alt="" className="h-5 w-5" />
+              <img src={`${BASE}/time.svg`} alt="" className="h-6 w-6" />
             </button>
             <span
               aria-hidden
