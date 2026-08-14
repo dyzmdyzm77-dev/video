@@ -228,8 +228,12 @@ export default function LandscapeVideo({
   /** 실시간/녹화 칩 + 시각을 어디에 둘지.
    *  "bottom-left"(기본) — 딤 아래 왼쪽, 녹화 컨트롤 바로 위. 기존 그대로.
    *  "top-center"      — 딤 위 가운데. 장소명(왼쪽)·딤 아이콘(오른쪽)과 같은 줄에
-   *                      앉는다. 녹화 컨트롤은 그대로 아래 남는다. */
-  statusPlacement?: "bottom-left" | "top-center";
+   *                      앉는다. 녹화 컨트롤은 그대로 아래 남는다.
+   *  "top-right"       — 오른쪽 위. 딤 아이콘이 쓰던 자리를 칩이 가져가고,
+   *                      아이콘은 그 아래 줄로 내려간다(A-3, 사용자 지정
+   *                      2026-08-14). 좁은 폭에서도 자리를 안 옮긴다 —
+   *                      가운데 정렬과 달리 장소명과 물릴 일이 없다. */
+  statusPlacement?: "bottom-left" | "top-center" | "top-right";
   /** 딤 그라데이션 사양 — 안 주면 GridSelectionOverlay 기본값(0.6 / 25% / 20%).
    *  세로에서 더 진한 딤을 쓰는 안(A-1: 0.8)은 가로도 같은 값을 넘겨야 한다.
    *  안 그러면 같은 화면인데 가로만 옅어 보인다. */
@@ -505,6 +509,10 @@ export default function LandscapeVideo({
   // 16~115, 칩줄 71~213 로 44px 겹쳤다. 그때는 칩줄을 원래 자리(딤 아래 왼쪽,
   // 컨트롤 바로 위)로 내린다. 위 첫 줄엔 장소명 + 아이콘만 남아 편하게 들어간다.
   const topCenter = statusPlacement === "top-center" && !narrow;
+  // 오른쪽 위에 둘 땐 폭을 따지지 않는다 — 아이콘 줄을 아래로 내려 자리를 비우므로
+  // 장소명과 겹칠 일이 없다. 아이콘이 내려갈 거리(칩 높이 26 + 사이 10).
+  const topRight = statusPlacement === "top-right";
+  const ICON_ROW_DROP = 36;
 
   // 위 가운데 — 장소명(왼쪽)·딤 아이콘(오른쪽)과 한 줄로 읽히게 맞춘다. 아이콘 줄이
   // top 12 에 높이 32(중심 28)라 여기도 같은 값을 쓴다.
@@ -517,7 +525,14 @@ export default function LandscapeVideo({
         statusRow,
         "wrap",
       )
-    : null;
+    : topRight
+      ? dimLayer(
+          "flex items-center justify-end",
+          { top: "12px", right: `${edgeInset ?? 20}px`, height: "32px" },
+          statusRow,
+          "wrap",
+        )
+      : null;
 
   // 딤 아래 — (기본이면) 칩 줄 + 녹화 플레이어·시간바. 둘을 한 덩어리로 쌓아
   // 바 높이를 몰라도 칩 줄이 항상 그 위에 앉는다. 위 가운데로 올린 경우엔
@@ -527,7 +542,7 @@ export default function LandscapeVideo({
   // 아이콘이랑 AI 아이콘도 안눌려져"). 껍데기는 통과시키고, 실제 내용(칩 줄 ·
   // 컨트롤)만 자기 크기만큼 클릭을 받는다.
   const statusBottom =
-    !topCenter || controls
+    !(topCenter || topRight) || controls
       ? dimLayer(
           "inset-x-0",
           {
@@ -538,7 +553,7 @@ export default function LandscapeVideo({
             bottom: `${(bottomInset ?? 12) - 12}px`,
           },
           <>
-            {!topCenter && (
+            {!topCenter && !topRight && (
               <div
                 className="pointer-events-none pb-3 transition-opacity duration-150 ease-out"
                 style={{
@@ -699,6 +714,8 @@ export default function LandscapeVideo({
       onMenu={onMenu}
       edgeInset={edgeInset}
       {...(bottomInset != null ? { bottomInset } : null)}
+      // 칩을 오른쪽 위로 올린 안(A-3)에선 아이콘 줄이 그만큼 아래로 내려간다.
+      topInset={topRight ? ICON_ROW_DROP : 0}
       onFit={cycle}
       fit={fit}
       dimAlpha={dimAlpha}

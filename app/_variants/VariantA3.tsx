@@ -438,6 +438,8 @@ export default function VariantA3({
           swapAiZoom
           // 실시간/녹화를 칩 두 개로 — 고른 쪽만 흰 배경 + 검정 글자.
           statusStyle="chips"
+          // 칩은 오른쪽 위, 딤 아이콘은 그 아래 줄로(사용자 지정 2026-08-14).
+          statusPlacement="top-right"
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 40 — A-1 가로와 같은 값으로(사용자 지정).
@@ -1062,21 +1064,9 @@ function ExpandedSlide({
           opacity: driving ? 1 : paused ? 1 : 0,
         }}
       />
-      {/* 시각 배지 — 아래 가운데(사용자 결정 2026-08-14). 위 가운데 → 왼쪽 아래를
-          거쳐 여기로 왔다. 가로 단일도 같은 자리다(badgeAlign="bottom-center"). */}
-      <div
-        suppressHydrationWarning
-        className="absolute inline-flex -translate-x-1/2 items-center bg-black/55 text-[10px] font-medium leading-none text-white"
-        style={{
-          bottom: "4px",
-          left: "50%",
-          height: "17px",
-          padding: "0 4px",
-          borderRadius: "2px",
-        }}
-      >
-        {timeLabel ?? c.label}
-      </div>
+      {/* 시각 배지는 여기 없다 — 딤 층의 상단 가운데로 옮겼다(사용자 지정
+          2026-08-14: "단일 영상 딤에 날짜 시간 표시 상단 센터에"). 늘 떠 있던
+          것을 딤과 같이 뜨고 지게 바꾼 것이라, 이 컴포넌트는 영상만 그린다. */}
     </>
   );
 }
@@ -1589,11 +1579,6 @@ function ExpandedView({
                     mode === "recording" && (isScrubbing || !isPlaying)
                   }
                   fit={videoFit}
-                  // 녹화면 스크럽한 시점, 실시간이면 현재 시각 — 없앤 날짜 줄이
-                  // 쓰던 문구를 그대로 쓴다.
-                  timeLabel={stripYear(
-                    mode === "recording" ? recordingDateLabel : dateLabel,
-                  )}
                 />
               </div>
             ))}
@@ -1619,6 +1604,16 @@ function ExpandedView({
                   "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
               }}
             />
+            {/* 날짜·시각 — 딤 상단 가운데(사용자 지정 2026-08-14). 늘 떠 있던
+                영상 위 배지를 여기로 옮겼다. 딤과 같이 뜨고 지므로 영상을 볼 땐
+                화면이 깨끗하다. */}
+            <div
+              suppressHydrationWarning
+              className="absolute left-1/2 -translate-x-1/2 inline-flex items-center rounded-full bg-black/55 text-[12px] font-medium leading-none text-white"
+              style={{ top: "12px", height: "24px", padding: "0 10px" }}
+            >
+              {stripYear(mode === "recording" ? recordingDateLabel : dateLabel)}
+            </div>
             {/* 카메라 이름 — 좌상단 배지가 시각으로 바뀌면서 이름이 갈 곳이 없어졌다
                 (사용자 결정 2026-08-14). 딤일 때만 좌상단에 띄운다. 위 그라데이션
                 스크림 위라 흰 글씨로 충분히 읽힌다.
@@ -1773,11 +1768,44 @@ function ExpandedView({
       </div>
     </>
   );
-  // A-3 에는 영상 아래 'LIVE/녹화 · 시각 · 캡처' 줄이 없다(사용자 결정 2026-08-14).
-  // 시각은 영상 좌상단 배지(ExpandedSlide 의 timeLabel)로 올라갔다. 같이 사라진
-  // 것들 — 캡처 버튼, REC 칩(플레이어 접기), LIVE 칩(가짜 시스템 바 토글), 그리고
-  // 날짜·시간 선택 진입. 녹화 시점 선택은 실시간↔녹화 토글로 들어올 때 뜨는
-  // 시트로만 남는다. 다채널 화면은 이 줄을 그대로 쓴다 — 여기만 뺀 것이다.
+  // 영상 아래 '실시간/녹화 배지 + 날짜·시각' 줄. 한 번 없앴다가 되살렸다
+  // (사용자 지정 2026-08-14: "다채널에 있는 그거 단일에도 다 같이 넣어줘").
+  // 다채널 화면의 같은 줄과 내용·서식이 같다. 캡처 버튼만 빠져 있는데, 그건
+  // 그 사이에 '카메라 목록' 탭 줄 오른쪽으로 옮겼기 때문이다(두 번 두지 않는다).
+  // 녹화일 때 날짜를 누르면 날짜·시간 선택 시트가 열린다 — 다채널과 같다.
+  const dateBarBlock = (
+    <>
+      <div
+        className="relative flex flex-none items-center px-5"
+        style={{ height: "44px" }}
+      >
+        {mode === "recording" ? (
+          <RecBadge onClick={onToggleTimeline} />
+        ) : (
+          <LiveBadge onClick={onToggleChrome} />
+        )}
+        {mode === "recording" ? (
+          <button
+            type="button"
+            onClick={onOpenDateTime}
+            className="ml-2 flex items-center gap-0 text-[14px] font-medium leading-none text-[#353535]"
+          >
+            <span suppressHydrationWarning>{recordingDateLabel}</span>
+            <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
+          </button>
+        ) : (
+          <span
+            suppressHydrationWarning
+            className="ml-2 text-[14px] font-medium leading-none text-[#353535]"
+          >
+            {dateLabel}
+          </span>
+        )}
+        <RowSkeleton visible={videoLoading} />
+      </div>
+      <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+    </>
+  );
   const playerBlock = (
     <>
       {/* 녹화 모드일 때 플레이어 버튼 — 시간바(타임라인) 위. REC 칩을 누르면
@@ -2084,6 +2112,7 @@ function ExpandedView({
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {videoBlock}
+            {dateBarBlock}
             {playerBlock}
             {/* 시간바 — 5버튼 바로 아래(사용자 지정 2026-08-14). 패널이 나와도
                 재생 위치를 잡을 게 있어야 한다. 세로 화면과 같은 시간바라
@@ -2101,6 +2130,7 @@ function ExpandedView({
       ) : (
         <>
           {videoBlock}
+          {dateBarBlock}
           {playerBlock}
           {bottomStrip}
         </>
