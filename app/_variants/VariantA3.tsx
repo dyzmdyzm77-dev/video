@@ -3121,20 +3121,32 @@ function RecordingEventTimeline({
               "linear-gradient(to right, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
           }}
         />
-        {/* 중앙 고정 현재 시각 라벨(다채널과 동일 — 다크) */}
+        {/* 중앙 고정 현재 시각 라벨(다채널과 동일 — 다크).
+            top 은 10 → 6: 알약 배지(20)가 되면서 아래 현재시각 마커(27~41)와
+            겹쳤다. 6 이면 배지가 6~26 이라 마커 바로 위에 앉는다. */}
         <div
           className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
-          style={{ top: "10px", lineHeight: 0 }}
+        style={{ top: "6px", lineHeight: 0 }}
         >
+          {/* 알약 배지 — 검정 50% 배경 + 흰 글자(사용자 지정). '원'을 넣어 달라고
+              했지만 글자가 가로로 길어 정원은 안 맞는다. 높이 20 · 좌우 8 ·
+              rounded-full 이다. 테두리는 없다 — 어두운 배경엔 회색 선이 안 맞는다.
+              배경을 깔아야 하는 이유는 달력 버튼과 같다: 아래로 흐르는 눈금이
+              글자에 겹쳐 지저분해진다. 반투명이라 눈금이 살짝 비치지만, 흐르는
+              게 보이는 편이 '지금 여기'를 짚는 데엔 오히려 낫다. */}
           <span
             suppressHydrationWarning
+            className="rounded-full"
             style={{
-              display: "inline-block",
-              color: "#353535",
+              display: "inline-flex",
+              alignItems: "center",
+              height: "20px",
+              color: "#FFFFFF",
+              backgroundColor: "rgba(0,0,0,0.5)",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
-              padding: "0 6px",
+              padding: "0 8px",
               verticalAlign: "top",
             }}
           >
