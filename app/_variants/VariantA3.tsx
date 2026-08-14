@@ -442,12 +442,11 @@ export default function VariantA3({
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 40 — A-1 가로와 같은 값으로(사용자 지정).
           edgeInset={40}
-          // 시간바 층은 이 값에서 12 를 뺀 만큼 뜬다 → 하단 마진 40.
-          bottomInset={52}
-          // AI·크게 보기 아이콘은 시간바 '위'로 올린다 — 시간바 하단 마진(40) +
-          // 시간바 높이(52) + 10 = 102(사용자 지정 2026-08-14).
-          // 예전엔 bottomInset 하나로 둘이 같이 움직여 아이콘이 시간바와 겹쳤다.
-          iconBottomInset={102}
+          // 아래 줄(AI 버튼·페이지 점)을 12 → 62 로 띄운다. 바로 아래에 시간바가
+          // 깔려서 붙어 보이고 클릭도 겹쳤다(사용자 지정: "하단 마진도 한 20 더").
+          // 시간바 층은 이 값에서 12 를 뺀 만큼 뜨므로 하단 마진 = 50 이 된다
+          // (40 에서 10 더 — 사용자 지정 2026-08-14).
+          bottomInset={62}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}

@@ -101,7 +101,6 @@ export default function LandscapeVideo({
   centerControls,
   edgeInset,
   bottomInset,
-  iconBottomInset,
   headerAlign = "center",
   statusStyle = "segment",
   statusActiveStyle = "brand",
@@ -166,11 +165,6 @@ export default function LandscapeVideo({
   /** 딤 아래 줄(메뉴·AI · 페이지 점)이 화면 아래에서 떨어지는 거리(px).
    *  기본 12. 아래에 시간바가 깔리는 안에서 그 위로 띄우는 용도. */
   bottomInset?: number;
-  /** 딤 아이콘(AI·크게 보기·페이지 점)만 따로 띄울 거리(px). 안 주면 bottomInset
-   *  을 그대로 쓴다(지금까지의 동작 — 시간바 층과 아이콘이 같이 움직인다).
-   *  A-3 은 아이콘을 시간바 '위'로 올려야 해서 둘을 갈랐다(사용자 지정
-   *  2026-08-14: "AI버튼이랑 축소버튼은 시간바 상단에서 10정도 띄운 곳으로"). */
-  iconBottomInset?: number;
   /** 장소명 줄을 오른쪽 아이콘 줄과 어떻게 맞출지.
    *   center = 지금까지의 기본. 56 높이 안에서 세로 가운데(중심 28).
    *   top    = 윗변끼리 맞춘다(둘 다 top 12). 장소명이 두 줄이라 가운데 정렬이면
@@ -704,9 +698,7 @@ export default function LandscapeVideo({
       swapAiZoom={swapAiZoom}
       onMenu={onMenu}
       edgeInset={edgeInset}
-      {...(iconBottomInset ?? bottomInset) != null
-        ? { bottomInset: iconBottomInset ?? bottomInset }
-        : null}
+      {...(bottomInset != null ? { bottomInset } : null)}
       onFit={cycle}
       fit={fit}
       dimAlpha={dimAlpha}
