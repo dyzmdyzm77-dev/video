@@ -1333,8 +1333,51 @@ function ExpandedView({
   const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const swipedRef = useRef(false);
 
+  // ── 단일 영상 줌 ─────────────────────────────────────────────────────────
+  // 두 손가락으로 벌리면 확대, 오므리면 축소(사용자 요청 2026-08-14).
+  // 확대된 동안은 한 손가락 드래그가 카메라 넘김이 아니라 '이동(pan)'이 된다 —
+  // 확대해 놓고 구석을 보려는 게 자연스러운 다음 동작이라서다.
+  // 데스크톱에서는 휠(트랙패드 핀치 포함)로도 조절된다.
+  const ZOOM_MIN = 1;
+  const ZOOM_MAX = 4;
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  // 화면에 닿아 있는 포인터들. 두 개가 되면 그 사이 거리로 배율을 잡는다.
+  const ptsRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
+  const panRef = useRef<{ x: number; y: number; px: number; py: number } | null>(
+    null,
+  );
+  const zoomBoxRef = useRef<HTMLDivElement>(null);
+  // 확대한 만큼만 움직일 수 있게 가둔다 — 안 그러면 영상이 화면 밖으로 빠진다.
+  const clampPan = (z: number, x: number, y: number) => {
+    const el = zoomBoxRef.current;
+    if (!el) return { x: 0, y: 0 };
+    const maxX = (el.clientWidth * (z - 1)) / 2;
+    const maxY = (el.clientHeight * (z - 1)) / 2;
+    return {
+      x: Math.max(-maxX, Math.min(maxX, x)),
+      y: Math.max(-maxY, Math.min(maxY, y)),
+    };
+  };
+  const applyZoom = (z: number, nextPan?: { x: number; y: number }) => {
+    const clamped = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+    setZoom(clamped);
+    const p = nextPan ?? pan;
+    setPan(clamped <= 1 ? { x: 0, y: 0 } : clampPan(clamped, p.x, p.y));
+  };
+  // 카메라를 바꾸거나 실시간↔녹화로 넘어가면 원래 크기로 돌린다 —
+  // 확대한 채로 다른 화면에 들어가면 어디를 보는지 알 수 없다.
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, [index, mode]);
+
+  // 확대 중 이동(pan)한 직후인가 — 그 뒤 따라오는 click(딤 토글)을 막는다.
+  const pannedRef = useRef(false);
   const handleVideoClick = () => {
     if (swipedRef.current) return;
+    if (pannedRef.current) return;
     if (clickTimerRef.current !== null) {
       clearTimeout(clickTimerRef.current);
       clickTimerRef.current = null;
@@ -1348,12 +1391,59 @@ function ExpandedView({
   };
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    swipeRef.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+    ptsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptsRef.current.size === 2) {
+      // 두 번째 손가락이 닿는 순간 — 그때의 거리와 배율을 기준으로 잡는다.
+      const [a, b] = [...ptsRef.current.values()];
+      pinchRef.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), zoom };
+      panRef.current = null;
+      swipeRef.current = null;
+      return;
+    }
+    if (zoom > 1) {
+      // 확대 중엔 한 손가락 드래그가 이동(pan)이다 — 카메라 넘김이 아니다.
+      panRef.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
+      swipeRef.current = null;
+    } else {
+      swipeRef.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+    }
     // 누르고 있는 동안 딤을 붙잡는다(길게 누르기·드래그 중 안 사라지게).
     controlsAuto.hold();
   };
 
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!ptsRef.current.has(e.pointerId)) return;
+    ptsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const pinch = pinchRef.current;
+    if (pinch && ptsRef.current.size >= 2) {
+      const [a, b] = [...ptsRef.current.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinch.dist > 0) applyZoom((pinch.zoom * dist) / pinch.dist);
+      return;
+    }
+    const p = panRef.current;
+    if (p && zoom > 1) {
+      const nx = p.px + (e.clientX - p.x);
+      const ny = p.py + (e.clientY - p.y);
+      // 조금이라도 움직였으면 '이동'으로 친다 — 뒤따라오는 click(딤 토글)을 막는다.
+      if (Math.abs(e.clientX - p.x) > 4 || Math.abs(e.clientY - p.y) > 4) {
+        pannedRef.current = true;
+      }
+      setPan(clampPan(zoom, nx, ny));
+    }
+  };
+
   const handlePointerUp = (e: React.PointerEvent) => {
+    ptsRef.current.delete(e.pointerId);
+    if (ptsRef.current.size < 2) pinchRef.current = null;
+    if (ptsRef.current.size === 0) {
+      panRef.current = null;
+      if (pannedRef.current) {
+        setTimeout(() => {
+          pannedRef.current = false;
+        }, 50);
+      }
+    }
     // 손을 뗀 시점부터 5초를 다시 센다. 아래 조기 반환들보다 먼저 놓아야
     // 붙잡은 상태가 남아 딤이 영영 안 꺼지는 일이 없다.
     controlsAuto.release();
@@ -1374,6 +1464,12 @@ function ExpandedView({
     } else {
       if (index > 0) onSelect(index - 1);
     }
+  };
+
+  // 데스크톱 — 휠(트랙패드 핀치 포함)로도 조절한다. 목업을 마우스로 볼 때 필요하다.
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!e.ctrlKey && Math.abs(e.deltaY) < 2) return;
+    applyZoom(zoom * (1 - e.deltaY / 300));
   };
 
 
@@ -1437,12 +1533,32 @@ function ExpandedView({
         data-wide={sidePanel ? undefined : "fill"}
       >
         <div
-          className="single-video-box relative cursor-pointer touch-pan-y select-none overflow-hidden bg-neutral-900"
+          ref={zoomBoxRef}
+          className="single-video-box relative cursor-pointer select-none overflow-hidden bg-neutral-900"
+          // 확대 중엔 브라우저에 제스처를 넘기지 않는다 — 안 그러면 두 손가락
+          // 벌리기가 페이지 확대로, 드래그가 스크롤로 새어 나간다.
+          style={{ touchAction: zoom > 1 ? "none" : "pan-y" }}
           onClick={handleVideoClick}
           onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
+          onWheel={handleWheel}
         >
+          {/* 줌 껍데기 — 확대·이동은 여기 한 겹에만 건다. 안쪽 슬라이드 띠는
+              카메라 넘김(translateX)을 그대로 쓰므로 둘이 안 부딪힌다. */}
+          <div
+            className="absolute inset-0"
+            style={{
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transformOrigin: "center",
+              // 손가락으로 조절하는 동안은 애니메이션을 걸지 않는다(따라오는 느낌이
+              // 아니라 늦게 붙는 느낌이 된다). 손을 떼고 원래대로 돌아갈 때만 부드럽게.
+              transition: pinchRef.current || panRef.current
+                ? "none"
+                : "transform 200ms ease-out",
+            }}
+          >
           <div
             className="absolute inset-0 flex transition-transform duration-300 ease-out"
             style={{
@@ -1472,6 +1588,7 @@ function ExpandedView({
                 />
               </div>
             ))}
+          </div>
           </div>
           <div
             className="pointer-events-none absolute inset-0 transition-opacity duration-300 ease-out"
