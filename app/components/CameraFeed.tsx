@@ -360,11 +360,15 @@ export function GridSelectionOverlay({
       className="pointer-events-none absolute inset-0 transition-opacity duration-300 ease-out"
       style={{ opacity: visible ? 1 : 0 }}
     >
-      {/* 상단 딤 그라데이션 */}
+      {/* 상단 딤 그라데이션 — 시간바를 끄는 동안(hideControls)엔 같이 걷는다
+          (사용자 요청 2026-08-14). 위 UI(장소명·아이콘 줄)는 이미 걷히는데
+          그라데이션만 남아 영상 위쪽이 계속 어두웠다. 아래 그라데이션은 그대로
+          둔다 — 거기엔 시간바가 얹혀 있어서 걷으면 눈금·글자가 영상에 묻힌다. */}
       <div
-        className="absolute inset-x-0 top-0"
+        className="absolute inset-x-0 top-0 transition-opacity duration-300 ease-out"
         style={{
           height: topHeight,
+          opacity: hideControls ? 0 : 1,
           background: `linear-gradient(to bottom, rgba(0,0,0,${dimAlpha}) 0%, rgba(0,0,0,0) 100%)`,
         }}
       />

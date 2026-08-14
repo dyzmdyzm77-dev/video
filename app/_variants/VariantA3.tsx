@@ -3141,10 +3141,10 @@ function RecordingEventTimeline({
               display: "inline-flex",
               alignItems: "center",
               height: "20px",
-              // 검정 50% + 흰 글자(사용자 지정). 흰색 반투명으로 갔더니 흰 바탕에
-              // 묻혀 너무 흐렸다 — 어두운 쪽이 눈금 위에서 또렷하게 떠 보인다.
-              color: "#FFFFFF",
-              backgroundColor: "rgba(0,0,0,0.5)",
+              // 흰색 70% + 어두운 글자(사용자 지정). 50% 는 흰 바탕에 묻혀 흐렸고
+              // 검정 반투명은 너무 셌다 — 70% 면 눈금을 덮으면서 바 톤도 안 깬다.
+              color: "#353535",
+              backgroundColor: "rgba(255,255,255,0.7)",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
@@ -4230,10 +4230,10 @@ function RecordingControls({
               display: "inline-flex",
               alignItems: "center",
               height: "20px",
-              // 검정 50% + 흰 글자(사용자 지정). 흰색 반투명으로 갔더니 흰 바탕에
-              // 묻혀 너무 흐렸다 — 어두운 쪽이 눈금 위에서 또렷하게 떠 보인다.
-              color: "#FFFFFF",
-              backgroundColor: "rgba(0,0,0,0.5)",
+              // 흰색 70% + 어두운 글자(사용자 지정). 50% 는 흰 바탕에 묻혀 흐렸고
+              // 검정 반투명은 너무 셌다 — 70% 면 눈금을 덮으면서 바 톤도 안 깬다.
+              color: "#353535",
+              backgroundColor: "rgba(255,255,255,0.7)",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
