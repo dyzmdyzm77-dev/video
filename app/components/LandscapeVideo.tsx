@@ -477,9 +477,15 @@ export default function LandscapeVideo({
     // 시간바를 끄는 동안에도 남길 층인가. 시간바 자체가 든 층만 true 다 —
     // 나머지는 걷어야 '시간바만 남는다'가 된다.
     keepWhileScrubbing = false,
+    // 페이드 없이 바로 뜨고 질 층인가. backdrop-filter(블러)를 쓰는 버튼이 든
+    // 층에 쓴다 — 부모 opacity 가 1 이 되기 전까지는 블러가 뒤를 못 읽어서,
+    // 투명하게 떴다가 블러가 뒤늦게 붙는다(사용자 지적 2026-08-14).
+    // opacity 가 1 미만이면 그 층이 격리돼 배경 샘플링이 끊기는 게 원인이라,
+    // 중간 상태 자체를 없애는 쪽이 확실하다.
+    noFade = false,
   ) => (
     <div
-      className={`absolute transition-opacity duration-300 ease-out ${className}`}
+      className={`absolute ${noFade ? "" : "transition-opacity duration-300 ease-out"} ${className}`}
       style={{
         ...style,
         opacity: dim && (keepWhileScrubbing || !scrubbing) ? 1 : 0,
@@ -599,6 +605,8 @@ export default function LandscapeVideo({
             )}
           </>,
           "shell",
+          true,
+          // 아이콘 원·시각 알약이 블러를 쓴다 — 이 층도 페이드 없이 바로 뜬다.
           true,
         )
       : null;
@@ -812,6 +820,9 @@ export default function LandscapeVideo({
           {},
           <div data-no-swipe="">{centerControls}</div>,
           "wrap",
+          false,
+          // 5버튼은 블러를 쓰므로 페이드 없이 바로 뜬다(위 noFade 주석 참고).
+          true,
         )}
     </div>
   );
