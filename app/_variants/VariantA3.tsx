@@ -3427,7 +3427,10 @@ function MotionEventList({
           ? // 가로 한 줄 — 한 덩어리씩 옆으로 나열하고 가로 스크롤(사용자 결정).
             // 세로로 쌓을 자리가 없을 때다. 좌우 여백(px-5)은 스크롤 안쪽 패딩이라
             // 첫/마지막만 20px 띄운다 — 카메라 목록 가로 배치와 같은 규칙.
-            "relative flex min-h-0 flex-1 items-stretch gap-2 px-5 pb-3 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            // pb 를 안 준다 — 이 컨테이너가 useListLayout 이 재는 '행'이라, 여기
+            // 여백을 주면 훅이 못 세고 그만큼 썸네일 세로만 깎인다(카메라 목록은
+            // 여백이 부모에 있어 chrome 에 잡힌다).
+            "relative flex min-h-0 flex-1 items-stretch gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           : "relative flex min-h-0 flex-1 flex-col overflow-y-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       }
     >
@@ -3461,7 +3464,10 @@ function MotionEventList({
                     // 덩어리 테두리와 겹쳐 두 겹으로 보였다.
                     // 라운드는 8 — 4 는 각져 보였다(사용자 지정). 안쪽 썸네일은
                     // 카메라 목록 타일과 같은 4 로 둔다(덩어리 안쪽이라 안 겹친다).
-                    padding: "6px 8px",
+                    // 위아래 여백은 0 이다 — 여백을 주면 그만큼 썸네일 세로가
+                    // 깎여 카메라 목록 타일(TILE_MIN_H)보다 작아진다. 두 탭의
+                    // 그림 높이를 맞추는 게 우선이라 좌우만 띄운다.
+                    padding: "0 8px",
                     borderRadius: "8px",
                     border: active ? "1px solid #1D6CEB" : "1px solid #EBEBEB",
                     backgroundColor: active
