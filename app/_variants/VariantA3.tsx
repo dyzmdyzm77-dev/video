@@ -1779,8 +1779,9 @@ function ExpandedView({
     <div
       className="relative flex flex-none flex-col"
       style={{
-        // 접으면 시간바만 남는다(BAR_H) — 남는 세로는 아래 카메라 목록이 가져간다.
-        height: `${motionOpen ? MOTION_MIN_H : BAR_H}px`,
+        // 접으면 시간바만 남는다(위아래 여백을 맞춘 BAR_H_CLOSED) — 남는 세로는
+        // 아래 카메라 목록이 가져간다.
+        height: `${motionOpen ? MOTION_MIN_H : BAR_H_CLOSED}px`,
         // 아래 구분선 — 감지 타임라인과 카메라 목록의 경계(사용자 요청).
         // 색·두께는 A-2 탭 스트립 밑줄과 같은 #EBEBEB 1px.
         borderBottom: "1px solid #EBEBEB",
@@ -2545,6 +2546,9 @@ const PAD_TOP = 12; // 시간바 위 여백
 const PAD_BOTTOM = 4; // 시간바 아래 여백. 삼각형 제거로 줄여 썸네일을 위로 붙인다.
 const RAIL_H = 28; // 라벨+눈금 영역 높이. 눈금 아래 빈 공간 줄여 썸네일을 위로.
 const BAR_H = PAD_TOP + RAIL_H + PAD_BOTTOM; // 시간바 블록 전체 높이(=44)
+// 접었을 때(썸네일 없음)는 위아래를 같게 — PAD_BOTTOM 4 는 바로 아래 썸네일을
+// 위로 붙이려고 줄인 값이라, 썸네일이 사라지면 아래만 얇아 보인다.
+const BAR_H_CLOSED = PAD_TOP + RAIL_H + PAD_TOP; // =52
 
 function RecordingEventTimeline({
   playbackMs,
@@ -2971,7 +2975,10 @@ function RecordingEventTimeline({
       {/* ── 시간바(다채널 RecordingControls 와 동일한 마크업·치수) ── */}
       <div
         className="relative flex-none overflow-hidden"
-        style={{ height: `${BAR_H}px`, paddingTop: `${PAD_TOP}px` }}
+        style={{
+          height: `${open ? BAR_H : BAR_H_CLOSED}px`,
+          paddingTop: `${PAD_TOP}px`,
+        }}
       >
         {/* 스크롤 레일 (라벨 + 눈금) — 다채널과 동일 */}
         <div
@@ -3075,20 +3082,21 @@ function RecordingEventTimeline({
         />
         {/* 펼침/접기 화살표 — 접으면 아래 썸네일이 사라지고 시간바만 남는다
             (사용자 결정 2026-08-14). 오른쪽 페이드 위에 얹으므로 z-20.
-            글자 오른쪽 끝이 화면 좌우 여백(px-5 = 20)에 맞게 32 버튼을 right 16 에
-            둔다(아이콘 24 → 16 + (32−24)/2 = 20). 시간바는 드래그로 스크럽되니
-            버튼에서 시작한 포인터는 막는다. */}
+            원 테두리 28×28 + 아이콘 24 는 없앤 캡처 버튼과 같은 규격이다.
+            원 오른쪽 끝을 화면 좌우 여백(px-5 = 20)에 맞추고, 세로는 눈금 레일
+            (RAIL_H) 가운데. 시간바는 드래그로 스크럽되니 버튼에서 시작한
+            포인터는 막는다. */}
         {onToggleOpen && (
           <button
             type="button"
             aria-label={open ? "움직임 감지 접기" : "움직임 감지 펼치기"}
             aria-expanded={open}
-            className="absolute z-20 flex items-center justify-center rounded-full"
+            className="absolute z-20 flex items-center justify-center rounded-full border border-neutral-300"
             style={{
-              right: "16px",
-              top: `${PAD_TOP + (RAIL_H - 32) / 2}px`,
-              width: "32px",
-              height: "32px",
+              right: "20px",
+              top: `${PAD_TOP + (RAIL_H - 28) / 2}px`,
+              width: "28px",
+              height: "28px",
               backgroundColor: "#FFFFFF",
             }}
             onPointerDown={(e) => e.stopPropagation()}
