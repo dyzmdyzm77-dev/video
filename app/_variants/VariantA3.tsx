@@ -3389,10 +3389,10 @@ function RecordingEventTimeline({
               display: "inline-flex",
               alignItems: "center",
               height: "20px",
-              // 흰색 70% + 어두운 글자(사용자 지정). 50% 는 흰 바탕에 묻혀 흐렸고
-              // 검정 반투명은 너무 셌다 — 70% 면 눈금을 덮으면서 바 톤도 안 깬다.
-              color: "#353535",
-              backgroundColor: "rgba(255,255,255,0.7)",
+              // 딤 버튼·다채널 알약과 같은 색(#4A4A4A) + 흰 글자(사용자 지정
+              // 2026-08-14). 흰 바탕이라 알파는 0.85 — 0.5 면 흰 글자가 안 읽힌다.
+              color: "#FFFFFF",
+              backgroundColor: "rgba(74,74,74,0.85)",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
@@ -4698,13 +4698,14 @@ function RecordingControls({
               display: "inline-flex",
               alignItems: "center",
               height: "20px",
-              // 흰 바탕(세로·사이드 패널)에선 흰색 70% + 어두운 글자. 딤 위(가로)
-              // 에선 아래 아이콘 원과 같은 회색 55% + 흰 글자다(사용자 지정
-              // 2026-08-14) — 같은 화면에 있는 것끼리 결을 맞춘다.
-              color: overlay ? "#FFFFFF" : "#353535",
+              // 딤 버튼과 같은 색(#4A4A4A) + 흰 글자로 맞춘다(사용자 지정
+              // 2026-08-14). 알파만 바탕에 따라 다르다: 딤 위(가로)는 뒤가 어둡고
+              // 블러도 깔려 0.5 로 충분하지만, 흰 바탕에서 0.5 면 실제 색이
+              // #A4A4A4 라 흰 글자가 2:1 밖에 안 나온다. 0.85 면 5.6:1 로 읽힌다.
+              color: "#FFFFFF",
               backgroundColor: overlay
                 ? "rgba(74,74,74,0.5)"
-                : "rgba(255,255,255,0.7)",
+                : "rgba(74,74,74,0.85)",
               ...(overlay
                 ? {
                     backdropFilter: "blur(20px)",
