@@ -1987,6 +1987,10 @@ function ExpandedView({
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {videoBlock}
             {playerBlock}
+            {/* 시간바 — 5버튼 바로 아래(사용자 지정 2026-08-14). 패널이 나와도
+                재생 위치를 잡을 게 있어야 한다. 세로 화면과 같은 시간바라
+                달력 버튼·감지 빨간 선도 그대로 따라온다. */}
+            {motionBlock}
           </div>
           <div
             className="flex min-h-0 flex-none flex-col overflow-hidden"
