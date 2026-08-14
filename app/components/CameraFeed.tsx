@@ -6,6 +6,10 @@ import { memo, useEffect, useRef, useState } from "react";
 
 type CameraFeedProps = {
   label: string;
+  // 좌상단 배지에 찍을 글자. 안 주면 label(카메라 이름) 그대로 — 지금까지의 동작이다.
+  // A-3 가로 단일은 카메라 이름 대신 시각을 띄운다(사용자 결정 2026-08-14).
+  // alt 는 label 을 그대로 쓴다 — 배지 문구가 바뀌어도 무엇을 찍은 화면인지는 같다.
+  badge?: string;
   src: string;
   paused?: boolean;
   // 녹화 모드: 타임라인 시각(playbackMs)에 해당하는 프레임을 직접 그려
@@ -162,6 +166,7 @@ export function useGifFrameCanvas(
 // 틱마다 타일 16~18개를 재조정하는 일이 아예 없어진다.
 function CameraFeedImpl({
   label,
+  badge,
   src,
   paused = false,
   playbackMs = null,
@@ -237,6 +242,7 @@ function CameraFeedImpl({
 
       {/* 라벨 */}
       <div
+        suppressHydrationWarning
         className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
         style={{
           top: "4px",
@@ -246,7 +252,7 @@ function CameraFeedImpl({
           borderRadius: "2px",
         }}
       >
-        {label}
+        {badge ?? label}
       </div>
     </div>
   );

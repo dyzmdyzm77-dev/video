@@ -111,6 +111,8 @@ export default function LandscapeVideo({
   mode = "live",
   setMode,
   timeLabel,
+  recordingLabel = "녹화",
+  singleBadge,
   controls,
   controlsOnDim = false,
   // ── 아래 넷은 '가로 화면' 자체의 사양이라 안이 정하지 않는다 ──────────────
@@ -190,6 +192,13 @@ export default function LandscapeVideo({
   mode?: "live" | "recording";
   setMode?: (m: "live" | "recording") => void;
   timeLabel?: string;
+  /** 녹화 쪽 칩 문구. 기본 "녹화" — 세로 토글을 "녹화 영상"으로 바꾼 안(A-3)만
+   *  같은 말로 맞춘다(사용자 지적: 가로만 말이 달랐다). */
+  recordingLabel?: string;
+  /** 단일 화면 영상 좌상단 배지 문구. 안 주면 카메라 이름(지금까지의 동작).
+   *  A-3 은 세로와 같이 시각을 띄운다(사용자 결정 2026-08-14).
+   *  다채널 타일은 그대로 카메라 이름이다 — 세로에서도 타일은 안 바꿨다. */
+  singleBadge?: string;
   /** 녹화일 때 딤 하단에 얹는 플레이어 버튼 + 시간바. 안마다 컴포넌트가 달라
    *  여기서 만들지 않고 받아서 자리만 잡는다(세로에서 쓰던 그것을 그대로 넘긴다).
    *  기본은 흰 바 위 — 세로와 같은 밝은 UI 를 그대로 넘기는 안(A·B)을 위해서다. */
@@ -364,7 +373,7 @@ export default function LandscapeVideo({
             className="inline-flex items-center text-[12px] font-bold leading-none transition-colors"
             style={chip(mode === "recording")}
           >
-            녹화
+            {recordingLabel}
           </button>
         </div>
       ) : (
@@ -390,7 +399,7 @@ export default function LandscapeVideo({
           className="inline-flex items-center text-[10px] font-bold leading-none tracking-wide transition-colors"
           style={seg(mode === "recording", "#757575")}
         >
-          녹화
+          {recordingLabel}
         </button>
       </div>
       )}
@@ -689,6 +698,7 @@ export default function LandscapeVideo({
       <div className="h-full w-full bg-black" onClick={() => handleTap(null)}>
         <CameraFeed
           label={cam.label}
+          badge={singleBadge}
           src={cam.src}
           fit={fit}
           playbackMs={playbackMs}

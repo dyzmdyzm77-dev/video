@@ -399,6 +399,13 @@ export default function VariantA3({
   }, []);
 
   const dateLabel = now ? formatNow(now) : "";
+  // 영상 위 시각 배지 문구 — 세로 단일(ExpandedSlide)과 같은 규칙을 가로에서도 쓴다.
+  // 녹화면 스크럽한 시점(playbackMs), 실시간이면 현재 시각. 연도는 뗀다.
+  const videoBadge = stripYear(
+    mode === "recording" && playbackMs !== null
+      ? formatNow(new Date(playbackMs))
+      : dateLabel,
+  );
 
   // 가로 모드 — 지금은 영상만 보여준다(헤더·목록·탭바·시스템 바 전부 없음).
   // '영상만' 화면은 크게 보기(확대)일 때만이다.
@@ -446,6 +453,11 @@ export default function VariantA3({
           mode={mode}
           setMode={handleSetMode}
           timeLabel={dateLabel}
+          // 세로 토글과 같은 말로 — 가로만 '녹화'라 어긋났다(사용자 지적).
+          recordingLabel="녹화 영상"
+          // 단일 화면 배지도 세로와 같이 카메라 이름 대신 시각.
+          // (다채널 타일은 그대로 카메라 이름 — 세로에서도 타일은 안 바꿨다.)
+          singleBadge={videoBadge}
           // 딤 농도·칩 위치·페이지 점은 LandscapeVideo 기본값을 그대로 쓴다
           // — 가로 화면은 세 안이 같아야 해서 그쪽에 모아 뒀다.
           // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
@@ -1108,9 +1120,9 @@ function ExpandedView({
   const cam = CAMERAS[index];
   const [showControls, setShowControls] = useState(false);
   // 움직임 감지 썸네일을 펼친 상태인지 — 시간바 오른쪽 화살표로 접고 편다.
-  // 기본은 펼침(지금까지 보이던 모습 그대로). 접으면 시간바만 남고, 비는 세로는
-  // 아래 카메라 목록이 가져간다.
-  const [motionOpen, setMotionOpen] = useState(true);
+  // 기본은 접힘(사용자 결정 2026-08-14): 처음엔 시간바만 보이고, 화살표를 눌러야
+  // 썸네일이 나온다. 접힌 만큼 남는 세로는 아래 카메라 목록이 가져간다.
+  const [motionOpen, setMotionOpen] = useState(false);
   // 영상 맞춤 모드 — 딤(showControls) 상태의 화면맞춤 버튼으로 돌린다.
   //   fill    : 영상 뷰 영역을 가득 채운다(원본 비율 무시, 늘어남/찌그러짐).
   //   contain : 원본 비율 그대로, 빈 공간은 검정으로 채운다(레터박스/필러박스).
