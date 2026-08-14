@@ -3210,9 +3210,9 @@ function RecordingEventTimeline({
             />
           ))}
           {/* 움직임이 감지된 시각 — 빨간 세로선(사용자 요청 2026-08-14).
-              눈금과 같은 레일에 있어 같이 흐른다. 눈금(top 18~26, 8px)보다 살짝만
-              길게(16~28, 12px) 긋는다 — 18px 은 너무 길었다(사용자 지적).
-              길이보다 색으로 구분되게 두는 쪽이 낫다.
+              눈금과 같은 레일에 있어 같이 흐른다. 크기는 작은 눈금과 똑같이
+              2×8 · top 18 이다(사용자 지정 2026-08-14) — 길이로 구분하지 않고
+              색으로만 구분한다.
               색은 감지 유형 칩(EventKindChip)의 이상 상황 빨강과 같은 #E2202D.
               눈금과 마찬가지로 화면에 보이는 범위만 그린다 — 하루 ~4900건이라
               다 그리면 스크롤이 죽는다.
@@ -3226,9 +3226,9 @@ function RecordingEventTimeline({
               className="pointer-events-none absolute rounded-[1px]"
               style={{
                 left: `calc(50% + ${xOf(c.secOffset)}px)`,
-                top: "16px",
+                top: "18px",
                 width: "2px",
-                height: "12px",
+                height: "8px",
                 backgroundColor: "#E2202D",
               }}
             />
@@ -4518,16 +4518,16 @@ function RecordingControls({
               }}
             />
           ))}
-          {/* 감지 표시 — 단일 시간바와 같은 규격(2×12, top 16, #E2202D). */}
+          {/* 감지 표시 — 작은 눈금과 같은 규격(2×8, top 18)에 색만 #E2202D. */}
           {motionMarks.map((secOffset, i) => (
             <div
               key={`M${i}`}
               className="pointer-events-none absolute rounded-[1px]"
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                top: "16px",
+                top: "18px",
                 width: "2px",
-                height: "12px",
+                height: "8px",
                 backgroundColor: "#E2202D",
               }}
             />
