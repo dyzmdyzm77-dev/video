@@ -82,11 +82,6 @@ function formatNow(d: Date) {
   return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}. ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-// 영상 위 시각 배지 전용 — 연도를 뗀다(사용자 결정 2026-08-14). 배지가 작아
-// 'YYYY.' 4글자가 자리만 먹는다. 다채널 화면 날짜 줄은 연도를 그대로 쓰므로
-// formatNow 자체는 안 건드리고 여기서만 잘라낸다.
-const stripYear = (s: string) => s.replace(/^\d{4}\./, "");
-
 function ChevronDownIcon({ className }: { className?: string }) {
   return (
     <span
@@ -403,13 +398,6 @@ export default function VariantA3({
   }, []);
 
   const dateLabel = now ? formatNow(now) : "";
-  // 영상 위 시각 배지 문구 — 세로 단일(ExpandedSlide)과 같은 규칙을 가로에서도 쓴다.
-  // 녹화면 스크럽한 시점(playbackMs), 실시간이면 현재 시각. 연도는 뗀다.
-  const videoBadge = stripYear(
-    mode === "recording" && playbackMs !== null
-      ? formatNow(new Date(playbackMs))
-      : dateLabel,
-  );
 
   // 가로 모드 — 지금은 영상만 보여준다(헤더·목록·탭바·시스템 바 전부 없음).
   // '영상만' 화면은 크게 보기(확대)일 때만이다.
@@ -466,11 +454,6 @@ export default function VariantA3({
           // 칩이 왼쪽으로 밀려 보였다. 빼면 칩만 남아 정확히 가운데에 온다.
           // 세로 토글과 같은 말로 — 가로만 '녹화'라 어긋났다(사용자 지적).
           recordingLabel="녹화영상"
-          // 단일 화면 배지도 세로와 같이 카메라 이름 대신 시각.
-          // (다채널 타일은 그대로 카메라 이름 — 세로에서도 타일은 안 바꿨다.)
-          singleBadge={videoBadge}
-          // 자리도 세로와 같이 아래 가운데.
-          singleBadgeAlign="bottom-center"
           // 딤 헤더는 계약번호(지점명) 없이 '뒤로가기 + 이름'. 단일은 카메라 이름,
           // 다채널은 위 title 과 같은 장소명을 그대로 쓴다(사용자 지적: 다채널에
           // 리터럴을 박아 뒀더니 세로 헤더와 말이 달랐다).
@@ -1012,15 +995,11 @@ function ExpandedSlide({
   playbackMs = null,
   driveByPlayback = false,
   fit = "fill",
-  timeLabel,
 }: {
   c: (typeof CAMERAS)[number];
   paused: boolean;
   playbackMs?: number | null;
   driveByPlayback?: boolean;
-  // 영상 좌상단 배지 문구. A-3 은 카메라 이름 대신 시각을 띄운다 — 아래 날짜 줄
-  // (LIVE/시각/캡처)을 없앴고, 카메라 이름은 딤 상태의 우상단으로 갔다.
-  timeLabel?: string;
   // 딤 상태의 '화면 맞춤' 버튼이 고르는 값. fill=가득 채움(비율 무시),
   // contain=원본 비율 유지·빈 공간 검정, cover=원본 비율 유지·크롭.
   // CameraFeed(그리드 타일)와 달리 이 컴포넌트는 원본 비율을 그대로 보여줄 일이
@@ -1064,21 +1043,20 @@ function ExpandedSlide({
           opacity: driving ? 1 : paused ? 1 : 0,
         }}
       />
-      {/* 시각 배지 — 영상에 붙어 늘 떠 있다(사용자 지적 2026-08-14: 딤으로 올렸다가
-          되돌렸다. 녹화 화면에서 시각은 영상의 일부라 딤과 같이 사라지면 안 된다).
-          자리는 상단 가운데. */}
+      {/* 라벨 — 카메라 이름, 왼쪽 위 구석. 한동안 시각을 띄웠다가(상단 가운데 →
+          왼쪽 아래 → 상단 가운데 → 딤) 원래대로 돌아왔다(사용자 지정 2026-08-14).
+          시각은 영상 아래 날짜 바가 맡는다. */}
       <div
-        suppressHydrationWarning
-        className="absolute inline-flex -translate-x-1/2 items-center bg-black/55 text-[10px] font-medium leading-none text-white"
+        className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
         style={{
           top: "4px",
-          left: "50%",
+          left: "4px",
           height: "17px",
           padding: "0 4px",
           borderRadius: "2px",
         }}
       >
-        {timeLabel ?? c.label}
+        {c.label}
       </div>
     </>
   );
@@ -1592,10 +1570,6 @@ function ExpandedView({
                     mode === "recording" && (isScrubbing || !isPlaying)
                   }
                   fit={videoFit}
-                  // 녹화면 스크럽한 시점, 실시간이면 현재 시각. 연도는 뗀다.
-                  timeLabel={stripYear(
-                    mode === "recording" ? recordingDateLabel : dateLabel,
-                  )}
                 />
               </div>
             ))}
