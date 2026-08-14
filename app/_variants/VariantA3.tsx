@@ -3139,9 +3139,10 @@ function RecordingEventTimeline({
               display: "inline-flex",
               alignItems: "center",
               height: "20px",
-              color: "#353535",
-              // 흰색 50% — 아래로 흐르는 눈금이 살짝 비친다(사용자 지정).
-              backgroundColor: "rgba(255,255,255,0.5)",
+              // 검정 50% + 흰 글자(사용자 지정). 흰색 반투명으로 갔더니 흰 바탕에
+              // 묻혀 너무 흐렸다 — 어두운 쪽이 눈금 위에서 또렷하게 떠 보인다.
+              color: "#FFFFFF",
+              backgroundColor: "rgba(0,0,0,0.5)",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
@@ -4227,9 +4228,10 @@ function RecordingControls({
               display: "inline-flex",
               alignItems: "center",
               height: "20px",
-              color: "#353535",
-              // 흰색 50% — 아래로 흐르는 눈금이 살짝 비친다(사용자 지정).
-              backgroundColor: "rgba(255,255,255,0.5)",
+              // 검정 50% + 흰 글자(사용자 지정). 흰색 반투명으로 갔더니 흰 바탕에
+              // 묻혀 너무 흐렸다 — 어두운 쪽이 눈금 위에서 또렷하게 떠 보인다.
+              color: "#FFFFFF",
+              backgroundColor: "rgba(0,0,0,0.5)",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
