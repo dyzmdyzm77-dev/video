@@ -3204,7 +3204,9 @@ function RecordingEventTimeline({
                 top: "18px",
                 width: "2px",
                 height: "8px",
-                backgroundColor: isMajor ? "#797979" : "#C4C4C4",
+                // 큰 눈금은 흰색(사용자 지정 2026-08-14). 이 시간바는 흰 바탕이라
+                // 사실상 안 보이게 된다 — 작은 눈금(#C4C4C4)만 남는 셈이다.
+                backgroundColor: isMajor ? "#FFFFFF" : "#C4C4C4",
               }}
             />
           ))}
