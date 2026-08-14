@@ -496,7 +496,9 @@ export default function VariantA3({
                   (showOverlayAi={false}) — 안 끄면 같은 버튼이 두 개가 된다. */}
               <div
                 className="pointer-events-auto flex items-center justify-center"
-                style={{ gap: "16px", paddingTop: "12px" }}
+                // 시간바와 붙인다 — 12 → 4(사용자 지정 2026-08-14). 시간바 자체가
+                // 아래 여백(paddingBottom 12)을 갖고 있어 실제로는 그만큼 더 뜬다.
+                style={{ gap: "16px", paddingTop: "4px" }}
               >
                 {[
                   { key: "ai", label: "AI 검색", src: `${BASE}/ai_Icon.svg`, onClick: () => setAiOpen(true) },
