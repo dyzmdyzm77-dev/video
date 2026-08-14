@@ -467,8 +467,8 @@ export default function VariantA3({
           // 단일 화면 배지도 세로와 같이 카메라 이름 대신 시각.
           // (다채널 타일은 그대로 카메라 이름 — 세로에서도 타일은 안 바꿨다.)
           singleBadge={videoBadge}
-          // 자리도 세로와 같이 왼쪽 아래 구석.
-          singleBadgeAlign="bottom-left"
+          // 자리도 세로와 같이 아래 가운데.
+          singleBadgeAlign="bottom-center"
           // 딤 헤더는 계약번호(지점명) 없이 '뒤로가기 + 이름'. 단일은 카메라 이름,
           // 다채널은 위 title 과 같은 장소명을 그대로 쓴다(사용자 지적: 다채널에
           // 리터럴을 박아 뒀더니 세로 헤더와 말이 달랐다).
@@ -1058,14 +1058,14 @@ function ExpandedSlide({
           opacity: driving ? 1 : paused ? 1 : 0,
         }}
       />
-      {/* 시각 배지 — 왼쪽 아래 구석(사용자 결정 2026-08-14). 위 가운데로 갔다가
-          여기로 왔다. 가로 단일도 같은 자리다(CameraFeed 의 badgeAlign="bottom-left"). */}
+      {/* 시각 배지 — 아래 가운데(사용자 결정 2026-08-14). 위 가운데 → 왼쪽 아래를
+          거쳐 여기로 왔다. 가로 단일도 같은 자리다(badgeAlign="bottom-center"). */}
       <div
         suppressHydrationWarning
-        className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
+        className="absolute inline-flex -translate-x-1/2 items-center bg-black/55 text-[10px] font-medium leading-none text-white"
         style={{
           bottom: "4px",
-          left: "4px",
+          left: "50%",
           height: "17px",
           padding: "0 4px",
           borderRadius: "2px",
@@ -3309,27 +3309,60 @@ function MotionEventList({
     );
     return hit ? hit.ms : null;
   }, [rows, playbackMs]);
-  // scrollIntoView 를 쓴다 — 직접 계산하면 안 맞는다. 데스크톱 목업은 프레임을
-  // CSS transform 으로 축소해 두는데, getBoundingClientRect 는 축소된 값을,
-  // scrollLeft/clientWidth 는 축소 전 값을 준다. 둘을 섞으면 엉뚱한 데로 간다
-  // (실제로 그래서 안 움직였다). 브라우저가 변형을 감안해 계산하게 맡긴다.
-  // 스크롤 축이 아닌 쪽은 "nearest" — 부모까지 같이 움직여 화면이 튀는 걸 막는다.
-  const centerOn = (ms: number) => {
+  // 고른 항목을 스크롤 가운데로. 카메라 목록과 같은 방식이다 — 컨테이너의
+  // scrollTo 를 직접 부르고 부드럽게(smooth) 움직인다.
+  //
+  // scrollIntoView 를 썼다가 되돌렸다: 그건 '조상까지' 스크롤해서, 화면 아래에
+  // 숨어 있던 바텀시트 층이 딸려 올라왔다(사용자 지적: "화면안 선택 바텀시트는
+  // 왜 뜨는거야?"). 컨테이너만 움직이면 그런 일이 없다.
+  //
+  // 좌표는 offsetLeft/offsetTop 으로 잡는다(컨테이너가 relative 라 그 기준이다).
+  // getBoundingClientRect 를 쓰면 안 된다 — 데스크톱 목업은 프레임을 CSS
+  // transform 으로 축소해 두는데, rect 는 축소된 값을, scrollLeft/clientWidth 는
+  // 축소 전 값을 준다. 둘을 섞으면 엉뚱한 데로 간다.
+  // behavior 기본값이 "auto"(즉시)인 건 이 화면에서 "smooth" 가 아예 안 먹기
+  // 때문이다 — 녹화 틱(150ms)이 계속 리렌더를 돌려 스크롤 애니메이션이 매번
+  // 취소된다(실측: smooth 로 5000 을 주면 1.2초 뒤에도 0, auto 면 바로 5000).
+  const centerOn = (ms: number, behavior: ScrollBehavior = "auto") => {
     const el = scrollRef.current;
     const target = el?.querySelector<HTMLElement>(`[data-ms="${ms}"]`);
-    // behavior 는 "auto"(즉시)다. "smooth" 는 이 화면에서 아예 안 먹는다 —
-    // 녹화 틱이 150ms 마다 리렌더를 돌려 부드러운 스크롤 애니메이션이 매번
-    // 취소된다(실측: smooth 면 scrollLeft 가 0 에서 안 움직이고, auto 면 정확히
-    // 가운데로 간다). 카메라 목록 쪽도 즉시 이동이라 조작감이 같다.
-    target?.scrollIntoView({
-      behavior: "auto",
-      inline: wide ? "center" : "nearest",
-      block: wide ? "nearest" : "center",
-    });
+    if (!el || !target) return;
+    // 움직임을 줄이는 설정이면 부드러운 스크롤을 안 쓴다(카메라 목록과 같은 규칙).
+    const reduce = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const how: ScrollBehavior = reduce ? "auto" : behavior;
+    if (wide) {
+      const to = Math.max(
+        0,
+        target.offsetLeft - (el.clientWidth - target.offsetWidth) / 2,
+      );
+      if (Math.abs(el.scrollLeft - to) < 1) return;
+      el.scrollTo({ left: to, behavior: how });
+    } else {
+      const to = Math.max(
+        0,
+        target.offsetTop - (el.clientHeight - target.offsetHeight) / 2,
+      );
+      if (Math.abs(el.scrollTop - to) < 1) return;
+      el.scrollTo({ top: to, behavior: how });
+    }
   };
-  // 재생이 다음 이벤트로 넘어가면 그쪽을 가운데로 따라간다.
+  // 스크롤은 '사용자가 고를 때'만 움직인다 — 카메라 목록과 같은 규칙이다.
+  // 재생이 이벤트를 지날 때마다 따라가게 뒀더니 목록이 몇 초마다 저절로 튀었다
+  // (사용자 지적: "너무 띡띡 선택되는거아니야?"). 지금 재생 중인 이벤트는
+  // 파란 배경으로만 알리고 자리는 안 건드린다.
+  // 탭에 들어온 순간(과 배치가 바뀔 때)만 한 번 맞춰 둔다 — 그때는 이미 가운데
+  // 있어야 하는 상태라 즉시 이동이다. 그림이 그려진 뒤에 재야 해서 한 프레임 미룬다.
+  const openedRef = useRef(false);
   useEffect(() => {
-    if (activeMs !== null) centerOn(activeMs);
+    openedRef.current = false;
+  }, [wide]);
+  useEffect(() => {
+    if (openedRef.current || activeMs === null) return;
+    openedRef.current = true;
+    const raf = requestAnimationFrame(() => centerOn(activeMs, "auto"));
+    return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMs, wide]);
 
@@ -3341,17 +3374,16 @@ function MotionEventList({
           ? // 가로 한 줄 — 한 덩어리씩 옆으로 나열하고 가로 스크롤(사용자 결정).
             // 세로로 쌓을 자리가 없을 때다. 좌우 여백(px-5)은 스크롤 안쪽 패딩이라
             // 첫/마지막만 20px 띄운다 — 카메라 목록 가로 배치와 같은 규칙.
-            "flex min-h-0 flex-1 items-center gap-2 px-5 pb-3 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            "relative flex min-h-0 flex-1 items-center gap-2 px-5 pb-3 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          : "relative flex min-h-0 flex-1 flex-col overflow-y-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       }
     >
       {rows.map((r) => {
-        // 지금 재생 중인 이벤트인가 — 그 구간 안에 있는 동안만. 시간바 썸네일의
-        // isActiveEvent 와 같은 판정이라 두 화면이 같은 것을 짚는다.
-        const active =
-          playbackMs !== null &&
-          playbackMs >= r.ms &&
-          playbackMs < r.ms + r.dur * 1000;
+        // 지금 재생 중인 이벤트인가. 구간(ms ~ ms+dur)만 보고 각자 판정하면 둘이
+        // 같이 켜진다 — 이벤트가 4~8초 간격으로 묶여 나오고 길이가 4~15초라
+        // 구간이 겹친다(사용자 지적: "리스트 두개가 선택되는건 뭐지?").
+        // 위에서 하나만 고른 activeMs 와 맞춰 항상 한 줄만 켠다.
+        const active = r.ms === activeMs;
         return (
           <button
             key={r.ms}
