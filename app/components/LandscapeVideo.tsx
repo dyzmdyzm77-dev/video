@@ -363,8 +363,14 @@ export default function LandscapeVideo({
   // 아이폰 홈화면 앱처럼 창 = 화면이면 gap 이 0 이라 지금까지와 같다.
   const edgeGaps = useEdgeGaps();
   const baseEdge = edgeInset ?? 20;
-  const edgeL = Math.max(0, baseEdge - edgeGaps.left);
-  const edgeR = Math.max(0, baseEdge - edgeGaps.right);
+  // 좌우를 '같은 값'으로 뺀다(사용자 지적 2026-08-18: "안드로이드 가로 딤 아이콘들
+  // 좌우 마진이 다른거같은데"). 처음엔 밀려난 양을 좌우 따로 뺐는데, 안드로이드는
+  // 한쪽만 깎이는 경우가 있어(컷아웃·내비바) 앱 안에서 좌우가 눈에 띄게 달라졌다.
+  // 기기 모서리에 정확히 맞추는 것보다 '좌우가 같아 보이는 것'이 먼저다 — 둘 중
+  // 작은 쪽만큼만 빼서 대칭을 유지한다(어느 쪽도 화면 밖으로 안 나간다).
+  const gap = Math.min(edgeGaps.left, edgeGaps.right);
+  const edgeL = Math.max(0, baseEdge - gap);
+  const edgeR = edgeL;
 
   // ── 단일 영상 줌 ─────────────────────────────────────────────────────────
   // 세로 단일 화면에만 있던 핀치 줌을 가로에도 붙인다(사용자 지적 2026-08-18:

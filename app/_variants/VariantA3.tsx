@@ -255,8 +255,10 @@ export default function VariantA3({
   // (사용자 지정 2026-08-18). null 이면 닫힘.
   const [lsPanel, setLsPanel] = useState<"list" | "motion" | null>(null);
   const dimGaps = useEdgeGaps();
-  const dimEdgeL = Math.max(0, dimEdge - dimGaps.left);
-  const dimEdgeR = Math.max(0, dimEdge - dimGaps.right);
+  // 좌우 대칭으로 뺀다 — 이유는 LandscapeVideo 의 같은 계산 주석 참고.
+  const dimGap = Math.min(dimGaps.left, dimGaps.right);
+  const dimEdgeL = Math.max(0, dimEdge - dimGap);
+  const dimEdgeR = dimEdgeL;
 
   const autoCount = autoGridCount(gridRatio);
   autoCountSeen.current[orientKey] = autoCount;
