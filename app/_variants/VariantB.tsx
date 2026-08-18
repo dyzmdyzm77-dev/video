@@ -402,9 +402,12 @@ export default function VariantB({
           mode={mode}
           setMode={handleSetMode}
           timeLabel={dateLabel}
+          // 딤 위에 얹는 컨트롤 — LandscapeVideo 가 껍데기에 깔던 흰 배경도 같이 뺀다.
+          controlsOnDim
           controls={
             mode === "recording" ? (
               <RecordingControls
+                overlay
                 now={now}
                 onScrubbingChange={setIsScrubbing}
                 playbackMs={playbackMs}
@@ -2674,6 +2677,7 @@ function RecBadge({ onClick }: { onClick?: () => void }) {
 const TIMELINE_VISIBLE_MIN = 120; // ±2시간 = 총 4시간
 
 function RecordingControls({
+  overlay = false,
   now,
   onToggleChrome,
   onScrubbingChange,
@@ -2687,6 +2691,10 @@ function RecordingControls({
   onSpeedChange,
   onSeekToast,
 }: {
+  /** 가로 딤 위에 얹힌 상태. 그러면 줄 배경(흰색)을 걷는다 — 딤 위에 흰 판이
+   *  깔리면 영상이 가려진다(사용자 지정 2026-08-18: "B안에 녹화 가로 딤에
+   *  5버튼있잖아. 그거 뒤에 흰색 배경 없애줘"). 버튼 자체는 그대로 흰 원이다. */
+  overlay?: boolean;
   now: Date | null;
   onToggleChrome?: () => void;
   onScrubbingChange?: (scrubbing: boolean) => void;
@@ -2947,7 +2955,7 @@ function RecordingControls({
         style={{
           gap: "20px",
           padding: "8px 0",
-          backgroundColor: "#FFFFFF",
+          backgroundColor: overlay ? "transparent" : "#FFFFFF",
         }}
       >
         <PlayerButton
