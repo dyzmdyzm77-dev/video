@@ -1927,10 +1927,11 @@ function ExpandedView({
                 }}
               />
             </button>
-            {/* 딤 왼쪽 아래 — AI · 메뉴 · 움직임 감지. 가로 딤의 같은 줄과 구성을
-                맞춘다(사용자 지정 2026-08-14). 오른쪽 아래 크게 보기와 같은
-                높이(bottom 12)에 앉는다. 움직임 감지는 녹화에만 — 실시간엔
-                지나간 이벤트가 없다. */}
+            {/* 딤 왼쪽 아래 — AI 하나. 오른쪽 아래 크게 보기와 같은 높이(bottom 12).
+                예전엔 가로 딤과 구성을 맞추려고 메뉴·움직임 감지도 같이 뒀는데
+                (2026-08-14), 세로는 영상 바로 아래에 카메라 목록/움직임 감지 탭이
+                이미 있어서 같은 입구가 두 벌이었다 — 게다가 그 둘은 동작도 없었다.
+                뺀다(사용자 지정 2026-08-18). 가로 딤에는 탭이 없어 거긴 그대로 둔다. */}
             <div
               className="absolute flex items-center"
               style={{
@@ -1942,10 +1943,6 @@ function ExpandedView({
             >
               {[
                 { key: "ai", label: "AI 검색", src: `${BASE}/ai_Icon.svg`, onClick: onOpenAi },
-                { key: "menu", label: "메뉴", src: `${BASE}/nav/menu.svg`, onClick: undefined },
-                ...(mode === "recording"
-                  ? [{ key: "motion", label: "움직임 감지", src: `${BASE}/Type=Line.svg`, onClick: undefined }]
-                  : []),
               ].map((b) => (
                 <button
                   key={b.key}
