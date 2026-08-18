@@ -399,6 +399,11 @@ export function toggleImmersive() {
       document.documentElement.dataset.immersive = "true";
       window.dispatchEvent(new Event(IMMERSIVE_EVENT));
       setBarColor(true); // 확대 화면은 검정 — 상태바도 검정으로.
+      // 한 번 더 시도한다. 위에서 이미 눌렀지만, 안드로이드는 회전 연출 도중에
+      // 잡은 전체화면이 풀리는 경우가 있다(사용자 지적 2026-08-18: "디바이스
+      // 눕혔을때는 상태바 사라지는데, 확대버튼 눌렀을때도 사라지면 안돼?").
+      // 이미 걸려 있으면 아무 일도 안 한다.
+      if (!document.fullscreenElement) syncFullscreen(true);
     };
     window.addEventListener(LANDSCAPE_EVENT, onRotated);
     requestDeviceRotate(true);
@@ -477,7 +482,13 @@ export function exitImmersive() {
 export function useImmersive(): boolean {
   const [on, setOn] = useState(false);
   useEffect(() => {
-    const sync = () => setOn(readImmersive());
+    const sync = () => {
+      const on = readImmersive();
+      setOn(on);
+      // 확대인데 전체화면이 안 걸려 있으면(회전 경로에서 놓친 경우) 다시 시도한다.
+      // 사용자 조작 창이 닫혔으면 조용히 거부된다 — 그때는 바가 남을 뿐이다.
+      if (on && !document.fullscreenElement) syncFullscreen(true);
+    };
     sync();
     window.addEventListener(IMMERSIVE_EVENT, sync);
     // 안드로이드에선 뒤로가기·스와이프로 전체화면만 빠져나올 수 있다. 그때
