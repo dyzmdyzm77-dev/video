@@ -3328,29 +3328,58 @@ function RecordingEventTimeline({
               {text}
             </span>
           ))}
-          {/* 눈금 (대/소) — 화면에 보이는 범위만 렌더(수천 개 방지). */}
-          {ticks.filter(({ secOffset }) => inView(secOffset)).map(({ secOffset, isMajor }) => (
+          {/* 작은 눈금은 점이 아니라 이어진 선이다(사용자 지정 2026-08-18:
+              "연한 그레이 점을 그냥 선으로 이을까"). 점을 하나씩 선분으로 잇는
+              대신 보이는 범위 전체를 한 줄로 깐다 — 눈금이 1초마다라 개수가
+              수천이고, 이어 붙이면 어차피 같은 그림이다.
+              두께·자리는 점과 같다(4px · top 20) — 큰 눈금 점이 선 위에 그대로
+              얹히고, 대/소는 예전처럼 색으로만 갈린다.
+              펼친 묶음이 만든 빈 구간(xOf 의 gap)도 선은 그대로 지난다 —
+              시간이 이어진다는 뜻이라 끊는 것보다 맞다. */}
+          {(() => {
+            const vis = ticks.filter(({ secOffset }) => inView(secOffset));
+            const first = vis[0];
+            const last = vis[vis.length - 1];
+            if (!first || !last) return null;
+            const x0 = xOf(first.secOffset);
+            const x1 = xOf(last.secOffset);
+            return (
+              <div
+                className="pointer-events-none absolute rounded-full"
+                style={{
+                  left: `calc(50% + ${x0}px)`,
+                  top: "20px",
+                  // 점은 left 가 기준이라 오른쪽으로 4px 를 차지한다 — 끝 점의
+                  // 오른쪽 끝까지 덮으려면 +4.
+                  width: `${x1 - x0 + 4}px`,
+                  // 두께는 점과 같은 4(사용자 지정 2026-08-18: "점 두께랑 동일하게").
+                  height: "4px",
+                  // 작은 눈금 색 그대로(#ADADAD). 흰 바탕에서 너무 옅어 안 읽히던 걸
+                  // #C4C4C4 에서 한 단계 올려둔 값이다.
+                  backgroundColor: "#ADADAD",
+                }}
+              />
+            );
+          })()}
+          {/* 큰 눈금 — 선 위에 얹는 4px 점. 화면에 보이는 범위만 렌더(수천 개 방지). */}
+          {ticks
+            .filter(({ secOffset, isMajor }) => isMajor && inView(secOffset))
+            .map(({ secOffset }) => (
             <div
               key={`T${secOffset}`}
               className="pointer-events-none absolute rounded-full"
               style={{
                 left: `calc(50% + ${xOf(secOffset)}px)`,
-                // 눈금은 가로세로가 같은 4px 점이다(사용자 지정 2026-08-14:
-                // "가로세로 동일하게 점처럼" → "살짝 더 두꺼워도 좋을듯").
-                // 2×8 세로 막대 → 3 → 4. 눈금 간격이 6px 라 4 가 상한이다 —
-                // 점 사이가 2px 만 남아서, 더 키우면 붙어서 선으로 보인다.
-                // 대/소는 길이가 아니라 색으로만 가른다.
+                // 가로세로 같은 4px 점(사용자 지정 2026-08-14: "가로세로 동일하게
+                // 점처럼" → "살짝 더 두꺼워도 좋을듯"). 2×8 세로 막대 → 3 → 4.
                 // 라벨(top 0~10) 아래, 옛 막대(18~26)의 가운데 즈음인 20.
                 top: "20px",
                 width: "4px",
                 height: "4px",
-                // 세로(흰 바탕)의 큰 눈금은 검정 계열(#353535 — 시간 글자와 같은 색).
-                // 한동안 흰색이었는데 흰 바탕에서 아예 안 보였다. 눈금이 세로 막대일
-                // 땐 그래도 됐지만 점으로 바뀌면서 큰/작은 구분이 통째로 사라졌다
-                // (사용자 지적 2026-08-14: "세로에서는 그 흰색 점이 검정색으로").
-                // 작은 눈금은 #C4C4C4 → #ADADAD 로 살짝 진하게(사용자 지정
-                // 2026-08-14). 흰 바탕에서 너무 옅어 눈금이 안 읽혔다.
-                backgroundColor: isMajor ? "#353535" : "#ADADAD",
+                // 흰 바탕이라 검정 계열(#353535 — 시간 글자와 같은 색).
+                // 한동안 흰색이었는데 흰 바탕에서 아예 안 보였다(사용자 지적
+                // 2026-08-14: "세로에서는 그 흰색 점이 검정색으로").
+                backgroundColor: "#353535",
               }}
             />
           ))}
@@ -4715,36 +4744,40 @@ function RecordingControls({
               {text}
             </span>
           ))}
-          {/* 눈금 */}
-          {ticks.map(({ secOffset, isMajor }) => (
+          {/* 작은 눈금은 점이 아니라 이어진 선이다(사용자 지정 2026-08-18:
+              "연한 그레이 점을 그냥 선으로 이을까"). 세로 시간바와 같은 규격 —
+              두께·자리 모두 점과 같은 4px · top 20. 눈금 하나하나를 선분으로
+              잇지 않고 눈금 범위 전체를 한 줄로 깐다. */}
+          {ticks.length > 0 && (
+            <div
+              className="pointer-events-none absolute rounded-full"
+              style={{
+                left: `calc(50% + ${ticks[0]!.secOffset * pxPerSec}px)`,
+                top: "20px",
+                // 점은 left 가 기준이라 오른쪽으로 4px 를 차지한다 → 끝 점까지 +4.
+                width: `${(ticks[ticks.length - 1]!.secOffset - ticks[0]!.secOffset) * pxPerSec + 4}px`,
+                // 두께는 점과 같은 4(사용자 지정 2026-08-18: "점 두께랑 동일하게").
+                height: "4px",
+                // 딤 위(가로)는 불투명 회색 #999999, 흰 바 위는 #ADADAD — 점일 때
+                // 쓰던 작은 눈금 색 그대로다. 딤 위에서 투명도로 낮추면 뒤 영상이
+                // 비쳐 흰색처럼 보였다(사용자 지적: "아예 하얀색이 되버렸어").
+                backgroundColor: overlay ? "#999999" : "#ADADAD",
+              }}
+            />
+          )}
+          {/* 큰 눈금 — 선 위에 얹는 4px 점 */}
+          {ticks.filter(({ isMajor }) => isMajor).map(({ secOffset }) => (
             <div
               key={`T${secOffset}`}
               className="absolute rounded-full"
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                // 눈금은 가로세로가 같은 4px 점이다(사용자 지정 2026-08-14:
-                // "가로세로 동일하게 점처럼" → "살짝 더 두꺼워도 좋을듯").
-                // 2×8 세로 막대 → 3 → 4. 눈금 간격이 6px 라 4 가 상한이다 —
-                // 점 사이가 2px 만 남아서, 더 키우면 붙어서 선으로 보인다.
-                // 대/소는 길이가 아니라 색으로만 가른다.
-                // 라벨(top 0~10) 아래, 옛 막대(18~26)의 가운데 즈음인 20.
+                // 가로세로 같은 4px 점(사용자 지정 2026-08-14). 라벨(top 0~10)
+                // 아래, 옛 막대(18~26)의 가운데 즈음인 20.
                 top: "20px",
                 width: "4px",
                 height: "4px",
-                // 딤 위(가로): 큰 눈금은 흰색, 작은 눈금은 불투명 회색(#999999).
-                // 흰색 50% 였던 걸 투명도만 빼려다 둘 다 흰색이 돼 구분이 사라졌다
-                // (사용자 지적: "너무 연해져서 아예 하얀색이 되버렸어").
-                // 투명도 대신 색으로 낮춘다 — 뒤 영상이 비치지 않는다.
-                // #BFBFBF 로는 아직 큰 눈금과 구분이 안 갔다(사용자 지적
-                // 2026-08-14) — 어두운 영상 위에서 '연하게' = 흰색에서 멀어지는
-                // 쪽이라 한 단계 더 내렸다.
-                backgroundColor: overlay
-                  ? isMajor
-                    ? "#FFFFFF"
-                    : "#999999"
-                  : isMajor
-                    ? "#353535"
-                    : "#ADADAD",
+                backgroundColor: overlay ? "#FFFFFF" : "#353535",
               }}
             />
           ))}
