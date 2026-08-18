@@ -648,7 +648,14 @@ export default function VariantA3({
                         src={b.src}
                         alt=""
                         className="h-7 w-7"
-                        style={{ filter: "brightness(0) invert(1)" }}
+                        style={{
+                          // 흰 아이콘 + 가운데로 퍼지는 그림자(사용자 지정
+                          // 2026-08-18: "둥근 원안에 있는 아이콘들 그림자좀 줘").
+                          // 딤의 다른 원 버튼(GridSelectionOverlay 의 iconShadow)이
+                          // 쓰는 값과 같다 — 0 0 4px 검정 60%.
+                          filter:
+                            "brightness(0) invert(1) drop-shadow(0 0 4px rgba(0,0,0,0.6))",
+                        }}
                       />
                     </button>
                   );
@@ -1864,7 +1871,10 @@ function ExpandedView({
                   src={`${BASE}/nav/etc.svg`}
                   alt=""
                   className="h-7 w-7"
-                  style={{ filter: "brightness(0) invert(1)" }}
+                  style={{
+                    filter:
+                      "brightness(0) invert(1) drop-shadow(0 0 4px rgba(0,0,0,0.6))",
+                  }}
                 />
               </button>
             </div>
