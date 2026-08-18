@@ -56,6 +56,12 @@ body {
         top: 50vh;
         width: 100vh;
       }
+      /* 원본 비율일 때만 상태바 자리를 뺀다(아래 본 규칙과 같은 조건). */
+      html[data-landscape="true"]:not([data-video-bleed="true"])
+        .app-safe-frame {
+        top: calc(50vh + var(--status-h, 0px) / 2);
+        width: calc(100vh - var(--status-h, 0px));
+      }
     }
   }
 }
@@ -199,21 +205,26 @@ body {
     padding: 0;
   }
 
-  /* ===== 상태바 자리를 비우지 않는다 (사용자 지정 2026-08-18) =====
-     "영상 기준 왼쪽 부분은 검정 여백 안 떠도 될 것 같은데?"
+  /* ===== 상태바 자리는 '원본 비율'일 때만 비운다 =====
+     사용자 결정 2026-08-18. 하루 사이 두 번 움직인 자리라 경위를 남긴다.
 
-     전에는 프레임 폭에서 --status-h 를 빼고 중심을 그 절반만큼 내려, 물리 상단
-     (= 회전한 화면에서 영상의 왼쪽)에 검은 띠를 남겼다. 아이폰이 투명 상태바를
-     늘 그리니 그 자리를 영상에 안 주려던 것이었는데, 영상이 그만큼 작아지고
-     좌우 여백이 짝짝이로 보였다. 지금은 확대·가로 모두 화면을 끝까지 쓴다.
+     ① 원래: 맞춤과 무관하게 물리 상단(= 회전한 화면에서 영상의 왼쪽)을
+        --status-h 만큼 비웠다. 아이폰은 투명 상태바(black-translucent)를 늘
+        그려서, 그 자리를 영상에 안 주려던 것.
+     ② "영상 기준 왼쪽 부분은 검정 여백 안 떠도 될 것 같은데?" → 통째로 걷었다.
+     ③ "다채널에서도 원본 비율이면 단일채널이랑 동일하게 상태바 제외한 영역으로"
+        → 맞춤으로 가른다. 지금이 이 상태다:
 
-     대신 확대(앱을 CSS 로 눕힌 상태)에서는 iOS 상태바 글자가 영상 왼쪽 가장자리
-     위에 90° 누운 채로 얹힌다 — 그 자리를 비우던 게 이 규칙이었다. 물리 가로
-     (폰을 눕힌 경우)는 iOS 가 상태바를 아예 안 그려 얹힐 것도 없다.
-     되돌리려면 이 자리에 --status-h 를 빼는 계산을 다시 넣으면 된다.
+        · 원본 비율 유지 — 상태바를 뺀 영역 안에서 비율을 맞춘다(검은 띠 있음).
+          어차피 레터박스가 생기는 맞춤이라 띠가 하나 더 있어도 어색하지 않고,
+          상태바 글자가 영상 위에 얹히지 않는다.
+        · 가득 채우기·늘리기 — 화면을 끝까지 쓴다(띠 없음). 그 자리를 덮는 게
+          이 맞춤의 뜻이다.
 
-     화면 맞춤(가득 채우기/원본 비율)에 따라 갈리던 data-video-bleed 도 같이
-     없앴다 — 이제 어느 맞춤이든 프레임 치수가 같다. */
+     가르는 스위치는 data-video-bleed 다 — LandscapeVideo 가 맞춤에 따라 켠다
+     (contain 이면 끔). 단일·다채널이 같은 플래그를 쓰므로 둘이 어긋나지 않는다.
+     프레임을 통째로 줄이는 방식인 이유는, 자식을 프레임 밖으로 넘기려 해도
+     가로 프레임에 overflow:hidden 이 걸려 잘리기 때문이다(실기기 확인). */
 
   @media (orientation: portrait) {
   html[data-landscape="true"] .app-safe-frame {
@@ -228,8 +239,8 @@ body {
        top 도 같은 단위로 맞춰야 중심이 안 어긋난다 — 예전에 %(=lvh 기준)와
        100svh 를 섞었다가 위아래로 (lvh-svh)/2 씩 밀렸던 그 문제다.
        vh 는 dvh 를 모르는 구형 브라우저용 폴백(위 html/body 와 같은 패턴). */
-    /* 상태바 자리를 빼지 않는다 — 화면 세로 길이를 그대로 프레임 폭으로 쓴다
-       (위 '상태바 자리를 비우지 않는다' 주석 참고). */
+    /* 기본(가득 채우기·늘리기)은 화면 세로 길이를 그대로 프레임 폭으로 쓴다.
+       원본 비율일 때만 아래 규칙이 --status-h 를 뺀다. */
     top: 50vh;
     top: 50dvh;
     width: 100vh;
@@ -249,6 +260,16 @@ body {
        딤 위 UI 는 자기 여백(px-5 등)으로 가장자리에서 떨어져 있어 노치와 크게
        겹치지 않는다 — 영상만 끝까지 깔린다. */
     padding: 0;
+  }
+  /* 원본 비율 유지 — 프레임 폭에서 --status-h 를 빼고 중심을 그 절반만큼
+     내린다. 그러면 물리 상단에 딱 그만큼 남고, 그 자리는 html 배경이 보이는데
+     확대 중엔 setBarColor(true) 가 검정으로 칠해 둬서 검은 상태바가 된다.
+     --status-h 를 못 재는 환경(사파리·안드로이드)에선 0 이라 위와 같아진다. */
+  html[data-landscape="true"]:not([data-video-bleed="true"]) .app-safe-frame {
+    top: calc(50vh + var(--status-h, 0px) / 2);
+    top: calc(50dvh + var(--status-h, 0px) / 2);
+    width: calc(100vh - var(--status-h, 0px));
+    width: calc(100dvh - var(--status-h, 0px));
   }
   }
 
@@ -276,26 +297,40 @@ body {
       height: 100vw;
       transform-origin: center center;
       transform: translate(-50%, -50%) rotate(var(--force-rot, -90deg));
-      /* 가로 인셋(양옆 59px)이 남으면 흰 마진이 된다 — 전부 0.
-         위쪽 상태바 자리도 안 비운다(사용자 지정 2026-08-18). */
+      /* 가로 인셋(양옆 59px)이 남으면 흰 마진이 된다 — 좌우는 0. */
       padding: 0;
+    }
+    /* 위쪽 상태바 자리는 원본 비율일 때만 비운다(위 규칙과 같은 조건).
+       축소 직후 폰이 아직 누워 있는 짧은 상태지만, 여기만 규칙이 다르면 그
+       순간 영상 크기가 한 번 튄다. */
+    html[data-force-portrait="true"]:not([data-video-bleed="true"])
+      .app-safe-frame {
+      padding: var(--status-h, 0px) 0 0;
     }
   }
 
-  /* 폰을 눕힌 가로도 화면을 끝까지 쓴다(사용자 지정 2026-08-18: "영상 기준
-     왼쪽 부분은 검정 여백 안 떠도 될 것 같은데?").
+  /* 폰을 눕힌 가로도 확대와 같은 규칙을 쓴다 — 기본은 꽉, 원본 비율일 때만
+     노치 쪽 '한 변'을 --status-h 만큼 비운다(위 '상태바 자리는 원본 비율일
+     때만 비운다' 참고).
 
-     전에는 노치 쪽 한 변을 --status-h 만큼 비웠다. 확대가 물리 상단 한 변을
-     비우고 있어 둘을 같은 크기로 맞추려던 것인데("가로로 전환이랑 확대모드 왜
-     달라?"), 확대 쪽에서 그 비움을 없앴으니 여기도 같이 없앤다 — 둘 다 꽉 차서
-     여전히 같은 그림이다. 노치 쪽 변을 가리던 --notch-l/--notch-r 도 이제
-     아무도 안 읽는다(StatusInset 은 계속 재 두기만 한다).
+     한 변만 비우는 이유: 확대는 물리 상단 한 변만 비우는데, env() 좌우 인셋을
+     그대로 쓰면 양쪽이 비어 확대와 폭이 달라진다(사용자 지적: "가로로 전환이랑
+     확대모드 왜 달라?"). 어느 변인지는 StatusInset 이 회전 각도로 가려
+     --notch-l/--notch-r 로 준다.
 
      확대·가로 플래그가 없는 보통 화면에는 원래대로 안전영역 env() 가 걸린다. */
   @media (orientation: landscape) {
     html[data-immersive="true"] .app-safe-frame,
     html[data-landscape="true"] .app-safe-frame {
       padding: 0;
+    }
+    html[data-immersive="true"]:not([data-video-bleed="true"])
+      .app-safe-frame,
+    html[data-landscape="true"]:not([data-video-bleed="true"])
+      .app-safe-frame {
+      padding-top: 0;
+      padding-left: var(--notch-l, 0px);
+      padding-right: var(--notch-r, 0px);
     }
   }
 
