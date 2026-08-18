@@ -180,9 +180,11 @@ function BatteryIcon({ className, level }: { className?: string; level: number }
  *  탭과 같은 흰색이면 시간바가 어디서 시작하는지 안 보였다.
  *  좌우 페이드와 날짜 버튼 뒤 마스크도 이 색을 써야 한다 — 다른 색이면 흰 띠가
  *  드러난다. 가로(딤 위)는 투명 그대로다.
- *  #F7F7F7(안 보임) → #F2F2F2(진함) → #F5F5F5. 두 번 왔다 갔다 한 자리다
- *  (사용자 지정 2026-08-18: "조금 더 연하게 넣을 수 없을까 시간바 배경?"). */
-const TIMEBAR_BG = "#F5F5F5";
+ *  회색으로 갔다가 흰색으로 되돌아왔다 — #F7F7F7(안 보임) → #F2F2F2(진함) →
+ *  #F5F5F5 → #FFFFFF(사용자 지정 2026-08-18: "그냥 흰색으로 바꾸자").
+ *  상수는 남겨 둔다: 좌우 페이드와 날짜 버튼 뒤 마스크가 이 값을 같이 봐서,
+ *  한 곳만 바꾸면 흰 띠가 드러나던 자리다. */
+const TIMEBAR_BG = "#FFFFFF";
 
 /** 시간바 아래 아이콘 줄을 감싼 층이 이미 갖고 있는 좌우 여백. 줄에 더 붙일 몫은
  *  LANDSCAPE_EDGE 에서 이만큼 뺀 값이다 — 안 빼면 10 이 더해져 더 들어간다. */
@@ -3560,7 +3562,7 @@ function RecordingEventTimeline({
             // 20% 로 줄인다(사용자 지정 2026-08-14).
             width: "20%",
             background:
-              `linear-gradient(to left, rgba(245,245,245,0) 0%, ${TIMEBAR_BG} 89.9%)`,
+              `linear-gradient(to left, rgba(255,255,255,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
         <div
@@ -3573,7 +3575,7 @@ function RecordingEventTimeline({
             // 20% 로 줄인다(사용자 지정 2026-08-14).
             width: "20%",
             background:
-              `linear-gradient(to right, rgba(245,245,245,0) 0%, ${TIMEBAR_BG} 89.9%)`,
+              `linear-gradient(to right, rgba(255,255,255,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
         {/* 중앙 고정 현재 시각 라벨(다채널과 동일 — 다크).
@@ -4990,7 +4992,7 @@ function RecordingControls({
             // 20% 로 줄인다(사용자 지정 2026-08-14).
             width: "20%",
             background:
-              `linear-gradient(to left, rgba(245,245,245,0) 0%, ${TIMEBAR_BG} 89.9%)`,
+              `linear-gradient(to left, rgba(255,255,255,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
         <div
@@ -5003,7 +5005,7 @@ function RecordingControls({
             // 20% 로 줄인다(사용자 지정 2026-08-14).
             width: "20%",
             background:
-              `linear-gradient(to right, rgba(245,245,245,0) 0%, ${TIMEBAR_BG} 89.9%)`,
+              `linear-gradient(to right, rgba(255,255,255,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
         </>
