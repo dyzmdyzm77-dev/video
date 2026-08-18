@@ -3563,12 +3563,13 @@ function RecordingEventTimeline({
               display: "inline-flex",
               alignItems: "center",
               height: "20px",
-              // 흰 바탕이라 흰색 70% + 어두운 글자다(사용자 지정 2026-08-14:
-              // 어둡게 갔다가 되돌렸다 — 달력·캡처 버튼과 같은 결이어야 한다).
-              // 배경을 깔아야 하는 이유는 달력 버튼과 같다: 아래로 흐르는 눈금이
-              // 글자에 겹쳐 지저분해진다.
+              // 배경은 없다(사용자 지정 2026-08-18: "현재시간에 흰색 둘러져있는건
+              // 빼자"). 원래는 아래로 흐르는 눈금이 글자에 겹치는 걸 막으려고
+              // 흰색 70% 를 깔았는데, 시간바 배경이 연한 회색(TIMEBAR_BG)이 되면서
+              // 그 흰 알약만 도드라졌다. 눈금은 이 글자 아래(top 20~)로 지나가고
+              // 글자는 top 6~26 이라 실제로 겹치는 폭도 좁다.
               color: "#353535",
-              backgroundColor: "rgba(255,255,255,0.7)",
+              backgroundColor: "transparent",
               fontSize: "12px",
               fontWeight: 700,
               lineHeight: "12px",
@@ -4660,9 +4661,9 @@ function RecordingControls({
           // (사용자 지정 2026-08-14) — 거긴 달력·캡처 버튼도 흰 원이라
           // 어두운 알약만 튀었다.
           color: overlay ? "#FFFFFF" : "#353535",
-          backgroundColor: overlay
-            ? "rgba(102,102,102,0.4)"
-            : "rgba(255,255,255,0.7)",
+          // 흰 바탕(세로)에서는 배경을 안 깐다(사용자 지정 2026-08-18) — 단일
+          // 시간바와 같은 규칙이다. 딤 위(가로)는 영상이 뒤에 있어 그대로 둔다.
+          backgroundColor: overlay ? "rgba(102,102,102,0.4)" : "transparent",
           ...(overlay
             ? {
                 backdropFilter: "blur(20px)",
