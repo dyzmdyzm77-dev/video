@@ -3500,8 +3500,8 @@ function RecordingEventTimeline({
               />
             );
           })()}
-          {/* 큰 눈금 — 선 위에 얹는 점(사용자 지정 2026-08-18). 5px 이라 3px 선
-              위아래로 1px 씩 솟는다. 보이는 범위만 렌더(수천 개 방지). */}
+          {/* 큰 눈금 — 선과 같은 굵기(3px)의 점. 솟지 않고 선 안에서 색만
+              달라진다(사용자 지정 2026-08-18). 보이는 범위만 렌더. */}
           {ticks
             .filter(({ secOffset, isMajor }) => isMajor && inView(secOffset))
             .map(({ secOffset }) => (
@@ -3510,9 +3510,11 @@ function RecordingEventTimeline({
                 className="pointer-events-none absolute rounded-full"
                 style={{
                   left: `calc(50% + ${xOf(secOffset)}px)`,
-                  top: "22px",
-                  width: "5px",
-                  height: "5px",
+                  // 점 지름 = 선 두께(사용자 지정 2026-08-18: "원은 선 두께랑
+                  // 맞춰야지"). 선과 같은 띠(23~26) 안에 들어가 색만 달라진다.
+                  top: "23px",
+                  width: "3px",
+                  height: "3px",
                   backgroundColor: "#353535",
                 }}
               />
@@ -3535,10 +3537,10 @@ function RecordingEventTimeline({
               className="pointer-events-none absolute rounded-full"
               style={{
                 left: `calc(50% + ${xOf(c.secOffset)}px)`,
-                // 큰 눈금과 같은 규격(5px 점)에 색만 #F59E0B.
-                top: "22px",
-                width: "5px",
-                height: "5px",
+                // 큰 눈금과 같은 규격(3px 점)에 색만 #F59E0B.
+                top: "23px",
+                width: "3px",
+                height: "3px",
                 backgroundColor: "#F59E0B",
               }}
             />
@@ -4902,16 +4904,16 @@ function RecordingControls({
               }}
             />
           )}
-          {/* 큰 눈금 — 선 위에 얹는 5px 점 */}
+          {/* 큰 눈금 — 선과 같은 굵기(3px)의 점 */}
           {ticks.filter(({ isMajor }) => isMajor).map(({ secOffset }) => (
             <div
               key={`T${secOffset}`}
               className="absolute rounded-full"
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                top: "22px",
-                width: "5px",
-                height: "5px",
+                top: "23px",
+                width: "3px",
+                height: "3px",
                 backgroundColor: overlay ? "#FFFFFF" : "#353535",
               }}
             />
@@ -4926,10 +4928,10 @@ function RecordingControls({
               className="pointer-events-none absolute rounded-full"
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                // 큰 눈금과 같은 규격(5px 점)에 색만 #F59E0B.
-                top: "22px",
-                width: "5px",
-                height: "5px",
+                // 큰 눈금과 같은 규격(3px 점)에 색만 #F59E0B.
+                top: "23px",
+                width: "3px",
+                height: "3px",
                 backgroundColor: "#F59E0B",
               }}
             />
