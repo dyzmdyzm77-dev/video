@@ -566,3 +566,22 @@ export function useImmersive(): boolean {
   }, []);
   return on;
 }
+
+/** 지금 확대가 '앱을 눕혀서' 만든 상태인가를 구독한다.
+ *
+ *  딤 여백이 이걸 본다(사용자 지정 2026-08-18: "세로, 가로 모드에서 확대 버튼
+ *  눌러서 제자리 확대되면, 딤 아이콘 좌우 마진 그대로 유지"). 화면이 가로냐가
+ *  아니라 '확대가 화면을 돌렸느냐'가 기준이다 — 폰을 이미 눕힌 상태에서 확대를
+ *  누르면 아무것도 안 돌아가므로 여백도 그대로여야 한다.
+ *  SSR·첫 렌더는 false. */
+export function useImmersiveRotated(): boolean {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const sync = () => setOn(readImmersiveRotated());
+    sync();
+    const evts = [IMMERSIVE_EVENT, LANDSCAPE_EVENT, "resize"];
+    evts.forEach((e) => window.addEventListener(e, sync));
+    return () => evts.forEach((e) => window.removeEventListener(e, sync));
+  }, []);
+  return on;
+}
