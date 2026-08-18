@@ -37,6 +37,7 @@ import AndroidNav from "../components/AndroidNav";
 import {
   useDeviceRatio,
   useDeviceWide,
+  useIsAndroid,
   useDeviceWidth,
 } from "../components/useDeviceWidth";
 import { useListLayout } from "../components/useListLayout";
@@ -54,6 +55,7 @@ import {
   IMMERSIVE_EDGE,
   LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
+  LANDSCAPE_EDGE_ANDROID,
   LANDSCAPE_TOP_INSET,
 } from "../components/layoutRules";
 
@@ -260,7 +262,14 @@ export default function VariantA3({
     : "portrait";
   // 딤 위 UI 좌우 여백 — 눕힌 화면과 제자리 확대가 다르다(layoutRules 주석 참고).
   // useDeviceWide 는 앱이 CSS 로 눕은 것과 실기기 물리 회전을 한 값으로 묶어 준다.
-  const dimEdge = wideNow ? LANDSCAPE_EDGE : IMMERSIVE_EDGE;
+  const isAndroid = useIsAndroid();
+  // 눕힌 화면 값은 기기별로 다르다 — 아이폰 60, 안드로이드 30(사용자 지정
+  // 2026-08-18). 제자리 확대는 양쪽 다 IMMERSIVE_EDGE.
+  const dimEdge = wideNow
+    ? isAndroid
+      ? LANDSCAPE_EDGE_ANDROID
+      : LANDSCAPE_EDGE
+    : IMMERSIVE_EDGE;
   // 시간바 아래 아이콘 줄은 LandscapeVideo 밖(controls)에 있어 그쪽 보정을 못 받는다
   // — 같은 식으로 앱 창이 화면에서 밀려난 만큼 빼서 기기 모서리 기준으로 맞춘다.
   // 가로 딤 왼쪽 아래 아이콘이 여는 오른쪽 패널 — 어느 탭으로 열렸는지까지 담는다

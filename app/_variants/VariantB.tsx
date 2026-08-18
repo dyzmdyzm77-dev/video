@@ -9,7 +9,7 @@ import {
 import {
   useDeviceLandscape,
 } from "../components/deviceRotate";
-import { useDeviceWide } from "../components/useDeviceWidth";
+import { useDeviceWide, useIsAndroid } from "../components/useDeviceWidth";
 import { toggleImmersive, useImmersive } from "../components/immersive";
 import LandscapeVideo from "../components/LandscapeVideo";
 
@@ -37,6 +37,7 @@ import {
   IMMERSIVE_EDGE,
   LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
+  LANDSCAPE_EDGE_ANDROID,
   LANDSCAPE_TOP_INSET,
 } from "../components/layoutRules";
 
@@ -198,7 +199,14 @@ export default function VariantB({
   const wideNow = useDeviceWide();
   // 딤 위 UI 좌우 여백 — 눕힌 화면과 제자리 확대가 다르다(layoutRules 주석 참고).
   // useDeviceWide 는 앱이 CSS 로 눕은 것과 실기기 물리 회전을 한 값으로 묶어 준다.
-  const dimEdge = wideNow ? LANDSCAPE_EDGE : IMMERSIVE_EDGE;
+  const isAndroid = useIsAndroid();
+  // 눕힌 화면 값은 기기별로 다르다 — 아이폰 60, 안드로이드 30(사용자 지정
+  // 2026-08-18). 제자리 확대는 양쪽 다 IMMERSIVE_EDGE.
+  const dimEdge = wideNow
+    ? isAndroid
+      ? LANDSCAPE_EDGE_ANDROID
+      : LANDSCAPE_EDGE
+    : IMMERSIVE_EDGE;
 
   const immersive = useImmersive();
   const compareTarget = useCompareTarget();

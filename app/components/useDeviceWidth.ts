@@ -236,3 +236,17 @@ export function useEdgeGaps(): EdgeGaps {
   }, []);
   return gaps;
 }
+
+/** 실기기가 안드로이드인가.
+ *
+ *  화면에 그리는 '가짜 시스템 바'용 platform 파라미터와는 다르다 — 그쪽은 값이
+ *  없으면 android 로 떨어져서, 실기기 아이폰도 android 로 잡힌다. 여백처럼 실제
+ *  기기에 따라 갈려야 하는 값은 UA 로 본다.
+ *  SSR·첫 렌더는 false 로 맞춰 하이드레이션 불일치를 막는다. */
+export function useIsAndroid(): boolean {
+  const [android, setAndroid] = useState(false);
+  useEffect(() => {
+    setAndroid(/Android/i.test(navigator.userAgent));
+  }, []);
+  return android;
+}
