@@ -524,11 +524,6 @@ export default function VariantA3({
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 — 아래 아이콘 줄과 한 값을 쓴다(dimEdge).
           edgeInset={dimEdge}
-          // 아래쪽 딤 그라데이션은 안 깐다(사용자 지정 2026-08-18: "A-3 딤에서
-          // 하단 딤영역만 없애볼 수 있어?"). 아래는 시간바·아이콘 줄이 이미
-          // 제 배경(원 버튼 블러·알약)을 갖고 있어 영상만 어두워지는 셈이었다.
-          // 위쪽 딤은 그대로 — 장소명·칩은 배경 없이 글자만 얹힌다.
-          dimBottomHeight="0%"
           // 위쪽 요소(장소명·칩 줄·아이콘 줄) — 네 안 공통(layoutRules).
           topInset={LANDSCAPE_TOP_INSET}
           // 이 층(시간바 + 그 아래 아이콘 줄)은 이 값에서 12 를 뺀 만큼 뜬다.
