@@ -174,6 +174,13 @@ function BatteryIcon({ className, level }: { className?: string; level: number }
   );
 }
 
+/** 세로 화면 시간바 영역 배경 — 흰 바탕에서 살짝 내린 회색(사용자 지정
+ *  2026-08-18: "A-3 세로, 시간바 영역 배경을 조금 연한 그레이로"). 위 영상·아래
+ *  탭과 같은 흰색이면 시간바가 어디서 시작하는지 안 보였다.
+ *  좌우 페이드와 날짜 버튼 뒤 마스크도 이 색을 써야 한다 — 다른 색이면 흰 띠가
+ *  드러난다. 가로(딤 위)는 투명 그대로다. */
+const TIMEBAR_BG = "#F7F7F7";
+
 /** 시간바 아래 아이콘 줄을 감싼 층이 이미 갖고 있는 좌우 여백. 줄에 더 붙일 몫은
  *  LANDSCAPE_EDGE 에서 이만큼 뺀 값이다 — 안 빼면 10 이 더해져 더 들어간다. */
 const LANDSCAPE_CONTROLS_PAD = 10;
@@ -3382,7 +3389,7 @@ function RecordingEventTimeline({
     <div
       ref={containerRef}
       className="relative flex min-h-0 flex-1 flex-col overflow-hidden touch-none select-none"
-      style={{ backgroundColor: "#FFFFFF", cursor: "grab" }}
+      style={{ backgroundColor: TIMEBAR_BG, cursor: "grab" }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -3519,7 +3526,7 @@ function RecordingEventTimeline({
             // 20% 로 줄인다(사용자 지정 2026-08-14).
             width: "20%",
             background:
-              "linear-gradient(to left, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
+              `linear-gradient(to left, rgba(247,247,247,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
         <div
@@ -3532,7 +3539,7 @@ function RecordingEventTimeline({
             // 20% 로 줄인다(사용자 지정 2026-08-14).
             width: "20%",
             background:
-              "linear-gradient(to right, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
+              `linear-gradient(to right, rgba(247,247,247,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
         {/* 중앙 고정 현재 시각 라벨(다채널과 동일 — 다크).
@@ -3600,7 +3607,7 @@ function RecordingEventTimeline({
               top: `${PAD_TOP + (RAIL_H - 34) / 2}px`,
               height: "34px",
               gap: "12px",
-              backgroundColor: "#FFFFFF",
+              backgroundColor: TIMEBAR_BG,
             }}
             onPointerDown={(e) => e.stopPropagation()}
           >
@@ -4722,6 +4729,7 @@ function RecordingControls({
         style={{
           gap: "20px",
           padding: "8px 0",
+          // 플레이어 버튼 줄은 흰색 그대로 — 회색으로 바꾼 건 시간바 영역뿐이다.
           backgroundColor: overlay ? "transparent" : "#FFFFFF",
           opacity: overlay && scrubbing ? 0 : 1,
           pointerEvents: overlay && scrubbing ? "none" : undefined,
@@ -4794,7 +4802,7 @@ function RecordingControls({
         ref={timelineRef}
         className="relative flex flex-col overflow-hidden touch-pan-y select-none"
         style={{
-          backgroundColor: overlay ? "transparent" : "#FFFFFF",
+          backgroundColor: overlay ? "transparent" : TIMEBAR_BG,
           // 좌우 페이드 — 흰 배경일 땐 흰 그라데이션 두 장으로 덮지만, 배경이
           // 없는 딤 위에선 덮을 색이 없다. 대신 영역을 마스크로 깎는다(A-1 동일).
           ...(overlay
@@ -4913,7 +4921,7 @@ function RecordingControls({
             // 20% 로 줄인다(사용자 지정 2026-08-14).
             width: "20%",
             background:
-              "linear-gradient(to left, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
+              `linear-gradient(to left, rgba(247,247,247,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
         <div
@@ -4926,7 +4934,7 @@ function RecordingControls({
             // 20% 로 줄인다(사용자 지정 2026-08-14).
             width: "20%",
             background:
-              "linear-gradient(to right, rgba(255,255,255,0) 0%, #FFFFFF 89.9%)",
+              `linear-gradient(to right, rgba(247,247,247,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
         </>
