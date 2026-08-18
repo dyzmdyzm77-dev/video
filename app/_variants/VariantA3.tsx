@@ -5711,13 +5711,36 @@ function LandscapeSidePanel({
         </button>
       </div>
       {showMotion ? (
-        // 가로 딤이 여는 패널도 세로 스크롤이다(위 1080+ 패널과 같은 규칙).
+        // 오른쪽 패널은 세로로 길어 세로 스크롤, 아래 판은 낮고 넓어 가로 스크롤
+        // (사용자 지정 2026-08-18: "아래에서 나올땐 가로 스크롤이어야겠지??").
+        // 판정은 부모가 정한 position 하나를 그대로 따른다.
         <MotionEventList
           playbackMs={playbackMs}
           setPlaybackMs={setPlaybackMs}
           cameraSrc={cam.src}
-          wide={false}
+          wide={bottom}
         />
+      ) : bottom ? (
+        // 아래 판의 카메라 목록 — 세로 화면 하단 스트립과 같은 가로 한 줄이다.
+        // 타일은 행 높이를 채우고(h-full) 16:9, 좌우 여백은 스크롤 안쪽 패딩.
+        <div className="flex min-h-0 flex-1 items-stretch gap-2 overflow-x-auto overflow-y-hidden px-5 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {CAMERAS.map((c, i) => (
+            <button
+              key={c.label}
+              type="button"
+              onClick={() => onSelect(i)}
+              className="relative h-full aspect-video flex-none overflow-hidden bg-neutral-900"
+              style={{
+                borderRadius: "4px",
+                ...(i === selectedIndex
+                  ? { boxShadow: "inset 0 0 0 2px #1D6CEB" }
+                  : null),
+              }}
+            >
+              <CameraFeed label={c.label} src={c.src} />
+            </button>
+          ))}
+        </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {CAMERAS.map((c, i) => (
