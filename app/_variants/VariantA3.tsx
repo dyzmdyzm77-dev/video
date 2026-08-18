@@ -4699,8 +4699,10 @@ function RecordingControls({
           onClick={onOpenDateTime}
           className="flex items-center gap-0 text-[14px] font-medium leading-none text-[#353535]"
         >
+          {/* 화살표는 안 그린다(사용자 지정 2026-08-18: "시간쪽에 화살표도 가리고").
+              날짜를 바꾸는 입구가 시간바 왼쪽 달력 버튼으로 옮겨져서, 여기 화살표는
+              같은 일을 두 번 알리는 셈이 됐다. 글자 자체는 계속 눌린다. */}
           <span suppressHydrationWarning>{labelDate}</span>
-          <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
         </button>
         <RowSkeleton visible={rowLoading} />
       </div>
@@ -4907,6 +4909,42 @@ function RecordingControls({
             />
           ))}
         </div>
+        {/* 날짜·시간 선택 — 단일 채널 시간바와 같은 것(사용자 지정 2026-08-18:
+            "A-3세로 다채널에서, 단일채널과 동일하게 시간바 왼쪽에 달력 아이콘
+            넣어주고, 구분선이랑 똑같이"). 규격도 그대로다: 34 원 + 흰 배경 +
+            neutral-300 테두리, 아이콘 24, 왼쪽 20, 오른쪽에 1×16 #EBEBEB 구분선.
+            감싼 층 배경은 시간바와 같은 색이라 아래로 흐르는 눈금을 가려 준다.
+            딤 위(가로)에선 안 그린다 — 거긴 딤 아이콘 줄이 같은 일을 한다. */}
+        {!overlay && onOpenDateTime && (
+          <div
+            className="absolute z-20 flex items-center"
+            style={{
+              left: "20px",
+              top: `${PAD_TOP + (RAIL_H - 34) / 2}px`,
+              height: "34px",
+              gap: "12px",
+              backgroundColor: TIMEBAR_BG,
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              aria-label="날짜, 시간 선택"
+              className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-neutral-300"
+              style={{ backgroundColor: "#FFFFFF" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenDateTime();
+              }}
+            >
+              <img src={`${BASE}/time.svg`} alt="" className="h-6 w-6" />
+            </button>
+            <span
+              aria-hidden
+              style={{ width: "1px", height: "16px", backgroundColor: "#EBEBEB" }}
+            />
+          </div>
+        )}
         {/* 좌우 페이드 — 딤 위(overlay)에선 덮을 흰 배경이 없어 위 컨테이너의
             마스크가 대신한다. */}
         {!overlay && (
