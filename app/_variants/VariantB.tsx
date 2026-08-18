@@ -2959,6 +2959,7 @@ function RecordingControls({
         }}
       >
         <PlayerButton
+          overlay={overlay}
           kind="skip-back"
           label={BACK_SPEED_LABELS[backSpeedIdx]}
           onClick={() => {
@@ -2971,6 +2972,7 @@ function RecordingControls({
           }}
         />
         <PlayerButton
+          overlay={overlay}
           kind="back10"
           onClick={() => {
             setPlaybackMs((p) => (p === null ? p : p - 10000));
@@ -2979,11 +2981,13 @@ function RecordingControls({
           }}
         />
         <PlayerButton
+          overlay={overlay}
           kind={isPlaying ? "pause" : "play"}
           onClick={onTogglePlay}
           held={!isPlaying}
         />
         <PlayerButton
+          overlay={overlay}
           kind="forward10"
           onClick={() => {
             setPlaybackMs((p) => (p === null ? p : p + 10000));
@@ -2992,6 +2996,7 @@ function RecordingControls({
           }}
         />
         <PlayerButton
+          overlay={overlay}
           kind="skip-forward"
           label={FWD_SPEED_LABELS[fwdSpeedIdx]}
           onClick={() => {
@@ -3310,6 +3315,7 @@ function PlayerButton({
   onClick,
   held = false,
   label = null,
+  overlay = false,
 }: {
   kind: PlayerButtonKind;
   onClick?: () => void;
@@ -3317,6 +3323,10 @@ function PlayerButton({
   held?: boolean;
   // label이 있으면 아이콘 대신 배속 텍스트("2배" 등)를 표시하고 active 상태로 둔다.
   label?: string | null;
+  /** 가로 딤 위인가 — A-1 가로 딤 5버튼과 같은 규격으로 바꾼다(사용자 지정
+   *  2026-08-18: "그 버튼도 좀 흰색빼고.. A-1 가로 딤 5버튼처럼 해줘").
+   *  60px · 반투명 검정 · 흰 테두리 · 흰 아이콘. 세로는 지금 그대로 흰 원. */
+  overlay?: boolean;
 }) {
   const [pressed, setPressed] = useState(false);
   const active = held || pressed || label != null;
@@ -3330,20 +3340,40 @@ function PlayerButton({
       onPointerCancel={() => setPressed(false)}
       className="flex items-center justify-center rounded-full"
       style={{
-        width: "40px",
-        height: "40px",
-        border: "1px solid #D9D9D9",
-        backgroundColor: active ? "#F2F2F2" : "#FFFFFF",
+        // 가로 딤에선 60 — 영상 위에 떠 있는 버튼이라 세로(40)보다 커야 눌린다.
+        width: overlay ? "60px" : "40px",
+        height: overlay ? "60px" : "40px",
+        border: overlay
+          ? "1px solid rgba(255,255,255,0.35)"
+          : "1px solid #D9D9D9",
+        // 딤 위 배경 — 영상이 비쳐 잘 안 보이므로 검정 55%. 눌리면 밝게.
+        backgroundColor: overlay
+          ? active
+            ? "rgba(255,255,255,0.45)"
+            : "rgba(0,0,0,0.55)"
+          : active
+            ? "#F2F2F2"
+            : "#FFFFFF",
       }}
     >
       {label != null ? (
         <span
-          style={{ fontSize: "14px", fontWeight: 500, color: "#262626" }}
+          style={{
+            fontSize: overlay ? "17px" : "14px",
+            fontWeight: 500,
+            // 배속 글자도 같은 규칙 — 밝은 배경(active)이면 검정.
+            color: overlay && !active ? "#FFFFFF" : "#262626",
+          }}
         >
           {label}
         </span>
       ) : (
-        <PlayerIcon kind={kind} size={24} />
+        <PlayerIcon
+          kind={kind}
+          size={overlay ? 32 : 24}
+          // 눌리면 배경이 밝아지므로 아이콘은 원래 색으로 되돌린다.
+          invert={overlay && !active}
+        />
       )}
     </button>
   );
@@ -3361,9 +3391,12 @@ const PLAYER_ICON_SRC: Record<PlayerButtonKind, string> = {
 function PlayerIcon({
   kind,
   size,
+  invert = false,
 }: {
   kind: PlayerButtonKind;
   size: number;
+  /** 어두운 딤 배경 위에서는 아이콘을 흰색으로 찍는다(A-1 과 같은 방식). */
+  invert?: boolean;
 }) {
   const marginLeft = kind === "skip-forward" ? "2px" : undefined;
   const marginRight = kind === "skip-back" ? "2px" : undefined;
@@ -3371,7 +3404,13 @@ function PlayerIcon({
     <img
       src={PLAYER_ICON_SRC[kind]}
       alt=""
-      style={{ width: `${size}px`, height: `${size}px`, marginLeft, marginRight }}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        marginLeft,
+        marginRight,
+        filter: invert ? "brightness(0) invert(1)" : undefined,
+      }}
     />
   );
 }
