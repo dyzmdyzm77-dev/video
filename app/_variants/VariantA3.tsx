@@ -3490,26 +3490,29 @@ function RecordingEventTimeline({
                 className="pointer-events-none absolute rounded-[1px]"
                 style={{
                   left: `calc(50% + ${x0}px)`,
-                  top: "24px",
+                  // 선을 조금 두껍게(2 → 3), 자리는 큰 눈금 점의 세로 가운데
+                  // (사용자 지정 2026-08-18: "선 두께 조금 늘리고, 눈금은 점으로").
+                  top: "23px",
                   width: `${x1 - x0 + 2}px`,
-                  height: "2px",
+                  height: "3px",
                   backgroundColor: "rgba(173,173,173,0.7)",
                 }}
               />
             );
           })()}
-          {/* 큰 눈금 — 선 위로 솟는 2×8 막대. 보이는 범위만 렌더(수천 개 방지). */}
+          {/* 큰 눈금 — 선 위에 얹는 점(사용자 지정 2026-08-18). 5px 이라 3px 선
+              위아래로 1px 씩 솟는다. 보이는 범위만 렌더(수천 개 방지). */}
           {ticks
             .filter(({ secOffset, isMajor }) => isMajor && inView(secOffset))
             .map(({ secOffset }) => (
               <div
                 key={`T${secOffset}`}
-                className="pointer-events-none absolute rounded-[1px]"
+                className="pointer-events-none absolute rounded-full"
                 style={{
                   left: `calc(50% + ${xOf(secOffset)}px)`,
-                  top: "18px",
-                  width: "2px",
-                  height: "8px",
+                  top: "22px",
+                  width: "5px",
+                  height: "5px",
                   backgroundColor: "#353535",
                 }}
               />
@@ -3529,14 +3532,13 @@ function RecordingEventTimeline({
           {eventOccurrences.filter((c) => inView(c.secOffset)).map((c) => (
             <div
               key={`M${c.key}`}
-              className="pointer-events-none absolute rounded-[1px]"
+              className="pointer-events-none absolute rounded-full"
               style={{
                 left: `calc(50% + ${xOf(c.secOffset)}px)`,
-                // 큰 눈금과 같은 규격(2×8)에 색만 #F59E0B — 눈금이 막대로
-                // 돌아왔으니 감지 표시도 같이 맞춘다(사용자 지정 2026-08-18).
-                top: "18px",
-                width: "2px",
-                height: "8px",
+                // 큰 눈금과 같은 규격(5px 점)에 색만 #F59E0B.
+                top: "22px",
+                width: "5px",
+                height: "5px",
                 backgroundColor: "#F59E0B",
               }}
             />
@@ -4891,25 +4893,25 @@ function RecordingControls({
               className="pointer-events-none absolute rounded-[1px]"
               style={{
                 left: `calc(50% + ${ticks[0]!.secOffset * pxPerSec}px)`,
-                top: "24px",
+                top: "23px",
                 width: `${(ticks[ticks.length - 1]!.secOffset - ticks[0]!.secOffset) * pxPerSec + 2}px`,
-                height: "2px",
+                height: "3px",
                 backgroundColor: overlay
                   ? "rgba(153,153,153,0.7)"
                   : "rgba(173,173,173,0.7)",
               }}
             />
           )}
-          {/* 큰 눈금 — 선 위로 솟는 2×8 막대 */}
+          {/* 큰 눈금 — 선 위에 얹는 5px 점 */}
           {ticks.filter(({ isMajor }) => isMajor).map(({ secOffset }) => (
             <div
               key={`T${secOffset}`}
-              className="absolute rounded-[1px]"
+              className="absolute rounded-full"
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                top: "18px",
-                width: "2px",
-                height: "8px",
+                top: "22px",
+                width: "5px",
+                height: "5px",
                 backgroundColor: overlay ? "#FFFFFF" : "#353535",
               }}
             />
@@ -4921,13 +4923,13 @@ function RecordingControls({
           {overlay && motionMarks.map((secOffset, i) => (
             <div
               key={`M${i}`}
-              className="pointer-events-none absolute rounded-[1px]"
+              className="pointer-events-none absolute rounded-full"
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                // 큰 눈금과 같은 규격(2×8)에 색만 #F59E0B — 감지는 눈에 띄어야 한다.
-                top: "18px",
-                width: "2px",
-                height: "8px",
+                // 큰 눈금과 같은 규격(5px 점)에 색만 #F59E0B.
+                top: "22px",
+                width: "5px",
+                height: "5px",
                 backgroundColor: "#F59E0B",
               }}
             />
