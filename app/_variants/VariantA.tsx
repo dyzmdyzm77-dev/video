@@ -222,10 +222,14 @@ export default function VariantA({
   // 사용자가 직접 고른 '한 화면에 볼 채널 수' — 기기 방향별로 따로 기억한다.
   // 눕혀 보면 16채널, 세로로 들면 8채널처럼 방향마다 알맞은 수가 다르다
   // (사용자 요청 2026-08-11, A-1 과 같은 사양). null 이면 그 방향은 '자동'.
+  // 처음 값은 세로 8 · 가로 16 이다(사용자 지정 2026-08-18: "화면 구성은 세로 8
+  // 가로 16을 디폴트로 해"). 예전엔 둘 다 null(자동)이라 영상 영역 비율에서
+  // 뽑은 수로 시작했는데, 기기마다 4~16 으로 들쭉날쭉해 UT 시작 화면이 달랐다.
+  // 사용자가 시트에서 '자동'을 고르면 그때 다시 null 이 된다.
   const [userCounts, setUserCounts] = useState<{
     portrait: number | null;
     landscape: number | null;
-  }>({ portrait: null, landscape: null });
+  }>({ portrait: 8, landscape: 16 });
   // 방향별로 마지막에 잰 '자동' 개수. 시트는 두 방향을 한 화면에 같이 보여
   // 주는데, 지금 안 보고 있는 방향은 실측할 길이 없어 마지막 값을 쓴다.
   const autoCountSeen = useRef<{

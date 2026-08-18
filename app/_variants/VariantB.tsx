@@ -207,7 +207,10 @@ export default function VariantB({
   // 다채널 화면 개수 — 사용자가 '화면 구성'에서 직접 고르기 전엔(또는 '자동'을
   // 고르면) 영상 영역 비율(gridRatio) 기반 기본값을 쓴다(autoGridCount).
   const [videoAreaRef, gridRatio] = useGridAreaRatio();
-  const [userGridCount, setUserGridCount] = useState<number | null>(null);
+  // 처음 값 8 (사용자 지정 2026-08-18: "화면 구성은 세로 8 가로 16을 디폴트로").
+  // B 는 방향별로 따로 기억하지 않고 한 값만 쓰므로 세로 기준인 8 로 둔다 —
+  // 가로로 눕히면 사용자가 시트에서 바꾸거나 '자동'을 고르면 된다.
+  const [userGridCount, setUserGridCount] = useState<number | null>(8);
   const gridCount = userGridCount ?? autoGridCount(gridRatio);
   const [mode, setMode] = useState<"live" | "recording">(
     () => readScreenState().mode,
