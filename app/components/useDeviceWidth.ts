@@ -202,6 +202,22 @@ export function readEdgeGaps(): EdgeGaps {
   // screenX/Y 를 안 주는 경우) 보정을 접는다 — 엉뚱한 수를 빼면 한쪽 여백이
   // 확 넓어지느니만 못하다. 창이 화면보다 크거나, 한쪽이 화면 절반을 넘으면
   // 잘못 잰 것으로 본다.
+  // 창 위치(screenX/Y)만으로는 안 잡히는 밀림이 있다 — 안드로이드는 컷아웃·바가
+  // '창 안쪽'을 깎는 경우가 있어 창은 화면 전체인데 쓸 수 있는 영역만 작다.
+  // 그건 안전영역(env)이 알려 준다. 둘 중 큰 값을 쓴다.
+  const envInset = (side: "top" | "bottom" | "left" | "right") => {
+    if (typeof document === "undefined") return 0;
+    const probe = document.createElement("div");
+    probe.style.cssText = `position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-${side},0px);pointer-events:none;`;
+    document.body.appendChild(probe);
+    const v = probe.getBoundingClientRect().height;
+    probe.remove();
+    return Number.isFinite(v) ? v : 0;
+  };
+  // 콘텐츠 기준 좌우가 물리적으로 어느 변인지는 CSS 회전 여부로 갈린다.
+  const envLeft = rotated ? envInset("top") : envInset("left");
+  const envRight = rotated ? envInset("bottom") : envInset("right");
+
   const sane =
     screenSpan > 0 &&
     span > 0 &&
@@ -210,8 +226,13 @@ export function readEdgeGaps(): EdgeGaps {
     near + span <= screenSpan + 1 &&
     near < screenSpan / 2 &&
     far < screenSpan / 2;
-  if (!sane) return { left: 0, right: 0 };
-  return { left: Math.round(near), right: Math.round(far) };
+  if (!sane) {
+    return { left: Math.round(envLeft), right: Math.round(envRight) };
+  }
+  return {
+    left: Math.round(Math.max(near, envLeft)),
+    right: Math.round(Math.max(far, envRight)),
+  };
 }
 
 /** readEdgeGaps 를 구독한다. SSR·첫 렌더는 0 으로 맞춰 하이드레이션 불일치를 막는다. */
