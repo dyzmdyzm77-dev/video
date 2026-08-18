@@ -24,17 +24,22 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "에스원 CCTV",
     description: "8층 사무실 실시간 영상",
     start_url: `${BASE}/a1`,
-    // fullscreen — 안드로이드 확대 중 회전 잠금이 이 설치 방식에 묶여 있다.
-    // 잠금(screen.orientation.lock)은 전체화면(또는 전체화면형 설치)에서만
-    // 허용되는데, 검은 띠를 잡으려고 잠깐 standalone 으로 바꿨더니 잠금까지
-    // 죽었다(일반 갤럭시에서 확대 중 회전됨 — 사용자 확인. 폴드가 잠겼던 건
-    // 옛 fullscreen 설치가 남아 있어서였다). 검은 띠의 실제 범인은 앱이 깔던
-    // --status-h 였고 그건 이미 안드로이드에서 껐다(StatusInset).
-    // JS requestFullscreen 은 계속 안 부른다 — "아래로 내려 나가기" 토스트의
-    // 원인이었다. 설치형 fullscreen 은 그 토스트가 없다.
+    // standalone — 세로 화면에서는 안드로이드 상태바·내비바가 계속 보여야 한다
+    // (사용자 지정 2026-08-18: "안드로이드바가 계속 있어야지. 세로일떄는").
+    // fullscreen 으로 설치하면 앱이 화면 전체를 받아 바가 아예 안 뜨고, 가장자리를
+    // 쓸어올려야 잠깐 나타난다 — 그게 사용자가 본 그 동작이다.
+    //
+    // 확대(몰입)에서만 바를 걷는 건 JS 전체화면이 맡는다(immersive.ts 의
+    // syncFullscreen) — 설치형에서만 부른다. 브라우저 탭에서 부르면 크롬이
+    // "아래로 내려 나가기" 안내를 강제로 띄우는데, 설치형에는 그게 없다.
+    //
+    // 예전에 fullscreen 으로 둔 이유는 확대 중 회전 잠금(screen.orientation.lock)
+    // 이 전체화면형 설치에서만 허용돼서였다. 지금은 눕혀도 앱이 아무것도 안 하도록
+    // CSS 미디어쿼리로 정리돼 있어(globals.css) 잠금이 없어도 이중 회전이 안 난다.
+    //
     // ※ 설치 순간 박히는 값 — 아이콘을 지우고 다시 추가해야 적용된다.
-    display: "fullscreen",
-    display_override: ["fullscreen", "standalone"],
+    display: "standalone",
+    display_override: ["standalone"],
     // any — 회전은 OS 에 맡긴다(사용자 확정: "그냥 가로로 돌게 해. 막지 말고").
     // portrait 잠금·CSS 되돌림·센서 가리개로 막아 봤던 이력이 있는데 전부
     // 걷어냈다. 아이폰은 애초에 잠금이 안 먹혔고(실측), 막는 장치들이 자꾸

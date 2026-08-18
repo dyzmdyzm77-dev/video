@@ -59,13 +59,30 @@ function syncFullscreen(on: boolean): Promise<unknown> {
     window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   if (desktop) return Promise.resolve();
   try {
-    // 전체화면을 더 쓰지 않는다(사용자 확정: 확대에서도 상태바는 남긴다).
-    // 안드로이드에서 전체화면은 상태바를 없애고, 노치(컷아웃) 자리를 OS 가
-    // 검은 레터박스로 막아 앱이 못 칠하는 검은 띠를 만들었다. 설치 앱은
-    // manifest display: "standalone" 이 시스템 바 처리를 맡는다.
-    // 켜는 쪽은 무시하고, 어쩌다 걸려 있는 전체화면만 푼다.
-    if (!on && document.fullscreenElement) {
-      document.exitFullscreen?.()?.catch(() => {});
+    if (!on) {
+      if (document.fullscreenElement) document.exitFullscreen?.()?.catch(() => {});
+      return Promise.resolve();
+    }
+    // 세로에서는 안드로이드 바가 계속 보이고(매니페스트 standalone), 가로·확대에서만
+    // 걷는다(사용자 지정 2026-08-18: "안드로이드바가 계속 있어야지. 세로일떄는",
+    // "가로로 돌릴때만 없애는거지"). 그 '걷기'를 여기서 한다.
+    //
+    // 설치본에서만 부른다. 브라우저 탭에서 전체화면을 잡으면 크롬이 "아래로 내려
+    // 나가기" 안내를 강제로 띄운다 — 사용자가 갇히지 않게 브라우저가 넣는 것이라
+    // 웹에서 끌 수 없다. 설치본에는 그 안내가 없다.
+    //
+    // 아이폰 사파리는 요소 전체화면 API 자체가 없어 아무 일도 안 난다(상태바는
+    // 계속 투명하게 얹힌다 — 그쪽은 원래 그렇게 맞춰 뒀다).
+    //
+    // 사용자 조작 안에서만 허용되는 API 라, 버튼(toggleImmersive)에서 부른 건
+    // 통과하고 회전으로 저절로 켜진 경우엔 거부된다 — 거부돼도 조용히 지나간다.
+    const installed =
+      typeof window.matchMedia === "function" &&
+      (window.matchMedia("(display-mode: standalone)").matches ||
+        window.matchMedia("(display-mode: fullscreen)").matches);
+    const el = document.documentElement;
+    if (installed && typeof el.requestFullscreen === "function") {
+      return el.requestFullscreen().catch(() => {});
     }
   } catch {}
   return Promise.resolve();
