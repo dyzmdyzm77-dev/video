@@ -9,6 +9,7 @@ import {
 import {
   useDeviceLandscape,
 } from "../components/deviceRotate";
+import { useDeviceWide } from "../components/useDeviceWidth";
 import { toggleImmersive, useImmersive } from "../components/immersive";
 import LandscapeVideo from "../components/LandscapeVideo";
 
@@ -33,7 +34,10 @@ import {
   bestGridForCount,
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
+  IMMERSIVE_EDGE,
+  LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
+  LANDSCAPE_TOP_INSET,
 } from "../components/layoutRules";
 
 const CAMERAS = [
@@ -191,6 +195,11 @@ export default function VariantB({
   );
   const [currentPage, setCurrentPage] = useState(0);
   const landscape = useDeviceLandscape();
+  const wideNow = useDeviceWide();
+  // 딤 위 UI 좌우 여백 — 눕힌 화면과 제자리 확대가 다르다(layoutRules 주석 참고).
+  // useDeviceWide 는 앱이 CSS 로 눕은 것과 실기기 물리 회전을 한 값으로 묶어 준다.
+  const dimEdge = wideNow ? LANDSCAPE_EDGE : IMMERSIVE_EDGE;
+
   const immersive = useImmersive();
   const compareTarget = useCompareTarget();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -373,7 +382,11 @@ export default function VariantB({
           // 딤 위 UI 좌우 여백 — 네 안 공통(사용자 지정 2026-08-18: "가로 딤
           // 좌우 마진은 시안 전체 다 동일하게"). B 는 그동안 이 값을 안 넘겨
           // LandscapeVideo 기본값(20)을 쓰고 있었다.
-          edgeInset={LANDSCAPE_EDGE}
+          edgeInset={dimEdge}
+          // 위아래 인셋도 네 안 공통으로 맞춘다(사용자 지정 2026-08-18). B 는
+          // 그동안 안 넘겨 LandscapeVideo 기본값(위 0 · 아래 12)이었다.
+          topInset={LANDSCAPE_TOP_INSET}
+          bottomInset={LANDSCAPE_BOTTOM_INSET}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}

@@ -48,7 +48,10 @@ import {
   bestGridForCount,
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
+  IMMERSIVE_EDGE,
+  LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
+  LANDSCAPE_TOP_INSET,
 } from "../components/layoutRules";
 
 const CAMERAS = [
@@ -231,7 +234,11 @@ export default function VariantA({
   }>({ portrait: null, landscape: null });
   // 기기가 가로로 긴 상태인가 — 판정은 useDeviceWide 하나에 모아 뒀다
   // (데스크톱 미리보기와 실기기가 회전을 다르게 표현해서다. useDeviceWidth.ts).
-  const orientKey: "portrait" | "landscape" = useDeviceWide()
+  const wideNow = useDeviceWide();
+  // 딤 위 UI 좌우 여백 — 눕힌 화면과 제자리 확대가 다르다(layoutRules 주석 참고).
+  // useDeviceWide 는 앱이 CSS 로 눕은 것과 실기기 물리 회전을 한 값으로 묶어 준다.
+  const dimEdge = wideNow ? LANDSCAPE_EDGE : IMMERSIVE_EDGE;
+  const orientKey: "portrait" | "landscape" = wideNow
     ? "landscape"
     : "portrait";
   const autoCount = autoGridCount(gridRatio);
@@ -425,10 +432,13 @@ export default function VariantA({
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 40 — A-1 가로와 같은 값으로(사용자 지정).
-          edgeInset={LANDSCAPE_EDGE}
+          edgeInset={dimEdge}
           // 아래 줄(AI 버튼·페이지 점)을 12 → 32 로 띄운다. 바로 아래에 시간바가
           // 깔려서 붙어 보이고 클릭도 겹쳤다(사용자 지정: "하단 마진도 한 20 더").
-          bottomInset={32}
+          // 아래층·위층 인셋 — 네 안 공통(layoutRules). 32 였는데 A-3 에 맞춰
+          // 22 로 내렸다(사용자 지정 2026-08-18).
+          bottomInset={LANDSCAPE_BOTTOM_INSET}
+          topInset={LANDSCAPE_TOP_INSET}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}

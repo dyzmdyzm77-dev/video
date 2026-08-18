@@ -56,7 +56,10 @@ import {
   bestGridForCount,
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
+  IMMERSIVE_EDGE,
+  LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
+  LANDSCAPE_TOP_INSET,
 } from "../components/layoutRules";
 
 const CAMERAS = [
@@ -285,7 +288,11 @@ export default function VariantA1({
 
   // '지금 기기가 가로로 긴 상태인가' — 판정은 useDeviceWide 하나에 모아 뒀다
   // (데스크톱 미리보기와 실기기가 회전을 다르게 표현해서다. useDeviceWidth.ts).
-  const orientKey: "portrait" | "landscape" = useDeviceWide()
+  const wideNow = useDeviceWide();
+  // 딤 위 UI 좌우 여백 — 눕힌 화면과 제자리 확대가 다르다(layoutRules 주석 참고).
+  // useDeviceWide 는 앱이 CSS 로 눕은 것과 실기기 물리 회전을 한 값으로 묶어 준다.
+  const dimEdge = wideNow ? LANDSCAPE_EDGE : IMMERSIVE_EDGE;
+  const orientKey: "portrait" | "landscape" = wideNow
     ? "landscape"
     : "portrait";
   // A-1 은 헤더를 상시 노출하지 않는 대신, 화면이 바뀔 때마다 딤을 한 번 띄운다
@@ -487,10 +494,12 @@ export default function VariantA1({
           // 토글 형태는 그대로 두고 고른 쪽 색만 흰 배경 + 검정 글자로.
           statusActiveStyle="white"
           // 딤 위 UI 좌우 여백 40 — 영상 자체는 제외, 끝까지 쓴다.
-          edgeInset={LANDSCAPE_EDGE}
-          // 아래 줄(AI 버튼·페이지 점)을 12 → 32 로 띄운다(사용자 지정:
-          // "딤처리됬을때 하단 마진 20 더 주자").
-          bottomInset={32}
+          edgeInset={dimEdge}
+          // 아래층(AI 버튼·페이지 점) 뜨는 양 — 네 안 공통(layoutRules).
+          // 32 였는데 A-3 에 맞춰 22 로 내렸다(사용자 지정 2026-08-18).
+          bottomInset={LANDSCAPE_BOTTOM_INSET}
+          // 위쪽 요소도 같은 값으로 올린다.
+          topInset={LANDSCAPE_TOP_INSET}
           // 장소명 줄을 오른쪽 아이콘 줄과 윗변 기준으로 맞춘다.
           headerAlign="top"
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.

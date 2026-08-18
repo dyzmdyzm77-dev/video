@@ -51,7 +51,10 @@ import {
   bestGridForCount,
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
+  IMMERSIVE_EDGE,
+  LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
+  LANDSCAPE_TOP_INSET,
 } from "../components/layoutRules";
 
 const CAMERAS = [
@@ -238,9 +241,14 @@ export default function VariantA3({
   }>({ portrait: null, landscape: null });
   // 기기가 가로로 긴 상태인가 — 판정은 useDeviceWide 하나에 모아 뒀다
   // (데스크톱 미리보기와 실기기가 회전을 다르게 표현해서다. useDeviceWidth.ts).
-  const orientKey: "portrait" | "landscape" = useDeviceWide()
+  const wideNow = useDeviceWide();
+  const orientKey: "portrait" | "landscape" = wideNow
     ? "landscape"
     : "portrait";
+  // 딤 위 UI 좌우 여백 — 눕힌 화면과 제자리 확대가 다르다(layoutRules 주석 참고).
+  // useDeviceWide 는 앱이 CSS 로 눕은 것과 실기기 물리 회전을 한 값으로 묶어 준다.
+  const dimEdge = wideNow ? LANDSCAPE_EDGE : IMMERSIVE_EDGE;
+
   const autoCount = autoGridCount(gridRatio);
   autoCountSeen.current[orientKey] = autoCount;
   const gridCount = userCounts[orientKey] ?? autoCount;
@@ -453,14 +461,14 @@ export default function VariantA3({
           statusStyle="chips"
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
           scrubbing={isScrubbing}
-          // 딤 위 UI 좌우 여백 — 아래 아이콘 줄과 한 값을 쓴다(LANDSCAPE_EDGE).
-          edgeInset={LANDSCAPE_EDGE}
-          // 위쪽 요소(장소명·칩 줄·아이콘 줄)를 10 올린다(사용자 지정 2026-08-14).
-          topInset={-10}
+          // 딤 위 UI 좌우 여백 — 아래 아이콘 줄과 한 값을 쓴다(dimEdge).
+          edgeInset={dimEdge}
+          // 위쪽 요소(장소명·칩 줄·아이콘 줄) — 네 안 공통(layoutRules).
+          topInset={LANDSCAPE_TOP_INSET}
           // 이 층(시간바 + 그 아래 아이콘 줄)은 이 값에서 12 를 뺀 만큼 뜬다.
           // 22 → 아이콘 줄 아래 마진 10(사용자 지정 2026-08-14: 20 에서 10 더 내림).
           // 시간바는 그 아이콘 줄 위에 얹히므로 같이 내려간다.
-          bottomInset={22}
+          bottomInset={LANDSCAPE_BOTTOM_INSET}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
@@ -539,8 +547,8 @@ export default function VariantA3({
                   // (사용자 지정 2026-08-14). 아이콘 줄은 아래에 고정이라
                   // 위쪽 시간바만 따라 내려온다.
                   marginTop: "-2px",
-                  paddingLeft: `${LANDSCAPE_EDGE - LANDSCAPE_CONTROLS_PAD}px`,
-                  paddingRight: `${LANDSCAPE_EDGE - LANDSCAPE_CONTROLS_PAD}px`,
+                  paddingLeft: `${dimEdge - LANDSCAPE_CONTROLS_PAD}px`,
+                  paddingRight: `${dimEdge - LANDSCAPE_CONTROLS_PAD}px`,
                   // 시간바를 끄는 동안엔 같이 걷는다(사용자 지정 2026-08-14).
                   // 이 줄은 시간바와 한 층에 있어서, 그 층이 스크럽 중에도 남는
                   // 규칙(keepWhileScrubbing)을 그대로 물려받아 혼자 남아 있었다.
