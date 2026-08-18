@@ -58,7 +58,6 @@ import {
   LANDSCAPE_EDGE_ANDROID,
   LANDSCAPE_TOP_INSET,
   PANEL_BOTTOM_H,
-  PANEL_BOTTOM_RATIO,
 } from "../components/layoutRules";
 
 const CAMERAS = [
@@ -265,16 +264,20 @@ export default function VariantA3({
   // 기기가 가로로 긴 상태인가 — 판정은 useDeviceWide 하나에 모아 뒀다
   // (데스크톱 미리보기와 실기기가 회전을 다르게 표현해서다. useDeviceWidth.ts).
   const wideNow = useDeviceWide();
-  // 패널을 오른쪽에서 낼지, 아래에서 낼지 — A-1 과 같은 기준(PANEL_BOTTOM_RATIO).
-  // 세로로 긴 화면(제자리 확대 등)에서 오른쪽에서 내면 영상 폭이 크게 깎인다
-  // (사용자 지정 2026-08-18: "세로가 좀 긴 형태에서 제자리 확대를 했다면 ...
-  // 아래에서 나와야할거같은데"). 실기기 확대는 폰이 세로인 채 화면만 CSS 로
-  // 돌린 것이라 뷰포트 비율이 세로 그대로다 — 회전이 걸려 있으면 뒤집어서 본다.
+  // 패널을 오른쪽에서 낼지, 아래에서 낼지.
+  //
+  // 기준은 '세로가 가로보다 긴가'(비율 < 1) 하나다. A-1 은 정사각형에 가까우면
+  // (PANEL_BOTTOM_RATIO 1.5) 아래에서 내는데, 그 값을 그대로 가져왔더니 4:3
+  // 처럼 가로가 더 긴 화면도 아래로 갔다(사용자 지적 2026-08-18: "가로가 긴데
+  // 아래에서 나오면 어떡하니"). 가로가 길면 오른쪽이 맞다 — 아래로 내면 낮은
+  // 판에 목록을 눕혀야 해서 영상 세로만 깎인다.
+  //
+  // 실기기 확대는 폰이 세로인 채 화면만 CSS 로 돌린 것이라 뷰포트 비율이 세로
+  // 그대로다 — 회전이 걸려 있으면 뒤집어서 본다(A-1 과 같은 처리).
   const rawRatio = useDeviceRatio();
   const ratioFlipped = useRotatedInput();
   const panelBottom =
-    (ratioFlipped && rawRatio > 0 ? 1 / rawRatio : rawRatio) <
-    PANEL_BOTTOM_RATIO;
+    (ratioFlipped && rawRatio > 0 ? 1 / rawRatio : rawRatio) < 1;
   const orientKey: "portrait" | "landscape" = wideNow
     ? "landscape"
     : "portrait";
