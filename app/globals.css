@@ -1629,6 +1629,30 @@ body {
   animation-fill-mode: both;
 }
 
+/* 흐름 안에 놓인 토스트용 — 가로 이동 없이 위로만 뜬다.
+   위 toast-slide-up 은 'left:50% + translateX(-50%)' 절대 배치를 전제로 해서
+   키프레임에 translateX(-50%) 가 박혀 있다(animation-fill-mode: both 라 끝난
+   뒤에도 남는다). flex 로 가운데 맞춘 알약에 그대로 쓰면 제 폭의 절반만큼
+   왼쪽으로 밀린다(사용자 지적 2026-08-18: "가로에서 토스트 팝업은 위치가 왜케
+   애매한곳에 있어? 센터가 아닌데??"). */
+@keyframes toast-rise {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.toast-rise {
+  animation-name: toast-rise;
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+}
+
 .skeleton-shimmer {
   background-image: linear-gradient(
     90deg,

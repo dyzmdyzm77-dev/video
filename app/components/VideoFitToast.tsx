@@ -68,7 +68,7 @@ export function VideoFitToast({
     return (
       <div
         key={toastKey}
-        className="toast-slide-up pointer-events-none flex w-fit items-center justify-center"
+        className="toast-rise pointer-events-none flex w-fit items-center justify-center"
         style={PILL}
       >
         {label}
