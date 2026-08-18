@@ -935,7 +935,10 @@ export default function LandscapeVideo({
   return shell(
     <div
       ref={gridAreaRef as React.RefObject<HTMLDivElement>}
-      className="landscape-video-area h-full w-full bg-white"
+      // 남는 띠 자리는 검정이다 — 흰색이면 단일(검정 배경)과 달라 보인다
+      // (사용자 지적 2026-08-18: "다채널일때는 그 공간이 왜 흰색이니?").
+      // 안쪽 격자만 흰색을 유지한다 — 타일 사이 2px 구분선이 그 흰색이다.
+      className="landscape-video-area h-full w-full bg-black"
     >
       <div
         className="grid h-full bg-white"

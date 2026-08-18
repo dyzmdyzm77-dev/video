@@ -403,8 +403,12 @@ export default function VariantA3({
   const [moreOpen, setMoreOpen] = useState(false);
   // 딤의 AI 버튼이 여는 'AI 검색 기능' 시트(A-1 과 같은 사양).
   const [aiOpen, setAiOpen] = useState(false);
-  const gridFitState = useVideoFit("fill");
-  const videoFitState = useVideoFit("fill");
+  // 화면 맞춤은 다채널·단일이 한 상태를 쓴다(사용자 지적 2026-08-18: "단일 →
+  // 다채널, 다채널 → 단일 바꿀때 왜 화면 비율도 바뀌는거야?"). 예전엔 화면마다
+  // 따로 기억해서, 한쪽에서 맞춤을 바꾸고 다른 쪽으로 넘어가면 화면이 저절로
+  // 바뀐 것처럼 보였다(가로에선 맞춤 토스트까지 떴다). 맞춤은 '이 영상들을 어떻게
+  // 채워 볼지'라는 하나의 취향이라 화면 종류로 갈릴 이유가 없다.
+  const fitState = useVideoFit("fill");
 
   const layoutDims = bestGridForCount(gridCount, gridRatio);
   const pageSize = layoutDims.cols * layoutDims.rows;
@@ -492,10 +496,8 @@ export default function VariantA3({
           // 딤 농도·칩 위치·페이지 점은 LandscapeVideo 기본값을 그대로 쓴다
           // — 가로 화면은 세 안이 같아야 해서 그쪽에 모아 뒀다.
           // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
-          fit={expandedIndex !== null ? videoFitState.fit : gridFitState.fit}
-          onFitCycle={
-            expandedIndex !== null ? videoFitState.cycle : gridFitState.cycle
-          }
+          fit={fitState.fit}
+          onFitCycle={fitState.cycle}
           // 플레이어·시간바를 딤 색에 맞춰 넘긴다(overlay) — 흰 바를 걷어
           // 영상이 비치게 한다.
           controlsOnDim
@@ -731,7 +733,7 @@ export default function VariantA3({
           onPlay={() => setIsPlaying(true)}
           onSpeedChange={setPlaybackRate}
           videoAreaRef={videoAreaRef}
-          fitState={gridFitState}
+          fitState={fitState}
         />
       ) : (
         <ExpandedView
@@ -759,7 +761,7 @@ export default function VariantA3({
           onCapture={showCaptureToast}
           captureToast={captureToast}
           onSpeedChange={setPlaybackRate}
-          fitState={videoFitState}
+          fitState={fitState}
         />
       )}
 
