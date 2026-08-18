@@ -76,6 +76,17 @@ export function useGridAreaRatio() {
     };
     const ro = new ResizeObserver(measure);
     measure();
+    // 마지막 안전망 — 0.5초마다 한 번씩 그냥 다시 잰다.
+    //
+    // 이벤트로 잡으려던 시도가 두 번 다 샜다(사용자 지적 2026-08-18: "가로에서
+    // 세로로 넘어갈때 또 화면 구성이 이상하네?"). 방향 전환은 기기·브라우저마다
+    // 신호 순서가 다르고(resize 만 오거나, orientationchange 가 늦거나), 전환 중에
+    // 그리드 DOM 이 갈아끼워져 ResizeObserver 도 옛 노드를 붙들고 있다. 어느 한
+    // 경로가 어긋나면 옛 비율이 그대로 굳어 세로인데 4×2 가 나온다.
+    //
+    // 폴링이면 어떤 경로로 들어와도 0.5초 안에 제자리를 찾는다. 비용은 요소 하나의
+    // offsetWidth/Height 읽기뿐이고, 값이 같으면 setRatio 가 리렌더를 안 낸다.
+    const poll = setInterval(measure, 500);
     // 크기 이벤트도 '지금' 한 번 + '조금 뒤' 한 번이다. 물리 회전이 resize 만 쏘는
     // 기기에서는 그 시점에 아직 옛 그리드가 붙어 있어, 지금 값만 믿으면 어긋난다.
     const measureNowAndSoon = () => {
@@ -88,6 +99,7 @@ export function useGridAreaRatio() {
     lateEvts.forEach((e) => window.addEventListener(e, measureSoon));
     return () => {
       ro.disconnect();
+      clearInterval(poll);
       timers.forEach(clearTimeout);
       evts.forEach((e) => window.removeEventListener(e, measureNowAndSoon));
       lateEvts.forEach((e) => window.removeEventListener(e, measureSoon));
