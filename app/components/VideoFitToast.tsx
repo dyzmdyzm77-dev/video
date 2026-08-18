@@ -45,9 +45,9 @@ const PILL: React.CSSProperties = {
 /**
  * 토스트. 기본은 영역 하단에서 20px 위, 가운데 — 부모가 position:relative 여야 한다.
  *
- * inline 이면 자리를 차지하며 흐름 안에 앉는다(가로 화면용). 가로는 아래가
- * 시간바·아이콘 줄로 꽉 차 있어서, 절대 위치로 20px 을 띄우면 그 위에 겹친다 —
- * 그 줄들과 같은 층에 넣고 위로 쌓는다.
+ * inline 이면 위치를 안 잡고 알약만 그린다 — 자리는 감싼 쪽이 정한다.
+ * 가로(확대) 화면이 이걸 써서 화면 정중앙에 놓는다(사용자 지정 2026-08-18:
+ * "가로에서 토스트 팝업 나오는 위치 기준이 이상한데, 디바이스 센터에 맞춰야지").
  */
 export function VideoFitToast({
   text,
@@ -68,7 +68,7 @@ export function VideoFitToast({
     return (
       <div
         key={toastKey}
-        className="toast-slide-up pointer-events-none mx-auto mb-2 flex w-fit items-center justify-center"
+        className="toast-slide-up pointer-events-none flex w-fit items-center justify-center"
         style={PILL}
       >
         {label}

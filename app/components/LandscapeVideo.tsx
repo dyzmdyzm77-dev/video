@@ -637,9 +637,6 @@ export default function LandscapeVideo({
             bottom: `${(bottomInset ?? 12) - 12}px`,
           },
           <>
-            {/* 맞춤 토스트는 시간바·아이콘 줄과 같은 층에 쌓아 그 위에 앉힌다 —
-                절대 위치로 바닥 20 에 두면 그 줄들 위에 겹친다. */}
-            <VideoFitToast inline text={fitToast} toastKey={fitToastKey} />
             {!topCenter && !topRight && (
               <div
                 className="pointer-events-none pb-3 transition-opacity duration-150 ease-out"
@@ -849,11 +846,13 @@ export default function LandscapeVideo({
       }}
     >
       {children}
-      {/* 아래 층이 아예 없는 안(칩·컨트롤이 전부 위로 간 경우)에서는 토스트가
-          갈 곳이 없다 — 그때만 세로와 같은 기본 배치(바닥에서 20)로 띄운다. */}
-      {!statusBottom && (
-        <VideoFitToast text={fitToast} toastKey={fitToastKey} />
-      )}
+      {/* 화면 맞춤 토스트 — 화면(디바이스) 정중앙(사용자 지정 2026-08-18:
+          "디바이스 센터에 맞춰야지"). 세로는 영역 하단에서 20 인데, 가로는 아래가
+          시간바·아이콘 줄로 꽉 차 기준이 애매했다. 딤 층이 아니라 껍데기에 두므로
+          딤이 꺼져 있어도 뜬다 — 맞춤 버튼을 누른 직후라 딤은 보통 떠 있다. */}
+      <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+        <VideoFitToast inline text={fitToast} toastKey={fitToastKey} />
+      </div>
       {/* 전환 스켈레톤 — 세로와 같은 결(skeleton-shimmer, 타일 사이 2px 흰 선).
           단일이면 화면 전체, 다채널이면 지금 가로 배치대로 칸을 나눈다. */}
       {loading &&
@@ -899,7 +898,10 @@ export default function LandscapeVideo({
   if (expandedIndex !== null) {
     const cam = cameras[expandedIndex];
     return shell(
-      <div className="h-full w-full bg-black" onClick={() => handleTap(null)}>
+      <div
+        className="landscape-video-area h-full w-full bg-black"
+        onClick={() => handleTap(null)}
+      >
         <CameraFeed
           label={cam.label}
           badge={singleBadge}
@@ -919,7 +921,7 @@ export default function LandscapeVideo({
   return shell(
     <div
       ref={gridAreaRef as React.RefObject<HTMLDivElement>}
-      className="grid h-full w-full bg-white"
+      className="landscape-video-area grid h-full w-full bg-white"
       style={{
         gridTemplateColumns: `repeat(${cols}, 1fr)`,
         gridTemplateRows: `repeat(${rows}, 1fr)`,
