@@ -718,7 +718,12 @@ export default function VariantA3({
             }}
             playbackMs={playbackMs}
             setPlaybackMs={setPlaybackMs}
-            edge={dimEdgeR}
+            // 오른쪽 여백은 '눕힌 화면'에서만 준다(사용자 지정 2026-08-18:
+            // "제자리 확대한 경우는 오른쪽 패널의 오른쪽 여백을 안줘도 돼.
+            // 가로로 돌려졌을때만 넣으면 될 것 같아"). 눕힌 화면은 손이 기기
+            // 양끝을 감싸 쥐어서 그만큼 들어와야 하고, 제자리 확대는 그럴 일이
+            // 없다 — 패널 제 여백(16)만 남기고 기기 끝에 붙인다.
+            edge={wideNow ? dimEdgeR : 0}
             onClose={() => setLsPanel(null)}
           />
         )}
