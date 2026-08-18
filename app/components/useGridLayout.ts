@@ -57,17 +57,39 @@ export function useGridAreaRatio() {
     // 물리 회전은 resize 만 쏘는데 그 시점엔 아직 세로 그리드가 붙어 있어
     // '가로로 넓어진 세로 그리드'를 재 버리고, 그 비율이 그대로 굳어 세로로
     // 돌아왔을 때 8채널이 2×4 가 아니라 4×2 로 잡혔다(사용자 지적).
-    const measureSoon = () =>
+    // 한 번만 재면 놓친다. 방향 전환은 '이벤트 → React 리렌더 → 회전 연출(350ms)'
+    // 순서로 이어지는데, 그 사이 어느 시점에 재느냐에 따라 옛 그리드가 잡힌다.
+    // 게다가 세로↔가로는 그리드 DOM 자체가 갈아끼워지는 전환이라, ResizeObserver 는
+    // 떨어져 나간 옛 노드를 보고 있어 새 노드의 첫 레이아웃을 못 잡는다(measure 가
+    // 다시 불려야 관찰 대상을 옮긴다). 그래서 두 프레임 뒤 + 연출 전후로 몇 번 더
+    // 잰다 — 실기기에서 가로 → 세로로 돌아왔을 때 8채널이 2×4 가 아니라 4×2 로
+    // 굳던 그 문제다(사용자 지적 2026-08-18: "평소엔 2x4인데, 가로에서 세로로
+    // 바꾸면 4x2로 바뀌는 경우가 있다고").
+    // 값이 같으면 setRatio 가 리렌더를 안 내므로 여러 번 재도 공짜다.
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const measureSoon = () => {
       requestAnimationFrame(() => requestAnimationFrame(measure));
+      timers.forEach(clearTimeout);
+      timers.length = 0;
+      // 350ms 는 회전 연출 길이(deviceRotate). 그 전·직후·여유 뒤로 한 번씩.
+      [120, 400, 800].forEach((ms) => timers.push(setTimeout(measure, ms)));
+    };
     const ro = new ResizeObserver(measure);
     measure();
+    // 크기 이벤트도 '지금' 한 번 + '조금 뒤' 한 번이다. 물리 회전이 resize 만 쏘는
+    // 기기에서는 그 시점에 아직 옛 그리드가 붙어 있어, 지금 값만 믿으면 어긋난다.
+    const measureNowAndSoon = () => {
+      measure();
+      measureSoon();
+    };
     const evts = ["devicechange", "devicerange", "deviceresize", "resize"];
-    evts.forEach((e) => window.addEventListener(e, measure));
+    evts.forEach((e) => window.addEventListener(e, measureNowAndSoon));
     const lateEvts = [LANDSCAPE_EVENT, IMMERSIVE_EVENT, "orientationchange"];
     lateEvts.forEach((e) => window.addEventListener(e, measureSoon));
     return () => {
       ro.disconnect();
-      evts.forEach((e) => window.removeEventListener(e, measure));
+      timers.forEach(clearTimeout);
+      evts.forEach((e) => window.removeEventListener(e, measureNowAndSoon));
       lateEvts.forEach((e) => window.removeEventListener(e, measureSoon));
     };
   }, []);
