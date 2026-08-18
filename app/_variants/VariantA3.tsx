@@ -533,6 +533,9 @@ export default function VariantA3({
           showOverlayZoom={false}
           // 실시간/녹화를 칩 두 개로 — 고른 쪽만 흰 배경 + 검정 글자.
           statusStyle="chips"
+          // 패널이 열려 영상 폭이 줄어도 칩은 위 가운데에 그대로 둔다
+          // (사용자 지정 2026-08-18).
+          statusAlwaysTop={lsPanel !== null}
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 — 아래 아이콘 줄과 한 값을 쓴다(dimEdge).

@@ -134,6 +134,7 @@ export default function LandscapeVideo({
   // 기본값을 여기로 올려 세 안이 자동으로 같아지게 한다. 바꿀 일이 있으면
   // 이 파일만 고치면 된다.
   statusPlacement = "top-center",
+  statusAlwaysTop = false,
   showPageIndicator = false,
   dimAlpha = LANDSCAPE_DIM_ALPHA,
   dimTopHeight,
@@ -269,6 +270,11 @@ export default function LandscapeVideo({
    *                      2026-08-14). 좁은 폭에서도 자리를 안 옮긴다 —
    *                      가운데 정렬과 달리 장소명과 물릴 일이 없다. */
   statusPlacement?: "bottom-left" | "top-center" | "top-right";
+  /** 폭이 좁아도 칩 줄을 위 가운데에 둔다. 오른쪽 패널이 열리면 영상 폭이
+   *  패널만큼 줄어 자동으로 아래로 내려가는데, 그때 칩이 따라 내려오는 게
+   *  더 어색하다(사용자 지정 2026-08-18: "오른쪽 패널 나오면서 실시간 녹화 탭이
+   *  아래로 내려오는데 그냥 위로 올려줘"). */
+  statusAlwaysTop?: boolean;
   /** 딤 그라데이션 사양 — 안 주면 GridSelectionOverlay 기본값(0.6 / 25% / 20%).
    *  세로에서 더 진한 딤을 쓰는 안(A-1: 0.8)은 가로도 같은 값을 넘겨야 한다.
    *  안 그러면 같은 화면인데 가로만 옅어 보인다. */
@@ -685,7 +691,8 @@ export default function LandscapeVideo({
   // 가운데 정렬한 칩줄이 왼쪽 장소명과 물린다 — 실측으로 폭 285 에서 장소명
   // 16~115, 칩줄 71~213 로 44px 겹쳤다. 그때는 칩줄을 원래 자리(딤 아래 왼쪽,
   // 컨트롤 바로 위)로 내린다. 위 첫 줄엔 장소명 + 아이콘만 남아 편하게 들어간다.
-  const topCenter = statusPlacement === "top-center" && !narrow;
+  const topCenter =
+    statusPlacement === "top-center" && (!narrow || statusAlwaysTop);
   // 오른쪽 위에 둘 땐 폭을 따지지 않는다 — 아이콘 줄을 아래로 내려 자리를 비우므로
   // 장소명과 겹칠 일이 없다. 아이콘이 내려갈 거리(칩 높이 26 + 사이 10).
   const topRight = statusPlacement === "top-right";
