@@ -3458,63 +3458,30 @@ function RecordingEventTimeline({
               {text}
             </span>
           ))}
-          {/* 작은 눈금은 점이 아니라 이어진 선이다(사용자 지정 2026-08-18:
-              "연한 그레이 점을 그냥 선으로 이을까"). 점을 하나씩 선분으로 잇는
-              대신 보이는 범위 전체를 한 줄로 깐다 — 눈금이 1초마다라 개수가
-              수천이고, 이어 붙이면 어차피 같은 그림이다.
-              두께·자리는 점과 같다(4px · top 20) — 큰 눈금 점이 선 위에 그대로
-              얹히고, 대/소는 예전처럼 색으로만 갈린다.
-              펼친 묶음이 만든 빈 구간(xOf 의 gap)도 선은 그대로 지난다 —
-              시간이 이어진다는 뜻이라 끊는 것보다 맞다. */}
-          {(() => {
-            const vis = ticks.filter(({ secOffset }) => inView(secOffset));
-            const first = vis[0];
-            const last = vis[vis.length - 1];
-            if (!first || !last) return null;
-            const x0 = xOf(first.secOffset);
-            const x1 = xOf(last.secOffset);
-            return (
+          {/* 눈금 (대/소) — A-2 와 같은 세로 막대다(사용자 지정 2026-08-18:
+              "그냥 눈금으로 바꾸자. A-2처럼"). 점 → 이어진 선을 거쳐 여기로 왔다.
+              대/소는 색과 '높이'로 가른다: 큰 눈금 8, 작은 눈금 5 (사용자 지정:
+              "좀 연한 눈금은 높이 좀 줄이고"). 아래를 맞춰 세우면 짧은 쪽이
+              라벨에서 더 떨어져 보이는데, 그게 대/소가 한눈에 갈리는 그림이다.
+              화면에 보이는 범위만 렌더한다(수천 개 방지). */}
+          {ticks
+            .filter(({ secOffset }) => inView(secOffset))
+            .map(({ secOffset, isMajor }) => (
               <div
-                className="pointer-events-none absolute rounded-full"
+                key={`T${secOffset}`}
+                className="pointer-events-none absolute rounded-[1px]"
                 style={{
-                  left: `calc(50% + ${x0}px)`,
-                  top: "20px",
-                  // 점은 left 가 기준이라 오른쪽으로 4px 를 차지한다 — 끝 점의
-                  // 오른쪽 끝까지 덮으려면 +4.
-                  width: `${x1 - x0 + 4}px`,
-                  // 두께는 점과 같은 4(사용자 지정 2026-08-18: "점 두께랑 동일하게").
-                  height: "4px",
-                  // 작은 눈금 색(#ADADAD)에 투명도만 살짝 준다(사용자 지정
-                  // 2026-08-18: "살짝만 더 연하게", "살짝 투명하게"). 색을 통째로
-                  // 올리면 #C4C4C4 로 돌아가는 셈인데, 그건 예전에 "너무 옅다"고
-                  // 다시 내렸던 값이다 — 톤은 두고 알파로만 눕힌다.
-                  backgroundColor: "rgba(173,173,173,0.7)",
+                  left: `calc(50% + ${xOf(secOffset)}px)`,
+                  // 아래 끝(top+height = 26)을 맞추고 위로 자란다.
+                  top: isMajor ? "18px" : "21px",
+                  width: "2px",
+                  height: isMajor ? "8px" : "5px",
+                  // 흰 바탕(세로) — 큰 눈금은 시간 글자와 같은 검정 계열,
+                  // 작은 눈금은 살짝 투명한 회색(선일 때 쓰던 그 톤 그대로).
+                  backgroundColor: isMajor ? "#353535" : "rgba(173,173,173,0.7)",
                 }}
               />
-            );
-          })()}
-          {/* 큰 눈금 — 선 위에 얹는 4px 점. 화면에 보이는 범위만 렌더(수천 개 방지). */}
-          {ticks
-            .filter(({ secOffset, isMajor }) => isMajor && inView(secOffset))
-            .map(({ secOffset }) => (
-            <div
-              key={`T${secOffset}`}
-              className="pointer-events-none absolute rounded-full"
-              style={{
-                left: `calc(50% + ${xOf(secOffset)}px)`,
-                // 가로세로 같은 4px 점(사용자 지정 2026-08-14: "가로세로 동일하게
-                // 점처럼" → "살짝 더 두꺼워도 좋을듯"). 2×8 세로 막대 → 3 → 4.
-                // 라벨(top 0~10) 아래, 옛 막대(18~26)의 가운데 즈음인 20.
-                top: "20px",
-                width: "4px",
-                height: "4px",
-                // 흰 바탕이라 검정 계열(#353535 — 시간 글자와 같은 색).
-                // 한동안 흰색이었는데 흰 바탕에서 아예 안 보였다(사용자 지적
-                // 2026-08-14: "세로에서는 그 흰색 점이 검정색으로").
-                backgroundColor: "#353535",
-              }}
-            />
-          ))}
+            ))}
           {/* 움직임이 감지된 시각 — 빨간 세로선(사용자 요청 2026-08-14).
               눈금과 같은 레일에 있어 같이 흐른다. 크기는 작은 눈금과 똑같이
               4×4 점 · top 20 이다(사용자 지정 2026-08-14) — 모양·크기로
@@ -3530,12 +3497,14 @@ function RecordingEventTimeline({
           {eventOccurrences.filter((c) => inView(c.secOffset)).map((c) => (
             <div
               key={`M${c.key}`}
-              className="pointer-events-none absolute rounded-full"
+              className="pointer-events-none absolute rounded-[1px]"
               style={{
                 left: `calc(50% + ${xOf(c.secOffset)}px)`,
-                top: "20px",
-                width: "4px",
-                height: "4px",
+                // 큰 눈금과 같은 규격(2×8)에 색만 #F59E0B — 눈금이 막대로
+                // 돌아왔으니 감지 표시도 같이 맞춘다(사용자 지정 2026-08-18).
+                top: "18px",
+                width: "2px",
+                height: "8px",
                 backgroundColor: "#F59E0B",
               }}
             />
@@ -4880,44 +4849,26 @@ function RecordingControls({
               {text}
             </span>
           ))}
-          {/* 작은 눈금은 점이 아니라 이어진 선이다(사용자 지정 2026-08-18:
-              "연한 그레이 점을 그냥 선으로 이을까"). 세로 시간바와 같은 규격 —
-              두께·자리 모두 점과 같은 4px · top 20. 눈금 하나하나를 선분으로
-              잇지 않고 눈금 범위 전체를 한 줄로 깐다. */}
-          {ticks.length > 0 && (
-            <div
-              className="pointer-events-none absolute rounded-full"
-              style={{
-                left: `calc(50% + ${ticks[0]!.secOffset * pxPerSec}px)`,
-                top: "20px",
-                // 점은 left 가 기준이라 오른쪽으로 4px 를 차지한다 → 끝 점까지 +4.
-                width: `${(ticks[ticks.length - 1]!.secOffset - ticks[0]!.secOffset) * pxPerSec + 4}px`,
-                // 두께는 점과 같은 4(사용자 지정 2026-08-18: "점 두께랑 동일하게").
-                height: "4px",
-                // 딤 위(가로)는 불투명 회색 #999999, 흰 바 위는 #ADADAD — 점일 때
-                // 쓰던 작은 눈금 색 그대로다. 딤 위에서 투명도로 낮추면 뒤 영상이
-                // 비쳐 흰색처럼 보였다(사용자 지적: "아예 하얀색이 되버렸어").
-                // 위 세로 시간바와 같은 규칙 — 톤은 두고 알파만 0.7(사용자 지정
-                // 2026-08-18). 딤 위에서는 투명해질수록 뒤 영상에 묻혀 연해진다.
-                backgroundColor: overlay
-                  ? "rgba(153,153,153,0.7)"
-                  : "rgba(173,173,173,0.7)",
-              }}
-            />
-          )}
-          {/* 큰 눈금 — 선 위에 얹는 4px 점 */}
-          {ticks.filter(({ isMajor }) => isMajor).map(({ secOffset }) => (
+          {/* 눈금 (대/소) — 세로 시간바와 같은 세로 막대(사용자 지정 2026-08-18:
+              "A-2처럼", "연한 눈금은 높이 좀 줄이고"). 큰 8 · 작은 5, 아래 끝을
+              맞추고 위로 자란다. 딤 위(가로)는 큰 눈금이 흰색, 작은 눈금은 뒤
+              영상에 묻히도록 살짝 투명한 회색이다. */}
+          {ticks.map(({ secOffset, isMajor }) => (
             <div
               key={`T${secOffset}`}
-              className="absolute rounded-full"
+              className="absolute rounded-[1px]"
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                // 가로세로 같은 4px 점(사용자 지정 2026-08-14). 라벨(top 0~10)
-                // 아래, 옛 막대(18~26)의 가운데 즈음인 20.
-                top: "20px",
-                width: "4px",
-                height: "4px",
-                backgroundColor: overlay ? "#FFFFFF" : "#353535",
+                top: isMajor ? "18px" : "21px",
+                width: "2px",
+                height: isMajor ? "8px" : "5px",
+                backgroundColor: isMajor
+                  ? overlay
+                    ? "#FFFFFF"
+                    : "#353535"
+                  : overlay
+                    ? "rgba(153,153,153,0.7)"
+                    : "rgba(173,173,173,0.7)",
               }}
             />
           ))}
@@ -4928,12 +4879,13 @@ function RecordingControls({
           {overlay && motionMarks.map((secOffset, i) => (
             <div
               key={`M${i}`}
-              className="pointer-events-none absolute rounded-full"
+              className="pointer-events-none absolute rounded-[1px]"
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                top: "20px",
-                width: "4px",
-                height: "4px",
+                // 큰 눈금과 같은 규격(2×8)에 색만 #F59E0B — 감지는 눈에 띄어야 한다.
+                top: "18px",
+                width: "2px",
+                height: "8px",
                 backgroundColor: "#F59E0B",
               }}
             />
