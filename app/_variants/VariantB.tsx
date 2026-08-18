@@ -9,7 +9,11 @@ import {
 import {
   useDeviceLandscape,
 } from "../components/deviceRotate";
-import { useDeviceWide, useIsAndroid } from "../components/useDeviceWidth";
+import {
+  useDeviceRotated,
+  useDeviceWide,
+  useIsAndroid,
+} from "../components/useDeviceWidth";
 import { toggleImmersive, useImmersive } from "../components/immersive";
 import LandscapeVideo from "../components/LandscapeVideo";
 
@@ -200,12 +204,14 @@ export default function VariantB({
   // 딤 위 UI 좌우 여백 — 눕힌 화면과 제자리 확대가 다르다(layoutRules 주석 참고).
   // useDeviceWide 는 앱이 CSS 로 눕은 것과 실기기 물리 회전을 한 값으로 묶어 준다.
   const isAndroid = useIsAndroid();
+  const rotatedNow = useDeviceRotated();
   // 눕힌 화면 값은 기기별로 다르다 — 아이폰 60, 안드로이드 30(사용자 지정
   // 2026-08-18). 제자리 확대는 양쪽 다 IMMERSIVE_EDGE.
-  // 눕힌 화면만 크게 준다. 세로에서 확대 버튼을 눌러 제자리로 커진 경우는 화면이
-  // 세로 그대로라 세로 딤과 같은 여백을 쓴다(사용자 지정 2026-08-18: "세로모드에서
-  // 확대 버튼 눌러서 제자리 확대되면, 딤 아이콘 좌우 마진 그대로 유지하라니까?").
-  const dimEdge = wideNow
+  // '돌렸을 때'만 크게 준다(사용자 지정 2026-08-18: "회전여부 기준으로 바꿔").
+  // 폭이 넓은가(useDeviceWide)로 보면 폴드 펼침처럼 원래 가로인 기기가 확대만
+  // 해도 넓은 값으로 잡힌다 — 그건 아무것도 안 돌린 '제자리 확대'다.
+  // 제자리는 화면이 그대로니 세로 딤과 같은 여백을 쓴다.
+  const dimEdge = rotatedNow
     ? isAndroid
       ? LANDSCAPE_EDGE_ANDROID
       : LANDSCAPE_EDGE

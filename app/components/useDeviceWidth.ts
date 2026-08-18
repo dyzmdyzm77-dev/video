@@ -250,3 +250,41 @@ export function useIsAndroid(): boolean {
   }, []);
   return android;
 }
+
+/** 지금 화면이 '돌아간' 상태인가 — 앱이 CSS 로 눕혔거나(data-landscape), 기기를
+ *  실제로 눕혔거나(화면 각도 90·270).
+ *
+ *  '가로로 넓은가'(useDeviceWide)와 다르다. 폴드 펼침처럼 원래부터 가로로 넓은
+ *  기기는 확대해도 아무것도 안 돌았는데 wide 로 잡힌다 — 딤 여백처럼 '돌렸을 때만
+ *  넓게'인 값은 그쪽을 쓰면 안 된다(사용자 지정 2026-08-18: "회전여부 기준으로
+ *  바꿔"). SSR·첫 렌더는 false. */
+export function useDeviceRotated(): boolean {
+  const [rotated, setRotated] = useState(false);
+  useEffect(() => {
+    const read = () => {
+      const byApp = document.documentElement.dataset.landscape === "true";
+      let byDevice = false;
+      const desktopPreview =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      if (!desktopPreview) {
+        const raw =
+          window.screen?.orientation?.angle ??
+          (window as unknown as { orientation?: number }).orientation;
+        if (typeof raw === "number") byDevice = ((raw + 360) % 360) % 180 !== 0;
+      }
+      setRotated(byApp || byDevice);
+    };
+    read();
+    const evts = [
+      "devicelandscapechange",
+      "orientationchange",
+      "resize",
+      "devicechange",
+      "immersivechange",
+    ];
+    evts.forEach((e) => window.addEventListener(e, read));
+    return () => evts.forEach((e) => window.removeEventListener(e, read));
+  }, []);
+  return rotated;
+}
