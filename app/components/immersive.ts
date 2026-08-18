@@ -520,6 +520,10 @@ export function exitImmersive() {
       // 폰을 세우면 그때 전체화면을 나가 바를 되돌린다. 눕힌 변에 바만 덩그러니
       // 남는 그림(사용자 지적)이 사라진다.
       cssPortrait();
+      // 확대 중에 전체화면이 안 잡혀 있었다면(요청이 거부됐던 경우) 지금 잡는다.
+      // 축소는 버튼을 누른 순간이라 사용자 조작 창이 열려 있어 허용된다 — 이걸
+      // 안 하면 '유지할 전체화면'이 없어 바가 눕힌 변에 그대로 남는다.
+      if (!document.fullscreenElement) syncFullscreen(true);
       keepBarsHiddenUntilUpright();
     }
   }
