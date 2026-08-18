@@ -918,33 +918,47 @@ export default function LandscapeVideo({
   // 다채널 — 타일 사이 구분선은 세로와 같은 흰색 2px(다채널 타일 구분선 규칙).
   const start = page * pageSize;
   const tiles = Array.from({ length: pageSize }, (_, i) => cameras[start + i]);
+  // 원본 비율이면 격자 자체를 '타일이 16:9 가 되는 크기'로 잡고 왼쪽에 붙인다.
+  // 안 그러면 타일마다 좌우로 조금씩 남아, 큰 띠 하나 대신 얇은 띠가 타일 수만큼
+  // 생긴다(사용자 지적: 단일엔 띠가 있는데 다채널엔 없어 보이던 것의 정체).
+  // 남는 폭은 전부 오른쪽 한 곳으로 모인다 — 단일과 같은 그림(사용자 지정
+  // 2026-08-18). 가득 채우기·늘리기는 예전처럼 화면을 다 쓴다.
+  const gridBox: React.CSSProperties =
+    fit === "contain"
+      ? { aspectRatio: `${cols * 16} / ${rows * 9}`, width: "auto", maxWidth: "100%" }
+      : { width: "100%" };
   return shell(
     <div
       ref={gridAreaRef as React.RefObject<HTMLDivElement>}
-      className="landscape-video-area grid h-full w-full bg-white"
-      style={{
-        gridTemplateColumns: `repeat(${cols}, 1fr)`,
-        gridTemplateRows: `repeat(${rows}, 1fr)`,
-        gap: "2px",
-      }}
+      className="landscape-video-area h-full w-full bg-white"
     >
-      {tiles.map((cam, i) => (
-        <div
-          key={i}
-          className="relative cursor-pointer overflow-hidden bg-neutral-900"
-          onClick={() => handleTap(start + i)}
-        >
-          {cam && (
-            <CameraFeed
-              label={cam.label}
-              src={cam.src}
-              fit={fit}
-              playbackMs={playbackMs}
-              driveByPlayback={driveByPlayback}
-            />
-          )}
-        </div>
-      ))}
+      <div
+        className="grid h-full bg-white"
+        style={{
+          ...gridBox,
+          gridTemplateColumns: `repeat(${cols}, 1fr)`,
+          gridTemplateRows: `repeat(${rows}, 1fr)`,
+          gap: "2px",
+        }}
+      >
+        {tiles.map((cam, i) => (
+          <div
+            key={i}
+            className="relative cursor-pointer overflow-hidden bg-neutral-900"
+            onClick={() => handleTap(start + i)}
+          >
+            {cam && (
+              <CameraFeed
+                label={cam.label}
+                src={cam.src}
+                fit={fit}
+                playbackMs={playbackMs}
+                driveByPlayback={driveByPlayback}
+              />
+            )}
+          </div>
+        ))}
+      </div>
     </div>,
   );
 }
