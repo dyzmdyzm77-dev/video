@@ -251,6 +251,9 @@ export default function VariantA3({
   const dimEdge = wideNow ? LANDSCAPE_EDGE : IMMERSIVE_EDGE;
   // 시간바 아래 아이콘 줄은 LandscapeVideo 밖(controls)에 있어 그쪽 보정을 못 받는다
   // — 같은 식으로 앱 창이 화면에서 밀려난 만큼 빼서 기기 모서리 기준으로 맞춘다.
+  // 가로 딤 왼쪽 아래 아이콘이 여는 오른쪽 패널 — 어느 탭으로 열렸는지까지 담는다
+  // (사용자 지정 2026-08-18). null 이면 닫힘.
+  const [lsPanel, setLsPanel] = useState<"list" | "motion" | null>(null);
   const dimGaps = useEdgeGaps();
   const dimEdgeL = Math.max(0, dimEdge - dimGaps.left);
   const dimEdgeR = Math.max(0, dimEdge - dimGaps.right);
@@ -444,7 +447,9 @@ export default function VariantA3({
   // 확대하면서 눕힌 경우엔 landscape 와 immersive 가 같이 켜지므로 여기로 온다.
   if (immersive) {
     return (
-      <div className="app-safe-frame h-full w-full overflow-hidden bg-black">
+      // 패널이 열리면 영상을 밀고 옆에 선다(덮지 않는다) — 그래서 가로 배치다.
+      <div className="app-safe-frame flex h-full w-full overflow-hidden bg-black">
+        <div className="relative flex min-h-0 min-w-0 flex-1">
         <LandscapeVideo
           cameras={CAMERAS}
           expandedIndex={expandedIndex}
@@ -601,11 +606,29 @@ export default function VariantA3({
                     <>
                       <div className="flex items-center" style={{ gap: "16px" }}>
                         {btn({ key: "ai", label: "AI 검색", src: `${BASE}/ai_Icon.svg`, onClick: () => setAiOpen(true) })}
-                        {btn({ key: "menu", label: "메뉴", src: `${BASE}/nav/menu.svg` })}
-                        {/* 움직임 감지는 녹화에만 — 실시간엔 지나간 이벤트가 없다
-                            (사용자 지적 2026-08-14). */}
+                        {/* 메뉴 — 오른쪽 패널을 '카메라 목록' 탭으로 연다.
+                            열려 있는 쪽을 다시 누르면 닫힌다(사용자 지정 2026-08-18). */}
+                        {btn({
+                          key: "menu",
+                          label: "메뉴",
+                          src: `${BASE}/nav/menu.svg`,
+                          onClick: () =>
+                            setLsPanel((v) => (v === "list" ? null : "list")),
+                        })}
+                        {/* 움직임 감지는 녹화 + 단일에서만 — 실시간엔 지나간 이벤트가
+                            없고(사용자 지적 2026-08-14), 다채널은 어느 카메라 기준인지
+                            모호하다. 누르면 같은 패널이 '움직임 감지' 탭으로 열린다. */}
                         {mode === "recording" &&
-                          btn({ key: "motion", label: "움직임 감지", src: `${BASE}/Type=Line.svg` })}
+                          expandedIndex !== null &&
+                          btn({
+                            key: "motion",
+                            label: "움직임 감지",
+                            src: `${BASE}/Type=Line.svg`,
+                            onClick: () =>
+                              setLsPanel((v) =>
+                                v === "motion" ? null : "motion",
+                              ),
+                          })}
                       </div>
                       {/* 크게 보기 ↔ 원래 크기로. 가로에서만 뜨는 줄이라 늘
                           '원래 크기로'다. 딤 오른쪽 아래에 있던 그 버튼이다. */}
@@ -636,6 +659,26 @@ export default function VariantA3({
             ) : null
           }
         />
+        </div>
+        {/* 딤 왼쪽 아래 '메뉴'·'움직임 감지'가 여는 오른쪽 패널(사용자 지정
+            2026-08-18). 다채널에서도 목록은 뜬다 — 거기서 카메라를 고르면 그
+            카메라 단일 화면으로 넘어간다. */}
+        {lsPanel && (
+          <LandscapeSidePanel
+            tab={lsPanel}
+            onTab={setLsPanel}
+            mode={mode}
+            selectedIndex={expandedIndex}
+            onSelect={(i) => {
+              handleExpand(i);
+              setLsPanel("list");
+            }}
+            playbackMs={playbackMs}
+            setPlaybackMs={setPlaybackMs}
+            edge={dimEdgeR}
+            onClose={() => setLsPanel(null)}
+          />
+        )}
         {/* 화면 구성 시트는 가로에서도 세로와 똑같이 뜬다. 예전엔 이 분기가
             시트보다 먼저 return 해서, 딤의 갤러리 버튼을 눌러도 열릴 시트가
             아예 렌더되지 않았다. */}
@@ -5385,6 +5428,138 @@ function TimelineSkeleton({ visible }: { visible: boolean }) {
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+// ── 가로 확대 화면의 오른쪽 세로 패널 ──────────────────────────────────────
+// 딤 왼쪽 아래 아이콘 두 개가 연다(사용자 지정 2026-08-18: "메뉴는 누르면 카메라
+// 목록이 오른쪽 패널로 나오고, 움직임감지 버튼 누르면 움직임감지 목록이 오른쪽
+// 패널에서 나오게"). A-1 의 같은 패널과 결이 같다 — 다만 거긴 버튼 하나로 열고
+// 패널 안 탭으로 갈아타는데, A-3 은 버튼 두 개가 각자 자기 탭으로 바로 연다.
+//
+// 열면 영상을 밀고 옆에 선다(덮지 않는다). 닫기는 패널 안 X 버튼, 또는 열려 있는
+// 쪽 아이콘을 한 번 더 누르기.
+//
+// 내용은 1080+ 오른쪽 패널과 같다: 목록은 1열 세로 스크롤, 감지는 아래 스트립과
+// 같은 리스트(MotionEventList). 같은 안에서 감지 화면이 두 종류면 안 된다.
+/** 패널 내용이 기기 오른쪽 모서리에서 떨어지는 거리 — 딤 아이콘과 같은 값. */
+const LS_PANEL_PAD = 16;
+function LandscapeSidePanel({
+  tab,
+  onTab,
+  mode,
+  selectedIndex,
+  onSelect,
+  playbackMs,
+  setPlaybackMs,
+  edge,
+  onClose,
+}: {
+  tab: "list" | "motion";
+  onTab: (t: "list" | "motion") => void;
+  mode: "live" | "recording";
+  /** 지금 보고 있는 카메라(단일). 다채널이면 null — 감지 탭은 그때 안 뜬다. */
+  selectedIndex: number | null;
+  onSelect: (i: number) => void;
+  playbackMs: number | null;
+  setPlaybackMs: (v: number | null) => void;
+  /** 오른쪽 모서리까지의 총 거리(딤 아이콘과 같은 값). 패널 안 여백을 뺀 만큼만
+   *  바깥에 더 붙인다 — 안 빼면 여백이 두 번 들어간다. */
+  edge: number;
+  onClose: () => void;
+}) {
+  const extra = Math.max(0, edge - LS_PANEL_PAD);
+  // 감지 탭은 녹화 + 단일에서만. 실시간엔 지나간 이벤트가 없고, 다채널은 어느
+  // 카메라 기준인지 모호하다(예전에 썸네일이 0번 카메라로 나오던 그 문제).
+  const canMotion = mode === "recording" && selectedIndex !== null;
+  const showMotion = tab === "motion" && canMotion;
+  const cam = CAMERAS[selectedIndex ?? 0];
+  return (
+    <div
+      className="flex min-h-0 flex-none flex-col bg-white"
+      style={{
+        width: `${SIDE_PANEL_W + extra}px`,
+        paddingRight: `${extra}px`,
+        borderLeft: "1px solid #EBEBEB",
+        // 왼쪽만 둥글게 — 영상 쪽에서 흰 판이 밀고 들어오는 모양이다(A-1 동일).
+        borderTopLeftRadius: "10px",
+        borderBottomLeftRadius: "10px",
+      }}
+    >
+      {/* 탭 + 닫기 — 1080+ 패널과 같은 생김새(활성 검정 + 밑줄). */}
+      <div
+        className="flex flex-none items-center justify-between"
+        style={{ height: "48px", padding: "0 16px" }}
+      >
+        <div className="flex items-center" style={{ gap: "20px" }}>
+          {(
+            [
+              { key: "list", label: "카메라 목록" },
+              ...(canMotion
+                ? [{ key: "motion", label: "움직임 감지" } as const]
+                : []),
+            ] as { key: "list" | "motion"; label: string }[]
+          ).map((t) => {
+            const active = (showMotion ? "motion" : "list") === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => onTab(t.key)}
+                className="relative text-[15px] font-bold leading-none"
+                style={{ color: active ? "#262626" : "#A4A4A4" }}
+              >
+                {t.label}
+                {active && (
+                  <span
+                    className="absolute left-0 right-0"
+                    style={{
+                      bottom: "-10px",
+                      height: "2px",
+                      backgroundColor: "#262626",
+                    }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          aria-label="닫기"
+          onClick={onClose}
+          className="flex h-6 w-6 flex-none items-center justify-center"
+        >
+          <img src={`${BASE}/close.svg`} alt="" className="h-6 w-6" />
+        </button>
+      </div>
+      {showMotion ? (
+        <MotionEventList
+          playbackMs={playbackMs}
+          setPlaybackMs={setPlaybackMs}
+          cameraSrc={cam.src}
+        />
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {CAMERAS.map((c, i) => (
+            <button
+              key={c.label}
+              type="button"
+              onClick={() => onSelect(i)}
+              className="relative aspect-video w-full flex-none overflow-hidden bg-neutral-900"
+              style={{
+                borderRadius: "4px",
+                ...(i === selectedIndex
+                  ? { boxShadow: "inset 0 0 0 2px #1D6CEB" }
+                  : null),
+              }}
+            >
+              <CameraFeed label={c.label} src={c.src} />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
