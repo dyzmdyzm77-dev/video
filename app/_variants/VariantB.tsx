@@ -318,6 +318,12 @@ export default function VariantB({
   const [now, setNow] = useState<Date | null>(null);
 
   // 딤의 '더보기'(⋮) 시트. 다채널·단일·가로 딤이 모두 이 하나를 연다.
+  // 화면 맞춤은 다채널·단일이 한 상태를 쓴다(사용자 지정 2026-08-18, 세 안 공통).
+  // 예전엔 두 화면이 각자 useVideoFit 을 들고 있어, 한쪽에서 바꾸고 다른 쪽으로
+  // 넘어가면 저장돼 있던 다른 값이 튀어나왔다("단일 -> 다채널, 다채널 -> 단일
+  // 바꿀때 왜 화면 비율도 바뀌는거야?"). 부모가 들고 있으므로 회전해도 유지된다
+  // (A · A-1 · A-3 과 같은 구조).
+  const fitState = useVideoFit("fill");
   const [moreOpen, setMoreOpen] = useState(false);
 
   const layoutDims = bestGridForCount(gridCount, gridRatio);
@@ -360,6 +366,9 @@ export default function VariantB({
           driveByPlayback={mode === "recording"}
           onGallery={() => setSheetOpen(true)}
           onMore={() => setMoreOpen(true)}
+          // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
+          fit={fitState.fit}
+          onFitCycle={fitState.cycle}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}
@@ -460,6 +469,7 @@ export default function VariantB({
 
       {expandedIndex === null ? (
         <GridView
+          fitState={fitState}
           onExpand={handleExpand}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
@@ -491,6 +501,7 @@ export default function VariantB({
         />
       ) : (
         <ExpandedView
+          fitState={fitState}
           index={expandedIndex}
           onBack={handleBack}
           onOpenMore={() => setMoreOpen(true)}
@@ -574,6 +585,7 @@ export default function VariantB({
 }
 
 function GridView({
+  fitState,
   onExpand,
   currentPage,
   setCurrentPage,
@@ -603,6 +615,8 @@ function GridView({
   onSpeedChange,
   videoAreaRef,
 }: {
+  /** 화면 맞춤 — 부모(VariantB)가 들고 단일과 공유한다. */
+  fitState: ReturnType<typeof useVideoFit>;
   onExpand: (i: number) => void;
   currentPage: number;
   setCurrentPage: (fn: (prev: number) => number) => void;
@@ -639,8 +653,9 @@ function GridView({
   const [gridSelected, setGridSelected] = useState(false);
   // 다채널 타일 맞춤 모드 — 딤 상태의 '화면 맞춤' 버튼으로 돌린다. 순서·아이콘·
   // 문구·기본값은 단일 화면과 같은 곳(components/videoFit.ts)에서 온다.
+  // 상태 자체는 VariantB 가 들고 있다(단일과 공유 · 회전해도 유지) — 받아 쓴다.
   const { fit: gridFit, cycle: cycleGridFit, toast: gridFitToast, toastKey: gridFitToastKey } =
-    useVideoFit("fill");
+    fitState;
   // 딤 자동 숨김 — 마지막 조작이 끝난 시점부터 5초. 규칙은 useAutoHide 참고.
   const hideGrid = useCallback(() => setGridSelected(false), []);
   const gridAuto = useAutoHide(gridSelected, hideGrid);
@@ -965,6 +980,7 @@ function ExpandedSlide({
 }
 
 function ExpandedView({
+  fitState,
   index,
   onBack,
   onOpenMore,
@@ -988,6 +1004,8 @@ function ExpandedView({
   captureToast = false,
   onSpeedChange,
 }: {
+  /** 화면 맞춤 — 부모(VariantB)가 들고 다채널과 공유한다. */
+  fitState: ReturnType<typeof useVideoFit>;
   index: number;
   onBack: () => void;
   /** 딤의 더보기(⋮) — 안이 더보기 시트를 연다. */
@@ -1025,8 +1043,9 @@ function ExpandedView({
   //   cover   : 원본 비율 유지한 채 가로나 세로 중 짧은 쪽 기준으로 최대로 키워
   //             넘치는 쪽을 자른다(크롭) — 이 안의 기존 기본값과 같다.
   // 순서·아이콘·문구는 components/videoFit.ts 한 곳에서 온다.
+  // 상태 자체는 VariantB 가 들고 있다(다채널과 공유 · 회전해도 유지) — 받아 쓴다.
   const { fit: videoFit, cycle: cycleVideoFit, toast: fitToast, toastKey: fitToastKey } =
-    useVideoFit("fill");
+    fitState;
   // 딤 자동 숨김 — 마지막 조작이 끝난 시점부터 5초. 규칙은 useAutoHide 참고.
   const hideControls = useCallback(() => setShowControls(false), []);
   const controlsAuto = useAutoHide(showControls, hideControls);

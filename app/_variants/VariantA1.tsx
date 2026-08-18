@@ -419,8 +419,12 @@ export default function VariantA1({
   const [moreOpen, setMoreOpen] = useState(false);
   // 딤의 AI 버튼이 여는 'AI 검색 기능' 시트.
   const [aiOpen, setAiOpen] = useState(false);
-  const gridFitState = useVideoFit("fill");
-  const videoFitState = useVideoFit("fill");
+  // 화면 맞춤은 다채널·단일이 한 상태를 쓴다(사용자 지정 2026-08-18, 세 안 공통).
+  // 화면마다 따로 기억하면 한쪽에서 맞춤을 바꾸고 다른 쪽으로 넘어갈 때 저장돼
+  // 있던 다른 값이 튀어나와, 화면이 저절로 바뀐 것처럼 보인다("단일 -> 다채널,
+  // 다채널 -> 단일 바꿀때 왜 화면 비율도 바뀌는거야?"). 맞춤은 '이 영상들을
+  // 어떻게 채워 볼지'라는 하나의 취향이라 화면 종류로 갈릴 이유가 없다.
+  const fitState = useVideoFit("fill");
 
   // 폭 경계(620)를 넘나들며 레이아웃이 바뀌어 페이지 수가 줄면 현재 페이지를 범위 안으로.
   useEffect(() => {
@@ -503,12 +507,8 @@ export default function VariantA1({
           // 딤 농도·칩 위치·페이지 점은 LandscapeVideo 기본값을 그대로 쓴다
           // — 가로 화면은 세 안이 같아야 해서 그쪽에 모아 뒀다.
           // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
-          fit={
-            expandedIndex !== null ? videoFitState.fit : gridFitState.fit
-          }
-          onFitCycle={
-            expandedIndex !== null ? videoFitState.cycle : gridFitState.cycle
-          }
+          fit={fitState.fit}
+          onFitCycle={fitState.cycle}
           // 플레이어를 딤 색에 맞춰 넘긴다(overlay) — 흰 바를 걷어 영상이 비치게 한다.
           controlsOnDim
           // 아래 시간바는 안 쓴다 — 플레이어 버튼 5개만 화면 한가운데 둔다.
@@ -644,7 +644,7 @@ export default function VariantA1({
           onSpeedChange={setPlaybackRate}
           videoAreaRef={videoAreaRef}
           initialDim
-          fitState={gridFitState}
+          fitState={fitState}
         />
       ) : (
         <ExpandedView
@@ -669,7 +669,7 @@ export default function VariantA1({
           onCapture={showCaptureToast}
           captureToast={captureToast}
           onSpeedChange={setPlaybackRate}
-          fitState={videoFitState}
+          fitState={fitState}
         />
       )}
 
