@@ -340,6 +340,45 @@ export default function LandscapeVideo({
   // (rotate(90deg) 는 콘텐츠 아래를 화면 왼쪽으로 보낸다 → dy = -dx_screen).
   const immersive = useImmersive();
   const rotatedInput = useRotatedInput();
+  // ── 단일 영상 줌 ─────────────────────────────────────────────────────────
+  // 세로 단일 화면에만 있던 핀치 줌을 가로에도 붙인다(사용자 지적 2026-08-18:
+  // "가로로 돌려졌을때 단일 화면은 줌인아웃 안되나? 세로만 되고 있네?").
+  // 규칙은 세로와 같다: 두 손가락으로 벌리면 확대, 확대된 동안은 한 손가락
+  // 드래그가 이동(pan). 데스크톱은 휠(트랙패드 핀치 포함).
+  // 다채널에는 안 건다 — 세로도 단일에만 있다.
+  const ZOOM_MIN = 1;
+  const ZOOM_MAX = 5;
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const ptsRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
+  const panRef = useRef<{ x: number; y: number; px: number; py: number } | null>(
+    null,
+  );
+  const zoomBoxRef = useRef<HTMLDivElement>(null);
+  const zoomable = expandedIndex !== null;
+  // 확대한 만큼만 움직일 수 있게 가둔다 — 안 그러면 영상이 화면 밖으로 빠진다.
+  const clampPan = (z: number, x: number, y: number) => {
+    const el = zoomBoxRef.current;
+    if (!el) return { x: 0, y: 0 };
+    const maxX = (el.clientWidth * (z - 1)) / 2;
+    const maxY = (el.clientHeight * (z - 1)) / 2;
+    return {
+      x: Math.max(-maxX, Math.min(maxX, x)),
+      y: Math.max(-maxY, Math.min(maxY, y)),
+    };
+  };
+  const applyZoom = (next: number) => {
+    const z = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, next));
+    setZoom(z);
+    setPan((prev) => clampPan(z, prev.x, prev.y));
+  };
+  // 카메라를 바꾸거나 다채널로 나가면 배율을 되돌린다 — 확대해 둔 채로 다른
+  // 화면에 들어가면 그 화면이 확대돼 보인다(세로와 같은 규칙).
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, [expandedIndex, page]);
   const dragRef = useRef<{ x: number; y: number } | null>(null);
   const startExitDrag = (e: React.PointerEvent<HTMLDivElement>) => {
     // 딤(헤더·칩줄·플레이어·시간바) 위에서 시작한 건 그쪽 조작이다.
@@ -833,15 +872,71 @@ export default function LandscapeVideo({
       style={{ touchAction: "none" }}
       onPointerDown={(e) => {
         auto.hold();
+        if (zoomable) {
+          ptsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if (ptsRef.current.size === 2) {
+            // 두 손가락 — 핀치 시작. 나가기·페이지 판정은 접는다.
+            const [a, b] = Array.from(ptsRef.current.values());
+            pinchRef.current = {
+              dist: Math.hypot(a.x - b.x, a.y - b.y),
+              zoom,
+            };
+            panRef.current = null;
+            dragRef.current = null;
+            return;
+          }
+          if (zoom > 1) {
+            // 확대 중 한 손가락 — 이동(pan). 스와이프로 새지 않게 여기서 끝낸다.
+            panRef.current = { x: e.clientX, y: e.clientY, px: pan.x, py: pan.y };
+            dragRef.current = null;
+            return;
+          }
+        }
         startExitDrag(e);
       }}
-      onPointerMove={moveExitDrag}
-      onPointerUp={() => {
+      onPointerMove={(e) => {
+        if (zoomable) {
+          if (ptsRef.current.has(e.pointerId)) {
+            ptsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          }
+          const pinch = pinchRef.current;
+          if (pinch && ptsRef.current.size >= 2) {
+            const [a, b] = Array.from(ptsRef.current.values());
+            const dist = Math.hypot(a.x - b.x, a.y - b.y);
+            if (pinch.dist > 0) applyZoom((pinch.zoom * dist) / pinch.dist);
+            return;
+          }
+          const p = panRef.current;
+          if (p) {
+            // 실기기 가로는 콘텐츠가 90° 돌아 있다 — 화면 좌표를 콘텐츠 기준으로
+            // 환산한다(moveExitDrag 와 같은 규칙).
+            const sx = e.clientX - p.x;
+            const sy = e.clientY - p.y;
+            const dx = rotatedInput ? sy : sx;
+            const dy = rotatedInput ? -sx : sy;
+            setPan(clampPan(zoom, p.px + dx, p.py + dy));
+            return;
+          }
+        }
+        moveExitDrag(e);
+      }}
+      onWheel={(e) => {
+        // 데스크톱 미리보기용 — 휠(트랙패드 핀치 포함)로도 조절한다.
+        if (!zoomable) return;
+        applyZoom(zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1));
+      }}
+      onPointerUp={(e) => {
         auto.release();
+        ptsRef.current.delete(e.pointerId);
+        if (ptsRef.current.size < 2) pinchRef.current = null;
+        panRef.current = null;
         dragRef.current = null;
       }}
-      onPointerCancel={() => {
+      onPointerCancel={(e) => {
         auto.release();
+        ptsRef.current.delete(e.pointerId);
+        if (ptsRef.current.size < 2) pinchRef.current = null;
+        panRef.current = null;
         dragRef.current = null;
       }}
     >
@@ -902,15 +997,32 @@ export default function LandscapeVideo({
         className="landscape-video-area h-full w-full bg-black"
         onClick={() => handleTap(null)}
       >
-        <CameraFeed
-          label={cam.label}
-          badge={singleBadge}
-          badgeAlign={singleBadgeAlign}
-          src={cam.src}
-          fit={fit}
-          playbackMs={playbackMs}
-          driveByPlayback={driveByPlayback}
-        />
+        {/* 줌 껍데기 — 확대·이동은 이 한 겹에만 건다. 부모의 상태바 여백
+            (padding-inline)을 그대로 받도록 absolute 가 아니라 h-full w-full 이다. */}
+        <div
+          ref={zoomBoxRef}
+          className="h-full w-full"
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: "center",
+            // 손가락으로 조절하는 동안은 애니메이션을 걸지 않는다(따라오는 느낌이
+            // 아니라 늦게 붙는 느낌이 된다). 손을 뗀 뒤에만 부드럽게(세로와 동일).
+            transition:
+              pinchRef.current || panRef.current
+                ? "none"
+                : "transform 200ms ease-out",
+          }}
+        >
+          <CameraFeed
+            label={cam.label}
+            badge={singleBadge}
+            badgeAlign={singleBadgeAlign}
+            src={cam.src}
+            fit={fit}
+            playbackMs={playbackMs}
+            driveByPlayback={driveByPlayback}
+          />
+        </div>
       </div>,
     );
   }

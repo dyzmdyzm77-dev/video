@@ -290,7 +290,8 @@ body {
      가로 화면의 단일 영상에만 건다: 격자(다채널)는 이 자식이 .grid 라 안 걸리고,
      세로 화면에는 .landscape-video-area 자체가 없다. #171717 은 '신호 없음'
      배경으로 다른 데서도 쓰므로 CameraFeed 자체는 안 건드린다. */
-  .landscape-video-area > div:not(.grid) {
+  .landscape-video-area > div:not(.grid),
+  .landscape-video-area > div:not(.grid) > div {
     background-color: #000;
   }
   }
