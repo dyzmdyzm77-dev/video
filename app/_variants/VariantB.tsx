@@ -34,6 +34,7 @@ import {
   bestGridForCount,
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
+  IMMERSIVE_EDGE,
   LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
   LANDSCAPE_EDGE_ANDROID,
@@ -201,10 +202,14 @@ export default function VariantB({
   const isAndroid = useIsAndroid();
   // 눕힌 화면 값은 기기별로 다르다 — 아이폰 60, 안드로이드 30(사용자 지정
   // 2026-08-18). 제자리 확대는 양쪽 다 IMMERSIVE_EDGE.
-  // 제자리 확대도 같은 값이다(사용자 지정 2026-08-18: "제자리 확대되면 딤 아이콘
-  // 좌우 마진 그대로 유지하라니까?"). 한동안 제자리만 40 으로 줄였는데, 같은
-  // 딤인데 확대 방식에 따라 여백이 달라지는 게 더 어색했다.
-  const dimEdge = isAndroid ? LANDSCAPE_EDGE_ANDROID : LANDSCAPE_EDGE;
+  // 눕힌 화면만 크게 준다. 세로에서 확대 버튼을 눌러 제자리로 커진 경우는 화면이
+  // 세로 그대로라 세로 딤과 같은 여백을 쓴다(사용자 지정 2026-08-18: "세로모드에서
+  // 확대 버튼 눌러서 제자리 확대되면, 딤 아이콘 좌우 마진 그대로 유지하라니까?").
+  const dimEdge = wideNow
+    ? isAndroid
+      ? LANDSCAPE_EDGE_ANDROID
+      : LANDSCAPE_EDGE
+    : IMMERSIVE_EDGE;
 
   const immersive = useImmersive();
   const compareTarget = useCompareTarget();

@@ -52,6 +52,7 @@ import {
   bestGridForCount,
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
+  IMMERSIVE_EDGE,
   LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
   LANDSCAPE_EDGE_ANDROID,
@@ -264,10 +265,14 @@ export default function VariantA3({
   const isAndroid = useIsAndroid();
   // 눕힌 화면 값은 기기별로 다르다 — 아이폰 60, 안드로이드 30(사용자 지정
   // 2026-08-18). 제자리 확대는 양쪽 다 IMMERSIVE_EDGE.
-  // 제자리 확대도 같은 값이다(사용자 지정 2026-08-18: "제자리 확대되면 딤 아이콘
-  // 좌우 마진 그대로 유지하라니까?"). 한동안 제자리만 40 으로 줄였는데, 같은
-  // 딤인데 확대 방식에 따라 여백이 달라지는 게 더 어색했다.
-  const dimEdge = isAndroid ? LANDSCAPE_EDGE_ANDROID : LANDSCAPE_EDGE;
+  // 눕힌 화면만 크게 준다. 세로에서 확대 버튼을 눌러 제자리로 커진 경우는 화면이
+  // 세로 그대로라 세로 딤과 같은 여백을 쓴다(사용자 지정 2026-08-18: "세로모드에서
+  // 확대 버튼 눌러서 제자리 확대되면, 딤 아이콘 좌우 마진 그대로 유지하라니까?").
+  const dimEdge = wideNow
+    ? isAndroid
+      ? LANDSCAPE_EDGE_ANDROID
+      : LANDSCAPE_EDGE
+    : IMMERSIVE_EDGE;
   // 시간바 아래 아이콘 줄은 LandscapeVideo 밖(controls)에 있어 그쪽 보정을 못 받는다
   // — 같은 식으로 앱 창이 화면에서 밀려난 만큼 빼서 기기 모서리 기준으로 맞춘다.
   // 가로 딤 왼쪽 아래 아이콘이 여는 오른쪽 패널 — 어느 탭으로 열렸는지까지 담는다
