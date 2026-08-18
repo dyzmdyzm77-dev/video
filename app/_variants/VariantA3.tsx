@@ -254,6 +254,23 @@ export default function VariantA3({
   // 가로 딤 왼쪽 아래 아이콘이 여는 오른쪽 패널 — 어느 탭으로 열렸는지까지 담는다
   // (사용자 지정 2026-08-18). null 이면 닫힘.
   const [lsPanel, setLsPanel] = useState<"list" | "motion" | null>(null);
+  // 열고 닫을 때 폭을 굴리려면 두 상태가 필요하다(사용자 지적 2026-08-18: "너무
+  // 띡 띡 나오는거 아니야?"):
+  //   lsPanelTab  — 지금 그릴 내용. 닫는 동안에도 남아 있어야 빈 판이 안 보인다.
+  //   lsPanelOpen — 폭 0 ↔ 제 폭. 붙인 다음 프레임에 켜야 전환이 돈다.
+  const [lsPanelTab, setLsPanelTab] = useState<"list" | "motion">("list");
+  const [lsPanelOpen, setLsPanelOpen] = useState(false);
+  useEffect(() => {
+    if (lsPanel) {
+      setLsPanelTab(lsPanel);
+      const id = requestAnimationFrame(() => setLsPanelOpen(true));
+      return () => cancelAnimationFrame(id);
+    }
+    setLsPanelOpen(false);
+    // 내용은 전환이 끝난 뒤에 치운다(240ms + 여유).
+    const t = setTimeout(() => setLsPanelTab("list"), 300);
+    return () => clearTimeout(t);
+  }, [lsPanel]);
   const dimGaps = useEdgeGaps();
   // 기기 모서리 기준 — 좌우 각각 밀린 만큼 뺀다(LandscapeVideo 의 같은 계산 참고).
   const dimEdgeL = Math.max(0, dimEdge - dimGaps.left);
@@ -664,9 +681,10 @@ export default function VariantA3({
         {/* 딤 왼쪽 아래 '메뉴'·'움직임 감지'가 여는 오른쪽 패널(사용자 지정
             2026-08-18). 다채널에서도 목록은 뜬다 — 거기서 카메라를 고르면 그
             카메라 단일 화면으로 넘어간다. */}
-        {lsPanel && (
+        {(lsPanel || lsPanelOpen) && (
           <LandscapeSidePanel
-            tab={lsPanel}
+            open={lsPanelOpen && lsPanel !== null}
+            tab={lsPanelTab}
             onTab={setLsPanel}
             mode={mode}
             selectedIndex={expandedIndex}
@@ -5457,6 +5475,7 @@ function TimelineSkeleton({ visible }: { visible: boolean }) {
 /** 패널 내용이 기기 오른쪽 모서리에서 떨어지는 거리 — 딤 아이콘과 같은 값. */
 const LS_PANEL_PAD = 16;
 function LandscapeSidePanel({
+  open,
   tab,
   onTab,
   mode,
@@ -5467,6 +5486,10 @@ function LandscapeSidePanel({
   edge,
   onClose,
 }: {
+  /** 열림/닫힘 — 폭을 0 ↔ 제 폭으로 애니메이션한다(사용자 지적 2026-08-18:
+   *  "오른쪽 패널 나올때 너무 띡 띡 나오는거 아니야?"). 붙였다 뗐다 하면
+   *  영상이 튀듯 밀린다. 폭을 굴리면 영상도 같이 부드럽게 밀린다. */
+  open: boolean;
   tab: "list" | "motion";
   onTab: (t: "list" | "motion") => void;
   mode: "live" | "recording";
@@ -5486,17 +5509,23 @@ function LandscapeSidePanel({
   const canMotion = mode === "recording" && selectedIndex !== null;
   const showMotion = tab === "motion" && canMotion;
   const cam = CAMERAS[selectedIndex ?? 0];
+  const full = SIDE_PANEL_W + extra;
   return (
     <div
-      className="flex min-h-0 flex-none flex-col bg-white"
+      className="flex min-h-0 flex-none flex-col overflow-hidden bg-white"
       style={{
-        width: `${SIDE_PANEL_W + extra}px`,
-        paddingRight: `${extra}px`,
-        borderLeft: "1px solid #EBEBEB",
+        // 바깥은 폭만 굴린다 — 안쪽은 제 폭 그대로라 글자가 눌리지 않는다.
+        width: open ? `${full}px` : "0px",
+        transition: "width 240ms cubic-bezier(0.22, 1, 0.36, 1)",
+        borderLeft: open ? "1px solid #EBEBEB" : "none",
         // 왼쪽만 둥글게 — 영상 쪽에서 흰 판이 밀고 들어오는 모양이다(A-1 동일).
         borderTopLeftRadius: "10px",
         borderBottomLeftRadius: "10px",
       }}
+    >
+    <div
+      className="flex min-h-0 flex-1 flex-col"
+      style={{ width: `${full}px`, paddingRight: `${extra}px` }}
     >
       {/* 탭 + 닫기 — 1080+ 패널과 같은 생김새(활성 검정 + 밑줄). */}
       <div
@@ -5573,6 +5602,7 @@ function LandscapeSidePanel({
           ))}
         </div>
       )}
+    </div>
     </div>
   );
 }
