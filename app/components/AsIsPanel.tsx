@@ -227,7 +227,10 @@ export default function AsIsPanel() {
 
   useEffect(() => {
     const read = () => {
-      const isOn = document.documentElement.dataset.compare === "true";
+      // 비교하기(왼쪽 나란히) 또는 'As Is 단독'(화면 시안 목록에서 고른 경우).
+      const isOn =
+        document.documentElement.dataset.compare === "true" ||
+        document.documentElement.dataset.asisOnly === "true";
       setOn(isOn);
       // 비교하기가 꺼지면 '첫 동기화 즉시' 플래그를 되돌려, 다시 켰을 때
       // 초기 상태를 스피너 없이 맞춘다.
@@ -235,6 +238,7 @@ export default function AsIsPanel() {
     };
     read();
     window.addEventListener("comparechange", read);
+    window.addEventListener("asisonlychange", read);
     return () => window.removeEventListener("comparechange", read);
   }, []);
 

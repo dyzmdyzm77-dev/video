@@ -130,6 +130,11 @@ export default function DesktopVariantNav() {
   const [showRuler, setShowRuler] = useState(true); // 목업 위 치수 눈금자 표시 여부
   const [actualSize, setActualSize] = useState(false); // 배율 1:1 고정 여부
   const [compare, setCompare] = useState(false); // As Is(현재 앱) 나란히 비교 여부
+  // As Is 를 '화면 시안' 목록에서 골라 단독으로 보는 상태(사용자 요청 2026-08-18:
+  // "As Is도 화면안 선택 목록에 넣어줄 수 있어?"). 비교하기와 달리 시안 대신
+  // As Is 하나만 가운데 기기에 띄운다 — 문서 루트 플래그로 알리고 CSS 가 자리를
+  // 옮긴다(AsIsPanel 은 이 플래그도 구독한다).
+  const [asisOnly, setAsisOnly] = useState(false);
   const [rotated, setRotated] = useState(false); // 디바이스 시각적 90° 회전(가로)
   // 확대 중에는 회전을 막는다(위 버튼 주석 참고).
   const immersive = useImmersive();
@@ -182,6 +187,10 @@ export default function DesktopVariantNav() {
     document.documentElement.dataset.compare = compare ? "true" : "false";
     window.dispatchEvent(new Event("comparechange"));
   }, [compare]);
+  useEffect(() => {
+    document.documentElement.dataset.asisOnly = asisOnly ? "true" : "false";
+    window.dispatchEvent(new Event("asisonlychange"));
+  }, [asisOnly]);
 
   // 프리셋 크기를 문서 루트에 반영하고 강조 인덱스를 맞춘다.
   const applyPreset = (i: number) => {
@@ -399,13 +408,27 @@ export default function DesktopVariantNav() {
           안 잘린다. */}
       {/* 시안 칩 — 오른쪽(지금 보고 있는 안) 기기 위. */}
       <div className="device-preset-chips dpc-right">
+        <button
+          type="button"
+          className="dpc-chip"
+          data-active={asisOnly}
+          onClick={() => {
+            setAsisOnly(true);
+            setCompare(false);
+          }}
+        >
+          As Is
+        </button>
         {VARIANTS.map((v) => (
           <button
             key={v.key}
             type="button"
             className="dpc-chip"
-            data-active={variant === v.key}
-            onClick={() => requestVariant(v.key)}
+            data-active={!asisOnly && variant === v.key}
+            onClick={() => {
+              setAsisOnly(false);
+              requestVariant(v.key);
+            }}
           >
             {VARIANT_LABEL[v.key]}
           </button>
@@ -445,15 +468,35 @@ export default function DesktopVariantNav() {
 
       <p className="dvn-group-title dvn-label">화면 시안</p>
       <ul className="dvn-list">
+        {/* As Is — 현행 앱 재현. 고르면 시안 대신 이것만 뜬다(비교하기와 다름). */}
+        <li>
+          <button
+            type="button"
+            data-active={asisOnly}
+            title="As Is (현행 앱)"
+            onClick={() => {
+              setAsisOnly(true);
+              setCompare(false);
+            }}
+          >
+            <span className="dvn-icon" aria-hidden>
+              현행
+            </span>
+            <span className="dvn-label">As Is</span>
+          </button>
+        </li>
         {VARIANTS.map((v) => (
           <li key={v.key}>
             <button
               type="button"
-              data-active={variant === v.key}
+              data-active={!asisOnly && variant === v.key}
               title={VARIANT_LABEL[v.key]}
               // URL 을 안 건드리고 안만 갈아끼운다 — 안 화면의 시안 목록 시트와
               // 같은 경로다(variantRoute.ts). platform·chrome 쿼리도 그대로 남는다.
-              onClick={() => requestVariant(v.key)}
+              onClick={() => {
+                setAsisOnly(false);
+                requestVariant(v.key);
+              }}
             >
               <span className="dvn-icon" aria-hidden>
                 {v.icon}

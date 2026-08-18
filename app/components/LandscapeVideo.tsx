@@ -94,6 +94,7 @@ export default function LandscapeVideo({
   totalPages = 1,
   playbackMs,
   driveByPlayback,
+  paused = false,
   onGallery,
   onMore,
   onAi,
@@ -152,6 +153,11 @@ export default function LandscapeVideo({
   totalPages?: number;
   playbackMs?: number | null;
   driveByPlayback?: boolean;
+  /** 일시정지·스크럽 중인가. 캔버스 경로(디코딩 성공)에서는 playbackMs 가 안
+   *  움직이니 저절로 멈추지만, 디코딩이 안 되는 기기는 GIF 를 그대로 재생하는
+   *  폴백이라 이 값을 안 주면 멈추지 않는다(사용자 지적 2026-08-18: "일시 정지
+   *  눌렀는데 영상이 안멈추고"). 세로 화면은 이미 같은 값을 넘기고 있었다. */
+  paused?: boolean;
   /** 딤의 '갤러리' 버튼. 세로의 화면 구성 시트를 그대로 연다. */
   onGallery?: () => void;
   /** 딤의 '더보기'(⋮). 세로와 같은 더보기 시트를 연다. */
@@ -1072,6 +1078,7 @@ export default function LandscapeVideo({
             badgeAlign={singleBadgeAlign}
             src={cam.src}
             fit={fit}
+            paused={paused}
             playbackMs={playbackMs}
             driveByPlayback={driveByPlayback}
           />
@@ -1125,6 +1132,7 @@ export default function LandscapeVideo({
                 label={cam.label}
                 src={cam.src}
                 fit={fit}
+                paused={paused}
                 playbackMs={playbackMs}
                 driveByPlayback={driveByPlayback}
               />

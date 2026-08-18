@@ -440,6 +440,8 @@ export default function VariantA({
           totalPages={totalPages}
           playbackMs={playbackMs}
           driveByPlayback={mode === "recording"}
+          // 일시정지·스크럽 중이면 폴백 GIF 도 멈춰야 한다(세로와 같은 값).
+          paused={mode === "recording" && (!isPlaying || isScrubbing)}
           onGallery={() => setSheetOpen(true)}
           onMore={() => setMoreOpen(true)}
           onAi={() => setAiOpen(true)}

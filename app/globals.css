@@ -1050,6 +1050,22 @@ body {
       border-radius 0.22s ease,
       transform 0.22s ease;
   }
+  /* ── As Is 단독 보기 ──────────────────────────────────────────────────
+     '화면 시안' 목록에서 As Is 를 고른 상태(사용자 요청 2026-08-18). 비교하기와
+     달리 시안을 옆에 두지 않고 As Is 하나만 가운데 기기 자리에 놓는다:
+     시안 앱과 그 베젤을 감추고, As Is 프레임을 시안이 서 있던 자리로 옮긴다. */
+  html[data-asis-only="true"] .app-safe-frame,
+  html[data-asis-only="true"] .device-frame {
+    display: none;
+  }
+  html[data-asis-only="true"] .asis-frame {
+    display: block;
+    left: calc(
+      var(--device-left, 240px) - var(--device-margin, 10px) *
+        var(--device-scale, 1)
+    );
+  }
+
   /* 베젤 안쪽 검정 면(시안 .device-frame::after 와 동일). 화면 뒤에 깔린다. */
   .asis-frame::after {
     content: "";

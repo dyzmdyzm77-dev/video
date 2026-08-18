@@ -388,6 +388,8 @@ export default function VariantB({
           totalPages={totalPages}
           playbackMs={playbackMs}
           driveByPlayback={mode === "recording"}
+          // 일시정지·스크럽 중이면 폴백 GIF 도 멈춰야 한다(세로와 같은 값).
+          paused={mode === "recording" && (!isPlaying || isScrubbing)}
           onGallery={() => setSheetOpen(true)}
           onMore={() => setMoreOpen(true)}
           // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
