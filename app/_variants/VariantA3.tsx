@@ -273,6 +273,17 @@ export default function VariantA3({
   //   lsPanelOpen — 폭 0 ↔ 제 폭. 붙인 다음 프레임에 켜야 전환이 돈다.
   const [lsPanelTab, setLsPanelTab] = useState<"list" | "motion">("list");
   const [lsPanelOpen, setLsPanelOpen] = useState(false);
+  // 패널이 열려 있는지 CSS 에도 알린다 — 영상 오른쪽 여백(상태바 자리 대칭분)을
+  // 그때만 접는다(사용자 지적 2026-08-18: "오른쪽 패널 나올때는 검정띠 없어도
+  // 될듯"). 패널이 그 자리를 이미 덮고 있어 띠가 두 겹으로 보인다.
+  useEffect(() => {
+    const ds = document.documentElement.dataset;
+    if (lsPanel) ds.lsPanel = "true";
+    else delete ds.lsPanel;
+    return () => {
+      delete document.documentElement.dataset.lsPanel;
+    };
+  }, [lsPanel]);
   useEffect(() => {
     if (lsPanel) {
       setLsPanelTab(lsPanel);
