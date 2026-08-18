@@ -193,46 +193,24 @@ export function readEdgeGaps(): EdgeGaps {
     typeof window.matchMedia === "function" &&
     window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   if (desktopPreview) return { left: 0, right: 0 };
-  const rotated = readCssRotated();
-  const near = rotated ? window.screenY : window.screenX;
-  const span = rotated ? window.innerHeight : window.innerWidth;
-  const screenSpan = rotated ? window.screen.height : window.screen.width;
-  const far = screenSpan - near - span;
-  // 값이 앞뒤가 안 맞으면(브라우저가 screen 을 기기 기본 방향으로만 보고하거나,
-  // screenX/Y 를 안 주는 경우) 보정을 접는다 — 엉뚱한 수를 빼면 한쪽 여백이
-  // 확 넓어지느니만 못하다. 창이 화면보다 크거나, 한쪽이 화면 절반을 넘으면
-  // 잘못 잰 것으로 본다.
-  // 창 위치(screenX/Y)만으로는 안 잡히는 밀림이 있다 — 안드로이드는 컷아웃·바가
-  // '창 안쪽'을 깎는 경우가 있어 창은 화면 전체인데 쓸 수 있는 영역만 작다.
-  // 그건 안전영역(env)이 알려 준다. 둘 중 큰 값을 쓴다.
-  const envInset = (side: "top" | "bottom" | "left" | "right") => {
-    if (typeof document === "undefined") return 0;
-    const probe = document.createElement("div");
-    probe.style.cssText = `position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-${side},0px);pointer-events:none;`;
-    document.body.appendChild(probe);
-    const v = probe.getBoundingClientRect().height;
-    probe.remove();
-    return Number.isFinite(v) ? v : 0;
-  };
-  // 콘텐츠 기준 좌우가 물리적으로 어느 변인지는 CSS 회전 여부로 갈린다.
-  const envLeft = rotated ? envInset("top") : envInset("left");
-  const envRight = rotated ? envInset("bottom") : envInset("right");
+  // 앱을 CSS 로 눕힌 확대(폰은 세로)는 건드리지 않는다 — 그쪽은 위아래 바가
+  // 콘텐츠의 좌우가 되는데, 두 바 두께를 갈라 낼 방법이 없어 추측이 된다.
+  if (readCssRotated()) return { left: 0, right: 0 };
 
-  const sane =
-    screenSpan > 0 &&
-    span > 0 &&
-    near >= 0 &&
-    far >= 0 &&
-    near + span <= screenSpan + 1 &&
-    near < screenSpan / 2 &&
-    far < screenSpan / 2;
-  if (!sane) {
-    return { left: Math.round(envLeft), right: Math.round(envRight) };
-  }
-  return {
-    left: Math.round(Math.max(near, envLeft)),
-    right: Math.round(Math.max(far, envRight)),
-  };
+  // 여기부터는 폰을 실제로 눕힌 가로. 이때 좌우를 깎는 건 보통 카메라 컷아웃
+  // 한 변이다(상태바·내비바는 위아래로 간다). 얼마나 깎였는지는 화면 폭과
+  // 뷰포트 폭의 차이로 알 수 있고, 어느 변인지는 회전 각도로 갈린다:
+  //   90(반시계, 기기 위쪽이 왼쪽으로) → 왼쪽,  270(시계) → 오른쪽.
+  // 이걸 안 빼면 그 변만 여백이 컷아웃 두께만큼 넓어 보인다(사용자 지적
+  // 2026-08-18, 안드로이드: "가로로 돌렸을때 왼쪽 부분이 문제야. 왼쪽이 너무 넓어").
+  const gap = Math.round(window.screen.width - window.innerWidth);
+  // 0 이거나 너무 크면(측정이 어긋난 것) 손대지 않는다.
+  if (!(gap > 0 && gap <= 120)) return { left: 0, right: 0 };
+  const raw =
+    window.screen?.orientation?.angle ??
+    (window as unknown as { orientation?: number }).orientation;
+  const a = typeof raw === "number" ? (raw + 360) % 360 : 90;
+  return a === 270 ? { left: 0, right: gap } : { left: gap, right: 0 };
 }
 
 /** readEdgeGaps 를 구독한다. SSR·첫 렌더는 0 으로 맞춰 하이드레이션 불일치를 막는다. */

@@ -9,6 +9,7 @@ import { CameraFeed, GridSelectionOverlay } from "./CameraFeed";
 import { useAutoHide } from "./useAutoHide";
 import { VideoFitToast, useVideoFit } from "./VideoFitToast";
 import { requestDeviceRotate, useRotatedInput } from "./deviceRotate";
+import { useEdgeGaps } from "./useDeviceWidth";
 import { exitImmersive, useImmersive } from "./immersive";
 import { VIDEO_FIT_LABEL, type VideoFit } from "./videoFit";
 
@@ -361,6 +362,10 @@ export default function LandscapeVideo({
   // 기기 끝 기준이 안 된다 — 밀려난 만큼(useEdgeGaps) 빼서 실제 모서리에 맞춘다.
   // 아이폰 홈화면 앱처럼 창 = 화면이면 gap 이 0 이라 지금까지와 같다.
   const baseEdge = edgeInset ?? 20;
+  // 폰을 눕힌 가로에서 컷아웃이 한 변을 깎으면 그쪽 여백만 그만큼 넓어 보인다 —
+  // 깎인 만큼 빼서 기기 끝 기준을 맞춘다(useEdgeGaps). 잴 수 없거나 CSS 로
+  // 눕힌 확대면 0 이라 좌우 같은 값이다.
+  const edgeGaps = useEdgeGaps();
   // 좌우 모두 앱 화면 끝에서 baseEdge 다. 그냥 이게 맞다.
   //
   // 한동안 '앱 창이 물리 화면에서 밀려난 만큼'을 빼서 기기 모서리에 맞추려 했다
@@ -372,8 +377,8 @@ export default function LandscapeVideo({
   //
   // 게다가 지금은 가로·확대에서 앱이 화면 전체를 받는다(안드로이드는 설치본
   // 전체화면, 아이폰은 홈화면 앱) — 앱 끝이 곧 기기 끝이라 보정할 것도 없다.
-  const edgeL = baseEdge;
-  const edgeR = baseEdge;
+  const edgeL = Math.max(0, baseEdge - edgeGaps.left);
+  const edgeR = Math.max(0, baseEdge - edgeGaps.right);
 
   // ── 단일 영상 줌 ─────────────────────────────────────────────────────────
   // 세로 단일 화면에만 있던 핀치 줌을 가로에도 붙인다(사용자 지적 2026-08-18:
