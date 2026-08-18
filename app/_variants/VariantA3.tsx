@@ -178,8 +178,10 @@ function BatteryIcon({ className, level }: { className?: string; level: number }
  *  2026-08-18: "A-3 세로, 시간바 영역 배경을 조금 연한 그레이로"). 위 영상·아래
  *  탭과 같은 흰색이면 시간바가 어디서 시작하는지 안 보였다.
  *  좌우 페이드와 날짜 버튼 뒤 마스크도 이 색을 써야 한다 — 다른 색이면 흰 띠가
- *  드러난다. 가로(딤 위)는 투명 그대로다. */
-const TIMEBAR_BG = "#F7F7F7";
+ *  드러난다. 가로(딤 위)는 투명 그대로다.
+ *  처음 #F7F7F7 로 넣었더니 흰색과 차이를 못 느끼겠다는 지적이 있어(2026-08-18)
+ *  한 단계 내렸다. */
+const TIMEBAR_BG = "#F2F2F2";
 
 /** 시간바 아래 아이콘 줄을 감싼 층이 이미 갖고 있는 좌우 여백. 줄에 더 붙일 몫은
  *  LANDSCAPE_EDGE 에서 이만큼 뺀 값이다 — 안 빼면 10 이 더해져 더 들어간다. */
@@ -3526,7 +3528,7 @@ function RecordingEventTimeline({
             // 20% 로 줄인다(사용자 지정 2026-08-14).
             width: "20%",
             background:
-              `linear-gradient(to left, rgba(247,247,247,0) 0%, ${TIMEBAR_BG} 89.9%)`,
+              `linear-gradient(to left, rgba(242,242,242,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
         <div
@@ -3539,7 +3541,7 @@ function RecordingEventTimeline({
             // 20% 로 줄인다(사용자 지정 2026-08-14).
             width: "20%",
             background:
-              `linear-gradient(to right, rgba(247,247,247,0) 0%, ${TIMEBAR_BG} 89.9%)`,
+              `linear-gradient(to right, rgba(242,242,242,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
         {/* 중앙 고정 현재 시각 라벨(다채널과 동일 — 다크).
@@ -4894,8 +4896,11 @@ function RecordingControls({
               }}
             />
           ))}
-          {/* 감지 표시 — 작은 눈금과 같은 규격(4×4 점, top 20)에 색만 #F59E0B. */}
-          {motionMarks.map((secOffset, i) => (
+          {/* 감지 표시 — 작은 눈금과 같은 규격(4×4 점, top 20)에 색만 #F59E0B.
+              세로 다채널에서는 안 그린다(사용자 지정 2026-08-18: "A-3안 세로 녹화
+              다채널에 시간바에 노란색빼줘"). 다채널은 어느 카메라의 감지인지
+              가릴 수 없어 점만 늘어놓는 셈이었다. 가로 딤에서는 그대로 둔다. */}
+          {overlay && motionMarks.map((secOffset, i) => (
             <div
               key={`M${i}`}
               className="pointer-events-none absolute rounded-full"
@@ -4959,7 +4964,7 @@ function RecordingControls({
             // 20% 로 줄인다(사용자 지정 2026-08-14).
             width: "20%",
             background:
-              `linear-gradient(to left, rgba(247,247,247,0) 0%, ${TIMEBAR_BG} 89.9%)`,
+              `linear-gradient(to left, rgba(242,242,242,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
         <div
@@ -4972,7 +4977,7 @@ function RecordingControls({
             // 20% 로 줄인다(사용자 지정 2026-08-14).
             width: "20%",
             background:
-              `linear-gradient(to right, rgba(247,247,247,0) 0%, ${TIMEBAR_BG} 89.9%)`,
+              `linear-gradient(to right, rgba(242,242,242,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
         </>
