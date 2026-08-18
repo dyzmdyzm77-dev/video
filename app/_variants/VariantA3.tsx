@@ -3474,21 +3474,43 @@ function RecordingEventTimeline({
               "좀 연한 눈금은 높이 좀 줄이고"). 아래를 맞춰 세우면 짧은 쪽이
               라벨에서 더 떨어져 보이는데, 그게 대/소가 한눈에 갈리는 그림이다.
               화면에 보이는 범위만 렌더한다(수천 개 방지). */}
+          {/* 작은 눈금은 막대가 아니라 이어진 선이다(사용자 지정 2026-08-18:
+              "눈금말고 선으로 바꾸자"). 눈금이 1초마다라 개수가 수천이고, 이어
+              붙이면 어차피 같은 그림이라 보이는 범위를 한 줄로 깐다.
+              큰 눈금 막대(18~26)의 아래쪽에 얹혀 바닥선처럼 읽힌다. */}
+          {(() => {
+            const vis = ticks.filter(({ secOffset }) => inView(secOffset));
+            const first = vis[0];
+            const last = vis[vis.length - 1];
+            if (!first || !last) return null;
+            const x0 = xOf(first.secOffset);
+            const x1 = xOf(last.secOffset);
+            return (
+              <div
+                className="pointer-events-none absolute rounded-[1px]"
+                style={{
+                  left: `calc(50% + ${x0}px)`,
+                  top: "24px",
+                  width: `${x1 - x0 + 2}px`,
+                  height: "2px",
+                  backgroundColor: "rgba(173,173,173,0.7)",
+                }}
+              />
+            );
+          })()}
+          {/* 큰 눈금 — 선 위로 솟는 2×8 막대. 보이는 범위만 렌더(수천 개 방지). */}
           {ticks
-            .filter(({ secOffset }) => inView(secOffset))
-            .map(({ secOffset, isMajor }) => (
+            .filter(({ secOffset, isMajor }) => isMajor && inView(secOffset))
+            .map(({ secOffset }) => (
               <div
                 key={`T${secOffset}`}
                 className="pointer-events-none absolute rounded-[1px]"
                 style={{
                   left: `calc(50% + ${xOf(secOffset)}px)`,
-                  // 아래 끝(top+height = 26)을 맞추고 위로 자란다.
-                  top: isMajor ? "18px" : "21px",
+                  top: "18px",
                   width: "2px",
-                  height: isMajor ? "8px" : "5px",
-                  // 흰 바탕(세로) — 큰 눈금은 시간 글자와 같은 검정 계열,
-                  // 작은 눈금은 살짝 투명한 회색(선일 때 쓰던 그 톤 그대로).
-                  backgroundColor: isMajor ? "#353535" : "rgba(173,173,173,0.7)",
+                  height: "8px",
+                  backgroundColor: "#353535",
                 }}
               />
             ))}
@@ -4863,22 +4885,32 @@ function RecordingControls({
               "A-2처럼", "연한 눈금은 높이 좀 줄이고"). 큰 8 · 작은 5, 아래 끝을
               맞추고 위로 자란다. 딤 위(가로)는 큰 눈금이 흰색, 작은 눈금은 뒤
               영상에 묻히도록 살짝 투명한 회색이다. */}
-          {ticks.map(({ secOffset, isMajor }) => (
+          {/* 작은 눈금 → 이어진 선(세로 시간바와 같은 규칙, 사용자 지정 2026-08-18). */}
+          {ticks.length > 0 && (
+            <div
+              className="pointer-events-none absolute rounded-[1px]"
+              style={{
+                left: `calc(50% + ${ticks[0]!.secOffset * pxPerSec}px)`,
+                top: "24px",
+                width: `${(ticks[ticks.length - 1]!.secOffset - ticks[0]!.secOffset) * pxPerSec + 2}px`,
+                height: "2px",
+                backgroundColor: overlay
+                  ? "rgba(153,153,153,0.7)"
+                  : "rgba(173,173,173,0.7)",
+              }}
+            />
+          )}
+          {/* 큰 눈금 — 선 위로 솟는 2×8 막대 */}
+          {ticks.filter(({ isMajor }) => isMajor).map(({ secOffset }) => (
             <div
               key={`T${secOffset}`}
               className="absolute rounded-[1px]"
               style={{
                 left: `calc(50% + ${secOffset * pxPerSec}px)`,
-                top: isMajor ? "18px" : "21px",
+                top: "18px",
                 width: "2px",
-                height: isMajor ? "8px" : "5px",
-                backgroundColor: isMajor
-                  ? overlay
-                    ? "#FFFFFF"
-                    : "#353535"
-                  : overlay
-                    ? "rgba(153,153,153,0.7)"
-                    : "rgba(173,173,173,0.7)",
+                height: "8px",
+                backgroundColor: overlay ? "#FFFFFF" : "#353535",
               }}
             />
           ))}
