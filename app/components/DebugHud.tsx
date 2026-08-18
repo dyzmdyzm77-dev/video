@@ -47,11 +47,11 @@ export default function DebugHud() {
       window.clearTimeout(tapTimer);
     };
 
-    if (!/[?&]debug=1/.test(window.location.search)) {
-      // 주소로 안 켰어도 모서리 탭은 살려 둔다.
-      return cleanupTap;
-    }
-    setOn(true);
+    // 주소에 ?debug=1 이 있으면 바로 켠다. 없어도 모서리 탭으로 켤 수 있으므로
+    // 읽기(read)는 어느 쪽이든 돌려 둔다 — 예전엔 주소로 켠 경우에만 값을 읽어서,
+    // 정작 이 계기판이 필요한 홈화면 앱(주소를 못 붙인다)에서는 탭으로 켜도 빈
+    // 상자만 떴다.
+    if (/[?&]debug=1/.test(window.location.search)) setOn(true);
 
     const read = () => {
       const root = document.documentElement;
@@ -70,13 +70,29 @@ export default function DebugHud() {
       const frame = document.querySelector<HTMLElement>(".app-safe-frame");
       const fcs = frame ? getComputedStyle(frame) : null;
 
+      // 가로 딤 마진이 '기기 기준인지 영상 기준인지' 보려고 붙인 줄들
+      // (사용자 지적 2026-08-18: 안드로이드만 영상 뷰 기준으로 보인다).
+      // 프레임이 화면보다 작으면 그 안의 딤·영상이 통째로 안쪽으로 들어온다 —
+      // frame 과 scr 을 나란히 찍어 두면 한눈에 갈린다.
+      const r = (el: Element | null) => {
+        if (!el) return "-";
+        const b = el.getBoundingClientRect();
+        return `${Math.round(b.left)},${Math.round(b.top)} ${Math.round(b.width)}×${Math.round(b.height)}`;
+      };
+      const area = document.querySelector(".landscape-video-area");
+      // 딤 위쪽 줄(장소명 · 좌우 여백이 걸린 층)
+      const dimRow = document.querySelector(
+        ".landscape-video-area ~ div, .app-safe-frame [class*='inset-x-0']",
+      );
       setLines([
-        `imm=${root.dataset.immersive ?? "-"} land=${root.dataset.landscape ?? "-"} rot=${root.dataset.rotate ?? "-"}`,
+        `imm=${root.dataset.immersive ?? "-"} land=${root.dataset.landscape ?? "-"} bleed=${root.dataset.videoBleed ?? "-"}`,
         `inner=${window.innerWidth}×${window.innerHeight} scr=${window.screen.width}×${window.screen.height}`,
-        `insetTop=${insetTop} fs=${!!document.fullscreenElement}`,
-        `theme=${themes || "-"} htmlBg=${getComputedStyle(root).backgroundColor}`,
-        `frame pad=${fcs?.padding ?? "-"} bg=${fcs?.backgroundColor ?? "-"}`,
-        `frame pos=${fcs?.position ?? "-"} rotated=${fcs?.transform !== "none"}`,
+        `dpr=${window.devicePixelRatio} insetTop=${insetTop} fs=${!!document.fullscreenElement}`,
+        `frame=${r(frame)} pad=${fcs?.padding ?? "-"}`,
+        `videoArea=${r(area)}`,
+        `dimRow=${r(dimRow)}`,
+        `statusH=${getComputedStyle(root).getPropertyValue("--status-h") || "-"}`,
+        `theme=${themes || "-"} rotated=${fcs?.transform !== "none"}`,
       ]);
     };
 
