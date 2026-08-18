@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LIST_MIN_H, TILE_MIN_H } from "./layoutRules";
+import { LIST_MIN_H, LIST_MIN_VISIBLE, TILE_MIN_H } from "./layoutRules";
 
 // 카메라 목록 배치(가로 한 줄 ↔ 세로 2열)를 정하는 단일 규칙 — 자세한 근거는
 // app/components/layoutRules.ts 참고.
@@ -123,12 +123,22 @@ export function useListLayout(motionH?: number, pin = false) {
       const wide = availH < tileHv * 1.5 + GAP;
       setListWide(wide);
 
+      // 가로 한 줄일 때 타일 높이는 '최소 N개가 보이는' 폭에서 거꾸로 나온다
+      // (layoutRules 의 LIST_MIN_VISIBLE). 행 높이를 그대로 채우게만 두면 좁은
+      // 화면에서 타일이 커져 두 개 남짓만 보였다.
+      const tileHwide = (W - GAP * (LIST_MIN_VISIBLE - 1)) / LIST_MIN_VISIBLE / RATIO;
+
       // ── 3) 영역 높이 ────────────────────────────────────────────────────────
       if (wide && pinned) {
         // 감지 탭과 정확히 같은 높이. min-height 가 아니라 고정 height 다 — 늘어나면
         // 그만큼 타일이 두꺼워져 감지 탭과 안 맞는다. 남는 세로는 영상이 가져간다.
+        //
+        // 높이는 셋 중 가운데를 고른다: 못 박은 값(pinned)과 타일 바닥(TILE_MIN_H)이
+        // 위쪽 한계고, N개 규칙이 그보다 작으면 그쪽을 따른다 — 좁은 화면에서만
+        // 줄어들고 넓은 화면은 지금 그대로다.
+        const wanted = Math.max(TILE_MIN_H + chrome, pinned);
         el.style.flex = "none";
-        el.style.height = `${Math.max(TILE_MIN_H + chrome, pinned)}px`;
+        el.style.height = `${Math.min(wanted, tileHwide + chrome)}px`;
         el.style.minHeight = "";
         videoFill(true);
       } else {
@@ -141,7 +151,12 @@ export function useListLayout(motionH?: number, pin = false) {
         el.style.minHeight = !row
           ? `${motionH}px`
           : wide
-            ? `${Math.max(TILE_MIN_H + chrome, motionH ?? 0)}px`
+            ? // 못 박지 않는 안(A-1·B)도 같은 규칙 — N개가 보이는 높이가 더 작으면
+              // 그쪽을 바닥으로 쓴다.
+              `${Math.min(
+                Math.max(TILE_MIN_H + chrome, motionH ?? 0),
+                tileHwide + chrome,
+              )}px`
             : `${LIST_MIN_H}px`;
         videoFill(false);
       }
