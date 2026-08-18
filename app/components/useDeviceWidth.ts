@@ -168,3 +168,60 @@ export function useDeviceWidth() {
   }, []);
   return w;
 }
+
+// ── 앱 창이 물리 화면에서 밀려난 양 ──────────────────────────────────────
+// 딤 위 아이콘의 좌우 여백은 '기기 모서리' 기준이어야 한다(사용자 지정
+// 2026-08-18: "IOS는 기기 사이즈 기준으로 되어있어. 영상 뷰 기준으로 하지말라고").
+//
+// 아이폰 홈화면 앱은 화면 전체를 받으므로 앱 창 = 화면이고, 프레임 끝에서 재면
+// 그게 곧 기기 끝이다. 안드로이드는 시스템 바(상태바·내비바)가 창을 깎아서 앱이
+// 화면보다 작다 — 그 안에서 60 을 주면 기기 기준으로는 60 + 바 두께만큼 들어와
+// 보인다. 영상도 같이 작아지니 '영상 뷰 기준으로 붙은 것처럼' 읽힌다.
+//
+// 창이 화면 어디에 놓였는지는 screenX/screenY 가 알려 준다(CSS 픽셀). 콘텐츠
+// 기준 좌우가 물리적으로 어느 변인지는 CSS 회전 여부로 갈린다:
+//   · 앱을 눕힌 확대(readCssRotated) — 콘텐츠 왼쪽 = 물리 상단, 오른쪽 = 물리 하단
+//   · 그 외(제자리 확대·물리 가로)   — 콘텐츠 좌우 = 물리 좌우
+//
+// 데스크톱 미리보기는 목업 프레임이라 이 보정을 걸지 않는다(창 위치는 브라우저
+// 창 위치일 뿐이다).
+export type EdgeGaps = { left: number; right: number };
+
+export function readEdgeGaps(): EdgeGaps {
+  if (typeof window === "undefined") return { left: 0, right: 0 };
+  const desktopPreview =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (desktopPreview) return { left: 0, right: 0 };
+  const rotated = readCssRotated();
+  const near = rotated ? window.screenY : window.screenX;
+  const span = rotated ? window.innerHeight : window.innerWidth;
+  const screenSpan = rotated ? window.screen.height : window.screen.width;
+  const far = screenSpan - near - span;
+  // 음수(창이 화면보다 크게 잡히는 계산 오차)는 0 으로 본다.
+  return { left: Math.max(0, near), right: Math.max(0, far) };
+}
+
+/** readEdgeGaps 를 구독한다. SSR·첫 렌더는 0 으로 맞춰 하이드레이션 불일치를 막는다. */
+export function useEdgeGaps(): EdgeGaps {
+  const [gaps, setGaps] = useState<EdgeGaps>({ left: 0, right: 0 });
+  useEffect(() => {
+    const read = () => {
+      const next = readEdgeGaps();
+      setGaps((prev) =>
+        prev.left === next.left && prev.right === next.right ? prev : next,
+      );
+    };
+    read();
+    const evts = [
+      "resize",
+      "orientationchange",
+      "devicechange",
+      "devicelandscapechange",
+      "immersivechange",
+    ];
+    evts.forEach((e) => window.addEventListener(e, read));
+    return () => evts.forEach((e) => window.removeEventListener(e, read));
+  }, []);
+  return gaps;
+}

@@ -9,6 +9,7 @@ import { CameraFeed, GridSelectionOverlay } from "./CameraFeed";
 import { useAutoHide } from "./useAutoHide";
 import { VideoFitToast, useVideoFit } from "./VideoFitToast";
 import { requestDeviceRotate, useRotatedInput } from "./deviceRotate";
+import { useEdgeGaps } from "./useDeviceWidth";
 import { exitImmersive, useImmersive } from "./immersive";
 import { VIDEO_FIT_LABEL, type VideoFit } from "./videoFit";
 
@@ -355,6 +356,16 @@ export default function LandscapeVideo({
   // (rotate(90deg) 는 콘텐츠 아래를 화면 왼쪽으로 보낸다 → dy = -dx_screen).
   const immersive = useImmersive();
   const rotatedInput = useRotatedInput();
+  // 딤 위 UI 의 좌우 여백은 '기기 모서리' 기준이다(사용자 지정 2026-08-18:
+  // "IOS는 기기 사이즈 기준으로 되어있어. 영상 뷰 기준으로 하지말라고").
+  // 앱 창이 화면보다 작으면(안드로이드 시스템 바) 프레임 끝에서 재는 것만으로는
+  // 기기 끝 기준이 안 된다 — 밀려난 만큼(useEdgeGaps) 빼서 실제 모서리에 맞춘다.
+  // 아이폰 홈화면 앱처럼 창 = 화면이면 gap 이 0 이라 지금까지와 같다.
+  const edgeGaps = useEdgeGaps();
+  const baseEdge = edgeInset ?? 20;
+  const edgeL = Math.max(0, baseEdge - edgeGaps.left);
+  const edgeR = Math.max(0, baseEdge - edgeGaps.right);
+
   // ── 단일 영상 줌 ─────────────────────────────────────────────────────────
   // 세로 단일 화면에만 있던 핀치 줌을 가로에도 붙인다(사용자 지적 2026-08-18:
   // "가로로 돌려졌을때 단일 화면은 줌인아웃 안되나? 세로만 되고 있네?").
@@ -669,7 +680,7 @@ export default function LandscapeVideo({
     : topRight
       ? dimLayer(
           "flex items-center justify-end",
-          { top: "12px", right: `${edgeInset ?? 20}px`, height: "32px" },
+          { top: "12px", right: `${edgeR}px`, height: "32px" },
           statusRow,
           "wrap",
         )
@@ -698,8 +709,8 @@ export default function LandscapeVideo({
               <div
                 className="pointer-events-none pb-3 transition-opacity duration-150 ease-out"
                 style={{
-                  paddingLeft: `${edgeInset ?? 20}px`,
-                  paddingRight: `${edgeInset ?? 20}px`,
+                  paddingLeft: `${edgeL}px`,
+                  paddingRight: `${edgeR}px`,
                   // 이 층은 시간바 때문에 남겨 두지만 칩 줄은 같이 걷는다.
                   opacity: auxOff ? 0 : 1,
                 }}
@@ -744,8 +755,8 @@ export default function LandscapeVideo({
         style={{
           height: `${OVERLAY_HEADER_H}px`,
           opacity: dim && !auxOff ? 1 : 0,
-          paddingLeft: `${edgeInset ?? 20}px`,
-          paddingRight: `${edgeInset ?? 20}px`,
+          paddingLeft: `${edgeL}px`,
+          paddingRight: `${edgeR}px`,
           marginTop: `${topInset}px`,
         }}
       >
@@ -805,8 +816,8 @@ export default function LandscapeVideo({
       style={{
         height: `${OVERLAY_HEADER_H}px`,
         opacity: dim && !auxOff ? 1 : 0,
-        paddingLeft: `${edgeInset ?? 20}px`,
-        paddingRight: `${edgeInset ?? 20}px`,
+        paddingLeft: `${edgeL}px`,
+        paddingRight: `${edgeR}px`,
         marginTop: `${topInset}px`,
         // 윗변 맞춤이면 아이콘 줄과 같은 12 에서 시작한다.
         ...(headerAlign === "top" ? { paddingTop: "12px" } : null),
@@ -860,7 +871,8 @@ export default function LandscapeVideo({
       showZoom={showOverlayZoom}
       dimStyle={dimStyle}
       onMenu={onMenu}
-      edgeInset={edgeInset}
+      edgeInset={edgeR}
+      edgeInsetLeft={edgeL}
       {...(bottomInset != null ? { bottomInset } : null)}
       // 칩을 오른쪽 위로 올린 안(A-3)에선 아이콘 줄이 그만큼 아래로 내려간다.
       topInset={(topRight ? ICON_ROW_DROP : 0) + topInset}

@@ -36,6 +36,7 @@ import { AUTO_HIDE_MS, useAutoHide } from "../components/useAutoHide";
 import AndroidNav from "../components/AndroidNav";
 import {
   useDeviceRatio,
+  useEdgeGaps,
   useDeviceWide,
   useDeviceWidth,
 } from "../components/useDeviceWidth";
@@ -248,6 +249,11 @@ export default function VariantA3({
   // 딤 위 UI 좌우 여백 — 눕힌 화면과 제자리 확대가 다르다(layoutRules 주석 참고).
   // useDeviceWide 는 앱이 CSS 로 눕은 것과 실기기 물리 회전을 한 값으로 묶어 준다.
   const dimEdge = wideNow ? LANDSCAPE_EDGE : IMMERSIVE_EDGE;
+  // 시간바 아래 아이콘 줄은 LandscapeVideo 밖(controls)에 있어 그쪽 보정을 못 받는다
+  // — 같은 식으로 앱 창이 화면에서 밀려난 만큼 빼서 기기 모서리 기준으로 맞춘다.
+  const dimGaps = useEdgeGaps();
+  const dimEdgeL = Math.max(0, dimEdge - dimGaps.left);
+  const dimEdgeR = Math.max(0, dimEdge - dimGaps.right);
 
   const autoCount = autoGridCount(gridRatio);
   autoCountSeen.current[orientKey] = autoCount;
@@ -547,8 +553,8 @@ export default function VariantA3({
                   // (사용자 지정 2026-08-14). 아이콘 줄은 아래에 고정이라
                   // 위쪽 시간바만 따라 내려온다.
                   marginTop: "-2px",
-                  paddingLeft: `${dimEdge - LANDSCAPE_CONTROLS_PAD}px`,
-                  paddingRight: `${dimEdge - LANDSCAPE_CONTROLS_PAD}px`,
+                  paddingLeft: `${Math.max(0, dimEdgeL - LANDSCAPE_CONTROLS_PAD)}px`,
+                  paddingRight: `${Math.max(0, dimEdgeR - LANDSCAPE_CONTROLS_PAD)}px`,
                   // 시간바를 끄는 동안엔 같이 걷는다(사용자 지정 2026-08-14).
                   // 이 줄은 시간바와 한 층에 있어서, 그 층이 스크럽 중에도 남는
                   // 규칙(keepWhileScrubbing)을 그대로 물려받아 혼자 남아 있었다.

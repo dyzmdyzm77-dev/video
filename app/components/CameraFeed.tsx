@@ -288,6 +288,7 @@ export function GridSelectionOverlay({
   onAi,
   onMenu,
   edgeInset,
+  edgeInsetLeft,
   onFit,
   fit = "fill",
   mode,
@@ -322,6 +323,9 @@ export function GridSelectionOverlay({
   onMenu?: () => void;
   /** 딤 위 UI 의 좌우 가장자리 여백(px). 안 주면 지금 값 그대로(16). */
   edgeInset?: number;
+  /** 왼쪽만 다른 값을 쓸 때(가로 딤). 앱 창이 화면 좌우에서 밀려난 양이 다르면
+   *  좌우를 따로 보정해야 기기 모서리 기준이 맞는다 — LandscapeVideo 참고. */
+  edgeInsetLeft?: number;
   /** 화면 맞춤 — 누를 때마다 fill → contain → cover 로 돈다(단일 화면과 동일). */
   onFit?: () => void;
   /** 지금 맞춤 상태. 버튼 아이콘이 이걸 그대로 보여준다. */
@@ -636,7 +640,7 @@ export function GridSelectionOverlay({
         <div
           className="absolute z-10"
           style={{
-            left: `${edgeInset ?? 16}px`,
+            left: `${edgeInsetLeft ?? edgeInset ?? 16}px`,
             bottom: `${bottomInset}px`,
             opacity: hideControls ? 0 : 1,
           }}
