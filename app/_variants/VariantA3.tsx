@@ -51,6 +51,7 @@ import {
   bestGridForCount,
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
+  LANDSCAPE_EDGE,
 } from "../components/layoutRules";
 
 const CAMERAS = [
@@ -169,16 +170,7 @@ function BatteryIcon({ className, level }: { className?: string; level: number }
   );
 }
 
-/** 가로(확대) 딤 위 UI 가 화면 좌우 끝에서 떨어지는 거리.
- *  40 이었는데 20 을 더 줬다(사용자 지정 2026-08-18: "상단 하단 아이콘들 좌우
- *  마진이 좀더 안으로 들어와야할듯" → 20). 아이폰 가로에서 상태바 자리를 안
- *  비우게 바꾸면서(globals.css) 딤 UI 가 노치 쪽으로 그만큼 나갔고, 그 몫이다.
- *
- *  한 값으로 묶어 둔다 — 시간바 아래 아이콘 줄만 LandscapeVideo 밖(controls)에
- *  있어서 40 이 따로 박혀 있었고, edgeInset 만 올렸더니 그 줄만 안 따라왔다
- *  (사용자 지적: "아래쪽에 그 둥근 원 아이콘들은 왜 같이 조정안해?"). */
-const LANDSCAPE_EDGE = 60;
-/** 그 아이콘 줄을 감싼 층이 이미 갖고 있는 좌우 여백. 줄에 더 붙일 몫은
+/** 시간바 아래 아이콘 줄을 감싼 층이 이미 갖고 있는 좌우 여백. 줄에 더 붙일 몫은
  *  LANDSCAPE_EDGE 에서 이만큼 뺀 값이다 — 안 빼면 10 이 더해져 더 들어간다. */
 const LANDSCAPE_CONTROLS_PAD = 10;
 

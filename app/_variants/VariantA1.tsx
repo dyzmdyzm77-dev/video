@@ -56,6 +56,7 @@ import {
   bestGridForCount,
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
+  LANDSCAPE_EDGE,
 } from "../components/layoutRules";
 
 const CAMERAS = [
@@ -486,7 +487,7 @@ export default function VariantA1({
           // 토글 형태는 그대로 두고 고른 쪽 색만 흰 배경 + 검정 글자로.
           statusActiveStyle="white"
           // 딤 위 UI 좌우 여백 40 — 영상 자체는 제외, 끝까지 쓴다.
-          edgeInset={40}
+          edgeInset={LANDSCAPE_EDGE}
           // 아래 줄(AI 버튼·페이지 점)을 12 → 32 로 띄운다(사용자 지정:
           // "딤처리됬을때 하단 마진 20 더 주자").
           bottomInset={32}
@@ -1994,12 +1995,15 @@ const TIMELINE_EVENTS = (() => {
 // 열면 영상을 밀고 옆에 선다(덮지 않는다). 닫기는 패널 안 X 버튼뿐이다
 // (사용자 결정) — 영상을 눌러 닫히면 영상 조작과 헷갈린다.
 /** 가로 확대 화면의 오른쪽 패널 — 내용이 기기 오른쪽 모서리에서 떨어지는 거리.
- *  딤 위 UI 의 edgeInset(40)에서 20 을 더 줬다(사용자 지정: "우측마진 40더
- *  줬었잖아. 20 더 줘도 되겠어"). 패널은 흰 판이라 아이콘 줄보다 더 떨어져야
- *  같은 정도로 떨어져 보인다. */
+ *  딤 위 UI 의 edgeInset 이 40 이던 시절 거기에 20 을 더 준 값이다(사용자 지정:
+ *  "우측마진 40더 줬었잖아. 20 더 줘도 되겠어"). 패널은 흰 판이라 아이콘 줄보다
+ *  더 떨어져야 같은 정도로 떨어져 보인다는 이유였다.
+ *  그 edgeInset 이 2026-08-18 에 LANDSCAPE_EDGE(60)로 올라가면서 지금은 둘이
+ *  같아졌다 — '20 더'를 지키려면 80 이지만, 그건 따로 확인받고 올릴 값이라
+ *  숫자는 그대로 둔다. */
 const LANDSCAPE_PANEL_EDGE = 60;
-/** 패널 안 탭 줄·목록이 이미 쓰고 있는 좌우 여백. 위 40 은 '모서리까지의 총
- *  거리'라, 패널에 더 붙일 몫은 그만큼 뺀 값이다 — 안 빼면 40+16=56 이 된다. */
+/** 패널 안 탭 줄·목록이 이미 쓰고 있는 좌우 여백. 위 값은 '모서리까지의 총
+ *  거리'라, 패널에 더 붙일 몫은 그만큼 뺀 값이다 — 안 빼면 60+16=76 이 된다. */
 const LANDSCAPE_PANEL_PAD = 16;
 const LANDSCAPE_PANEL_EXTRA = LANDSCAPE_PANEL_EDGE - LANDSCAPE_PANEL_PAD;
 

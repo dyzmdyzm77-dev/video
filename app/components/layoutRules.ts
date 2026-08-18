@@ -293,3 +293,14 @@ export function nearestGridCountIndex(count: number): number {
   }
   return bestIdx;
 }
+
+/** 가로(확대) 딤 위 UI 가 화면 좌우 끝에서 떨어지는 거리 — 네 안 공통.
+ *
+ *  40 이었는데 20 을 더 줬다(사용자 지정 2026-08-18: "상단 하단 아이콘들 좌우
+ *  마진이 좀더 안으로 들어와야할듯" → 20, 이어서 "가로 딤 좌우 마진은 시안
+ *  전체 다 동일하게"). 아이폰 가로에서 상태바 자리를 안 비우게 바꾸면서
+ *  (globals.css) 딤 UI 가 노치 쪽으로 그만큼 나갔고, 그 몫이다.
+ *
+ *  A-3 은 시간바 아래 아이콘 줄이 LandscapeVideo 밖(controls)에 있어 이 값을
+ *  직접 한 번 더 쓴다 — 그쪽도 같은 상수를 봐야 다시 어긋나지 않는다. */
+export const LANDSCAPE_EDGE = 60;

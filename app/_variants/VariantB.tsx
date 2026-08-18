@@ -33,6 +33,7 @@ import {
   bestGridForCount,
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
+  LANDSCAPE_EDGE,
 } from "../components/layoutRules";
 
 const CAMERAS = [
@@ -369,6 +370,10 @@ export default function VariantB({
           // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
           fit={fitState.fit}
           onFitCycle={fitState.cycle}
+          // 딤 위 UI 좌우 여백 — 네 안 공통(사용자 지정 2026-08-18: "가로 딤
+          // 좌우 마진은 시안 전체 다 동일하게"). B 는 그동안 이 값을 안 넘겨
+          // LandscapeVideo 기본값(20)을 쓰고 있었다.
+          edgeInset={LANDSCAPE_EDGE}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}

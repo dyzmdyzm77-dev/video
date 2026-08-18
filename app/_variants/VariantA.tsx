@@ -48,6 +48,7 @@ import {
   bestGridForCount,
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
+  LANDSCAPE_EDGE,
 } from "../components/layoutRules";
 
 const CAMERAS = [
@@ -424,7 +425,7 @@ export default function VariantA({
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 40 — A-1 가로와 같은 값으로(사용자 지정).
-          edgeInset={40}
+          edgeInset={LANDSCAPE_EDGE}
           // 아래 줄(AI 버튼·페이지 점)을 12 → 32 로 띄운다. 바로 아래에 시간바가
           // 깔려서 붙어 보이고 클릭도 겹쳤다(사용자 지정: "하단 마진도 한 20 더").
           bottomInset={32}
