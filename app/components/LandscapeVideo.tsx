@@ -86,6 +86,9 @@ function ChevronDownIcon({ className }: { className?: string }) {
   );
 }
 
+/** 임시 — 가로 딤 여백 진단용 숫자 표시(2026-08-18). 원인 잡히면 지운다. */
+const EDGE_DEBUG = true;
+
 export default function LandscapeVideo({
   cameras,
   expandedIndex,
@@ -992,6 +995,35 @@ export default function LandscapeVideo({
       <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
         <VideoFitToast inline text={centerToast} toastKey={centerToastKey} />
       </div>
+      {/* ── 임시 계기 ── 가로 딤 좌우 여백이 안드로이드에서만 한쪽이 넓어 보이는
+          문제를 숫자로 가리려고 잠깐 얹는다(2026-08-18). 원인이 잡히면 이 블록과
+          EDGE_DEBUG 를 지운다. */}
+      {EDGE_DEBUG && (
+        <div
+          className="pointer-events-none absolute z-40"
+          style={{
+            left: "50%",
+            bottom: "2px",
+            transform: "translateX(-50%)",
+            font: "9px/1.2 ui-monospace, Menlo, monospace",
+            color: "#fff",
+            background: "rgba(0,0,0,0.55)",
+            padding: "2px 6px",
+            borderRadius: "4px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {`in ${typeof window !== "undefined" ? window.innerWidth : 0}×${
+            typeof window !== "undefined" ? window.innerHeight : 0
+          } / scr ${typeof window !== "undefined" ? window.screen.width : 0}×${
+            typeof window !== "undefined" ? window.screen.height : 0
+          } / gap ${edgeGaps.left},${edgeGaps.right} / edge ${edgeL},${edgeR} / ang ${
+            typeof window !== "undefined"
+              ? (window.screen?.orientation?.angle ?? "-")
+              : "-"
+          } / rot ${typeof document !== "undefined" ? document.documentElement.dataset.landscape ?? "-" : "-"}`}
+        </div>
+      )}
       {/* 전환 스켈레톤 — 세로와 같은 결(skeleton-shimmer, 타일 사이 2px 흰 선).
           단일이면 화면 전체, 다채널이면 지금 가로 배치대로 칸을 나눈다. */}
       {loading &&
