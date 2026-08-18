@@ -57,6 +57,8 @@ import {
   LANDSCAPE_EDGE,
   LANDSCAPE_EDGE_ANDROID,
   LANDSCAPE_TOP_INSET,
+  PANEL_BOTTOM_H,
+  PANEL_BOTTOM_RATIO,
 } from "../components/layoutRules";
 
 const CAMERAS = [
@@ -263,6 +265,16 @@ export default function VariantA3({
   // 기기가 가로로 긴 상태인가 — 판정은 useDeviceWide 하나에 모아 뒀다
   // (데스크톱 미리보기와 실기기가 회전을 다르게 표현해서다. useDeviceWidth.ts).
   const wideNow = useDeviceWide();
+  // 패널을 오른쪽에서 낼지, 아래에서 낼지 — A-1 과 같은 기준(PANEL_BOTTOM_RATIO).
+  // 세로로 긴 화면(제자리 확대 등)에서 오른쪽에서 내면 영상 폭이 크게 깎인다
+  // (사용자 지정 2026-08-18: "세로가 좀 긴 형태에서 제자리 확대를 했다면 ...
+  // 아래에서 나와야할거같은데"). 실기기 확대는 폰이 세로인 채 화면만 CSS 로
+  // 돌린 것이라 뷰포트 비율이 세로 그대로다 — 회전이 걸려 있으면 뒤집어서 본다.
+  const rawRatio = useDeviceRatio();
+  const ratioFlipped = useRotatedInput();
+  const panelBottom =
+    (ratioFlipped && rawRatio > 0 ? 1 / rawRatio : rawRatio) <
+    PANEL_BOTTOM_RATIO;
   const orientKey: "portrait" | "landscape" = wideNow
     ? "landscape"
     : "portrait";
@@ -509,7 +521,11 @@ export default function VariantA3({
   if (immersive) {
     return (
       // 패널이 열리면 영상을 밀고 옆에 선다(덮지 않는다) — 그래서 가로 배치다.
-      <div className="app-safe-frame flex h-full w-full overflow-hidden bg-black">
+      <div
+        className={`app-safe-frame flex h-full w-full overflow-hidden bg-black${
+          panelBottom ? " flex-col" : ""
+        }`}
+      >
         <div className="relative flex min-h-0 min-w-0 flex-1">
         <LandscapeVideo
           cameras={CAMERAS}
@@ -740,6 +756,7 @@ export default function VariantA3({
             카메라 단일 화면으로 넘어간다. */}
         {(lsPanel || lsPanelOpen) && (
           <LandscapeSidePanel
+            position={panelBottom ? "bottom" : "right"}
             open={lsPanelOpen && lsPanel !== null}
             tab={lsPanelTab}
             onTab={setLsPanel}
@@ -5572,6 +5589,7 @@ function TimelineSkeleton({ visible }: { visible: boolean }) {
 /** 패널 내용이 기기 오른쪽 모서리에서 떨어지는 거리 — 딤 아이콘과 같은 값. */
 const LS_PANEL_PAD = 16;
 function LandscapeSidePanel({
+  position = "right",
   open,
   tab,
   onTab,
@@ -5583,7 +5601,11 @@ function LandscapeSidePanel({
   edge,
   onClose,
 }: {
-  /** 열림/닫힘 — 폭을 0 ↔ 제 폭으로 애니메이션한다(사용자 지적 2026-08-18:
+  /** 어느 변에서 나오는가. 세로로 긴 화면은 "bottom" — 오른쪽에서 내면 영상
+   *  폭이 크게 깎인다(사용자 지정 2026-08-18). 판정은 부모(PANEL_BOTTOM_RATIO). */
+  position?: "right" | "bottom";
+  /** 열림/닫힘 — 폭(오른쪽) 또는 높이(아래)를 0 ↔ 제 크기로 애니메이션한다
+   *  (사용자 지적 2026-08-18:
    *  "오른쪽 패널 나올때 너무 띡 띡 나오는거 아니야?"). 붙였다 뗐다 하면
    *  영상이 튀듯 밀린다. 폭을 굴리면 영상도 같이 부드럽게 밀린다. */
   open: boolean;
@@ -5607,22 +5629,39 @@ function LandscapeSidePanel({
   const showMotion = tab === "motion" && canMotion;
   const cam = CAMERAS[selectedIndex ?? 0];
   const full = SIDE_PANEL_W + extra;
+  const bottom = position === "bottom";
   return (
     <div
       className="flex min-h-0 flex-none flex-col overflow-hidden bg-white"
-      style={{
-        // 바깥은 폭만 굴린다 — 안쪽은 제 폭 그대로라 글자가 눌리지 않는다.
-        width: open ? `${full}px` : "0px",
-        transition: "width 240ms cubic-bezier(0.22, 1, 0.36, 1)",
-        borderLeft: open ? "1px solid #EBEBEB" : "none",
-        // 왼쪽만 둥글게 — 영상 쪽에서 흰 판이 밀고 들어오는 모양이다(A-1 동일).
-        borderTopLeftRadius: "10px",
-        borderBottomLeftRadius: "10px",
-      }}
+      style={
+        bottom
+          ? {
+              // 아래에서 나오는 판 — 바텀시트와 같은 결: 윗변만 둥글게, 높이 고정.
+              width: "100%",
+              height: open ? `${PANEL_BOTTOM_H}px` : "0px",
+              transition: "height 240ms cubic-bezier(0.22, 1, 0.36, 1)",
+              borderTop: open ? "1px solid #EBEBEB" : "none",
+              borderTopLeftRadius: "10px",
+              borderTopRightRadius: "10px",
+            }
+          : {
+              // 바깥은 폭만 굴린다 — 안쪽은 제 폭 그대로라 글자가 눌리지 않는다.
+              width: open ? `${full}px` : "0px",
+              transition: "width 240ms cubic-bezier(0.22, 1, 0.36, 1)",
+              borderLeft: open ? "1px solid #EBEBEB" : "none",
+              // 왼쪽만 둥글게 — 영상 쪽에서 흰 판이 밀고 들어오는 모양(A-1 동일).
+              borderTopLeftRadius: "10px",
+              borderBottomLeftRadius: "10px",
+            }
+      }
     >
     <div
       className="flex min-h-0 flex-1 flex-col"
-      style={{ width: `${full}px`, paddingRight: `${extra}px` }}
+      style={
+        bottom
+          ? { width: "100%", height: `${PANEL_BOTTOM_H}px` }
+          : { width: `${full}px`, paddingRight: `${extra}px` }
+      }
     >
       {/* 탭 + 닫기 — 1080+ 패널과 같은 생김새(활성 검정 + 밑줄). */}
       <div
