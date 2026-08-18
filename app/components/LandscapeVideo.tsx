@@ -299,16 +299,31 @@ export default function LandscapeVideo({
   // 들 수도 있어 문구를 한쪽에서만 가져올 수가 없다. 그래서 '값이 바뀌면 띄운다'
   // 로 잡는다 — 어느 쪽이 들고 있든 같은 자리에서 같이 뜬다.
   // 첫 렌더는 건너뛴다(세로에서 고른 맞춤을 들고 들어오는 것뿐이라 알릴 게 없다).
-  const [fitToast, setFitToast] = useState<string | null>(null);
-  const [fitToastKey, setFitToastKey] = useState(0);
+  // 화면 정중앙 토스트 — 화면 맞춤 문구와 줌 배율이 같이 쓴다.
+  const [centerToast, setCenterToast] = useState<string | null>(null);
+  const [centerToastKey, setCenterToastKey] = useState(0);
+  const centerToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showCenterToast = (text: string) => {
+    setCenterToast(text);
+    // key 는 같은 문구를 연속으로 띄울 때도 등장 애니메이션을 다시 태우기 위한 것.
+    setCenterToastKey((k) => k + 1);
+    if (centerToastTimer.current) clearTimeout(centerToastTimer.current);
+    centerToastTimer.current = setTimeout(() => setCenterToast(null), 2000);
+  };
+  useEffect(
+    () => () => {
+      if (centerToastTimer.current) clearTimeout(centerToastTimer.current);
+    },
+    [],
+  );
   const prevFit = useRef(fit);
   useEffect(() => {
     if (prevFit.current === fit) return;
     prevFit.current = fit;
-    setFitToast(VIDEO_FIT_LABEL[fit]);
-    setFitToastKey((k) => k + 1);
-    const id = setTimeout(() => setFitToast(null), 2000);
-    return () => clearTimeout(id);
+    showCenterToast(VIDEO_FIT_LABEL[fit]);
+    // showCenterToast 는 렌더마다 새로 만들어지지만 하는 일은 같다 — 맞춤이
+    // 바뀔 때만 돌면 된다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fit]);
   // 상태바 자리를 비울지는 화면 맞춤이 정한다(사용자 결정 2026-08-18: "다채널
   // 에서도 원본 비율이면 단일채널이랑 동일하게 상태바 제외한 영역으로").
@@ -371,7 +386,10 @@ export default function LandscapeVideo({
   const applyZoom = (next: number) => {
     const z = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, next));
     setZoom(z);
-    setPan((prev) => clampPan(z, prev.x, prev.y));
+    setPan((prev) => (z <= ZOOM_MIN ? { x: 0, y: 0 } : clampPan(z, prev.x, prev.y)));
+    // 배율 토스트 — 세로 단일과 같은 문구 규칙(사용자 지적 2026-08-18: "그
+    // 토스트는 왜 안떠?"). 원래 크기면 숫자 대신 '원본'.
+    showCenterToast(z <= ZOOM_MIN ? "원본" : `${z.toFixed(1)}X`);
   };
   // 카메라를 바꾸거나 다채널로 나가면 배율을 되돌린다 — 확대해 둔 채로 다른
   // 화면에 들어가면 그 화면이 확대돼 보인다(세로와 같은 규칙).
@@ -946,7 +964,7 @@ export default function LandscapeVideo({
           시간바·아이콘 줄로 꽉 차 기준이 애매했다. 딤 층이 아니라 껍데기에 두므로
           딤이 꺼져 있어도 뜬다 — 맞춤 버튼을 누른 직후라 딤은 보통 떠 있다. */}
       <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
-        <VideoFitToast inline text={fitToast} toastKey={fitToastKey} />
+        <VideoFitToast inline text={centerToast} toastKey={centerToastKey} />
       </div>
       {/* 전환 스켈레톤 — 세로와 같은 결(skeleton-shimmer, 타일 사이 2px 흰 선).
           단일이면 화면 전체, 다채널이면 지금 가로 배치대로 칸을 나눈다. */}
