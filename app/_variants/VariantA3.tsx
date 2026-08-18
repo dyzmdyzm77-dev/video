@@ -2251,6 +2251,10 @@ function ExpandedView({
           playbackMs={playbackMs}
           setPlaybackMs={setPlaybackMs}
           cameraSrc={cam.src}
+          // 패널은 세로로 길다 — 가로 스크롤로 가면 안 된다(사용자 지적 2026-08-18:
+          // "오른쪽 패널에 나오는 움직임감지 ... 세로 스크롤로 해야해"). 기본값이
+          // 세로지만 아래 스트립(wide={listWide})과 헷갈리지 않게 못 박아 둔다.
+          wide={false}
         />
       ) : (
         <div
@@ -5535,10 +5539,12 @@ function LandscapeSidePanel({
         </button>
       </div>
       {showMotion ? (
+        // 가로 딤이 여는 패널도 세로 스크롤이다(위 1080+ 패널과 같은 규칙).
         <MotionEventList
           playbackMs={playbackMs}
           setPlaybackMs={setPlaybackMs}
           cameraSrc={cam.src}
+          wide={false}
         />
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

@@ -2984,6 +2984,28 @@ function RecordingEventTimeline({
               }}
             />
           ))}
+          {/* 움직임이 감지된 시각 — 눈금과 같은 규격(2×8, top 18)에 색만 노랑
+              (#F59E0B). A-3 가 쓰는 그 색이다(사용자 지정 2026-08-18: "A-2안
+              시간바도 움직임 감지 있는 경우, 노란색 눈금 표시 해주고").
+              묶음(clusters)이 아니라 낱개(eventOccurrences)로 긋는다 — 묶음은
+              카드가 겹치지 않게 만든 것이라 가까운 이벤트 여럿이 대표 하나로
+              접힌다. 그러면 목록엔 있는데 시간바엔 표시가 없는 게 생긴다.
+              눈금과 마찬가지로 보이는 범위만 그린다(하루 수천 건). */}
+          {eventOccurrences
+            .filter((o) => inView(o.secOffset))
+            .map((o) => (
+              <div
+                key={`M${o.key}`}
+                className="pointer-events-none absolute rounded-[1px]"
+                style={{
+                  left: `calc(50% + ${xOf(o.secOffset)}px)`,
+                  top: "18px",
+                  width: "2px",
+                  height: "8px",
+                  backgroundColor: "#F59E0B",
+                }}
+              />
+            ))}
         </div>
         {/* 좌우 페이드(다채널과 동일 — 블록 전체 높이) */}
         <div
