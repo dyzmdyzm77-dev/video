@@ -293,18 +293,9 @@ export default function LandscapeVideo({
   const ownFit = useVideoFit("fill");
   const fit = fitProp ?? ownFit.fit;
   const cycle = onFitCycle ?? ownFit.cycle;
-  // 화면 맞춤이 '가득 채우기·늘리기'면 상태바 자리까지 영상이 덮는다(사용자 결정
-  // 2026-08-14). '원본 비율 유지'는 그대로 — 상태바를 뺀 영역 안에서 비율을 맞춘다.
-  // 실제 치수는 globals.css 가 잡는다(프레임 폭에서 --status-h 를 빼느냐 마느냐).
-  // 자식을 프레임 밖으로 넘기는 방식은 안 됐다 — 프레임에 overflow:hidden 이라 잘린다.
-  useEffect(() => {
-    const ds = document.documentElement.dataset;
-    if (fit === "contain") delete ds.videoBleed;
-    else ds.videoBleed = "true";
-    return () => {
-      delete document.documentElement.dataset.videoBleed;
-    };
-  }, [fit]);
+  // 예전엔 화면 맞춤에 따라 data-video-bleed 를 켜서 '상태바 자리까지 덮을지'를
+  // 갈랐다. 지금은 확대·가로가 어느 맞춤이든 화면을 끝까지 쓰므로(globals.css 의
+  // '상태바 자리를 비우지 않는다', 사용자 지정 2026-08-18) 가를 것이 없다.
   // 배치(cols×rows)는 가로 영역 비율로 다시 고른다. 세로에서 쓰던 배치를 그대로
   // 들고 오면 안 된다 — 16채널 기준 세로는 2×8 이 맞지만 가로(≈2.17:1)에서 그
   // 배치는 타일이 0.54:1 로 길쭉해진다. 같은 영역에서 4×4 면 2.17:1 로 16:9 에
