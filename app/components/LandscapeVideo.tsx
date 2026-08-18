@@ -105,6 +105,7 @@ export default function LandscapeVideo({
   onMenu,
   centerControls,
   edgeInset,
+  edgeInsetRight,
   bottomInset,
   headerAlign = "center",
   statusStyle = "segment",
@@ -181,6 +182,10 @@ export default function LandscapeVideo({
   /** 딤 위 UI(장소명·아이콘 줄·칩 줄·AI/메뉴)의 좌우 가장자리 여백(px).
    *  영상 자체는 해당 없음 — 화면을 끝까지 쓴다. 안 주면 지금 값 그대로. */
   edgeInset?: number;
+  /** 오른쪽만 다른 값을 쓸 때. 오른쪽 패널이 열리면 그쪽은 패널이 막고 있어
+   *  여백이 덜 필요하다(사용자 지정 2026-08-18: "오른쪽 패널 떴을떄는 딤 우측
+   *  마진이 한 20정도면 될듯"). */
+  edgeInsetRight?: number;
   /** 딤 아래 줄(메뉴·AI · 페이지 점)이 화면 아래에서 떨어지는 거리(px).
    *  기본 12. 아래에 시간바가 깔리는 안에서 그 위로 띄우는 용도. */
   bottomInset?: number;
@@ -378,7 +383,7 @@ export default function LandscapeVideo({
   // 게다가 지금은 가로·확대에서 앱이 화면 전체를 받는다(안드로이드는 설치본
   // 전체화면, 아이폰은 홈화면 앱) — 앱 끝이 곧 기기 끝이라 보정할 것도 없다.
   const edgeL = Math.max(0, baseEdge - edgeGaps.left);
-  const edgeR = Math.max(0, baseEdge - edgeGaps.right);
+  const edgeR = Math.max(0, (edgeInsetRight ?? baseEdge) - edgeGaps.right);
 
   // ── 단일 영상 줌 ─────────────────────────────────────────────────────────
   // 세로 단일 화면에만 있던 핀치 줌을 가로에도 붙인다(사용자 지적 2026-08-18:

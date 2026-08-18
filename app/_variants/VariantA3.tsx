@@ -175,6 +175,10 @@ function BatteryIcon({ className, level }: { className?: string; level: number }
   );
 }
 
+/** 오른쪽 패널이 열렸을 때 딤의 오른쪽 여백(사용자 지정 2026-08-18:
+ *  "오른쪽 패널 떴을떄는, 딤 우측 마진이 한 20정도면 될듯"). */
+const DIM_EDGE_WITH_PANEL = 20;
+
 /** 세로 화면 시간바 영역 배경 — 흰 바탕에서 살짝 내린 회색(사용자 지정
  *  2026-08-18: "A-3 세로, 시간바 영역 배경을 조금 연한 그레이로"). 위 영상·아래
  *  탭과 같은 흰색이면 시간바가 어디서 시작하는지 안 보였다.
@@ -311,7 +315,9 @@ export default function VariantA3({
   // 시간바 아래 아이콘 줄도 같은 값을 쓴다(그 줄만 LandscapeVideo 밖에 있다).
   // 앱 창 밀림 보정은 폐기했다 — 이유는 LandscapeVideo 의 edgeL/edgeR 주석 참고.
   const dimEdgeL = dimEdge;
-  const dimEdgeR = dimEdge;
+  // 오른쪽 패널이 열려 있으면 그쪽 여백은 20 이면 된다(사용자 지정 2026-08-18) —
+  // 패널이 화면 끝을 막고 있어 손이 걸릴 일도, 노치가 올 일도 없다.
+  const dimEdgeR = lsPanel ? DIM_EDGE_WITH_PANEL : dimEdge;
 
   const autoCount = autoGridCount(gridRatio);
   autoCountSeen.current[orientKey] = autoCount;
@@ -529,6 +535,8 @@ export default function VariantA3({
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 — 아래 아이콘 줄과 한 값을 쓴다(dimEdge).
           edgeInset={dimEdge}
+          // 패널이 열리면 오른쪽만 좁힌다(위 dimEdgeR 과 같은 값).
+          edgeInsetRight={lsPanel ? DIM_EDGE_WITH_PANEL : undefined}
           // 위쪽 요소(장소명·칩 줄·아이콘 줄) — 네 안 공통(layoutRules).
           topInset={LANDSCAPE_TOP_INSET}
           // 이 층(시간바 + 그 아래 아이콘 줄)은 이 값에서 12 를 뺀 만큼 뜬다.
