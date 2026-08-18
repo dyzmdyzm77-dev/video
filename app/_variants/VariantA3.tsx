@@ -169,6 +169,19 @@ function BatteryIcon({ className, level }: { className?: string; level: number }
   );
 }
 
+/** 가로(확대) 딤 위 UI 가 화면 좌우 끝에서 떨어지는 거리.
+ *  40 이었는데 20 을 더 줬다(사용자 지정 2026-08-18: "상단 하단 아이콘들 좌우
+ *  마진이 좀더 안으로 들어와야할듯" → 20). 아이폰 가로에서 상태바 자리를 안
+ *  비우게 바꾸면서(globals.css) 딤 UI 가 노치 쪽으로 그만큼 나갔고, 그 몫이다.
+ *
+ *  한 값으로 묶어 둔다 — 시간바 아래 아이콘 줄만 LandscapeVideo 밖(controls)에
+ *  있어서 40 이 따로 박혀 있었고, edgeInset 만 올렸더니 그 줄만 안 따라왔다
+ *  (사용자 지적: "아래쪽에 그 둥근 원 아이콘들은 왜 같이 조정안해?"). */
+const LANDSCAPE_EDGE = 60;
+/** 그 아이콘 줄을 감싼 층이 이미 갖고 있는 좌우 여백. 줄에 더 붙일 몫은
+ *  LANDSCAPE_EDGE 에서 이만큼 뺀 값이다 — 안 빼면 10 이 더해져 더 들어간다. */
+const LANDSCAPE_CONTROLS_PAD = 10;
+
 function MenuIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -444,11 +457,8 @@ export default function VariantA3({
           statusStyle="chips"
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
           scrubbing={isScrubbing}
-          // 딤 위 UI 좌우 여백. A-1 가로와 같은 40 이었는데 20 을 더 줬다
-          // (사용자 지정 2026-08-18: "상단 하단 아이콘들 좌우 마진이 좀더 안으로
-          // 들어와야할듯" → 20). 아이폰 가로에서 상태바 자리를 안 비우게 바꾸면서
-          // (globals.css) 딤 UI 가 노치 쪽으로 그만큼 나갔고, 그 몫을 여기서 준다.
-          edgeInset={60}
+          // 딤 위 UI 좌우 여백 — 아래 아이콘 줄과 한 값을 쓴다(LANDSCAPE_EDGE).
+          edgeInset={LANDSCAPE_EDGE}
           // 위쪽 요소(장소명·칩 줄·아이콘 줄)를 10 올린다(사용자 지정 2026-08-14).
           topInset={-10}
           // 이 층(시간바 + 그 아래 아이콘 줄)은 이 값에서 12 를 뺀 만큼 뜬다.
@@ -495,7 +505,12 @@ export default function VariantA3({
           controls={
             // 실시간에도 아래 아이콘 줄은 나온다(사용자 지적: 녹화에만 있었다).
             // 시간바만 녹화 전용이다.
-            <div style={{ paddingLeft: "10px", paddingRight: "10px" }}>
+            <div
+              style={{
+                paddingLeft: `${LANDSCAPE_CONTROLS_PAD}px`,
+                paddingRight: `${LANDSCAPE_CONTROLS_PAD}px`,
+              }}
+            >
               {mode === "recording" && (
               <RecordingControls
                 overlay
@@ -521,16 +536,17 @@ export default function VariantA3({
                 // 시간바와 붙인다 — 12 → 4(사용자 지정 2026-08-14). 시간바 자체가
                 // 아래 여백(paddingBottom 12)을 갖고 있어 실제로는 그만큼 더 뜬다.
                 // 자리를 둘로 나눈다: AI·메뉴·움직임 감지는 왼쪽, 축소는 오른쪽
-                // (사용자 지정). 좌우 여백은 30 을 더 줘 딤의 다른 요소(장소명·
-                // 우상단 아이콘)가 쓰는 40 에 맞춘다 — 감싼 층이 이미 10 을 갖고
-                // 있어서 30 만 더하면 된다. 화면 끝에 붙으면 손가락이 걸린다.
+                // (사용자 지정). 좌우 여백은 딤의 다른 요소(장소명·우상단 아이콘)
+                // 와 같은 LANDSCAPE_EDGE 에 맞춘다 — 감싼 층이 이미
+                // LANDSCAPE_CONTROLS_PAD 를 갖고 있어 그만큼 뺀 값만 더한다.
+                // 화면 끝에 붙으면 손가락이 걸린다.
                 style={{
                   // 시간바와의 간격을 6 줄인다 = 시간바가 그만큼 내려온다
                   // (사용자 지정 2026-08-14). 아이콘 줄은 아래에 고정이라
                   // 위쪽 시간바만 따라 내려온다.
                   marginTop: "-2px",
-                  paddingLeft: "30px",
-                  paddingRight: "30px",
+                  paddingLeft: `${LANDSCAPE_EDGE - LANDSCAPE_CONTROLS_PAD}px`,
+                  paddingRight: `${LANDSCAPE_EDGE - LANDSCAPE_CONTROLS_PAD}px`,
                   // 시간바를 끄는 동안엔 같이 걷는다(사용자 지정 2026-08-14).
                   // 이 줄은 시간바와 한 층에 있어서, 그 층이 스크럽 중에도 남는
                   // 규칙(keepWhileScrubbing)을 그대로 물려받아 혼자 남아 있었다.

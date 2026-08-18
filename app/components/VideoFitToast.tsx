@@ -33,35 +33,55 @@ export function useVideoFit(initial: VideoFit = "cover") {
   return { fit, cycle, toast, toastKey };
 }
 
+/** 알약 모양 — 두 배치가 공유한다(다른 토스트: 탐색·화면 캡처와 같은 규칙). */
+const PILL: React.CSSProperties = {
+  height: "32px",
+  padding: "0 16px",
+  borderRadius: "32px",
+  backgroundColor: "rgba(34, 34, 34, 0.9)",
+  whiteSpace: "nowrap",
+};
+
 /**
- * 토스트. 다른 토스트(탐색·화면 캡처)와 같은 규칙 — 영역 하단에서 20px 위, 가운데.
- * 부모가 position:relative 여야 한다.
+ * 토스트. 기본은 영역 하단에서 20px 위, 가운데 — 부모가 position:relative 여야 한다.
+ *
+ * inline 이면 자리를 차지하며 흐름 안에 앉는다(가로 화면용). 가로는 아래가
+ * 시간바·아이콘 줄로 꽉 차 있어서, 절대 위치로 20px 을 띄우면 그 위에 겹친다 —
+ * 그 줄들과 같은 층에 넣고 위로 쌓는다.
  */
 export function VideoFitToast({
   text,
   toastKey,
+  inline,
 }: {
   text: string | null;
   toastKey?: number;
+  inline?: boolean;
 }) {
   if (!text) return null;
+  const label = (
+    <span style={{ color: "#FFFFFF", fontSize: "14px", fontWeight: 500 }}>
+      {text}
+    </span>
+  );
+  if (inline) {
+    return (
+      <div
+        key={toastKey}
+        className="toast-slide-up pointer-events-none mx-auto mb-2 flex w-fit items-center justify-center"
+        style={PILL}
+      >
+        {label}
+      </div>
+    );
+  }
   return (
     <div
       key={toastKey}
       className="toast-slide-up pointer-events-none absolute left-1/2 z-20 flex items-center justify-center"
-      style={{
-        bottom: "20px",
-        transform: "translateX(-50%)",
-        height: "32px",
-        padding: "0 16px",
-        borderRadius: "32px",
-        backgroundColor: "rgba(34, 34, 34, 0.9)",
-        whiteSpace: "nowrap",
-      }}
+      style={{ ...PILL, bottom: "20px", transform: "translateX(-50%)" }}
     >
-      <span style={{ color: "#FFFFFF", fontSize: "14px", fontWeight: 500 }}>
-        {text}
-      </span>
+      {label}
     </div>
   );
 }

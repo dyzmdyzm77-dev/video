@@ -7,10 +7,10 @@ import { useGridAreaRatio } from "./useGridLayout";
 import type React from "react";
 import { CameraFeed, GridSelectionOverlay } from "./CameraFeed";
 import { useAutoHide } from "./useAutoHide";
-import { useVideoFit } from "./VideoFitToast";
+import { VideoFitToast, useVideoFit } from "./VideoFitToast";
 import { requestDeviceRotate, useRotatedInput } from "./deviceRotate";
 import { exitImmersive, useImmersive } from "./immersive";
-import type { VideoFit } from "./videoFit";
+import { VIDEO_FIT_LABEL, type VideoFit } from "./videoFit";
 
 // 가로 모드의 영상 화면 — 지금은 '영상만'이다(사용자 결정).
 // 헤더·날짜 바·카메라 목록·하단 탭바·시스템 바 전부 빼고 화면을 영상이 다 쓴다.
@@ -293,6 +293,23 @@ export default function LandscapeVideo({
   const ownFit = useVideoFit("fill");
   const fit = fitProp ?? ownFit.fit;
   const cycle = onFitCycle ?? ownFit.cycle;
+  // 화면 맞춤 토스트 — 세로에는 있는데 가로에만 없었다(사용자 지적 2026-08-18:
+  // "가로에서 그 화면 비율 조정할떄는 왜 토스트 안떠?"). 세로는 안이 useVideoFit
+  // 의 toast 를 직접 그리는데, 가로는 그 훅을 안이 들고 있을 수도(fitProp) 여기서
+  // 들 수도 있어 문구를 한쪽에서만 가져올 수가 없다. 그래서 '값이 바뀌면 띄운다'
+  // 로 잡는다 — 어느 쪽이 들고 있든 같은 자리에서 같이 뜬다.
+  // 첫 렌더는 건너뛴다(세로에서 고른 맞춤을 들고 들어오는 것뿐이라 알릴 게 없다).
+  const [fitToast, setFitToast] = useState<string | null>(null);
+  const [fitToastKey, setFitToastKey] = useState(0);
+  const prevFit = useRef(fit);
+  useEffect(() => {
+    if (prevFit.current === fit) return;
+    prevFit.current = fit;
+    setFitToast(VIDEO_FIT_LABEL[fit]);
+    setFitToastKey((k) => k + 1);
+    const id = setTimeout(() => setFitToast(null), 2000);
+    return () => clearTimeout(id);
+  }, [fit]);
   // 예전엔 화면 맞춤에 따라 data-video-bleed 를 켜서 '상태바 자리까지 덮을지'를
   // 갈랐다. 지금은 확대·가로가 어느 맞춤이든 화면을 끝까지 쓰므로(globals.css 의
   // '상태바 자리를 비우지 않는다', 사용자 지정 2026-08-18) 가를 것이 없다.
@@ -608,6 +625,9 @@ export default function LandscapeVideo({
             bottom: `${(bottomInset ?? 12) - 12}px`,
           },
           <>
+            {/* 맞춤 토스트는 시간바·아이콘 줄과 같은 층에 쌓아 그 위에 앉힌다 —
+                절대 위치로 바닥 20 에 두면 그 줄들 위에 겹친다. */}
+            <VideoFitToast inline text={fitToast} toastKey={fitToastKey} />
             {!topCenter && !topRight && (
               <div
                 className="pointer-events-none pb-3 transition-opacity duration-150 ease-out"
@@ -817,6 +837,11 @@ export default function LandscapeVideo({
       }}
     >
       {children}
+      {/* 아래 층이 아예 없는 안(칩·컨트롤이 전부 위로 간 경우)에서는 토스트가
+          갈 곳이 없다 — 그때만 세로와 같은 기본 배치(바닥에서 20)로 띄운다. */}
+      {!statusBottom && (
+        <VideoFitToast text={fitToast} toastKey={fitToastKey} />
+      )}
       {/* 전환 스켈레톤 — 세로와 같은 결(skeleton-shimmer, 타일 사이 2px 흰 선).
           단일이면 화면 전체, 다채널이면 지금 가로 배치대로 칸을 나눈다. */}
       {loading &&
