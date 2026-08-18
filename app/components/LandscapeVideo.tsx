@@ -9,7 +9,6 @@ import { CameraFeed, GridSelectionOverlay } from "./CameraFeed";
 import { useAutoHide } from "./useAutoHide";
 import { VideoFitToast, useVideoFit } from "./VideoFitToast";
 import { requestDeviceRotate, useRotatedInput } from "./deviceRotate";
-import { useEdgeGaps } from "./useDeviceWidth";
 import { exitImmersive, useImmersive } from "./immersive";
 import { VIDEO_FIT_LABEL, type VideoFit } from "./videoFit";
 
@@ -361,17 +360,20 @@ export default function LandscapeVideo({
   // 앱 창이 화면보다 작으면(안드로이드 시스템 바) 프레임 끝에서 재는 것만으로는
   // 기기 끝 기준이 안 된다 — 밀려난 만큼(useEdgeGaps) 빼서 실제 모서리에 맞춘다.
   // 아이폰 홈화면 앱처럼 창 = 화면이면 gap 이 0 이라 지금까지와 같다.
-  const edgeGaps = useEdgeGaps();
   const baseEdge = edgeInset ?? 20;
-  // 기준은 '기기 모서리'다(사용자 지정 2026-08-18: "영상뷰로 맞추지말고 기기
-  // 기준으로 맞추라니까? 마진을"). 앱 창이 화면에서 밀려난 만큼을 좌우 각각
-  // 빼면, 화면 끝에서 잰 거리가 양쪽 다 baseEdge 로 같아진다.
-  // 잠깐 '작은 쪽만큼만 대칭으로' 빼 봤는데, 그러면 창이 한쪽만 깎인 기기에서
-  // 물리 왼쪽 여백이 그만큼 넓어졌다(사용자 지적: "왼쪽이 너무 마진이 넓은데").
-  // 앱 안에서 두 값이 다른 건 그 밀림을 상쇄한 결과다.
-  // 밀림을 못 믿을 상황이면 useEdgeGaps 가 0 을 준다 — 그때는 그냥 좌우 같은 값.
-  const edgeL = Math.max(0, baseEdge - edgeGaps.left);
-  const edgeR = Math.max(0, baseEdge - edgeGaps.right);
+  // 좌우 모두 앱 화면 끝에서 baseEdge 다. 그냥 이게 맞다.
+  //
+  // 한동안 '앱 창이 물리 화면에서 밀려난 만큼'을 빼서 기기 모서리에 맞추려 했다
+  // (useEdgeGaps). 그런데 그 밀림을 웹에서 정확히 재는 방법이 없다 — 창 위치
+  // (screenX/Y)는 안 깎인 것처럼 0 을 주고, 안전영역(env)은 내비바 두께까지 섞여
+  // 들어와 한쪽이 통째로 0 이 되기도 했다(오른쪽 패널이 기기 끝에 붙어 버렸다 —
+  // 사용자 지적 2026-08-18). 값이 틀리면 여백이 눈에 띄게 어긋나는데, 맞아 봐야
+  // 얻는 건 몇 십 px 이라 손익이 안 맞는다.
+  //
+  // 게다가 지금은 가로·확대에서 앱이 화면 전체를 받는다(안드로이드는 설치본
+  // 전체화면, 아이폰은 홈화면 앱) — 앱 끝이 곧 기기 끝이라 보정할 것도 없다.
+  const edgeL = baseEdge;
+  const edgeR = baseEdge;
 
   // ── 단일 영상 줌 ─────────────────────────────────────────────────────────
   // 세로 단일 화면에만 있던 핀치 줌을 가로에도 붙인다(사용자 지적 2026-08-18:

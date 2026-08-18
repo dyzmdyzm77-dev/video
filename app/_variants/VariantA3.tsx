@@ -36,7 +36,6 @@ import { AUTO_HIDE_MS, useAutoHide } from "../components/useAutoHide";
 import AndroidNav from "../components/AndroidNav";
 import {
   useDeviceRatio,
-  useEdgeGaps,
   useDeviceWide,
   useDeviceWidth,
 } from "../components/useDeviceWidth";
@@ -295,10 +294,10 @@ export default function VariantA3({
     const t = setTimeout(() => setLsPanelTab("list"), 300);
     return () => clearTimeout(t);
   }, [lsPanel]);
-  const dimGaps = useEdgeGaps();
-  // 기기 모서리 기준 — 좌우 각각 밀린 만큼 뺀다(LandscapeVideo 의 같은 계산 참고).
-  const dimEdgeL = Math.max(0, dimEdge - dimGaps.left);
-  const dimEdgeR = Math.max(0, dimEdge - dimGaps.right);
+  // 시간바 아래 아이콘 줄도 같은 값을 쓴다(그 줄만 LandscapeVideo 밖에 있다).
+  // 앱 창 밀림 보정은 폐기했다 — 이유는 LandscapeVideo 의 edgeL/edgeR 주석 참고.
+  const dimEdgeL = dimEdge;
+  const dimEdgeR = dimEdge;
 
   const autoCount = autoGridCount(gridRatio);
   autoCountSeen.current[orientKey] = autoCount;
@@ -723,7 +722,7 @@ export default function VariantA3({
             // 가로로 돌려졌을때만 넣으면 될 것 같아"). 눕힌 화면은 손이 기기
             // 양끝을 감싸 쥐어서 그만큼 들어와야 하고, 제자리 확대는 그럴 일이
             // 없다 — 패널 제 여백(16)만 남기고 기기 끝에 붙인다.
-            edge={wideNow ? dimEdgeR : 0}
+            edge={wideNow ? dimEdge : 0}
             onClose={() => setLsPanel(null)}
           />
         )}
