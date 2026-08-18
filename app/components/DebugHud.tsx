@@ -15,6 +15,7 @@
 // ============================================================================
 
 import { useEffect, useState } from "react";
+import { readEdgeGaps } from "./useDeviceWidth";
 
 export default function DebugHud() {
   const [on, setOn] = useState(false);
@@ -92,6 +93,8 @@ export default function DebugHud() {
         `videoArea=${r(area)}`,
         `dimRow=${r(dimRow)}`,
         `statusH=${getComputedStyle(root).getPropertyValue("--status-h") || "-"}`,
+        // 딤 여백 보정이 쓰는 값 — 창이 화면에서 얼마나 밀렸나(useEdgeGaps).
+        `win=${window.screenX},${window.screenY} gaps=${JSON.stringify(readEdgeGaps())}`,
         `theme=${themes || "-"} rotated=${fcs?.transform !== "none"}`,
       ]);
     };

@@ -198,8 +198,20 @@ export function readEdgeGaps(): EdgeGaps {
   const span = rotated ? window.innerHeight : window.innerWidth;
   const screenSpan = rotated ? window.screen.height : window.screen.width;
   const far = screenSpan - near - span;
-  // 음수(창이 화면보다 크게 잡히는 계산 오차)는 0 으로 본다.
-  return { left: Math.max(0, near), right: Math.max(0, far) };
+  // 값이 앞뒤가 안 맞으면(브라우저가 screen 을 기기 기본 방향으로만 보고하거나,
+  // screenX/Y 를 안 주는 경우) 보정을 접는다 — 엉뚱한 수를 빼면 한쪽 여백이
+  // 확 넓어지느니만 못하다. 창이 화면보다 크거나, 한쪽이 화면 절반을 넘으면
+  // 잘못 잰 것으로 본다.
+  const sane =
+    screenSpan > 0 &&
+    span > 0 &&
+    near >= 0 &&
+    far >= 0 &&
+    near + span <= screenSpan + 1 &&
+    near < screenSpan / 2 &&
+    far < screenSpan / 2;
+  if (!sane) return { left: 0, right: 0 };
+  return { left: Math.round(near), right: Math.round(far) };
 }
 
 /** readEdgeGaps 를 구독한다. SSR·첫 렌더는 0 으로 맞춰 하이드레이션 불일치를 막는다. */
