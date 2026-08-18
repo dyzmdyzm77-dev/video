@@ -127,30 +127,36 @@ function lockOrientation(kind: "portrait" | "landscape") {
   } catch {}
 }
 
-/** 축소하며 걸어 둔 '세로 잠금'을 폰이 실제로 세워졌을 때 푼다.
+/** 축소했는데 폰이 아직 누워 있는 동안은 전체화면을 유지한다 — 바가 눕힌 변에
+ *  남는 걸 막는 유일한 방법이다(웹은 OS 방향을 못 돌린다). 폰을 세우면 그때
+ *  전체화면을 나가서 세로 화면의 상태바·내비바를 되돌린다.
  *
- *  잠긴 동안에는 screen.orientation 이 잠금값을 그대로 보고해서 기기가 어떻게
- *  놓였는지 알 수 없다 — 그래서 가속도계(deviceorientation)의 좌우 기울기(gamma)로
- *  본다. 안드로이드는 권한 없이 온다. 안 풀면 그 뒤로 눕혀도 가로가 안 돼서
- *  '눕히면 확대' 자체가 막힌다. */
-function releaseWhenUpright() {
+ *  '세웠나'는 뷰포트로 본다 — 전체화면이어도 물리 회전은 그대로 오므로
+ *  innerHeight >= innerWidth 가 되는 순간이 곧 세로다. */
+function keepBarsHiddenUntilUpright() {
   if (typeof window === "undefined") return;
-  const onTilt = (e: DeviceOrientationEvent) => {
-    const g = e.gamma;
-    if (typeof g !== "number") return;
-    // |gamma| 가 작다 = 좌우로 안 기울었다 = 세워 들었다.
-    if (Math.abs(g) < 25) {
-      window.removeEventListener("deviceorientation", onTilt);
-      unlockOrientation();
-    }
+  const done = () => {
+    window.removeEventListener("resize", check);
+    window.removeEventListener("orientationchange", check);
+    clearTimeout(timer);
   };
-  window.addEventListener("deviceorientation", onTilt);
-  // 가속도계가 안 오는 환경(데스크톱·권한 거부)에서는 20초 뒤 그냥 푼다 —
-  // 그때쯤이면 사용자가 화면을 보고 있고, 잠금이 계속 남는 것보다 낫다.
-  setTimeout(() => {
-    window.removeEventListener("deviceorientation", onTilt);
-    unlockOrientation();
-  }, 20000);
+  const check = () => {
+    if (window.innerHeight < window.innerWidth) return;
+    done();
+    syncFullscreen(false);
+    // 세워졌으니 CSS 로 세워 두던 것도 정리한다(syncImmersiveWithLandscape 도
+    // 같은 일을 하지만, 그쪽이 안 도는 경로가 있어 여기서도 못 박는다).
+    document.documentElement.dataset.forcePortrait = "false";
+    window.dispatchEvent(new Event("resize"));
+  };
+  window.addEventListener("resize", check);
+  window.addEventListener("orientationchange", check);
+  // 아무 일도 안 일어나면 30초 뒤엔 그냥 바를 되돌린다 — 전체화면이 영영 남는
+  // 것보단 낫다.
+  const timer = setTimeout(() => {
+    done();
+    syncFullscreen(false);
+  }, 30000);
 }
 
 function unlockOrientation() {
@@ -456,7 +462,17 @@ export function exitImmersive() {
   // 확대에서 걸어 둔 잠금은 여기서 푼다. 다만 아래에서 '세로로 세우기' 잠금을
   // 새로 걸 수 있는데(폰이 아직 누워 있는 경우), 그건 이 뒤에 걸리므로 안 죽는다.
   unlockOrientation();
-  syncFullscreen(false);
+  {
+    // 폰이 아직 누워 있으면 전체화면을 지금 나가지 않는다 — 나가면 바가 눕힌 변에
+    // 뜬다. 아래 keepBarsHiddenUntilUpright 가 세워지는 순간 대신 나간다.
+    const touchNow = !(
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    );
+    if (!(touchNow && window.innerWidth > window.innerHeight)) {
+      syncFullscreen(false);
+    }
+  }
   // 축소하면 앱이 걸어 둔 회전은 무조건 푼다. 어떤 경로로 눕었든(확대가 눕혔든,
   // 회전으로 켜졌든, 중간에 폰을 눕혔다 세웠든) 축소 뒤에는 기기 방향 그대로
   // 돌아와야 한다 — 플래그로 경로를 따지다 보니 어떤 순서에서는 눕은 채로
@@ -496,26 +512,15 @@ export function exitImmersive() {
         // 치수가 맞바뀌었음을 배치들이 다시 읽게 한다.
         window.dispatchEvent(new Event("resize"));
       };
-      let locked = false;
-      try {
-        const so = window.screen?.orientation as
-          | (ScreenOrientation & { lock?: (o: string) => Promise<void> })
-          | undefined;
-        const p = so?.lock?.("portrait");
-        if (p && typeof p.then === "function") {
-          locked = true;
-          p.then(() => {
-            // OS 가 돌려 줬으니 CSS 로 또 돌리면 두 번 돈다 — 그건 끈다.
-            root.dataset.forcePortrait = "false";
-            window.dispatchEvent(new Event("resize"));
-            releaseWhenUpright();
-          }).catch(() => {
-            // 아이폰 사파리처럼 잠금이 없는 환경 — 예전 방식으로 세워 둔다.
-            cssPortrait();
-          });
-        }
-      } catch {}
-      if (!locked) cssPortrait();
+      // OS 방향을 세로로 돌리는 건 웹에서 못 한다. screen.orientation.lock 은
+      // 안드로이드 크롬에서 전체화면 안에서만 허용되는데, 축소는 전체화면을
+      // 나가는 동작이라 그 순간 잠금이 죽는다(실기기 확인 2026-08-18: 잠금 시도가
+      // 아무 일도 안 했다). 그래서 방향 대신 '바' 쪽을 정리한다 —
+      // 폰이 아직 누워 있는 동안에는 전체화면을 유지해 바를 아예 안 보이게 두고,
+      // 폰을 세우면 그때 전체화면을 나가 바를 되돌린다. 눕힌 변에 바만 덩그러니
+      // 남는 그림(사용자 지적)이 사라진다.
+      cssPortrait();
+      keepBarsHiddenUntilUpright();
     }
   }
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
