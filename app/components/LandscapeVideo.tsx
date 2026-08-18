@@ -920,6 +920,10 @@ export default function LandscapeVideo({
           ptsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
           if (ptsRef.current.size === 2) {
             // 두 손가락 — 핀치 시작. 나가기·페이지 판정은 접는다.
+            // 딤도 끈다(사용자 지정 2026-08-18: "단일 확대할때는 딤이 꺼져야지").
+            // 확대는 영상을 자세히 보려는 동작인데 그 위에 UI 가 얹혀 있으면
+            // 가려진다. 다시 보려면 화면을 한 번 탭하면 된다.
+            setDim(false);
             const [a, b] = Array.from(ptsRef.current.values());
             pinchRef.current = {
               dist: Math.hypot(a.x - b.x, a.y - b.y),

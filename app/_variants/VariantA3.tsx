@@ -1610,6 +1610,10 @@ function ExpandedView({
     ptsRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (ptsRef.current.size === 2) {
       // 두 번째 손가락이 닿는 순간 — 그때의 거리와 배율을 기준으로 잡는다.
+      // 딤(영상 위 컨트롤)은 끈다(사용자 지정 2026-08-18: "단일 확대할때는 딤이
+      // 꺼져야지"). 확대는 영상을 자세히 보려는 동작이라 UI 가 가리면 안 된다 —
+      // 다시 보려면 한 번 탭하면 된다.
+      setShowControls(false);
       const [a, b] = [...ptsRef.current.values()];
       pinchRef.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), zoom };
       panRef.current = null;
