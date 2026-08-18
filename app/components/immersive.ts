@@ -127,6 +127,32 @@ function lockOrientation(kind: "portrait" | "landscape") {
   } catch {}
 }
 
+/** 축소하며 걸어 둔 '세로 잠금'을 폰이 실제로 세워졌을 때 푼다.
+ *
+ *  잠긴 동안에는 screen.orientation 이 잠금값을 그대로 보고해서 기기가 어떻게
+ *  놓였는지 알 수 없다 — 그래서 가속도계(deviceorientation)의 좌우 기울기(gamma)로
+ *  본다. 안드로이드는 권한 없이 온다. 안 풀면 그 뒤로 눕혀도 가로가 안 돼서
+ *  '눕히면 확대' 자체가 막힌다. */
+function releaseWhenUpright() {
+  if (typeof window === "undefined") return;
+  const onTilt = (e: DeviceOrientationEvent) => {
+    const g = e.gamma;
+    if (typeof g !== "number") return;
+    // |gamma| 가 작다 = 좌우로 안 기울었다 = 세워 들었다.
+    if (Math.abs(g) < 25) {
+      window.removeEventListener("deviceorientation", onTilt);
+      unlockOrientation();
+    }
+  };
+  window.addEventListener("deviceorientation", onTilt);
+  // 가속도계가 안 오는 환경(데스크톱·권한 거부)에서는 20초 뒤 그냥 푼다 —
+  // 그때쯤이면 사용자가 화면을 보고 있고, 잠금이 계속 남는 것보다 낫다.
+  setTimeout(() => {
+    window.removeEventListener("deviceorientation", onTilt);
+    unlockOrientation();
+  }, 20000);
+}
+
 function unlockOrientation() {
   if (noPhysicalOrientation()) return;
   try {
@@ -427,8 +453,8 @@ export function exitImmersive() {
   ds.immersive = "false";
   ds[ROTATED_FLAG] = "false";
   ds[BY_ROTATE_FLAG] = "false";
-  // 잠금은 전체화면을 나가기 전에 푼다 — 나가면서 자동으로 풀리기도 하지만,
-  // 안 풀린 채로 남으면 세로로 돌아온 뒤에도 방향이 굳는다.
+  // 확대에서 걸어 둔 잠금은 여기서 푼다. 다만 아래에서 '세로로 세우기' 잠금을
+  // 새로 걸 수 있는데(폰이 아직 누워 있는 경우), 그건 이 뒤에 걸리므로 안 죽는다.
   unlockOrientation();
   syncFullscreen(false);
   // 축소하면 앱이 걸어 둔 회전은 무조건 푼다. 어떤 경로로 눕었든(확대가 눕혔든,
@@ -453,16 +479,43 @@ export function exitImmersive() {
       window.matchMedia("(hover: hover) and (pointer: fine)").matches
     );
     if (touch && window.innerWidth > window.innerHeight) {
-      const raw =
-        (window as unknown as { orientation?: number }).orientation ??
-        window.screen?.orientation?.angle ??
-        90;
-      const a = typeof raw === "number" && raw !== 0 ? raw : 90;
       const root = document.documentElement;
-      root.style.setProperty("--force-rot", `${-((a + 360) % 360)}deg`);
-      root.dataset.forcePortrait = "true";
-      // 치수가 맞바뀌었음을 배치들이 다시 읽게 한다.
-      window.dispatchEvent(new Event("resize"));
+      // CSS 로 세워 두는 건 '앱만' 도는 것이라 OS 바는 눕힌 그대로 남는다
+      // (사용자 지적 2026-08-18: "축소버튼 누르면 화면은 세로로 돌아가는데,
+      // 디바이스 상태는 가로로 인지하고 있는거 같거든? 세로로 인지하게끔 상태바가
+      // 이동되면 좋겠는데"). 그래서 먼저 OS 방향 잠금을 시도한다 — 되면 창째로
+      // 돌아가서 상태바·내비바도 같이 세로로 온다. 설치본에서만 허용된다.
+      const cssPortrait = () => {
+        const raw =
+          (window as unknown as { orientation?: number }).orientation ??
+          window.screen?.orientation?.angle ??
+          90;
+        const a = typeof raw === "number" && raw !== 0 ? raw : 90;
+        root.style.setProperty("--force-rot", `${-((a + 360) % 360)}deg`);
+        root.dataset.forcePortrait = "true";
+        // 치수가 맞바뀌었음을 배치들이 다시 읽게 한다.
+        window.dispatchEvent(new Event("resize"));
+      };
+      let locked = false;
+      try {
+        const so = window.screen?.orientation as
+          | (ScreenOrientation & { lock?: (o: string) => Promise<void> })
+          | undefined;
+        const p = so?.lock?.("portrait");
+        if (p && typeof p.then === "function") {
+          locked = true;
+          p.then(() => {
+            // OS 가 돌려 줬으니 CSS 로 또 돌리면 두 번 돈다 — 그건 끈다.
+            root.dataset.forcePortrait = "false";
+            window.dispatchEvent(new Event("resize"));
+            releaseWhenUpright();
+          }).catch(() => {
+            // 아이폰 사파리처럼 잠금이 없는 환경 — 예전 방식으로 세워 둔다.
+            cssPortrait();
+          });
+        }
+      } catch {}
+      if (!locked) cssPortrait();
     }
   }
   window.dispatchEvent(new Event(IMMERSIVE_EVENT));
