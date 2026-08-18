@@ -205,7 +205,11 @@ body {
     padding: 0;
   }
 
-  /* ===== 상태바 자리는 '원본 비율'일 때만 비운다 =====
+  /* ===== 상태바 자리 비우기 — 노치 있는 변 하나만, 원본 비율일 때만 =====
+     비우는 건 '아이폰이 실제로 상태바를 그리는 상태'뿐이다 = 폰이 세로일 때
+     (아래 orientation: portrait 블록). 폰을 눕히면 아이폰이 상태바를 안 그리니
+     비울 것도 없다 — 그쪽은 화면을 끝까지 쓴다.
+
      사용자 결정 2026-08-18. 하루 사이 두 번 움직인 자리라 경위를 남긴다.
 
      ① 원래: 맞춤과 무관하게 물리 상단(= 회전한 화면에서 영상의 왼쪽)을
@@ -297,40 +301,32 @@ body {
       height: 100vw;
       transform-origin: center center;
       transform: translate(-50%, -50%) rotate(var(--force-rot, -90deg));
-      /* 가로 인셋(양옆 59px)이 남으면 흰 마진이 된다 — 좌우는 0. */
+      /* 가로 인셋(양옆 59px)이 남으면 흰 마진이 된다 — 전부 0.
+         상태바 자리도 안 비운다: 이 상태는 폰이 아직 누워 있는 것이라
+         (미디어쿼리가 landscape) 아이폰이 상태바를 안 그린다 — 위 가로 규칙과
+         같은 이유다. */
       padding: 0;
-    }
-    /* 위쪽 상태바 자리는 원본 비율일 때만 비운다(위 규칙과 같은 조건).
-       축소 직후 폰이 아직 누워 있는 짧은 상태지만, 여기만 규칙이 다르면 그
-       순간 영상 크기가 한 번 튄다. */
-    html[data-force-portrait="true"]:not([data-video-bleed="true"])
-      .app-safe-frame {
-      padding: var(--status-h, 0px) 0 0;
     }
   }
 
-  /* 폰을 눕힌 가로도 확대와 같은 규칙을 쓴다 — 기본은 꽉, 원본 비율일 때만
-     노치 쪽 '한 변'을 --status-h 만큼 비운다(위 '상태바 자리는 원본 비율일
-     때만 비운다' 참고).
+  /* 폰을 눕힌 가로는 아무것도 안 비운다 — 화면을 끝까지 쓴다(사용자 결정
+     2026-08-18).
 
-     한 변만 비우는 이유: 확대는 물리 상단 한 변만 비우는데, env() 좌우 인셋을
-     그대로 쓰면 양쪽이 비어 확대와 폭이 달라진다(사용자 지적: "가로로 전환이랑
-     확대모드 왜 달라?"). 어느 변인지는 StatusInset 이 회전 각도로 가려
-     --notch-l/--notch-r 로 준다.
+     비우는 기준은 "노치(상태바) 있는 변 하나만"인데, 아이폰은 가로에서 상태바를
+     아예 안 그린다. 그래서 여기 띠는 가릴 게 없는 빈 검정이었다 — 8/14 에
+     확대와 영상 크기를 맞추려고 넣어 뒀던 것이다("가로로 전환이랑 확대모드 왜
+     달라?"). 사용자 지적: "검정 띠 생기는게 왜 기준이 다르지" — 실제로 상태바가
+     뜨는 확대(폰이 세로)에만 남기고 여기서는 걷는다.
+
+     그 대신 가로가 확대보다 --status-h 만큼 영상이 커진다. 원본 비율은 어차피
+     레터박스가 생기는 맞춤이라 그 차이가 어색하지 않다는 판단(사용자 결정).
+     StatusInset 의 --notch-l/--notch-r 은 이제 아무도 안 읽는다.
 
      확대·가로 플래그가 없는 보통 화면에는 원래대로 안전영역 env() 가 걸린다. */
   @media (orientation: landscape) {
     html[data-immersive="true"] .app-safe-frame,
     html[data-landscape="true"] .app-safe-frame {
       padding: 0;
-    }
-    html[data-immersive="true"]:not([data-video-bleed="true"])
-      .app-safe-frame,
-    html[data-landscape="true"]:not([data-video-bleed="true"])
-      .app-safe-frame {
-      padding-top: 0;
-      padding-left: var(--notch-l, 0px);
-      padding-right: var(--notch-r, 0px);
     }
   }
 
