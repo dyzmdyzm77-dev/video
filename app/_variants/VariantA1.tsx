@@ -1022,6 +1022,8 @@ function GridView({
       ) : (
         <RecordingControls
           now={now}
+          // 다채널 녹화에는 시간바를 안 둔다(사용자 지정 2026-08-19, 네 안 공통).
+          noTimeline
           setMode={setMode}
           onScrubbingChange={onScrubbingChange}
           playbackMs={playbackMs}
@@ -3808,6 +3810,7 @@ function RecordingControls({
   onSpeedChange,
   overlay = false,
   playerOnly = false,
+  noTimeline = false,
 }: {
   now: Date | null;
   setMode: (m: "live" | "recording") => void;
@@ -3831,6 +3834,11 @@ function RecordingControls({
   /** 플레이어 버튼 5개만 그린다(가로 딤 가운데용). 헤더 줄·시간바는 뺀다 —
    *  시간바 없이 버튼만 화면 한가운데 놓는 가로 사양이다(사용자 결정). */
   playerOnly?: boolean;
+  /** 시간바만 뺀다(플레이어 버튼·날짜 줄은 그대로). 다채널 녹화에서 쓴다
+   *  — 사용자 지정 2026-08-19: "다채널 녹화에서는 시간바를 좀 빼야겠어",
+   *  "모든 안에 다 빼야지". playerOnly 와 다르다: 그쪽은 날짜 줄까지 걷어
+   *  화면 한가운데에 버튼만 얹는 가로 배치용이다. */
+  noTimeline?: boolean;
 }) {
   const VISIBLE_MINUTES = TIMELINE_VISIBLE_MIN;
   // 시간바를 끌고 있는 중인가. 가로(overlay)에서 플레이어 버튼 5개를 잠깐
@@ -4183,7 +4191,7 @@ function RecordingControls({
       {!overlay && (
         <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
       )}
-      {!playerOnly && (
+      {!playerOnly && !noTimeline && (
       <>
       {/* 타임라인 */}
       <div

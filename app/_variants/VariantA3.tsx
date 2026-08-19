@@ -618,7 +618,9 @@ export default function VariantA3({
                 paddingRight: `${LANDSCAPE_CONTROLS_PAD}px`,
               }}
             >
-              {mode === "recording" && (
+              {/* 시간바는 단일 화면에서만. 다채널 녹화에는 안 둔다(사용자 지정
+                  2026-08-19: "가로에서도 빼야해") — 세로 다채널과 같은 규칙이다. */}
+              {mode === "recording" && expandedIndex !== null && (
               <RecordingControls
                 overlay
                 timelineOnly
