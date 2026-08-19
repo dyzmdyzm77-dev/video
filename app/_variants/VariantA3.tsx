@@ -180,6 +180,9 @@ function BatteryIcon({ className, level }: { className?: string; level: number }
   );
 }
 
+/** 가로 딤이 여는 패널의 폭(px) — 아래에서 나오는 판은 높이가 대신이라 안 쓴다. */
+const LANDSCAPE_PANEL_W = 240;
+
 /** 오른쪽 패널이 열렸을 때 딤의 오른쪽 여백(사용자 지정 2026-08-18:
  *  "오른쪽 패널 떴을떄는, 딤 우측 마진이 한 20정도면 될듯"). */
 const DIM_EDGE_WITH_PANEL = 20;
@@ -303,26 +306,11 @@ export default function VariantA3({
     : IMMERSIVE_EDGE;
   // 시간바 아래 아이콘 줄은 LandscapeVideo 밖(controls)에 있어 그쪽 보정을 못 받는다
   // — 같은 식으로 앱 창이 화면에서 밀려난 만큼 빼서 기기 모서리 기준으로 맞춘다.
-  // 가로 패널 내용 폭 — 화면(확대 프레임) 폭의 1/3(사용자 지정 2026-08-19:
-  // "3분의 1정도 차지하면 어때?"). 예전엔 1080+ 사이드 패널과 같은 220 고정이라
-  // 기기에 따라 28~34% 로 들쭉날쭉했다. 프레임을 실측해서 나눈다 — 확대는 회전
-  // 여부에 따라 폭이 화면 세로가 되기도 해서 상수로는 못 잡는다.
-  // 바닥·천장을 둔다: 너무 좁으면 타일이 못 읽히고, 넓으면 영상이 죽는다.
-  const immFrameRef = useRef<HTMLDivElement>(null);
-  const [immFrameW, setImmFrameW] = useState(0);
-  useEffect(() => {
-    const el = immFrameRef.current;
-    if (!el) return;
-    const measure = () => setImmFrameW(el.offsetWidth);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  });
-  const panelContentW =
-    immFrameW > 0
-      ? Math.max(200, Math.min(380, Math.round(immFrameW / 3)))
-      : SIDE_PANEL_W;
+  // 가로 패널 폭 — 240 고정(사용자 지정 2026-08-19: "그냥 고정하자 240으로").
+  // 화면의 1/3 로 재서 주다가(780 에서 260) 과하다고 해서 되돌렸다. 220(1080+
+  // 사이드 패널과 같은 값)보다 조금 넓은 자리다. 바깥 여백도 이 안에 포함된다 —
+  // 흰 판이 화면에서 차지하는 몫이 곧 240 이다.
+  const panelContentW = LANDSCAPE_PANEL_W;
   // 가로 딤 왼쪽 아래 아이콘이 여는 오른쪽 패널 — 어느 탭으로 열렸는지까지 담는다
   // (사용자 지정 2026-08-18). null 이면 닫힘.
   const [lsPanel, setLsPanel] = useState<"list" | "motion" | null>(null);
@@ -560,7 +548,6 @@ export default function VariantA3({
     return (
       // 패널이 열리면 영상을 밀고 옆에 선다(덮지 않는다) — 그래서 가로 배치다.
       <div
-        ref={immFrameRef}
         className={`app-safe-frame flex h-full w-full overflow-hidden bg-black${
           panelBottom ? " flex-col" : ""
         }`}
