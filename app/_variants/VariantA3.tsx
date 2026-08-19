@@ -1248,6 +1248,10 @@ function GridView({
         <RecordingControls
           now={now}
           onToggleChrome={onToggleChrome}
+          // 다채널 녹화에는 시간바를 안 둔다(사용자 지정 2026-08-19). 어느 카메라
+          // 기준인지 모호한 데다, 세로 다채널은 이미 감지 표시도 뺀 상태다.
+          // 플레이어 버튼 5개와 날짜 줄은 그대로 남는다.
+          noTimeline
           timelineVisible={timelineVisible}
           onToggleTimeline={onToggleTimeline}
           onScrubbingChange={onScrubbingChange}
@@ -4403,6 +4407,7 @@ function RecordingControls({
   onSpeedChange,
   overlay = false,
   playerOnly = false,
+  noTimeline = false,
   onPlayerAction,
   timelineOnly = false,
 }: {
@@ -4428,6 +4433,11 @@ function RecordingControls({
   overlay?: boolean;
   /** 플레이어 버튼 5개만 그린다(가로 딤 가운데용). 헤더 줄·시간바는 뺀다. */
   playerOnly?: boolean;
+  /** 시간바만 뺀다(플레이어 버튼·날짜 줄은 그대로). 다채널 녹화에서 쓴다
+   *  — 사용자 지정 2026-08-19: "다채널 녹화에서는 시간바를 좀 빼야겠어".
+   *  playerOnly 와 다르다: 그쪽은 날짜 줄까지 걷어 화면 한가운데에 버튼만
+   *  얹는 가로 배치용이다. */
+  noTimeline?: boolean;
   /** 5버튼 중 아무거나 눌렀을 때. 가로 딤에서 '5버튼 + 시간바'만 남기려고
    *  안이 쓴다(사용자 지정 2026-08-14). */
   onPlayerAction?: () => void;
@@ -4875,7 +4885,7 @@ function RecordingControls({
       {!overlay && (
         <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
       )}
-      {!playerOnly && (
+      {!playerOnly && !noTimeline && (
       <>
       {/* 타임라인 */}
       <div
