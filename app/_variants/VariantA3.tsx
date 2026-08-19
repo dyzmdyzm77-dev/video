@@ -640,13 +640,13 @@ export default function VariantA3({
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
-                      // 20 · 12px 이었는데 한 단계 키웠다(사용자 지정 2026-08-19:
-                      // "그 둥근거 그거 좀더 키우자"). 시간바 안 알약도 같은 값이다.
-                      height: "24px",
+                      // 20/12 → 24/14 로 키웠다가 22/13 으로 맞췄다(사용자 지정
+                      // 2026-08-19: "높이 22에 13으로 해줘"). 시간바 안 알약도 같은 값.
+                      height: "22px",
                       padding: "0 10px",
-                      fontSize: "14px",
+                      fontSize: "13px",
                       fontWeight: 700,
-                      lineHeight: "14px",
+                      lineHeight: "13px",
                       color: "#FFFFFF",
                       backgroundColor: "rgba(102,102,102,0.4)",
                       backdropFilter: "blur(20px)",
@@ -3682,7 +3682,7 @@ function RecordingEventTimeline({
             style={{
               display: "inline-flex",
               alignItems: "center",
-              height: "24px",
+              height: "22px",
               // 배경은 없다(사용자 지정 2026-08-18: "현재시간에 흰색 둘러져있는건
               // 빼자"). 원래는 아래로 흐르는 눈금이 글자에 겹치는 걸 막으려고
               // 흰색 70% 를 깔았는데, 시간바 배경이 연한 회색(TIMEBAR_BG)이 되면서
@@ -3690,9 +3690,9 @@ function RecordingEventTimeline({
               // 글자는 top 6~26 이라 실제로 겹치는 폭도 좁다.
               color: "#353535",
               backgroundColor: "transparent",
-              fontSize: "14px",
+              fontSize: "13px",
               fontWeight: 700,
-              lineHeight: "14px",
+              lineHeight: "13px",
               padding: "0 10px",
               verticalAlign: "top",
             }}
@@ -4780,7 +4780,7 @@ function RecordingControls({
         style={{
           display: "inline-flex",
           alignItems: "center",
-          height: "24px",
+          height: "22px",
           // 딤 위(가로)는 아래 버튼들과 같은 값 하나를 그대로 쓴다 —
           // #666666 40% + blur(20) + 테두리 없음 + 흰 글자 + 같은 그림자.
           // 흰 바탕(세로·사이드 패널)은 흰색 70% + 어두운 글자로 되돌렸다
@@ -4801,9 +4801,9 @@ function RecordingControls({
                 textShadow: "0 0 4px rgba(0,0,0,0.6)",
               }
             : null),
-          fontSize: "14px",
+          fontSize: "13px",
           fontWeight: 700,
-          lineHeight: "14px",
+          lineHeight: "13px",
           padding: "0 10px",
           verticalAlign: "top",
         }}
