@@ -634,39 +634,6 @@ export default function VariantA3({
                 paddingRight: `${LANDSCAPE_CONTROLS_PAD}px`,
               }}
             >
-              {/* 시간바가 없는 화면(실시간 · 다채널 녹화)에서도 현재 시각은 보여야
-                  한다(사용자 지정 2026-08-19: "녹화 가로에서 현재시간뜨는거 ...
-                  실시간에 가로에서도 나와야할듯"). 시간바가 있을 땐 그 안의
-                  알약이 같은 일을 하므로 여기선 안 그린다.
-                  규격은 그 알약과 같다 — 높이 20 · 좌우 8 · 반투명 회색 + 블러 +
-                  흰 글자(딤의 원 버튼과 한 값). */}
-              {!(mode === "recording" && expandedIndex !== null) && (
-                <div className="flex justify-center" style={{ paddingBottom: "4px" }}>
-                  <span
-                    suppressHydrationWarning
-                    className="rounded-full"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      // 20/12 → 24/14 로 키웠다가 22/13 으로 맞췄다(사용자 지정
-                      // 2026-08-19: "높이 22에 13으로 해줘"). 시간바 안 알약도 같은 값.
-                      height: "22px",
-                      padding: "0 10px",
-                      fontSize: "13px",
-                      fontWeight: 700,
-                      lineHeight: "13px",
-                      color: "#FFFFFF",
-                      backgroundColor: "rgba(102,102,102,0.4)",
-                      backdropFilter: "blur(20px)",
-                      WebkitBackdropFilter: "blur(20px)",
-                      textShadow: "0 0 4px rgba(0,0,0,0.6)",
-                      opacity: isScrubbing || playerFocus ? 0 : 1,
-                    }}
-                  >
-                    {landscapeClock}
-                  </span>
-                </div>
-              )}
               {mode === "recording" && expandedIndex !== null && (
               <RecordingControls
                 overlay
@@ -780,6 +747,51 @@ export default function VariantA3({
                               ),
                           })}
                       </div>
+                      {/* 현재 시각 — 아이콘 줄 가운데(사용자 지정 2026-08-19:
+                          "그거 아래쪽 아이콘이랑 정렬 맞춰줘"). 줄이
+                          justify-between 이라 왼쪽 묶음과 축소 버튼 사이 한가운데에
+                          앉는다. 시간바가 있는 화면에서는 그 안 알약이 같은 일을
+                          하므로 안 그린다. */}
+                      {!(mode === "recording" && expandedIndex !== null) && (
+                        <span
+                          suppressHydrationWarning
+                          className="rounded-full"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            height: "22px",
+                            padding: "0 10px",
+                            fontSize: "13px",
+                            fontWeight: 700,
+                            lineHeight: "13px",
+                            color: "#FFFFFF",
+                            backgroundColor: "rgba(102,102,102,0.4)",
+                            backdropFilter: "blur(20px)",
+                            WebkitBackdropFilter: "blur(20px)",
+                            textShadow: "0 0 4px rgba(0,0,0,0.6)",
+                          }}
+                        >
+                          {/* 빨간 점 + 상태 글자 → 시각 순(사용자 지정 2026-08-19:
+                              "현재시간 앞에 점 + 실시간 이것도 추가해줘",
+                              "점은 빨간색"). 세로 딤의 실시간/녹화 배지와 같은
+                              말을 쓰고, 알약 하나에 묶어 아이콘 줄과 높이를 맞춘다. */}
+                          <span
+                            aria-hidden
+                            className="rounded-full"
+                            style={{
+                              width: "5px",
+                              height: "5px",
+                              backgroundColor: "#FF3B4A",
+                              marginRight: "5px",
+                              flex: "none",
+                            }}
+                          />
+                          <span style={{ marginRight: "6px" }}>
+                            {mode === "recording" ? "녹화영상" : "실시간"}
+                          </span>
+                          {landscapeClock}
+                        </span>
+                      )}
                       {/* 크게 보기 ↔ 원래 크기로. 가로에서만 뜨는 줄이라 늘
                           '원래 크기로'다. 딤 오른쪽 아래에 있던 그 버튼이다. */}
                       {btn({ key: "zoom", label: "원래 크기로", src: `${BASE}/zoom_out.svg`, onClick: toggleImmersive })}
