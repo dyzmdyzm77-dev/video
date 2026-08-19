@@ -303,6 +303,26 @@ export default function VariantA3({
     : IMMERSIVE_EDGE;
   // 시간바 아래 아이콘 줄은 LandscapeVideo 밖(controls)에 있어 그쪽 보정을 못 받는다
   // — 같은 식으로 앱 창이 화면에서 밀려난 만큼 빼서 기기 모서리 기준으로 맞춘다.
+  // 가로 패널 내용 폭 — 화면(확대 프레임) 폭의 1/3(사용자 지정 2026-08-19:
+  // "3분의 1정도 차지하면 어때?"). 예전엔 1080+ 사이드 패널과 같은 220 고정이라
+  // 기기에 따라 28~34% 로 들쭉날쭉했다. 프레임을 실측해서 나눈다 — 확대는 회전
+  // 여부에 따라 폭이 화면 세로가 되기도 해서 상수로는 못 잡는다.
+  // 바닥·천장을 둔다: 너무 좁으면 타일이 못 읽히고, 넓으면 영상이 죽는다.
+  const immFrameRef = useRef<HTMLDivElement>(null);
+  const [immFrameW, setImmFrameW] = useState(0);
+  useEffect(() => {
+    const el = immFrameRef.current;
+    if (!el) return;
+    const measure = () => setImmFrameW(el.offsetWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+  const panelContentW =
+    immFrameW > 0
+      ? Math.max(200, Math.min(380, Math.round(immFrameW / 3)))
+      : SIDE_PANEL_W;
   // 가로 딤 왼쪽 아래 아이콘이 여는 오른쪽 패널 — 어느 탭으로 열렸는지까지 담는다
   // (사용자 지정 2026-08-18). null 이면 닫힘.
   const [lsPanel, setLsPanel] = useState<"list" | "motion" | null>(null);
@@ -540,6 +560,7 @@ export default function VariantA3({
     return (
       // 패널이 열리면 영상을 밀고 옆에 선다(덮지 않는다) — 그래서 가로 배치다.
       <div
+        ref={immFrameRef}
         className={`app-safe-frame flex h-full w-full overflow-hidden bg-black${
           panelBottom ? " flex-col" : ""
         }`}
@@ -808,6 +829,7 @@ export default function VariantA3({
         {(lsPanel || lsPanelOpen) && (
           <LandscapeSidePanel
             position={panelBottom ? "bottom" : "right"}
+            contentWidth={panelContentW}
             open={lsPanelOpen && lsPanel !== null}
             tab={lsPanelTab}
             onTab={setLsPanel}
@@ -5653,6 +5675,7 @@ function TimelineSkeleton({ visible }: { visible: boolean }) {
 const LS_PANEL_PAD = 16;
 function LandscapeSidePanel({
   position = "right",
+  contentWidth = SIDE_PANEL_W,
   open,
   tab,
   onTab,
@@ -5664,6 +5687,9 @@ function LandscapeSidePanel({
   edge,
   onClose,
 }: {
+  /** 패널 전체 폭(px) — 화면 폭의 1/3 을 부모가 재서 넘긴다. 바깥 여백(extra)도
+   *  이 안에 포함된다: 흰 판이 화면에서 차지하는 몫이 곧 이 값이다. */
+  contentWidth?: number;
   /** 어느 변에서 나오는가. 세로로 긴 화면은 "bottom" — 오른쪽에서 내면 영상
    *  폭이 크게 깎인다(사용자 지정 2026-08-18). 판정은 부모(PANEL_BOTTOM_RATIO). */
   position?: "right" | "bottom";
@@ -5691,7 +5717,9 @@ function LandscapeSidePanel({
   const canMotion = mode === "recording" && selectedIndex !== null;
   const showMotion = tab === "motion" && canMotion;
   const cam = CAMERAS[selectedIndex ?? 0];
-  const full = SIDE_PANEL_W + extra;
+  // 전체 폭은 부모가 준 값 그대로다. 바깥 여백(extra)은 이 안에서 빠지므로
+  // 타일이 쓰는 폭은 full − extra 다.
+  const full = contentWidth;
   const bottom = position === "bottom";
   return (
     <div
