@@ -54,6 +54,7 @@ import {
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
   IMMERSIVE_EDGE,
+  IMMERSIVE_EXTRA_INSET,
   LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
   LANDSCAPE_EDGE_ANDROID,
@@ -462,8 +463,8 @@ export default function VariantA({
           // 깔려서 붙어 보이고 클릭도 겹쳤다(사용자 지정: "하단 마진도 한 20 더").
           // 아래층·위층 인셋 — 네 안 공통(layoutRules). 32 였는데 A-3 에 맞춰
           // 22 로 내렸다(사용자 지정 2026-08-18).
-          bottomInset={LANDSCAPE_BOTTOM_INSET}
-          topInset={LANDSCAPE_TOP_INSET}
+          bottomInset={LANDSCAPE_BOTTOM_INSET + (rotatedNow ? 0 : IMMERSIVE_EXTRA_INSET)}
+          topInset={LANDSCAPE_TOP_INSET + (rotatedNow ? 0 : IMMERSIVE_EXTRA_INSET)}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}

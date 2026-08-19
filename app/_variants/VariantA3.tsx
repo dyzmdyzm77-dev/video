@@ -57,6 +57,7 @@ import {
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
   IMMERSIVE_EDGE,
+  IMMERSIVE_EXTRA_INSET,
   LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
   LANDSCAPE_EDGE_ANDROID,
@@ -585,11 +586,11 @@ export default function VariantA3({
           // 패널이 열리면 오른쪽만 좁힌다(위 dimEdgeR 과 같은 값).
           edgeInsetRight={lsPanel ? DIM_EDGE_WITH_PANEL : undefined}
           // 위쪽 요소(장소명·칩 줄·아이콘 줄) — 네 안 공통(layoutRules).
-          topInset={LANDSCAPE_TOP_INSET}
+          topInset={LANDSCAPE_TOP_INSET + (rotatedNow ? 0 : IMMERSIVE_EXTRA_INSET)}
           // 이 층(시간바 + 그 아래 아이콘 줄)은 이 값에서 12 를 뺀 만큼 뜬다.
           // 22 → 아이콘 줄 아래 마진 10(사용자 지정 2026-08-14: 20 에서 10 더 내림).
           // 시간바는 그 아이콘 줄 위에 얹히므로 같이 내려간다.
-          bottomInset={LANDSCAPE_BOTTOM_INSET}
+          bottomInset={LANDSCAPE_BOTTOM_INSET + (rotatedNow ? 0 : IMMERSIVE_EXTRA_INSET)}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}

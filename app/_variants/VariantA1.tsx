@@ -62,6 +62,7 @@ import {
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
   IMMERSIVE_EDGE,
+  IMMERSIVE_EXTRA_INSET,
   LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
   LANDSCAPE_EDGE_ANDROID,
@@ -522,9 +523,9 @@ export default function VariantA1({
           edgeInset={dimEdge}
           // 아래층(AI 버튼·페이지 점) 뜨는 양 — 네 안 공통(layoutRules).
           // 32 였는데 A-3 에 맞춰 22 로 내렸다(사용자 지정 2026-08-18).
-          bottomInset={LANDSCAPE_BOTTOM_INSET}
+          bottomInset={LANDSCAPE_BOTTOM_INSET + (rotatedNow ? 0 : IMMERSIVE_EXTRA_INSET)}
           // 위쪽 요소도 같은 값으로 올린다.
-          topInset={LANDSCAPE_TOP_INSET}
+          topInset={LANDSCAPE_TOP_INSET + (rotatedNow ? 0 : IMMERSIVE_EXTRA_INSET)}
           // 장소명 줄을 오른쪽 아이콘 줄과 윗변 기준으로 맞춘다.
           headerAlign="top"
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.

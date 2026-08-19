@@ -42,6 +42,7 @@ import {
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
   IMMERSIVE_EDGE,
+  IMMERSIVE_EXTRA_INSET,
   LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
   LANDSCAPE_EDGE_ANDROID,
@@ -411,8 +412,8 @@ export default function VariantB({
           edgeInset={dimEdge}
           // 위아래 인셋도 네 안 공통으로 맞춘다(사용자 지정 2026-08-18). B 는
           // 그동안 안 넘겨 LandscapeVideo 기본값(위 0 · 아래 12)이었다.
-          topInset={LANDSCAPE_TOP_INSET}
-          bottomInset={LANDSCAPE_BOTTOM_INSET}
+          topInset={LANDSCAPE_TOP_INSET + (rotatedNow ? 0 : IMMERSIVE_EXTRA_INSET)}
+          bottomInset={LANDSCAPE_BOTTOM_INSET + (rotatedNow ? 0 : IMMERSIVE_EXTRA_INSET)}
           // 전환 스켈레톤 — 세로와 같은 상태를 그대로 넘긴다.
           loading={expandedIndex !== null ? videoLoading : gridLoading}
           onExpand={handleExpand}

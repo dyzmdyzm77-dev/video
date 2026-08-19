@@ -342,3 +342,9 @@ export const LANDSCAPE_TOP_INSET = -10;
  *  기준은 역시 A-3 에서 맞춘 22 다(A-1·A 는 32, B 는 기본 12 였다). 이 값에서
  *  12 를 뺀 만큼 층이 떠오른다(LandscapeVideo 의 statusBottom 주석 참고). */
 export const LANDSCAPE_BOTTOM_INSET = 22;
+
+/** 제자리 확대(회전 없이 그 자리에서 몰입)일 때 위아래로 더 주는 여백(px).
+ *  화면이 안 돌았으니 폭도 그대로라, 눕힌 화면과 같은 값으로는 위아래가 답답하다
+ *  (사용자 지정 2026-08-19: "제자리 확대모드 ... 위아래 마진 좀 20정도 더 줬으면").
+ *  위쪽은 그만큼 내려오고 아래층은 그만큼 떠오른다. */
+export const IMMERSIVE_EXTRA_INSET = 20;
