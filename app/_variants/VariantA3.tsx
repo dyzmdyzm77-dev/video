@@ -4789,10 +4789,12 @@ function RecordingControls({
           onClick={onOpenDateTime}
           className="flex items-center gap-0 text-[14px] font-medium leading-none text-[#353535]"
         >
-          {/* 화살표는 안 그린다(사용자 지정 2026-08-18: "시간쪽에 화살표도 가리고").
-              날짜를 바꾸는 입구가 시간바 왼쪽 달력 버튼으로 옮겨져서, 여기 화살표는
-              같은 일을 두 번 알리는 셈이 됐다. 글자 자체는 계속 눌린다. */}
+          {/* 화살표 — 한 번 뺐다가 되살렸다(사용자 지정 2026-08-19: "화살표
+              되살려"). 뺀 이유는 시간바 왼쪽 달력 버튼이 같은 일을 하고 있어서
+              였는데, 다채널 녹화에서 시간바를 통째로 빼면서 그 버튼도 같이
+              사라졌다 — 지금은 이 줄이 날짜를 바꾸는 유일한 입구다. */}
           <span suppressHydrationWarning>{labelDate}</span>
+          <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
         </button>
         <RowSkeleton visible={rowLoading} />
       </div>
