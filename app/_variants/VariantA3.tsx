@@ -5793,14 +5793,34 @@ function LandscapeSidePanel({
               type="button"
               onClick={() => onSelect(i)}
               className="relative h-full aspect-video flex-none overflow-hidden bg-neutral-900"
-              style={{
-                borderRadius: "4px",
-                ...(i === selectedIndex
-                  ? { boxShadow: "inset 0 0 0 2px #1D6CEB" }
-                  : null),
-              }}
+              style={{ borderRadius: "4px" }}
             >
               <CameraFeed label={c.label} src={c.src} />
+              {/* 고른 카메라 표시 — 세로 목록과 같은 그림(사용자 지정 2026-08-19:
+                  "목록 누르면 세로처럼, 파란색 테두리랑 그 움직이는 아이콘").
+                  어둡게 깔고 파란 테두리 + 재생 중 아이콘. */}
+              {i === selectedIndex && (
+                <>
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+                  />
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                      boxShadow: "inset 0 0 0 2px #1D6CEB",
+                      borderRadius: "4px",
+                    }}
+                  />
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <img
+                      src={`${BASE}/nav/playing.gif`}
+                      alt="재생 중"
+                      className="h-6 w-6"
+                    />
+                  </div>
+                </>
+              )}
             </button>
           ))}
         </div>
@@ -5812,14 +5832,34 @@ function LandscapeSidePanel({
               type="button"
               onClick={() => onSelect(i)}
               className="relative aspect-video w-full flex-none overflow-hidden bg-neutral-900"
-              style={{
-                borderRadius: "4px",
-                ...(i === selectedIndex
-                  ? { boxShadow: "inset 0 0 0 2px #1D6CEB" }
-                  : null),
-              }}
+              style={{ borderRadius: "4px" }}
             >
               <CameraFeed label={c.label} src={c.src} />
+              {/* 고른 카메라 표시 — 세로 목록과 같은 그림(사용자 지정 2026-08-19:
+                  "목록 누르면 세로처럼, 파란색 테두리랑 그 움직이는 아이콘").
+                  어둡게 깔고 파란 테두리 + 재생 중 아이콘. */}
+              {i === selectedIndex && (
+                <>
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+                  />
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    style={{
+                      boxShadow: "inset 0 0 0 2px #1D6CEB",
+                      borderRadius: "4px",
+                    }}
+                  />
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <img
+                      src={`${BASE}/nav/playing.gif`}
+                      alt="재생 중"
+                      className="h-6 w-6"
+                    />
+                  </div>
+                </>
+              )}
             </button>
           ))}
         </div>
