@@ -778,17 +778,21 @@ export default function VariantA3({
                             textShadow: "0 0 4px rgba(0,0,0,0.6)",
                           }}
                         >
-                          {/* 빨간 점 + 상태 글자 → 시각 순(사용자 지정 2026-08-19:
+                          {/* 점 + 상태 글자 → 시각 순(사용자 지정 2026-08-19:
                               "현재시간 앞에 점 + 실시간 이것도 추가해줘",
-                              "점은 빨간색"). 세로 딤의 실시간/녹화 배지와 같은
-                              말을 쓰고, 알약 하나에 묶어 아이콘 줄과 높이를 맞춘다. */}
+                              "점은 빨간색", "녹화영상은 흰색 점으로").
+                              세로 딤의 실시간/녹화 배지와 같은 말·같은 구분이고,
+                              알약 하나에 묶어 아이콘 줄과 높이를 맞춘다. */}
                           <span
                             aria-hidden
                             className="rounded-full"
                             style={{
                               width: "5px",
                               height: "5px",
-                              backgroundColor: "#FF3B4A",
+                              // 실시간은 빨강, 녹화영상은 흰 점(사용자 지정
+                              // 2026-08-19) — 세로 딤의 두 배지와 같은 구분이다.
+                              backgroundColor:
+                                mode === "recording" ? "#FFFFFF" : "#FF3B4A",
                               marginRight: "5px",
                               flex: "none",
                             }}
