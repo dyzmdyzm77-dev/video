@@ -428,6 +428,16 @@ export default function VariantA({
 
   const dateLabel = now ? formatNow(now) : "";
 
+  // 가로 딤에 띄울 현재 시각 — 녹화면 재생 위치, 실시간이면 지금 시각.
+  // 시간바가 없는 화면에서 쓴다(시간바가 있으면 그 안 알약이 같은 값을 보여 준다).
+  // A-3 과 같은 계산식이다.
+  const landscapeClock = (() => {
+    const d = mode === "recording" ? (playbackMs !== null ? new Date(playbackMs) : null) : now;
+    if (!d) return "";
+    const p2 = (n: number) => String(n).padStart(2, "0");
+    return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+  })();
+
   // 가로 모드 — 지금은 영상만 보여준다(헤더·목록·탭바·시스템 바 전부 없음).
   // '영상만' 화면은 크게 보기(확대)일 때만이다.
   //
@@ -491,23 +501,80 @@ export default function VariantA({
           // 둘을 따로 얹으므로 RecordingControls 를 두 벌 쓴다 — 각자 자기 몫만
           // 그리게 timelineOnly / playerOnly 로 갈라 준다.
           controls={
-            // 시간바는 단일 화면에서만 — 다채널 녹화에는 안 둔다(사용자 지정
-            // 2026-08-19, 세로 다채널과 같은 규칙).
-            mode === "recording" && expandedIndex !== null ? (
-              <RecordingControls
-                overlay
-                timelineOnly
-                now={now}
-                onScrubbingChange={setIsScrubbing}
-                playbackMs={playbackMs}
-                setPlaybackMs={setPlaybackMs}
-                onOpenDateTime={() => setDateTimeOpen(true)}
-                isPlaying={isPlaying}
-                onTogglePlay={() => setIsPlaying((p) => !p)}
-                onPlay={() => setIsPlaying(true)}
-                onSpeedChange={setPlaybackRate}
-              />
-            ) : null
+            <>
+              {/* 시간바는 단일 화면에서만 — 다채널 녹화에는 안 둔다(사용자 지정
+                  2026-08-19, 세로 다채널과 같은 규칙). */}
+              {mode === "recording" && expandedIndex !== null ? (
+                <RecordingControls
+                  overlay
+                  timelineOnly
+                  now={now}
+                  onScrubbingChange={setIsScrubbing}
+                  playbackMs={playbackMs}
+                  setPlaybackMs={setPlaybackMs}
+                  onOpenDateTime={() => setDateTimeOpen(true)}
+                  isPlaying={isPlaying}
+                  onTogglePlay={() => setIsPlaying((p) => !p)}
+                  onPlay={() => setIsPlaying(true)}
+                  onSpeedChange={setPlaybackRate}
+                />
+              ) : null}
+              {/* 현재 시각 알약 — 딤 하단 정중앙(사용자 지정 2026-08-20: "A-2안도
+                  그 가로 딤 하단에 시간이랑 점+실시간 그거 좀 넣어줘"). 점 + 상태
+                  글자 + 시각 순으로, A-3 딤 아이콘 줄에 있는 그 알약과 같은 규격을
+                  그대로 쓴다 — 가로 화면은 안끼리 같아야 한다.
+                  시간바가 있는 화면(녹화 + 단일)에서는 안 그린다: 그 안 중앙 알약이
+                  이미 같은 값을 보여 주고, 겹쳐서 상단 날짜·시각을 뺐던 것과 같은
+                  이유다(c3273bf: "시간바랑 겹치네" → "빼자 그럼"). */}
+              {!(mode === "recording" && expandedIndex !== null) && (
+                <div
+                  className="flex w-full justify-center"
+                  style={{
+                    // 딤 오른쪽 아래 원 버튼(34)과 세로 가운데를 맞춘다 — 이 층은
+                    // 그 줄보다 12 아래에서 시작하므로(statusBottom 의 bottom),
+                    // 12 + (34-22)/2 만큼 띄운다.
+                    paddingBottom: "18px",
+                  }}
+                >
+                  <span
+                    suppressHydrationWarning
+                    className="rounded-full"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      height: "22px",
+                      padding: "0 10px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      lineHeight: "13px",
+                      color: "#FFFFFF",
+                      backgroundColor: "rgba(102,102,102,0.4)",
+                      backdropFilter: "blur(20px)",
+                      WebkitBackdropFilter: "blur(20px)",
+                      textShadow: "0 0 4px rgba(0,0,0,0.6)",
+                    }}
+                  >
+                    <span
+                      aria-hidden
+                      className="rounded-full"
+                      style={{
+                        width: "5px",
+                        height: "5px",
+                        // 실시간은 빨강, 녹화영상은 흰 점(A-3 과 같은 구분).
+                        backgroundColor:
+                          mode === "recording" ? "#FFFFFF" : "#FF3B4A",
+                        marginRight: "5px",
+                        flex: "none",
+                      }}
+                    />
+                    <span style={{ marginRight: "6px" }}>
+                      {mode === "recording" ? "녹화영상" : "실시간"}
+                    </span>
+                    {landscapeClock}
+                  </span>
+                </div>
+              )}
+            </>
           }
           centerControls={
             mode === "recording" ? (
