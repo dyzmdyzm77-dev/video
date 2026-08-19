@@ -475,7 +475,9 @@ export default function VariantA({
           onTitleClick={() => setVariantPickerOpen(true)}
           mode={mode}
           setMode={handleSetMode}
-          timeLabel={dateLabel}
+          // 딤 상단의 날짜·시각은 안 띄운다(사용자 지정 2026-08-19: 하단 가운데로
+          // 옮기려다 "시간바랑 겹치네" → "빼자 그럼"). 시각은 시간바 중앙 알약이
+          // 이미 보여 준다. A-3 도 같은 이유로 안 넘긴다.
           // 딤 농도·칩 위치·페이지 점은 LandscapeVideo 기본값을 그대로 쓴다
           // — 가로 화면은 세 안이 같아야 해서 그쪽에 모아 뒀다.
           // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
