@@ -721,7 +721,14 @@ export default function VariantA3({
                   );
                   return (
                     <>
-                      <div className="flex items-center" style={{ gap: "16px" }}>
+                      {/* 양쪽 묶음에 flex-1 을 줘서 가운데 알약이 화면 정중앙에
+                          오게 한다(사용자 지정 2026-08-19: "센터로 맞춰줘").
+                          justify-between 만으로는 왼쪽 묶음이 넓어 알약이 오른쪽으로
+                          밀린다. */}
+                      <div
+                        className="flex flex-1 items-center"
+                        style={{ gap: "16px" }}
+                      >
                         {btn({ key: "ai", label: "AI 검색", src: `${BASE}/ai_Icon.svg`, onClick: () => setAiOpen(true) })}
                         {/* 메뉴 — 오른쪽 패널을 '카메라 목록' 탭으로 연다.
                             열려 있는 쪽을 다시 누르면 닫힌다(사용자 지정 2026-08-18). */}
@@ -794,7 +801,9 @@ export default function VariantA3({
                       )}
                       {/* 크게 보기 ↔ 원래 크기로. 가로에서만 뜨는 줄이라 늘
                           '원래 크기로'다. 딤 오른쪽 아래에 있던 그 버튼이다. */}
-                      {btn({ key: "zoom", label: "원래 크기로", src: `${BASE}/zoom_out.svg`, onClick: toggleImmersive })}
+                      <div className="flex flex-1 items-center justify-end">
+                        {btn({ key: "zoom", label: "원래 크기로", src: `${BASE}/zoom_out.svg`, onClick: toggleImmersive })}
+                      </div>
                     </>
                   );
                 })()}
