@@ -528,6 +528,14 @@ export default function VariantA3({
   // 회전 = 방향 전환' 이라는 기준과 어긋났다(사용자 지적).
   //
   // 확대하면서 눕힌 경우엔 landscape 와 immersive 가 같이 켜지므로 여기로 온다.
+  // 가로 딤에 띄울 현재 시각 — 녹화면 재생 위치, 실시간이면 지금 시각.
+  // 시간바가 없는 화면에서 쓴다(시간바가 있으면 그 안 알약이 같은 값을 보여 준다).
+  const landscapeClock = (() => {
+    const d = mode === "recording" ? (playbackMs !== null ? new Date(playbackMs) : null) : now;
+    if (!d) return "";
+    const p2 = (n: number) => String(n).padStart(2, "0");
+    return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+  })();
   if (immersive) {
     return (
       // 패널이 열리면 영상을 밀고 옆에 선다(덮지 않는다) — 그래서 가로 배치다.
@@ -618,8 +626,37 @@ export default function VariantA3({
                 paddingRight: `${LANDSCAPE_CONTROLS_PAD}px`,
               }}
             >
-              {/* 시간바는 단일 화면에서만. 다채널 녹화에는 안 둔다(사용자 지정
-                  2026-08-19: "가로에서도 빼야해") — 세로 다채널과 같은 규칙이다. */}
+              {/* 시간바가 없는 화면(실시간 · 다채널 녹화)에서도 현재 시각은 보여야
+                  한다(사용자 지정 2026-08-19: "녹화 가로에서 현재시간뜨는거 ...
+                  실시간에 가로에서도 나와야할듯"). 시간바가 있을 땐 그 안의
+                  알약이 같은 일을 하므로 여기선 안 그린다.
+                  규격은 그 알약과 같다 — 높이 20 · 좌우 8 · 반투명 회색 + 블러 +
+                  흰 글자(딤의 원 버튼과 한 값). */}
+              {!(mode === "recording" && expandedIndex !== null) && (
+                <div className="flex justify-center" style={{ paddingBottom: "4px" }}>
+                  <span
+                    suppressHydrationWarning
+                    className="rounded-full"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      height: "20px",
+                      padding: "0 8px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      lineHeight: "12px",
+                      color: "#FFFFFF",
+                      backgroundColor: "rgba(102,102,102,0.4)",
+                      backdropFilter: "blur(20px)",
+                      WebkitBackdropFilter: "blur(20px)",
+                      textShadow: "0 0 4px rgba(0,0,0,0.6)",
+                      opacity: isScrubbing || playerFocus ? 0 : 1,
+                    }}
+                  >
+                    {landscapeClock}
+                  </span>
+                </div>
+              )}
               {mode === "recording" && expandedIndex !== null && (
               <RecordingControls
                 overlay
