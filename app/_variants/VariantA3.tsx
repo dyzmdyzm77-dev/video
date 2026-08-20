@@ -2131,15 +2131,33 @@ function ExpandedView({
   );
   // 영상 아래 '실시간/녹화 배지 + 날짜·시각' 줄. 한 번 없앴다가 되살렸다
   // (사용자 지정 2026-08-14: "다채널에 있는 그거 단일에도 다 같이 넣어줘").
-  // 다채널 화면의 같은 줄과 내용·서식이 같다. 캡처 버튼만 빠져 있는데, 그건
-  // 그 사이에 '카메라 목록' 탭 줄 오른쪽으로 옮겼기 때문이다(두 번 두지 않는다).
-  // 녹화일 때 날짜를 누르면 날짜·시간 선택 시트가 열린다 — 다채널과 같다.
+  // 다채널 화면의 같은 줄과 거의 같은데, 녹화일 때 이 줄 맨 왼쪽에 달력 버튼이
+  // 하나 더 있다 — 시간바 왼쪽에 있던 걸 여기로 옮겼다(사용자 지정 2026-08-20).
+  // 그래서 이 줄만으로 날짜를 고를 수 있다: 달력 버튼도, 날짜 글자도 같은 시트를
+  // 연다.
   const dateBarBlock = (
     <>
       <div
         className="relative flex flex-none items-center px-5"
         style={{ height: "44px" }}
       >
+        {/* 날짜·시간 선택 — 이 줄 맨 왼쪽, REC 칩보다 앞이다(사용자 지정
+            2026-08-20: "시간바 왼쪽에 달력 아이콘 그거 캡쳐 아이콘 있는 영역에
+            왼쪽으로 넣어줘"). 원래는 시간바 왼쪽에 34 원으로 있었는데, 이 줄로
+            오면서 규격은 같은 줄 오른쪽 끝 캡처 버튼에 맞춘다 — 28 원 + 아이콘 24.
+            한 줄에 원 두 개가 크기가 다르면 어긋나 보인다. 시간바 쪽 버튼은
+            없앴다(두 곳에 두지 않는다). 녹화 모드에만 그린다 — 실시간엔 고를
+            날짜가 없다. 오른쪽 여백 8 은 REC↔날짜 사이 간격(ml-2)과 같은 값. */}
+        {mode === "recording" && (
+          <button
+            type="button"
+            aria-label="날짜, 시간 선택"
+            onClick={onOpenDateTime}
+            className="mr-2 flex h-[28px] w-[28px] flex-none items-center justify-center rounded-full border border-neutral-300"
+          >
+            <img src={`${BASE}/time.svg`} alt="" className="h-6 w-6" />
+          </button>
+        )}
         {mode === "recording" ? (
           <RecBadge onClick={onToggleTimeline} />
         ) : (
@@ -2147,7 +2165,7 @@ function ExpandedView({
         )}
         {mode === "recording" ? (
           // 시각 옆 아래 화살표는 뺐다(사용자 지정 2026-08-14). 날짜·시간 선택으로
-          // 들어가는 길은 시간바 왼쪽 달력 버튼과 '녹화영상' 탭이 이미 있어서,
+          // 들어가는 길은 바로 왼쪽 달력 버튼과 '녹화영상' 탭이 이미 있어서,
           // 여기 화살표는 같은 말을 세 번 하는 셈이었다. 글자는 그대로 누를 수 있다.
           <button
             type="button"
@@ -2308,7 +2326,8 @@ function ExpandedView({
   // (가로 시간바) — 탭 없이 항상 보인다. 높이는 A-2 감지 탭 스트립과 같은
   // MOTION_MIN_H 로 고정하고, 남는 세로는 아래 카메라 목록 영역이 쓴다.
   // 시간바 — 탭 위에 늘 있다(사용자 결정 2026-08-14). 재생 위치를 잡는 조작기라
-  // 어느 탭을 보든 쓸 수 있어야 하고, 달력 버튼도 여기 얹혀 있다.
+  // 어느 탭을 보든 쓸 수 있어야 한다. 왼쪽에 얹혀 있던 달력 버튼은 위 날짜 줄로
+  // 옮겨서(2026-08-20) 지금은 눈금만 왼쪽 끝까지 흐른다.
   // 썸네일 줄은 여기서 빠져 '움직임 감지' 탭의 리스트로 갔다 — 그래서 접기
   // 화살표도 없앴다(접을 게 없다). 높이는 위아래 여백을 맞춘 BAR_H_CLOSED.
   const motionBlock = mode === "recording" && (
@@ -2328,7 +2347,6 @@ function ExpandedView({
         setPlaybackMs={setPlaybackMs}
         cameraSrc={cam.src}
         onScrubbingChange={onScrubbingChange}
-        onOpenDateTime={onOpenDateTime}
       />
     </div>
   );
@@ -2479,7 +2497,7 @@ function ExpandedView({
             {playerBlock}
             {/* 시간바 — 5버튼 바로 아래(사용자 지정 2026-08-14). 패널이 나와도
                 재생 위치를 잡을 게 있어야 한다. 세로 화면과 같은 시간바라
-                달력 버튼·감지 빨간 선도 그대로 따라온다. */}
+                감지 빨간 선도 그대로 따라온다(달력 버튼은 위 날짜 줄에 있다). */}
             {motionBlock}
           </div>
           <div
@@ -3138,7 +3156,6 @@ function RecordingEventTimeline({
   setPlaybackMs,
   cameraSrc,
   onScrubbingChange,
-  onOpenDateTime,
 }: {
   playbackMs: number | null;
   setPlaybackMs: (
@@ -3146,9 +3163,6 @@ function RecordingEventTimeline({
   ) => void;
   cameraSrc: string;
   onScrubbingChange?: (s: boolean) => void;
-  /** 시간바 왼쪽 달력 버튼 — 날짜·시간 선택 시트를 연다. 넘기면 버튼이 생긴다.
-   *  영상 아래 날짜 줄을 없애면서 사라졌던 진입점이 여기로 돌아온다. */
-  onOpenDateTime?: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   // 썸네일을 못 뽑는 기기 사양이면 카드에 시각+타이틀만 남긴다(eventThumbs.ts).
@@ -3746,51 +3760,11 @@ function RecordingEventTimeline({
             backgroundColor: "#111111",
           }}
         />
-        {/* 날짜·시간 선택 — 원(흰 배경 · border-neutral-300)을 도로 넣었다
-            (사용자 결정 2026-08-14). 크기는 딤의 확대·AI 원 버튼과 같은 34
-            (사용자 지정: "확대 아이콘 마냥"). 아이콘은 24 — 확대 쪽은 28 을 쓰지만
-            그 에셋은 안쪽 여백이 있고 time.svg 는 박스를 거의 꽉 채우는 그림이라,
-            28 로 넣으면 원에 닿아 동그라미가 안 보인다. 24 면 사방 5 가 남는다.
-            그 오른쪽 세로 구분선은 그대로 둔다 — 흐르는 눈금과 갈라 준다.
-            원 왼쪽 끝은 화면 좌우 여백 20, 세로는 눈금 레일(RAIL_H) 가운데.
-            구분선 색은 앱 공용 #EBEBEB, 높이는 눈금(8)보다 길고 레일(28)보다 짧은 16.
-            감싼 층에 흰 배경을 깐 건 아래로 흐르는 눈금이 겹쳐 지저분해지는 걸
-            막기 위해서다(왼쪽 페이드만으로는 눈금이 비친다).
-            시간바는 드래그로 스크럽되니 포인터를 막는다. */}
-        {onOpenDateTime && (
-          <div
-            className="absolute z-20 flex items-center"
-            style={{
-              left: "20px",
-              top: `${PAD_TOP + (RAIL_H - 34) / 2}px`,
-              height: "34px",
-              gap: "12px",
-              backgroundColor: TIMEBAR_BG,
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              aria-label="날짜, 시간 선택"
-              className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-neutral-300"
-              style={{ backgroundColor: "#FFFFFF" }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenDateTime();
-              }}
-            >
-              <img src={`${BASE}/time.svg`} alt="" className="h-6 w-6" />
-            </button>
-            <span
-              aria-hidden
-              style={{
-                width: "1px",
-                height: "16px",
-                backgroundColor: "#EBEBEB",
-              }}
-            />
-          </div>
-        )}
+        {/* 날짜·시간 선택 버튼은 여기 없다 — 위 '녹화 + 날짜 + 캡처' 줄 맨 왼쪽으로
+            옮겼다(사용자 지정 2026-08-20: "시간바 왼쪽에 달력 아이콘 그거 캡쳐
+            아이콘 있는 영역에 왼쪽으로 넣어줘"). 시간을 고르는 입구가 날짜 글자
+            바로 옆에 모이고, 시간바는 눈금만 남아 왼쪽 끝까지 흐른다.
+            다채널 시간바(RecordingControls)는 그대로다 — 거긴 그 줄이 없다. */}
       </div>
 
     </div>
@@ -5071,9 +5045,12 @@ function RecordingControls({
             />
           ))}
         </div>
-        {/* 날짜·시간 선택 — 단일 채널 시간바와 같은 것(사용자 지정 2026-08-18:
-            "A-3세로 다채널에서, 단일채널과 동일하게 시간바 왼쪽에 달력 아이콘
-            넣어주고, 구분선이랑 똑같이"). 규격도 그대로다: 34 원 + 흰 배경 +
+        {/* 날짜·시간 선택 — 원래 단일 채널 시간바에서 그대로 가져온 것이다
+            (사용자 지정 2026-08-18: "A-3세로 다채널에서, 단일채널과 동일하게
+            시간바 왼쪽에 달력 아이콘 넣어주고, 구분선이랑 똑같이"). 지금은 단일
+            쪽이 이 버튼을 위 날짜 줄로 옮겨서(2026-08-20) 둘이 갈렸다 — 그때
+            지정은 단일 화면만이었다. 여긴 그대로 시간바에 남긴다.
+            규격은 옮기기 전 단일과 같다: 34 원 + 흰 배경 +
             neutral-300 테두리, 아이콘 24, 왼쪽 20, 오른쪽에 1×16 #EBEBEB 구분선.
             감싼 층 배경은 시간바와 같은 색이라 아래로 흐르는 눈금을 가려 준다.
             딤 위(가로)에선 안 그린다 — 거긴 딤 아이콘 줄이 같은 일을 한다. */}
