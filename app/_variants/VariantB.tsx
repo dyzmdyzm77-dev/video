@@ -35,6 +35,8 @@ import { nextVideoFit, videoFitIcon } from "../components/videoFit";
 import { useAutoHide } from "../components/useAutoHide";
 import AndroidNav from "../components/AndroidNav";
 import { useListLayout } from "../components/useListLayout";
+import { useEventThumbs } from "../components/eventThumbs";
+import EventCardFace from "../components/EventCardFace";
 import { useGridAreaRatio } from "../components/useGridLayout";
 import {
   autoGridCount,
@@ -1736,6 +1738,8 @@ function RecordingEventTimeline({
   onScrubbingChange?: (s: boolean) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // 썸네일을 못 뽑는 사양(NVR)이면 카드에 시각+타이틀만 남긴다(eventThumbs.ts).
+  const eventThumbs = useEventThumbs();
   // 줌 레벨: 픽셀/초 — 가로 타임라인과 동일하게 기본 6px/sec. 핀치/휠로 연속 조정.
   const [pxPerSec, setPxPerSec] = useState(6);
   const [lineY, setLineY] = useState(20);
@@ -2253,9 +2257,12 @@ function RecordingEventTimeline({
                     />
                   </>
                 )}
-                {/* 앞쪽(대표) 썸네일 */}
+                {/* 앞쪽(대표) 썸네일. NVR 사양이면 이미지 대신 EventCardFace —
+                    A·A-1·A-3 와 같은 규칙이다(eventThumbs.ts). 검정 배경은 이미지가
+                    있을 때만 깔아야 한다; 남겨 두면 흰 카드의 라운드 모서리에서
+                    검정이 비친다. */}
                 <div
-                  className="absolute overflow-hidden rounded-md bg-neutral-900"
+                  className={`absolute overflow-hidden rounded-md ${eventThumbs ? "bg-neutral-900" : ""}`}
                   style={{
                     left: 0,
                     top: 0,
@@ -2268,12 +2275,16 @@ function RecordingEventTimeline({
                       : null),
                   }}
                 >
-                  <FrozenImage
-                    src={cameraSrc}
-                    alt=""
-                    className="h-full w-full"
-                    style={{ objectFit: "cover" }}
-                  />
+                  {eventThumbs ? (
+                    <FrozenImage
+                      src={cameraSrc}
+                      alt=""
+                      className="h-full w-full"
+                      style={{ objectFit: "cover" }}
+                    />
+                  ) : (
+                    <EventCardFace ms={occ.ms} />
+                  )}
                   {count > 1 && (
                     <span
                       className="absolute inline-flex items-center justify-center leading-none tabular-nums"
