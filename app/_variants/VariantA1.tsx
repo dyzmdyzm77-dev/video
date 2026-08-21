@@ -52,7 +52,7 @@ import {
   TIMELINE_EVENTS,
   type EventKind,
 } from "../components/timelineEvents";
-import CloudEventSheet from "../components/CloudEventSheet";
+import CloudEventScreen from "../components/CloudEventScreen";
 import { useStorageMode } from "../components/storageMode";
 import { useGridAreaRatio } from "../components/useGridLayout";
 import {
@@ -412,13 +412,11 @@ export default function VariantA1({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandedIndex]);
 
-  // 녹화로 들어갈 때 뜨는 시트 — NVR 은 예전 그대로 날짜·시간을 찍고,
-  // 클라우드는 오늘 이벤트 목록에서 고른다(CloudEventSheet 주석 참고).
-  // 두 시트의 props 가 같아서(open·initialMs·onClose·onApply) 여기서
-  // 컴포넌트만 갈아끼우면 아래 호출부는 손댈 게 없다.
+  // 녹화로 들어갈 때 — NVR 은 예전 그대로 날짜·시간 시트가 뜨고,
+  // 클라우드는 '오늘 이벤트 내역' 화면으로 넘어간다(CloudEventScreen).
+  // 둘 다 dateTimeOpen 하나로 켜고, 클라우드일 땐 시트를 열지 않는다.
   const storage = useStorageMode();
-  const RecordingEntrySheet =
-    storage === "cloud" ? CloudEventSheet : DateTimePickerSheet;
+  const cloudEventScreen = storage === "cloud" && dateTimeOpen;
 
   const triggerTransitionSkeleton = () => {
     if (expandedIndex === null) {
@@ -607,7 +605,7 @@ export default function VariantA1({
             setCurrentPage(0);
           }}
         />
-        <RecordingEntrySheet
+        <DateTimePickerSheet
           open={dateTimeOpen}
           initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
           onClose={() => setDateTimeOpen(false)}
@@ -665,7 +663,22 @@ export default function VariantA1({
         </div>
       )}
 
-      {expandedIndex === null ? (
+      {/* 클라우드에서 녹화로 들어가면 영상 자리를 이벤트 목록이 대신한다.
+          시트가 아니라 화면이라 여기서 갈린다 — 아래 하단 탭바는 이 블록
+          바깥의 형제라 그대로 남는다(사용자 결정). */}
+      {cloudEventScreen ? (
+        <CloudEventScreen
+          initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
+          onLive={() => setDateTimeOpen(false)}
+          onPick={(ms) => {
+            setPlaybackMs(ms);
+            setIsPlaying(true);
+            setMode("recording");
+            setDateTimeOpen(false);
+            triggerTransitionSkeleton();
+          }}
+        />
+      ) : expandedIndex === null ? (
         <GridView
           onExpand={handleExpand}
           currentPage={currentPage}
@@ -723,8 +736,8 @@ export default function VariantA1({
         />
       )}
 
-      <RecordingEntrySheet
-        open={dateTimeOpen}
+      <DateTimePickerSheet
+        open={dateTimeOpen && !cloudEventScreen}
         initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
         onClose={() => setDateTimeOpen(false)}
         onApply={(ms) => {
