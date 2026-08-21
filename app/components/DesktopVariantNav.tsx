@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { EVENT_THUMBS_EVENT } from "./eventThumbs";
 import {
   requestCompareTarget,
   useCompareTarget,
@@ -165,8 +164,6 @@ export default function DesktopVariantNav() {
         compareWith === "asis" ? "To Be" : VARIANT_LABEL[variant];
     }
   }, [compareWith, variant]);
-  // 움직임 감지 이벤트 카드에 썸네일을 쓸 수 있는 사양인지. 끄면 시각+타이틀만.
-  const [eventThumbs, setEventThumbs] = useState(true);
   // 직접 입력(커스텀 해상도) — 가로·세로 px.
   const [customW, setCustomW] = useState("");
   const [customH, setCustomH] = useState("");
@@ -183,20 +180,19 @@ export default function DesktopVariantNav() {
   }, [actualSize]);
 
   // ?compare=1 이면 처음부터 비교 모드로 연다(platform·chrome 과 같은 방식).
-  // ?thumbs=0 이면 썸네일 없는 사양으로 시작한다 — 좌측 패널은 데스크톱 전용이라
+  // ?storage=cloud 면 클라우드로 시작한다 — 좌측 패널은 데스크톱 전용이라
   // 폰으로 미리보기를 열어 볼 땐 쿼리가 유일한 진입점이다.
+  // ?thumbs= 는 저장 방식으로 합쳐지기 전의 옛 이름이다(이미 돌아다니는 링크가
+  // 있어 그대로 받는다). 썸네일 있음 = 클라우드, 없음 = NVR.
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     if (sp.get("compare") === "1") setCompare(true);
-    if (sp.get("thumbs") === "0") setEventThumbs(false);
+    const thumbs = sp.get("thumbs");
+    if (thumbs === "0") requestStorageMode("nvr");
+    if (thumbs === "1") requestStorageMode("cloud");
     if (sp.get("storage") === "cloud") requestStorageMode("cloud");
+    if (sp.get("storage") === "nvr") requestStorageMode("nvr");
   }, []);
-
-  // 썸네일 지원 여부를 문서 루트에 반영한다(A·A-1 의 움직임 감지 타임라인이 구독).
-  useEffect(() => {
-    document.documentElement.dataset.eventThumbs = eventThumbs ? "true" : "false";
-    window.dispatchEvent(new Event(EVENT_THUMBS_EVENT));
-  }, [eventThumbs]);
 
   // 비교하기(As Is 나란히) 여부를 문서 루트에 반영한다(AsIsPanel 이 구독).
   useEffect(() => {
@@ -678,19 +674,6 @@ export default function DesktopVariantNav() {
         <span className="dvn-label">비교하기</span>
       </button>
 
-
-      {/* 움직임 감지 썸네일 온/오프 — 썸네일을 못 뽑는 기기 사양 대응 화면 확인용.
-          끄면 카드 자리에 시각 + "움직임 감지" 텍스트만 남는다(카드 크기는 동일). */}
-      <label className="dvn-ruler-toggle" title="움직임 감지 썸네일">
-        <span className="dvn-icon">
-          <input
-            type="checkbox"
-            checked={eventThumbs}
-            onChange={(e) => setEventThumbs(e.target.checked)}
-          />
-        </span>
-        <span className="dvn-label">감지 썸네일</span>
-      </label>
 
       {/* 목업 위 치수 눈금자 표시 온/오프. */}
       <label className="dvn-ruler-toggle" title="치수 표시">
