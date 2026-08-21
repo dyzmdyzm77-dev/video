@@ -35,6 +35,9 @@ import { nextVideoFit, videoFitIcon } from "../components/videoFit";
 import { useAutoHide } from "../components/useAutoHide";
 import AndroidNav from "../components/AndroidNav";
 import { useListLayout } from "../components/useListLayout";
+import { TIMELINE_EVENTS } from "../components/timelineEvents";
+import CloudEventSheet from "../components/CloudEventSheet";
+import { useStorageMode } from "../components/storageMode";
 import { useEventThumbs } from "../components/eventThumbs";
 import EventCardFace from "../components/EventCardFace";
 import { useGridAreaRatio } from "../components/useGridLayout";
@@ -333,6 +336,14 @@ export default function VariantB({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandedIndex]);
 
+  // 녹화로 들어갈 때 뜨는 시트 — NVR 은 예전 그대로 날짜·시간을 찍고,
+  // 클라우드는 오늘 이벤트 목록에서 고른다(CloudEventSheet 주석 참고).
+  // 두 시트의 props 가 같아서(open·initialMs·onClose·onApply) 여기서
+  // 컴포넌트만 갈아끼우면 아래 호출부는 손댈 게 없다.
+  const storage = useStorageMode();
+  const RecordingEntrySheet =
+    storage === "cloud" ? CloudEventSheet : DateTimePickerSheet;
+
   const triggerTransitionSkeleton = () => {
     if (expandedIndex === null) {
       setGridLoading(true);
@@ -460,7 +471,7 @@ export default function VariantB({
             setCurrentPage(0);
           }}
         />
-        <DateTimePickerSheet
+        <RecordingEntrySheet
           open={dateTimeOpen}
           initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
           onClose={() => setDateTimeOpen(false)}
@@ -577,7 +588,7 @@ export default function VariantB({
         />
       )}
 
-      <DateTimePickerSheet
+      <RecordingEntrySheet
         open={dateTimeOpen}
         initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
         onClose={() => setDateTimeOpen(false)}
@@ -1674,55 +1685,6 @@ function ExpandedView({
   );
 }
 
-// 시간대별 상대 활동량(0~23시) — 클수록 이벤트가 촘촘하다. 심야 한산, 출퇴근·저녁 붐빔.
-const HOURLY_ACTIVITY = [
-  3, 2, 2, 2, 2, 3, // 0-5시 심야
-  5, 8, 9, 8, 7, 7, // 6-11시 오전
-  8, 7, 7, 7, 8, 9, // 12-17시 오후
-  10, 9, 8, 6, 5, 4, // 18-23시 저녁
-];
-
-// 시드 기반 PRNG — 매 렌더마다 동일한 랜덤 분포 보장
-function mulberry32(seed: number) {
-  let s = seed >>> 0;
-  return () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-// 가상 이벤트 — 자정부터 하루를 연속으로 걸으며 '묶음' 단위로 배치한다.
-// at: 자정 기준 초 오프셋, dur: 영상 길이(초). dur 로 타임라인 막대 길이를 그린다.
-//
-// 설계 의도(두 가지를 동시에 만족):
-//  1) 빽빽한 리본 — 활동 시간대 평균 ~16~24초 간격이라 기본 줌에서도 화면이 썸네일로 찬다.
-//  2) 상식적인 겹침 — 한 묶음은 1개(78%)·2개(18%)·3개(4%)뿐이고, 멤버는 4~8초 간격.
-//     다음 묶음은 마지막 멤버에서 최소 16초 떨어뜨려 '격리'하므로 묶음끼리는 절대 붙지 않는다
-//     → 같은 1초에 떼박히거나 4개 이상 겹치는 비상식적 분포가 구조적으로 불가능.
-const TIMELINE_EVENTS = (() => {
-  const rng = mulberry32(20260529);
-  const arr: { at: number; dur: number }[] = [];
-  let t = 0;
-  while (t < 86400) {
-    const h = Math.min(23, Math.floor(t / 3600));
-    // 활동량이 높을수록 평균 간격이 짧다(12초) ~ 한산할수록 길다(30초). 하루 ~4900건.
-    const meanGap = 12 + (30 - 12) * (1 - (HOURLY_ACTIVITY[h] - 2) / 8);
-    const r = rng();
-    const size = r < 0.78 ? 1 : r < 0.96 ? 2 : 3; // 묶음 크기
-    let last = t;
-    arr.push({ at: Math.round(t), dur: 4 + Math.floor(rng() * 12) }); // 4~15초
-    for (let k = 1; k < size; k++) {
-      last += 4 + Math.floor(rng() * 5); // 묶음 내 멤버 간 4~8초
-      arr.push({ at: Math.round(last), dur: 4 + Math.floor(rng() * 12) });
-    }
-    // 다음 묶음 시작 — 마지막 멤버에서 ≥16초 떨어뜨려 묶음을 격리.
-    t = last + Math.max(16, Math.round(meanGap * (0.5 + rng())));
-  }
-  return arr.sort((a, b) => a.at - b.at);
-})();
 
 function RecordingEventTimeline({
   playbackMs,
