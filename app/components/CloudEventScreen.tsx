@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BASE } from "../basePath";
+import DateTimePickerSheet from "./DateTimePickerSheet";
 import EventKindChip from "./EventKindChip";
+import ModeChipToggle from "./ModeChipToggle";
 import { EVENT_KINDS, TIMELINE_EVENTS, type EventKind } from "./timelineEvents";
 
 // ============================================================================
@@ -17,9 +19,11 @@ import { EVENT_KINDS, TIMELINE_EVENTS, type EventKind } from "./timelineEvents";
 // 그래서 딤도 슬라이드 애니메이션도 없고, 안의 콘텐츠 컬럼 안에서 세로를 다
 // 차지한다. 하단 탭바(홈·경비·영상·전체)는 이 화면 바깥의 형제라 그대로 남는다.
 //
-// 돌아가는 길은 위쪽 '실시간' 하나다(사용자 결정) — 뒤로가기 화살표를 따로 두지
-// 않는다. 이 화면은 녹화 모드의 첫 화면이지 시트가 아니라서, 닫는 게 아니라
-// 다른 탭으로 옮겨 가는 게 맞다.
+// 맨 윗줄은 실시간 화면과 같은 구조다(사용자 결정) — 같은 ModeChipToggle 에
+// 같은 자리 날짜·시각. 다른 점은 그 날짜·시각이 눌린다는 것 하나뿐이다:
+// 누르면 '날짜, 시간 선택' 시트가 떠서 어느 날 것을 볼지 고른다. 실시간엔
+// 고를 게 없어 라벨로 두지만, 여기선 그게 곧 목록의 범위다.
+// 돌아가는 길은 그 줄의 LIVE 하나다 — 뒤로가기 화살표는 따로 두지 않는다.
 //
 // 네 안(A-1·A-2·A-3·B)이 이 하나를 같이 쓴다. 진입 화면이 안마다 다르게 보이면
 // 안끼리 비교가 안 되므로, 안에 두지 않고 여기 공유 컴포넌트로 뒀다.
@@ -28,7 +32,6 @@ import { EVENT_KINDS, TIMELINE_EVENTS, type EventKind } from "./timelineEvents";
 // 다중 선택은 칩이 좁은 폭(360px)에서 '지금 뭐가 켜졌는지'를 읽기 어렵다.
 // ============================================================================
 
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const pad = (n: number) => String(n).padStart(2, "0");
 
 // 시간대 필터. from ≤ 시 < to (24시간). '전체'만 범위가 없다.
@@ -52,6 +55,25 @@ const THUMB_H = 54;
 // 카메라 이미지는 움직이는 GIF 다. 목록엔 한 화면에 열 몇 개가 깔리므로 그대로
 // 넣으면 전부 각자 돌아가 버벅인다 — 안들이 타임라인 썸네일에 쓰는 것과 같은
 // 수법으로 첫 프레임만 캔버스에 떠서 정지화면으로 만든다.
+function ChevronDownIcon({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-block bg-current ${className ?? ""}`}
+      style={{
+        WebkitMaskImage: `url(${BASE}/More.svg)`,
+        maskImage: `url(${BASE}/More.svg)`,
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+      }}
+    />
+  );
+}
+
 function FrozenThumb({ src }: { src: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -90,6 +112,10 @@ export default function CloudEventScreen({
   /** 이벤트를 골랐을 때 — 그 시각으로 녹화 재생을 시작한다. */
   onPick: (ms: number) => void;
 }) {
+  // 어느 날 것을 볼지. null 이면 호출부가 준 기준 시각(=지금)을 그대로 쓴다.
+  // 날짜를 고르면 그 시각이 새 기준이 된다 — 목록은 그 날 자정부터 그 시각까지.
+  const [viewMs, setViewMs] = useState<number | null>(null);
+  const [pickOpen, setPickOpen] = useState(false);
   const [timeKey, setTimeKey] = useState("all");
   const [kind, setKind] = useState<EventKind | "all">("all");
   const [limit, setLimit] = useState(PAGE);
@@ -99,17 +125,19 @@ export default function CloudEventScreen({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  const baseMs = viewMs ?? initialMs;
+
   const dayStart = useMemo(() => {
-    const d = new Date(initialMs);
+    const d = new Date(baseMs);
     d.setHours(0, 0, 0, 0);
     return d.getTime();
-  }, [initialMs]);
+  }, [baseMs]);
 
   // 오늘 자정부터 기준 시각까지, 최신이 위로. 아직 안 일어난 이벤트는 뺀다.
   const events = useMemo(() => {
     if (!mounted) return [];
     const bucket = TIME_BUCKETS.find((b) => b.key === timeKey);
-    const maxSec = Math.floor((initialMs - dayStart) / 1000);
+    const maxSec = Math.floor((baseMs - dayStart) / 1000);
     return TIMELINE_EVENTS.filter((e) => {
       if (e.at > maxSec) return false;
       if (kind !== "all" && e.kind !== kind) return false;
@@ -119,11 +147,12 @@ export default function CloudEventScreen({
       }
       return true;
     }).reverse();
-  }, [mounted, initialMs, dayStart, timeKey, kind]);
+  }, [mounted, baseMs, dayStart, timeKey, kind]);
 
   const shown = events.slice(0, limit);
-  const day = new Date(dayStart);
-  const dayLabel = `${day.getMonth() + 1}.${day.getDate()}. (${WEEKDAYS[day.getDay()]})`;
+  // 안들의 녹화 줄과 같은 형식. 목록 위에 적히는 이 시각이 곧 목록의 끝점이다.
+  const b = new Date(baseMs);
+  const headerLabel = `${b.getFullYear()}.${pad(b.getMonth() + 1)}.${pad(b.getDate())}. ${pad(b.getHours())}:${pad(b.getMinutes())}:${pad(b.getSeconds())}`;
 
   const chip = (active: boolean) =>
     ({
@@ -140,60 +169,23 @@ export default function CloudEventScreen({
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col bg-white">
-      {/* 헤더 — 왼쪽 제목·날짜, 오른쪽 실시간/녹화. 지금은 녹화 쪽이다. */}
+      {/* 맨 윗줄 — 실시간 화면과 같은 구조(토글 + 날짜·시각). 다만 여기선
+          날짜·시각이 버튼이라, 누르면 다른 날을 고를 수 있다. */}
       <div
-        className="flex flex-none items-center justify-between"
-        style={{ height: "52px", padding: "0 20px" }}
+        className="relative flex flex-none items-center px-5"
+        style={{ height: "48px", gap: "8px" }}
       >
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-[18px] font-bold leading-none text-neutral-900">
-            이벤트 내역
-          </h2>
-          <span
-            suppressHydrationWarning
-            className="text-[13px] font-medium leading-none text-neutral-500"
-          >
-            {dayLabel}
-          </span>
-        </div>
-        <div
-          className="flex items-center"
-          style={{
-            gap: "2px",
-            padding: "2px",
-            borderRadius: "15px",
-            backgroundColor: "#F4F4F4",
-          }}
+        <ModeChipToggle mode="recording" setMode={(m) => m === "live" && onLive()} />
+        <button
+          type="button"
+          onClick={() => setPickOpen(true)}
+          className="flex items-center gap-0 text-[14px] font-medium leading-none text-[#353535]"
         >
-          <button
-            type="button"
-            onClick={onLive}
-            style={{
-              padding: "5px 11px",
-              borderRadius: "13px",
-              fontSize: "12px",
-              fontWeight: 700,
-              lineHeight: 1,
-              color: "#767676",
-            }}
-          >
-            실시간
-          </button>
-          <span
-            style={{
-              padding: "5px 11px",
-              borderRadius: "13px",
-              backgroundColor: "#1D6CEB",
-              color: "#FFFFFF",
-              fontSize: "12px",
-              fontWeight: 700,
-              lineHeight: 1,
-            }}
-          >
-            녹화
-          </span>
-        </div>
+          <span suppressHydrationWarning>{headerLabel}</span>
+          <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
+        </button>
       </div>
+      <div className="h-px flex-none" style={{ backgroundColor: "#EBEBEB" }} />
 
       {/* 필터 두 줄 — 시간대 / 알고리즘. 라벨을 왼쪽에 붙이면 360px 에서 칩이
           잘려서, 라벨은 위에 작게 두고 칩 줄은 폭을 다 쓴다. */}
@@ -318,6 +310,18 @@ export default function CloudEventScreen({
           </button>
         )}
       </div>
+
+      {/* 날짜·시각 고르기 — NVR 의 녹화 진입에 쓰는 그 시트 그대로다. */}
+      <DateTimePickerSheet
+        open={pickOpen}
+        initialMs={baseMs}
+        onClose={() => setPickOpen(false)}
+        onApply={(ms) => {
+          setViewMs(ms);
+          setLimit(PAGE);
+          setPickOpen(false);
+        }}
+      />
     </div>
   );
 }
