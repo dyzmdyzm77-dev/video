@@ -19,6 +19,11 @@ import {
   setBarColor,
 } from "./deviceRotate";
 import {
+  requestStorageMode,
+  useStorageMode,
+  type StorageMode,
+} from "./storageMode";
+import {
   VARIANT_EVENT,
   readVariant,
   requestVariant,
@@ -74,6 +79,14 @@ const DEVICES = [
     chip: "트라이폴드",
   },
 ];
+// 저장 방식 세그먼트. token 은 접힘(64px) 레일에 들어갈 짧은 이름 —
+// 두 칸을 세로로 쌓아도 글자가 들어갈 폭이 30px 남짓이라 '클라우드'(네 글자)도
+// 'CLOUD'(다섯 자)도 잘린다. 세 글자로 맞춘다(뜻은 title 툴팁이 받는다).
+const STORAGE_MODES: { key: StorageMode; token: string; label: string }[] = [
+  { key: "nvr", token: "NVR", label: "NVR" },
+  { key: "cloud", token: "CLD", label: "클라우드" },
+];
+
 // 최초 표시 기본 프리셋 — 제너릭 360px(이름 없는 첫 항목).
 // 비교하기 왼쪽에 놓을 수 있는 것들 — As Is(현행 앱) + 세 안.
 const COMPARE_TARGETS: CompareTarget[] = ["asis", "a1", "a2", "a3", "b"];
@@ -140,6 +153,8 @@ export default function DesktopVariantNav() {
   const immersive = useImmersive();
   // 비교하기 왼쪽에 놓을 대상(기본 As Is).
   const compareWith = useCompareTarget();
+  // 저장 방식(NVR / 클라우드). 값은 문서 루트에 실려 안들이 구독한다.
+  const storage = useStorageMode();
 
   // 오른쪽(시안) 캡션 — 비교 대상이 As Is 면 예전처럼 'To Be', 시안끼리 비교하면
   // 어느 안인지 적는다(왼쪽 캡션과 짝이 맞아야 어느 쪽이 뭔지 읽힌다).
@@ -174,6 +189,7 @@ export default function DesktopVariantNav() {
     const sp = new URLSearchParams(window.location.search);
     if (sp.get("compare") === "1") setCompare(true);
     if (sp.get("thumbs") === "0") setEventThumbs(false);
+    if (sp.get("storage") === "cloud") requestStorageMode("cloud");
   }, []);
 
   // 썸네일 지원 여부를 문서 루트에 반영한다(A·A-1 의 움직임 감지 타임라인이 구독).
@@ -465,6 +481,28 @@ export default function DesktopVariantNav() {
         </span>
         <span className="dvn-label">메뉴</span>
       </button>
+
+      {/* 저장 방식 — 영상이 NVR(로컬 녹화기)에 있느냐 클라우드에 있느냐.
+          '화면 시안'보다 위다: 어느 안을 볼지보다 먼저 정하는 전제라서. */}
+      <p className="dvn-group-title dvn-label">저장 방식</p>
+      <div className="dvn-seg" role="group" aria-label="저장 방식">
+        {STORAGE_MODES.map((m) => (
+          <button
+            key={m.key}
+            type="button"
+            className="dvn-seg-btn"
+            data-active={storage === m.key}
+            aria-pressed={storage === m.key}
+            title={m.label}
+            onClick={() => requestStorageMode(m.key)}
+          >
+            <span className="dvn-icon" aria-hidden>
+              {m.token}
+            </span>
+            <span className="dvn-label">{m.label}</span>
+          </button>
+        ))}
+      </div>
 
       <p className="dvn-group-title dvn-label">화면 시안</p>
       <ul className="dvn-list">
