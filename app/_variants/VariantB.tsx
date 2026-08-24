@@ -2,6 +2,7 @@
 
 import { BASE } from "../basePath";
 import { readScreenState, writeScreenState } from "../components/screenState";
+import { usePlaybackSync } from "../components/playbackSync";
 import {
   requestCompareTarget,
   useCompareTarget,
@@ -357,6 +358,22 @@ export default function VariantB({
       setTimeout(() => setVideoLoading(false), 600);
     }
   };
+
+  // 비교하기 — 옆 기기와 실시간/녹화·재생 시각을 맞춘다(components/playbackSync.ts).
+  // 다채널/단일(channel-sync)과 달리 '화면을 옮긴 순간'만 오간다.
+  usePlaybackSync({
+    mode,
+    playbackMs,
+    isScrubbing,
+    apply: ({ mode: m, ms }) => {
+      setPlaybackMs(ms);
+      if (ms !== null) setIsPlaying(true);
+      if (m !== mode) {
+        setMode(m);
+        triggerTransitionSkeleton();
+      }
+    },
+  });
 
   // 라이브에서 녹화 탭 클릭 시 바텀시트 열기 (모드는 적용 시 변경)
   const handleSetMode = (m: "live" | "recording") => {
