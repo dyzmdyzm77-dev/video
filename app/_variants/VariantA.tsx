@@ -5,6 +5,7 @@ import { readScreenState, writeScreenState } from "../components/screenState";
 import {
   requestCompareTarget,
   useCompareTarget,
+  type CompareSlot,
 } from "../components/compareTarget";
 import {
   useDeviceLandscape,
@@ -207,6 +208,7 @@ export default function VariantA({
   initialChrome = false,
   onHome,
   inCompare = false,
+  compareSlot = 1,
 }: {
   platform?: "android" | "ios";
   initialChrome?: boolean;
@@ -215,6 +217,9 @@ export default function VariantA({
    *  '지금 보고 있는 안'이 아니라 '비교 대상'을 바꾼다 — 왼쪽에서 고른 게
    *  오른쪽을 바꿔 버리면 안 된다(사용자 지적). */
   inCompare?: boolean;
+  /** 비교 프레임 중 몇 번째 자리인가(1 = 시안 바로 왼쪽, 2 = 그 왼쪽).
+   *  고른 안을 어느 자리에 반영할지 — 3개 비교에서 왼쪽 둘이 섞이면 안 된다. */
+  compareSlot?: CompareSlot;
 }) {
   // 안을 바꿔도 보던 화면 종류(다채널/단일 · 실시간/녹화)는 이어진다 —
   // 문서 루트에 남겨 두고 새로 뜨는 안이 물려받는다(components/screenState.ts).
@@ -224,7 +229,7 @@ export default function VariantA({
   const [currentPage, setCurrentPage] = useState(0);
   const landscape = useDeviceLandscape();
   const immersive = useImmersive();
-  const compareTarget = useCompareTarget();
+  const compareTarget = useCompareTarget(compareSlot);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
   // 다채널 화면 개수 — 사용자가 '화면 구성'에서 직접 고르기 전엔 영상 영역
@@ -641,7 +646,9 @@ export default function VariantA({
               ? compareTarget
               : "a2"
           }
-          onSelect={inCompare ? requestCompareTarget : undefined}
+          onSelect={
+            inCompare ? (v) => requestCompareTarget(v, compareSlot) : undefined
+          }
           platform={platform}
           onClose={() => setVariantPickerOpen(false)}
         />
@@ -790,7 +797,9 @@ export default function VariantA({
               ? compareTarget
               : "a2"
           }
-          onSelect={inCompare ? requestCompareTarget : undefined}
+          onSelect={
+            inCompare ? (v) => requestCompareTarget(v, compareSlot) : undefined
+          }
         platform={platform}
         onClose={() => setVariantPickerOpen(false)}
       />

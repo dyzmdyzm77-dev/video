@@ -8,7 +8,7 @@ import VariantA from "../_variants/VariantA";
 import VariantA1 from "../_variants/VariantA1";
 import VariantA3 from "../_variants/VariantA3";
 import VariantB from "../_variants/VariantB";
-import { useCompareTarget } from "./compareTarget";
+import { useCompareTarget, type CompareSlot } from "./compareTarget";
 import { VARIANT_LABEL } from "./variantRoute";
 import { CameraFeed } from "./CameraFeed";
 import { useDeviceWidth } from "./useDeviceWidth";
@@ -172,10 +172,11 @@ function BatteryIcon({ className, level }: { className?: string; level: number }
   );
 }
 
-export default function AsIsPanel() {
+export default function AsIsPanel({ slot = 1 }: { slot?: CompareSlot }) {
   const [on, setOn] = useState(false);
   // 왼쪽에 무엇을 놓을지 — 기본은 As Is, 시안끼리 비교할 수도 있다.
-  const compareWith = useCompareTarget();
+  // slot 1 = 시안 바로 왼쪽, slot 2 = 그 왼쪽(3개 비교일 때만 뜬다).
+  const compareWith = useCompareTarget(slot);
   // 기본은 다채널(그리드, 시안과 동일) — 큰 영상 없이 목록 8개가 모두 재생된다.
   // 타일을 클릭하면 그 카메라가 큰 영상으로 올라오는 단일채널 모드로 전환되고,
   // 큰 영상을 더블클릭하면 다채널로 복귀한다(시안과 동일한 규칙).
@@ -228,9 +229,14 @@ export default function AsIsPanel() {
   useEffect(() => {
     const read = () => {
       // 비교하기(왼쪽 나란히) 또는 'As Is 단독'(화면 시안 목록에서 고른 경우).
+      // 두 번째 자리는 '3개 비교'일 때만 뜬다 — As Is 단독은 기기가 한 대뿐이라
+      // 여기에 해당하지 않는다.
+      const root = document.documentElement;
       const isOn =
-        document.documentElement.dataset.compare === "true" ||
-        document.documentElement.dataset.asisOnly === "true";
+        slot === 2
+          ? root.dataset.compare === "true" && root.dataset.compareSlots === "2"
+          : root.dataset.compare === "true" ||
+            root.dataset.asisOnly === "true";
       setOn(isOn);
       // 비교하기가 꺼지면 '첫 동기화 즉시' 플래그를 되돌려, 다시 켰을 때
       // 초기 상태를 스피너 없이 맞춘다.
@@ -239,8 +245,11 @@ export default function AsIsPanel() {
     read();
     window.addEventListener("comparechange", read);
     window.addEventListener("asisonlychange", read);
-    return () => window.removeEventListener("comparechange", read);
-  }, []);
+    return () => {
+      window.removeEventListener("comparechange", read);
+      window.removeEventListener("asisonlychange", read);
+    };
+  }, [slot]);
 
   // 실시간 시계 — 매초 갱신.
   useEffect(() => {
@@ -327,6 +336,9 @@ export default function AsIsPanel() {
   // 왼쪽이 시안이면 그 안을 프레임 안에 그대로 띄운다. As Is 마크업 대신
   // 진짜 컴포넌트라, 오른쪽과 같은 화면 종류(다채널/단일·실시간/녹화)에서
   // 시작하고 딤·시트도 각자 독립으로 동작한다(screenState.ts).
+  // 자리에 따라 왼쪽으로 한 칸(slot 1) 또는 두 칸(slot 2) 물러난다(globals.css).
+  const frameClass = slot === 2 ? "asis-frame asis-frame--2" : "asis-frame";
+
   if (compareWith !== "asis") {
     const Variant =
       compareWith === "a1"
@@ -337,13 +349,14 @@ export default function AsIsPanel() {
             ? VariantA3
             : VariantB;
     return (
-      <div className="asis-frame">
+      <div className={frameClass}>
         <span className="asis-caption">{VARIANT_LABEL[compareWith]}</span>
         <div className="asis-screen asis-variant">
           <Variant
             platform={platform}
             initialChrome={chromeVisible}
             inCompare
+            compareSlot={slot}
           />
         </div>
       </div>
@@ -387,7 +400,7 @@ export default function AsIsPanel() {
   // (자체 상태바·하단탭·안드로이드 네비 포함. 중첩 .app-safe-frame 는 CSS 로 무력화)
   if (isHome) {
     return (
-      <div className="asis-frame" aria-hidden>
+      <div className={frameClass} aria-hidden>
         <span className="asis-caption">As Is</span>
         <div className="asis-screen asis-home">
           <Suspense>
@@ -416,7 +429,7 @@ export default function AsIsPanel() {
   );
 
   return (
-    <div className="asis-frame" aria-hidden>
+    <div className={frameClass} aria-hidden>
       <span className="asis-caption">As Is</span>
       <div className="asis-screen">
         {/* 상단 상태바 — 시안과 동일. */}

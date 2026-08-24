@@ -573,14 +573,18 @@ body {
         var(--device-scale, 1) / 2
     );
   }
-  /* 왼쪽 기기(비교 프레임)의 중심 — .asis-frame 의 left 계산과 같은 식에
-     자기 바깥 폭의 절반을 더한 자리다(간격 50 은 COMPARE_GAP). */
+  /* 왼쪽 기기(비교 프레임)의 중심 — .asis-frame 의 left 계산(한 칸 = --asis-step)에
+     자기 바깥 폭의 절반을 더한 자리다. 3개 비교의 바깥 자리는 두 칸(.dpc-left2). */
   .dpc-left {
     left: calc(
       var(--device-left, 240px) - var(--device-margin, 10px) *
-        var(--device-scale, 1) - 50px -
-        (var(--device-w, 360px) + var(--device-margin, 10px) * 2) *
-        var(--device-scale, 1) / 2
+        var(--device-scale, 1) - var(--asis-step) + var(--asis-outer) / 2
+    );
+  }
+  .dpc-left2 {
+    left: calc(
+      var(--device-left, 240px) - var(--device-margin, 10px) *
+        var(--device-scale, 1) - var(--asis-step) * 2 + var(--asis-outer) / 2
     );
   }
   .dpc-chip {
@@ -1066,7 +1070,18 @@ body {
   /* As Is(현재 앱) 비교 패널 — 시안 기기 왼쪽에 나란히.
      크기·베젤·라운드·배율 모두 시안 기기와 동일한 변수를 쓰므로 시안이 커지면
      같이 커진다. 시안 화면 왼쪽 앵커(--device-left)에서 왼쪽으로 갭 + 자기
-     바깥 폭(화면 + 베젤 양쪽)만큼 떨어뜨려 오른쪽 끝을 맞춘다. */
+     바깥 폭(화면 + 베젤 양쪽)만큼 떨어뜨려 오른쪽 끝을 맞춘다.
+     3개 비교면 같은 걸 한 칸 더 왼쪽에 놓는다(.asis-frame--2). */
+  /* 기기 하나의 바깥(베젤 포함) 폭과, 옆 기기까지의 한 칸 거리. 비교 프레임과
+     그 위 칩 줄이 같이 쓰므로 문서 루트에 둔다. 50 은 DeviceScaler 의
+     COMPARE_GAP 과 같은 값이어야 한다(간격은 배율을 안 탄다 — 항상 화면상 50px). */
+  html {
+    --asis-outer: calc(
+      (var(--device-w, 360px) + var(--device-margin, 10px) * 2) *
+        var(--device-scale, 1)
+    );
+    --asis-step: calc(50px + var(--asis-outer));
+  }
   .asis-frame {
     display: block;
     position: fixed;
@@ -1076,13 +1091,11 @@ body {
       var(--device-bottom-pad, 40px) - var(--device-margin, 10px) *
         var(--device-scale, 1)
     );
-    /* 시안 베젤 왼쪽(= --device-left - margin·scale)에서 50px 왼쪽에 As Is 의
-       오른쪽 끝이 오도록. 50 은 DeviceScaler 의 COMPARE_GAP 과 같은 값이어야 한다. */
+    /* 시안 베젤 왼쪽(= --device-left - margin·scale)에서 한 칸(간격 + 자기 바깥
+       폭) 왼쪽. 두 번째 자리는 두 칸(아래 --2). */
     left: calc(
       var(--device-left, 240px) - var(--device-margin, 10px) *
-        var(--device-scale, 1) - 50px -
-        (var(--device-w, 360px) + var(--device-margin, 10px) * 2) *
-        var(--device-scale, 1)
+        var(--device-scale, 1) - var(--asis-step)
     );
     transform-origin: 0 100%;
     transform: scale(var(--device-scale, 1));
@@ -1110,6 +1123,14 @@ body {
       border-radius 0.22s ease,
       transform 0.22s ease;
   }
+  /* 3개 비교의 가장 바깥 자리 — 한 칸 더 왼쪽. */
+  .asis-frame--2 {
+    left: calc(
+      var(--device-left, 240px) - var(--device-margin, 10px) *
+        var(--device-scale, 1) - var(--asis-step) * 2
+    );
+  }
+
   /* ── As Is 단독 보기 ──────────────────────────────────────────────────
      '화면 시안' 목록에서 As Is 를 고른 상태(사용자 요청 2026-08-18). 비교하기와
      달리 시안을 옆에 두지 않고 As Is 하나만 가운데 기기 자리에 놓는다:

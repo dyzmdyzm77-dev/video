@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   requestCompareTarget,
   useCompareTarget,
+  type CompareSlot,
   type CompareTarget,
 } from "./compareTarget";
 import {
@@ -87,8 +88,13 @@ const STORAGE_MODES: { key: StorageMode; token: string; label: string }[] = [
 ];
 
 // 최초 표시 기본 프리셋 — 제너릭 360px(이름 없는 첫 항목).
-// 비교하기 왼쪽에 놓을 수 있는 것들 — As Is(현행 앱) + 세 안.
+// 비교하기 왼쪽에 놓을 수 있는 것들 — As Is(현행 앱) + 네 안.
 const COMPARE_TARGETS: CompareTarget[] = ["asis", "a1", "a2", "a3", "b"];
+// 나란히 놓을 기기 대수(오른쪽 시안 포함). 2 = 왼쪽 한 대, 3 = 왼쪽 두 대.
+const COMPARE_COUNTS: { n: 2 | 3; token: string; label: string }[] = [
+  { n: 2, token: "2", label: "2개" },
+  { n: 3, token: "3", label: "3개" },
+];
 
 const DEFAULT_PRESET = DEVICES.findIndex(
   (d) => d.label === "360px" && d.sub === "",
@@ -142,6 +148,9 @@ export default function DesktopVariantNav() {
   const [showRuler, setShowRuler] = useState(true); // 목업 위 치수 눈금자 표시 여부
   const [actualSize, setActualSize] = useState(false); // 배율 1:1 고정 여부
   const [compare, setCompare] = useState(false); // As Is(현재 앱) 나란히 비교 여부
+  // 몇 개를 나란히 볼지(오른쪽 시안 포함). 3 이면 왼쪽에 비교 기기가 둘이다
+  // (사용자 요청 2026-08-24: "최대 3개까지 비교 가능하게").
+  const [compareCount, setCompareCount] = useState<2 | 3>(2);
   // As Is 를 '화면 시안' 목록에서 골라 단독으로 보는 상태(사용자 요청 2026-08-18:
   // "As Is도 화면안 선택 목록에 넣어줄 수 있어?"). 비교하기와 달리 시안 대신
   // As Is 하나만 가운데 기기에 띄운다 — 문서 루트 플래그로 알리고 CSS 가 자리를
@@ -150,8 +159,9 @@ export default function DesktopVariantNav() {
   const [rotated, setRotated] = useState(false); // 디바이스 시각적 90° 회전(가로)
   // 확대 중에는 회전을 막는다(위 버튼 주석 참고).
   const immersive = useImmersive();
-  // 비교하기 왼쪽에 놓을 대상(기본 As Is).
-  const compareWith = useCompareTarget();
+  // 비교하기 왼쪽에 놓을 대상(기본 As Is). 자리 2 는 3개 비교일 때만 쓴다.
+  const compareWith = useCompareTarget(1);
+  const compareWith2 = useCompareTarget(2);
   // 저장 방식(NVR / 클라우드). 값은 문서 루트에 실려 안들이 구독한다.
   const storage = useStorageMode();
 
@@ -160,10 +170,14 @@ export default function DesktopVariantNav() {
   useEffect(() => {
     const el = document.querySelector(".device-caption");
     if (el) {
-      el.textContent =
-        compareWith === "asis" ? "To Be" : VARIANT_LABEL[variant];
+      // 왼쪽이 전부 As Is 면 예전처럼 'To Be'. 한 자리라도 시안이면 어느 안인지
+      // 적는다 — 안끼리 비교할 땐 이름이 없으면 어느 쪽이 뭔지 안 읽힌다.
+      const leftAll =
+        compareWith === "asis" &&
+        (compareCount === 2 || compareWith2 === "asis");
+      el.textContent = leftAll ? "To Be" : VARIANT_LABEL[variant];
     }
-  }, [compareWith, variant]);
+  }, [compareWith, compareWith2, compareCount, variant]);
   // 직접 입력(커스텀 해상도) — 가로·세로 px.
   const [customW, setCustomW] = useState("");
   const [customH, setCustomH] = useState("");
@@ -186,7 +200,10 @@ export default function DesktopVariantNav() {
   // 있어 그대로 받는다). 썸네일 있음 = 클라우드, 없음 = NVR.
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
-    if (sp.get("compare") === "1") setCompare(true);
+    // ?compare=1 은 2개(예전 그대로), ?compare=3 이면 3개로 연다.
+    const cmp = sp.get("compare");
+    if (cmp === "1" || cmp === "2" || cmp === "3") setCompare(true);
+    if (cmp === "3") setCompareCount(3);
     const thumbs = sp.get("thumbs");
     if (thumbs === "0") requestStorageMode("nvr");
     if (thumbs === "1") requestStorageMode("cloud");
@@ -194,11 +211,25 @@ export default function DesktopVariantNav() {
     if (sp.get("storage") === "nvr") requestStorageMode("nvr");
   }, []);
 
-  // 비교하기(As Is 나란히) 여부를 문서 루트에 반영한다(AsIsPanel 이 구독).
+  // 비교하기(As Is 나란히) 여부와 대수를 문서 루트에 반영한다(AsIsPanel·
+  // DeviceScaler 가 구독). 대수는 '왼쪽 자리 수'로 싣는다(2개 비교 = 1).
   useEffect(() => {
     document.documentElement.dataset.compare = compare ? "true" : "false";
+    document.documentElement.dataset.compareSlots = String(compareCount - 1);
     window.dispatchEvent(new Event("comparechange"));
-  }, [compare]);
+  }, [compare, compareCount]);
+
+  // 3개 비교로 늘릴 때 바깥 자리가 옆자리·오른쪽과 겹쳐 있으면(기본값 As Is 가
+  // 이미 쓰이는 등) 남는 것 중 첫 번째로 바꿔 준다 — 같은 화면 셋을 나란히
+  // 놓아 봐야 비교가 안 된다.
+  useEffect(() => {
+    if (!compare || compareCount !== 3) return;
+    if (compareWith2 !== compareWith && compareWith2 !== variant) return;
+    const free = COMPARE_TARGETS.find(
+      (t) => t !== compareWith && t !== variant,
+    );
+    if (free) requestCompareTarget(free, 2);
+  }, [compare, compareCount, compareWith, compareWith2, variant]);
   useEffect(() => {
     document.documentElement.dataset.asisOnly = asisOnly ? "true" : "false";
     window.dispatchEvent(new Event("asisonlychange"));
@@ -450,21 +481,40 @@ export default function DesktopVariantNav() {
       {/* 비교 대상 칩 — 왼쪽 기기 위. 각 칩 줄이 자기 기기 바로 위에 있어야
           어느 쪽을 고르는 건지 바로 읽힌다(사용자 요청). 오른쪽은 지금 보고
           있는 안이라 목록에서 빠진다 — 자기 자신과 비교할 일은 없다. */}
-      {compare && (
-        <div className="device-preset-chips dpc-left">
-          {COMPARE_TARGETS.filter((t) => t !== variant).map((t) => (
-            <button
-              key={t}
-              type="button"
-              className="dpc-chip"
-              data-active={compareWith === t}
-              onClick={() => requestCompareTarget(t)}
-            >
-              {t === "asis" ? "As Is" : VARIANT_LABEL[t]}
-            </button>
-          ))}
-        </div>
-      )}
+      {compare &&
+        ([1, 2] as CompareSlot[])
+          .filter((slot) => slot === 1 || compareCount === 3)
+          .map((slot) => {
+            const picked = slot === 1 ? compareWith : compareWith2;
+            // 이미 다른 자리에 서 있는 것은 뺀다 — 같은 화면을 두 번 놓을 일은
+            // 없다(오른쪽 시안도 마찬가지).
+            const taken =
+              slot === 1
+                ? compareCount === 3
+                  ? [variant as CompareTarget, compareWith2]
+                  : [variant as CompareTarget]
+                : [variant as CompareTarget, compareWith];
+            return (
+              <div
+                key={slot}
+                className={`device-preset-chips ${slot === 1 ? "dpc-left" : "dpc-left2"}`}
+              >
+                {COMPARE_TARGETS.filter(
+                  (t) => t === picked || !taken.includes(t),
+                ).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    className="dpc-chip"
+                    data-active={picked === t}
+                    onClick={() => requestCompareTarget(t, slot)}
+                  >
+                    {t === "asis" ? "As Is" : VARIANT_LABEL[t]}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
       <button
         type="button"
         className="dvn-toggle"
@@ -673,6 +723,28 @@ export default function DesktopVariantNav() {
         </span>
         <span className="dvn-label">비교하기</span>
       </button>
+      {/* 몇 개를 나란히 볼지 — 비교하기를 켰을 때만. 저장 방식과 같은 세그먼트
+          룩이라 접힘(64px) 레일에서도 숫자만으로 읽힌다. */}
+      {compare && (
+        <div className="dvn-seg" role="group" aria-label="비교 개수">
+          {COMPARE_COUNTS.map((c) => (
+            <button
+              key={c.n}
+              type="button"
+              className="dvn-seg-btn"
+              data-active={compareCount === c.n}
+              aria-pressed={compareCount === c.n}
+              title={`${c.label} 비교`}
+              onClick={() => setCompareCount(c.n)}
+            >
+              <span className="dvn-icon" aria-hidden>
+                {c.token}
+              </span>
+              <span className="dvn-label">{c.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
 
       {/* 목업 위 치수 눈금자 표시 온/오프. */}

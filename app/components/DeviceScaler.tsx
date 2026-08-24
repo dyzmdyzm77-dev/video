@@ -10,9 +10,16 @@ import { detectPxPerMm } from "./displayDensity";
 // 큰 창에서의 최대 배율. 1 이면 원본 크기, 낮출수록 작게.
 const MAX_SCALE = 0.8;
 
-// 비교하기(As Is 나란히) 시 두 기기 바깥(베젤) 사이 간격(px).
+// 비교하기(As Is 나란히) 시 이웃한 두 기기 바깥(베젤) 사이 간격(px).
 // CSS 의 .asis-frame left 계산과 반드시 같은 값을 써야 한다.
 const COMPARE_GAP = 50;
+
+// 지금 화면에 서는 기기 대수 — 오른쪽(시안) 1 + 왼쪽 비교 자리(0~2).
+// 비교하기가 꺼져 있으면 1. data-compare-slots 는 DesktopVariantNav 가 싣는다.
+function paneCount(root: HTMLElement) {
+  if (root.dataset.compare !== "true") return 1;
+  return root.dataset.compareSlots === "2" ? 3 : 2;
+}
 // 기기 위로 비워 두는 세로 여유(px). 해상도 칩 줄 + 치수 눈금자가 여기 들어간다 —
 // 안 비워 두면 기기가 화면 꼭대기까지 올라와 칩·눈금자와 겹친다.
 const TOP_CHROME = 92;
@@ -95,14 +102,18 @@ export default function DeviceScaler() {
         // 두 기기의 바깥(베젤) 사이 간격이 정확히 COMPARE_GAP 이 되도록 계산한다.
         // As Is 는 시안과 같은 크기라 바깥 폭도 동일하다.
         if (root.dataset.compare === "true") {
+          // 왼쪽 비교 기기는 하나일 수도, 둘일 수도 있다(2개/3개 비교).
+          // 전부 같은 크기라 '한 덩어리' 폭 = 대수·바깥폭 + 사이 간격들이다.
+          const n = paneCount(root);
           const outerW = (w + margin * 2) * curScale;
-          const pairW = outerW * 2 + COMPARE_GAP;
-          const pairLeft = Math.max(
+          const groupW = outerW * n + COMPARE_GAP * (n - 1);
+          const groupLeft = Math.max(
             panel + 16,
-            panel + (window.innerWidth - panel - pairW) / 2,
+            panel + (window.innerWidth - panel - groupW) / 2,
           );
-          // --device-left 는 시안 '화면' 왼쪽 = 시안 베젤 왼쪽 + margin·scale
-          const anchor = pairLeft + outerW + COMPARE_GAP + margin * curScale;
+          // --device-left 는 시안(맨 오른쪽) '화면' 왼쪽 = 그 베젤 왼쪽 + margin·scale
+          const anchor =
+            groupLeft + (outerW + COMPARE_GAP) * (n - 1) + margin * curScale;
           root.style.setProperty("--device-left", `${Math.round(anchor)}px`);
           return;
         }
@@ -165,11 +176,10 @@ export default function DeviceScaler() {
         return;
       }
       // 목업/프레임 외곽(사방 margin) + 창 여백 기준으로 맞춘다.
-      // 비교하기 중엔 같은 크기의 As Is 가 왼쪽에 하나 더 붙으므로, 가로 기준을
-      // "기기 2대 + 갭"으로 잡아야 둘 다 창 안에 들어온다.
-      const compare = root.dataset.compare === "true";
-      const cols = compare ? 2 : 1;
-      const gap = compare ? COMPARE_GAP : 0;
+      // 비교하기 중엔 같은 크기의 기기가 왼쪽에 하나(2개 비교) 또는 둘(3개 비교)
+      // 더 붙으므로, 가로 기준을 "기기 n대 + 갭"으로 잡아야 전부 창 안에 들어온다.
+      const cols = paneCount(root);
+      const gap = COMPARE_GAP * (cols - 1);
       // 현재 기기가 창에 들어오는 최대 배율(오버플로 방지 상한).
       const sFit = Math.min(
         MAX_SCALE,

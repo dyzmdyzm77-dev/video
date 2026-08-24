@@ -59,11 +59,14 @@ export default function RootLayout({
         </div>
         {/* 기기 가장자리 드래그 핸들(폭·높이 조절). */}
         <DeviceResizer />
-        {/* 비교하기: 시안 왼쪽에 As Is(현재 앱) 영상 화면. useSearchParams 를
-            쓰므로 Suspense 로 감싸야 /_not-found 등 정적 프리렌더가 깨지지
-            않는다. */}
+        {/* 비교하기: 시안 왼쪽에 비교 대상(기본 As Is) 영상 화면. 자리는 둘 —
+            slot 1 은 시안 바로 왼쪽, slot 2 는 그 왼쪽으로 '3개 비교'일 때만
+            뜬다(각자 안에서 자기 자리를 보고 판단한다).
+            useSearchParams 를 쓰므로 Suspense 로 감싸야 /_not-found 등 정적
+            프리렌더가 깨지지 않는다. */}
         <Suspense>
-          <AsIsPanel />
+          <AsIsPanel slot={2} />
+          <AsIsPanel slot={1} />
         </Suspense>
         {children}
         <DeviceScaler />
