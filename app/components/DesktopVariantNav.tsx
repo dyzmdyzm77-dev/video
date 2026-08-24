@@ -219,17 +219,6 @@ export default function DesktopVariantNav() {
     window.dispatchEvent(new Event("comparechange"));
   }, [compare, compareCount]);
 
-  // 3개 비교로 늘릴 때 바깥 자리가 옆자리·오른쪽과 겹쳐 있으면(기본값 As Is 가
-  // 이미 쓰이는 등) 남는 것 중 첫 번째로 바꿔 준다 — 같은 화면 셋을 나란히
-  // 놓아 봐야 비교가 안 된다.
-  useEffect(() => {
-    if (!compare || compareCount !== 3) return;
-    if (compareWith2 !== compareWith && compareWith2 !== variant) return;
-    const free = COMPARE_TARGETS.find(
-      (t) => t !== compareWith && t !== variant,
-    );
-    if (free) requestCompareTarget(free, 2);
-  }, [compare, compareCount, compareWith, compareWith2, variant]);
   useEffect(() => {
     document.documentElement.dataset.asisOnly = asisOnly ? "true" : "false";
     window.dispatchEvent(new Event("asisonlychange"));
@@ -479,29 +468,21 @@ export default function DesktopVariantNav() {
       </div>
 
       {/* 비교 대상 칩 — 왼쪽 기기 위. 각 칩 줄이 자기 기기 바로 위에 있어야
-          어느 쪽을 고르는 건지 바로 읽힌다(사용자 요청). 오른쪽은 지금 보고
-          있는 안이라 목록에서 빠진다 — 자기 자신과 비교할 일은 없다. */}
+          어느 쪽을 고르는 건지 바로 읽힌다(사용자 요청).
+          목록은 항상 전부 띄운다 — 예전엔 다른 자리에 이미 선 것(오른쪽 시안
+          포함)을 뺐는데, 고를 수 있는 게 자리마다 달라 칩 줄이 들쭉날쭉했다.
+          같은 안을 두 자리에 놓는 것도 사용자 선택으로 둔다(2026-08-24). */}
       {compare &&
         ([1, 2] as CompareSlot[])
           .filter((slot) => slot === 1 || compareCount === 3)
           .map((slot) => {
             const picked = slot === 1 ? compareWith : compareWith2;
-            // 이미 다른 자리에 서 있는 것은 뺀다 — 같은 화면을 두 번 놓을 일은
-            // 없다(오른쪽 시안도 마찬가지).
-            const taken =
-              slot === 1
-                ? compareCount === 3
-                  ? [variant as CompareTarget, compareWith2]
-                  : [variant as CompareTarget]
-                : [variant as CompareTarget, compareWith];
             return (
               <div
                 key={slot}
                 className={`device-preset-chips ${slot === 1 ? "dpc-left" : "dpc-left2"}`}
               >
-                {COMPARE_TARGETS.filter(
-                  (t) => t === picked || !taken.includes(t),
-                ).map((t) => (
+                {COMPARE_TARGETS.map((t) => (
                   <button
                     key={t}
                     type="button"
