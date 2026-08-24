@@ -7,6 +7,7 @@ import { useGridAreaRatio } from "./useGridLayout";
 import type React from "react";
 import { CameraFeed, GridSelectionOverlay } from "./CameraFeed";
 import { useAutoHide } from "./useAutoHide";
+import { useDimSync } from "./dimSync";
 import { VideoFitToast, useVideoFit } from "./VideoFitToast";
 import { requestDeviceRotate, useRotatedInput } from "./deviceRotate";
 import { useEdgeGaps } from "./useDeviceWidth";
@@ -306,6 +307,8 @@ export default function LandscapeVideo({
   const [dim, setDim] = useState(true);
   const hide = useCallback(() => setDim(false), []);
   const auto = useAutoHide(dim, hide);
+  // 비교하기 — 옆 기기 딤과 같이 켜고 끈다(components/dimSync.ts).
+  useDimSync(dim, setDim);
   // 바깥에서 맞춤 상태를 주면 그걸 쓰고, 안 주면 자체 상태(기존 동작).
   // 훅은 조건 없이 항상 부른다 — 안 쓰이면 그냥 놀고 있는 상태다.
   const ownFit = useVideoFit("fill");

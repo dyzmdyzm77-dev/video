@@ -39,6 +39,7 @@ import AiSearchSheet from "../components/AiSearchSheet";
 import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
 import { nextVideoFit, videoFitIcon } from "../components/videoFit";
 import { AUTO_HIDE_MS, useAutoHide } from "../components/useAutoHide";
+import { useDimSync } from "../components/dimSync";
 import AndroidNav from "../components/AndroidNav";
 import {
   useDeviceRatio,
@@ -1192,6 +1193,8 @@ function GridView({
   // 딤 자동 숨김 — 마지막 조작이 끝난 시점부터 5초. 규칙은 useAutoHide 참고.
   const hideGrid = useCallback(() => setGridSelected(false), []);
   const gridAuto = useAutoHide(gridSelected, hideGrid);
+  // 비교하기 — 옆 기기 딤과 같이 켜고 끈다(components/dimSync.ts).
+  useDimSync(gridSelected, setGridSelected);
   const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const swipedRef = useRef(false);
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1533,6 +1536,8 @@ function ExpandedView({
   // 딤 자동 숨김 — 마지막 조작이 끝난 시점부터 5초. 규칙은 useAutoHide 참고.
   const hideControls = useCallback(() => setShowControls(false), []);
   const controlsAuto = useAutoHide(showControls, hideControls);
+  // 비교하기 — 옆 기기 딤과 같이 켜고 끈다(components/dimSync.ts).
+  useDimSync(showControls, setShowControls);
   const [seekToast, setSeekToast] = useState<string | null>(null);
   const seekToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showSeekToast = (text: string) => {

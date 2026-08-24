@@ -56,8 +56,10 @@ export function usePlaybackSync({
   // 구독을 매번 다시 걸면 이벤트를 놓칠 수 있다.
   const applyRef = useRef(apply);
   applyRef.current = apply;
-  // 받아서 맞춘 변화는 되쏘지 않는다(둘이 서로 튕기지 않게).
-  const applying = useRef(false);
+  // 방금 '받아서 맞춘' 값. 되쏘지 않으려고 들고 있는다(둘이 서로 튕기지 않게).
+  // 플래그가 아니라 값인 이유 — 받은 값이 이미 내 값과 같으면 상태가 안 바뀌어
+  // 아래 effect 가 안 도는데, 플래그였다면 그게 남아 다음 내 조작을 삼킨다.
+  const fromRemote = useRef<{ mode: PlayMode; ms: number | null } | null>(null);
   const last = useRef<{ mode: PlayMode; ms: number | null }>({
     mode,
     ms: playbackMs,
@@ -67,7 +69,7 @@ export function usePlaybackSync({
     const onSync = (e: Event) => {
       const d = (e as CustomEvent<Detail>).detail;
       if (!d || d.id === id) return;
-      applying.current = true;
+      fromRemote.current = { mode: d.mode, ms: d.ms };
       applyRef.current({ mode: d.mode, ms: d.ms });
     };
     window.addEventListener(EVENT, onSync);
@@ -86,10 +88,10 @@ export function usePlaybackSync({
         playbackMs !== null &&
         Math.abs(playbackMs - prev.ms) > JUMP_MS);
     last.current = { mode, ms: playbackMs };
-    if (applying.current) {
-      applying.current = false;
-      return;
-    }
+    const r = fromRemote.current;
+    const echo = r !== null && r.mode === mode && r.ms === playbackMs;
+    fromRemote.current = null;
+    if (echo) return;
     if (!moved) return;
     window.dispatchEvent(
       new CustomEvent<Detail>(EVENT, {
