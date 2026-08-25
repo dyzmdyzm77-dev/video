@@ -560,10 +560,11 @@ export default function VariantA1({
               ? () => setSidePanelOpen((v) => !v)
               : undefined
           }
-          // 실시간/녹화 칩 + 시각을 왼쪽 아래로.
-          statusPlacement="bottom-left"
-          // 토글 형태는 그대로 두고 고른 쪽 색만 흰 배경 + 검정 글자로.
-          statusActiveStyle="white"
+          // 실시간/녹화 칩 — A-2·A-3 과 같은 자리(위 가운데)·같은 모양(칩 두 개)
+          // 이다(사용자 지정 2026-08-25: "A-1 하단 왼쪽도 그냥 동일하게 다른거랑
+          // 맞춰"). 예전엔 A-1 만 딤 아래 왼쪽에 세그먼트 토글로 떠 있어서, 안을
+          // 갈아 가며 볼 때 가로 화면만 자리가 튀었다.
+          statusStyle="chips"
           // 딤 위 UI 좌우 여백 40 — 영상 자체는 제외, 끝까지 쓴다.
           edgeInset={dimEdge}
           // 아래층(AI 버튼·페이지 점) 뜨는 양 — 네 안 공통(layoutRules).

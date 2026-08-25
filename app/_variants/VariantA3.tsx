@@ -2420,26 +2420,20 @@ function ExpandedView({
   const bottomStrip = (
     <>
       {motionBlock}
-      {/* 카메라 목록 — 남는 공간을 채우는 영역(flex-1). 최소 높이는
-          useListLayout 이 배치에 따라 잡는다 — 가로 한 줄이면 타일 세로 기준
-          (TILE_MIN_H), 세로 2열이면 영역 기준(LIST_MIN_H). layoutRules.ts 참고. */}
-      <div
-        ref={listAreaRef}
-        className="relative flex min-h-0 flex-col flex-1"
-      >
       {/* 탭 줄 — 녹화면 '카메라 목록 | 움직임 감지' 두 탭(사용자 결정 2026-08-14),
           실시간이면 감지가 없으니 '카메라 목록' 제목 하나만.
           위아래 14 로 같다 — 사이드 패널 탭(tabsBlock)의 padding 14px 0 과 같은 값.
-          그 여백의 기준은 버튼이 아니라 글자다(사용자 지정) — 그래서 캡처 버튼은
-          흐름이 아니라 절대 위치다. 아래 참고.
-          useListLayout 이 이 줄 높이를 실측해 영역 최소 높이에 더한다. */}
-      <div
-        className="relative flex flex-none items-center px-5"
-        // (좌우는 px-5 가 잡는다 — 인라인 padding 축약형을 쓰면 그걸 덮어쓴다.)
-        style={{ paddingTop: "14px", paddingBottom: "14px", gap: "20px" }}
-      >
-        {mode === "recording" ? (
-          ([
+
+          영역 '밖'이다 — A-2 와 같은 구조다(사용자 지정 2026-08-25: "녹화쪽
+          카메라목록이랑 움직임감지 그 영역은 세 안 다 동일하게, A-2안에 맞게").
+          안에 두면 useListLayout 이 이 줄까지 영역으로 재서(chrome) 같은 기기에서
+          A-2 보다 스트립이 두꺼워졌다(405×648 기준 138 vs 116). 밖으로 빼면 영역이
+          곧 목록/감지 자리라 세 안이 같은 높이가 된다. */}
+      {mode === "recording" ? (
+        // 여백을 줄이 아니라 버튼에 준다 — A-2 와 완전히 같은 마크업이라 줄 높이
+        // (14+15+14=43)도, 손이 닿는 넓이도 같다.
+        <div className="flex items-center px-5" style={{ gap: "20px" }}>
+          {([
             { key: "list", label: "카메라 목록" },
             { key: "motion", label: "움직임 감지" },
           ] as const).map((t) => (
@@ -2447,21 +2441,41 @@ function ExpandedView({
               key={t.key}
               type="button"
               onClick={() => setRecTab(t.key)}
-              className="text-[15px] font-bold leading-none"
-              style={{ color: recTab === t.key ? "#1D6CEB" : "#A6A6A6" }}
+              className="relative text-[15px] font-bold leading-none"
+              style={{
+                padding: "14px 0",
+                color: recTab === t.key ? "#1D6CEB" : "#A6A6A6",
+              }}
             >
               {t.label}
             </button>
-          ))
-        ) : (
+          ))}
+        </div>
+      ) : (
+        <div
+          className="relative flex flex-none items-center px-5"
+          // (좌우는 px-5 가 잡는다 — 인라인 padding 축약형을 쓰면 그걸 덮어쓴다.)
+          style={{ paddingTop: "14px", paddingBottom: "14px" }}
+        >
           <span
             className="text-[15px] font-bold leading-none"
             style={{ color: "#262626" }}
           >
             카메라 목록
           </span>
-        )}
-      </div>
+        </div>
+      )}
+      {/* 탭 아래 구분선 — 녹화만(A-2 와 동일). 실시간은 제목 한 줄이라 안 긋는다. */}
+      {mode === "recording" && (
+        <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+      )}
+      {/* 카메라 목록 / 움직임 감지 — 남는 공간을 채우는 영역(flex-1). 최소 높이는
+          useListLayout 이 배치에 따라 잡는다 — 가로 한 줄이면 타일 세로 기준
+          (TILE_MIN_H), 세로 2열이면 영역 기준(LIST_MIN_H). layoutRules.ts 참고. */}
+      <div
+        ref={listAreaRef}
+        className="relative flex min-h-0 flex-col flex-1"
+      >
       {motionTab ? (
         <MotionEventList
           playbackMs={playbackMs}
@@ -2496,7 +2510,9 @@ function ExpandedView({
               ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "grid grid-cols-2 gap-2 px-5"
           }
-          // 위 제목이 아래 여백(14)을 이미 갖고 있으니 겹쳐 주지 않는다.
+          // 탭 줄이 영역 밖으로 나가면서 위 여백은 A-2 와 같은 12 로 잡는다 —
+          // 타일이 세 안 모두 같은 자리에서 시작해야 한다.
+          style={{ marginTop: "12px" }}
         >
           {CAMERAS.map((c, i) =>
             cameraTile(
