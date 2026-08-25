@@ -2671,12 +2671,20 @@ function RecordingEventTimeline({
   // 썸네일 영역(시간바 아래 남는 공간). 이 높이에 맞춰 썸네일 세로 크기를 유동
   // 조절한다(화면이 짧아지면 잘리지 않게 줄인다). 최대 72(원본), 폭은 16:9 로 연동.
   const thumbAreaRef = useRef<HTMLDivElement>(null);
+  // 썸네일 레일 위 여백.
+  //   · "thumbs"(움직임 감지 탭) — 카메라 목록 탭의 타일과 같은 자리에서 시작해야
+  //     한다. 탭을 바꿔도 그림이 제자리에 있어야 두 탭이 같은 스트립으로 읽힌다
+  //     (사용자 지적 2026-08-25: "움직임 감지랑 카메라 목록 위치 맞추라고").
+  //     목록 타일은 위 12(marginTop) · 아래 12(pb-3)이므로 여기도 같은 12·12 다.
+  //     같은 여백 → 남는 세로도 같음 → 타일과 썸네일 크기(48)까지 자동으로 같다.
+  //   · "both"(가로 확대 딤 패널) — 바로 위가 시간바라 4 로 붙인다. 예전 그대로.
+  const cardTop = part === "thumbs" ? PAD_TOP : 4;
   const [thumbH, setThumbH] = useState(THUMB_MAX_H);
   const updateThumbH = () => {
     const el = thumbAreaRef.current;
     if (!el || el.clientHeight <= 0) return;
-    // 남는 영역 높이에서 상하 여백(위 4 + 아래 PAD_TOP)을 뺀 값. 일반 48 로 캡.
-    const avail = el.clientHeight - (4 + PAD_TOP);
+    // 남는 영역 높이에서 상하 여백(위 cardTop + 아래 PAD_TOP)을 뺀 값. 일반 48 로 캡.
+    const avail = el.clientHeight - (cardTop + PAD_TOP);
     setThumbH(Math.max(THUMB_MIN_H, Math.min(THUMB_MAX_H, Math.round(avail))));
   };
   // 매 렌더 뒤 재계산 — 기기 폭/높이 전환처럼 ResizeObserver 만으로는 놓치는 경우가
@@ -3224,7 +3232,7 @@ function RecordingEventTimeline({
               className="absolute flex items-start"
               style={{
                 left: `calc(50% + ${xOf(cluster.secOffset)}px)`,
-                top: "4px",
+                top: `${cardTop}px`,
                 // 아래 여백은 시간바 위 여백(PAD_TOP 12)과 같게 — 세로가 빡빡한
                 // 실기기에서 위는 12, 아래는 4로 붙어 보이던 걸 맞춘 값이다.
                 bottom: `${PAD_TOP}px`,
