@@ -9,6 +9,12 @@ import {
   type CompareTarget,
 } from "./compareTarget";
 import {
+  applyCompareSizes,
+  requestCompareSize,
+  useCompareSize,
+} from "./compareSize";
+import { DEFAULT_PRESET, DEVICES, presetName } from "./devicePresets";
+import {
   exitImmersive,
   readImmersive,
   useImmersive,
@@ -45,40 +51,9 @@ const VARIANTS: { key: VariantKey; icon: string }[] = [
   { key: "b", icon: "B" },
 ];
 
-// 선택 가능한 디바이스 폭. w/h 는 앱 프레임(px), 목업은 사방 10px 크게 잡힌다.
-// r = 바깥 베젤 라운드(px). 360 은 SVG 목업 rx=45 에 맞춘 값.
-// m = 베젤과 화면 사이 사방 간격(px). 1080 만 30, 나머지는 10.
-// 이름 없는 폭(480/620)은 위, 실기기 이름이 붙은 것들은 아래에 디바이스별로
-// 묶어서(같은 기기의 접힘/펼침은 인접) 배치한다.
-// chip 은 상단 칩 줄에 쓰는 짧은 이름 — 열 개가 한 줄에 들어가야 해서
-// 좌측 패널의 긴 라벨(label+sub)을 그대로 못 쓴다.
-const DEVICES = [
-  { w: 360, h: 780, r: 45, m: 10, label: "360px", sub: "", chip: "360" },
-  { w: 480, h: 780, r: 29, m: 10, label: "480px", sub: "", chip: "480" },
-  { w: 620, h: 780, r: 29, m: 10, label: "620px", sub: "", chip: "620" },
-  { w: 780, h: 780, r: 29, m: 10, label: "780px", sub: "", chip: "780" },
-  { w: 1080, h: 780, r: 29, m: 10, label: "1080px", sub: "", chip: "1080" },
-  {
-    w: 360, h: 780, r: 45, m: 10, label: "360px", sub: "Galaxy S26",
-    chip: "S26",
-  },
-  {
-    w: 405, h: 648, r: 13, m: 10, label: "405px", sub: "Z Fold 8(접힘)",
-    chip: "폴드 접힘",
-  },
-  {
-    w: 864, h: 648, r: 13, m: 10, label: "864px", sub: "Z Fold 8(펼침)",
-    chip: "폴드 펼침",
-  },
-  {
-    w: 750, h: 832, r: 13, m: 10, label: "750px", sub: "Z Fold 8 울트라",
-    chip: "울트라",
-  },
-  {
-    w: 1080, h: 792, r: 13, m: 30, label: "1080px", sub: "Z TriFold",
-    chip: "트라이폴드",
-  },
-];
+// 해상도 프리셋(DEVICES)은 devicePresets.ts 에 있다 — 좌측 패널뿐 아니라 비교
+// 자리의 해상도 드롭다운도 같은 목록을 쓴다.
+
 // 저장 방식 세그먼트. token 은 접힘(64px) 레일에 들어갈 짧은 이름 —
 // 두 칸을 세로로 쌓아도 글자가 들어갈 폭이 30px 남짓이라 '클라우드'(네 글자)도
 // 'CLOUD'(다섯 자)도 잘린다. 세 글자로 맞춘다(뜻은 title 툴팁이 받는다).
@@ -87,7 +62,6 @@ const STORAGE_MODES: { key: StorageMode; token: string; label: string }[] = [
   { key: "cloud", token: "CLD", label: "클라우드" },
 ];
 
-// 최초 표시 기본 프리셋 — 제너릭 360px(이름 없는 첫 항목).
 // 비교하기 왼쪽에 놓을 수 있는 것들 — As Is(현행 앱) + 네 안.
 const COMPARE_TARGETS: CompareTarget[] = ["asis", "a1", "a2", "a3", "b"];
 // 나란히 놓을 기기 대수(오른쪽 시안 포함). 2 = 왼쪽 한 대, 3 = 왼쪽 두 대.
@@ -95,10 +69,6 @@ const COMPARE_COUNTS: { n: 2 | 3; token: string; label: string }[] = [
   { n: 2, token: "2", label: "2개" },
   { n: 3, token: "3", label: "3개" },
 ];
-
-const DEFAULT_PRESET = DEVICES.findIndex(
-  (d) => d.label === "360px" && d.sub === "",
-);
 
 // 가로:세로 비율. 이름 없는 제너릭 폭 라벨에 "360px(6:13)"처럼 붙인다.
 // 흔한 비율에 아주 가까우면(≤0.8%) 그 예쁜 비율을 쓰고(620×780→4:5 등),
@@ -162,6 +132,10 @@ export default function DesktopVariantNav() {
   // 비교하기 왼쪽에 놓을 대상(기본 As Is). 자리 2 는 3개 비교일 때만 쓴다.
   const compareWith = useCompareTarget(1);
   const compareWith2 = useCompareTarget(2);
+  // 비교 자리마다 따로 고른 해상도(-1 = 시안과 같음). 값은 DEVICES 인덱스이고
+  // 실제 크기 반영은 compareSize.ts 가 CSS 변수로 한다.
+  const size1 = useCompareSize(1);
+  const size2 = useCompareSize(2);
   // 저장 방식(NVR / 클라우드). 값은 문서 루트에 실려 안들이 구독한다.
   const storage = useStorageMode();
 
@@ -181,6 +155,16 @@ export default function DesktopVariantNav() {
   // 직접 입력(커스텀 해상도) — 가로·세로 px.
   const [customW, setCustomW] = useState("");
   const [customH, setCustomH] = useState("");
+
+  // 자리 해상도를 CSS 변수로 반영한다. 가로 모드에선 프리셋도 눕혀야 하므로
+  // (applyCompareSizes 가 처리) 회전이 끝날 때마다 다시 건다 — 안 그러면 시안만
+  // 눕고 해상도를 못 박은 비교 기기는 세로로 남는다.
+  useEffect(() => {
+    applyCompareSizes();
+    const onLand = () => applyCompareSizes();
+    window.addEventListener(LANDSCAPE_EVENT, onLand);
+    return () => window.removeEventListener(LANDSCAPE_EVENT, onLand);
+  }, []);
 
   // 치수 눈금자 표시를 문서 루트에 반영한다(CSS 가 data-show-ruler 로 숨김 처리).
   useEffect(() => {
@@ -426,6 +410,46 @@ export default function DesktopVariantNav() {
     return () => window.removeEventListener("devicerange", onRange);
   }, []);
 
+  // 기기 위 칩 줄 맨 끝에 붙는 해상도 드롭다운.
+  //   slot 0 = 오른쪽 시안(좌측 패널 '해상도' 목록과 같은 것을 고른다)
+  //   slot 1·2 = 왼쪽 비교 자리 — '시안과 같음'이 기본이고, 고르면 그 자리만
+  //              떨어져 나온다(사용자 요청 2026-08-25: 비교하기에서 해상도도 선택).
+  // 칩으로 늘어놓지 않는 이유는 globals.css 의 .dpc-select 주석 참고(줄이 겹친다).
+  const sizeSelect = (slot: 0 | CompareSlot) => {
+    const value = slot === 0 ? active : slot === 1 ? size1 : size2;
+    return (
+      // 닫힌 상태에 보이는 건 짧은 이름(칩)뿐이라 툴팁으로 전체 이름을 준다.
+      <select
+        className="dpc-select"
+        data-pinned={slot !== 0 && value >= 0}
+        title={value >= 0 ? `해상도 · ${presetName(DEVICES[value])}` : "해상도"}
+        aria-label="해상도"
+        value={String(value)}
+        onChange={(e) => {
+          const i = Number(e.target.value);
+          if (slot === 0) applyPreset(i);
+          else requestCompareSize(slot, i);
+        }}
+      >
+        {slot === 0 ? (
+          // 시안 쪽은 드래그로 크기를 바꾸면 프리셋 강조가 풀린다(active = -1).
+          // 그때만 '직접'을 보여 준다 — 고를 수 있는 값이 아니라 현재 상태다.
+          active < 0 && <option value="-1">직접</option>
+        ) : (
+          <option value="-1">같음</option>
+        )}
+        {/* 이름은 상단 칩 줄용 짧은 이름(chip)을 쓴다. 좌측 패널의 긴 라벨을
+            그대로 넣으면 드롭다운이 넓어져 칩 줄이 한 줄 더 접히고, 그만큼
+            아래로 내려와 기기 목업 위를 덮는다(위쪽 여유는 92px 뿐). */}
+        {DEVICES.map((d, i) => (
+          <option key={i} value={i}>
+            {d.chip}
+          </option>
+        ))}
+      </select>
+    );
+  };
+
   return (
     <nav
       className="desktop-variant-nav"
@@ -465,6 +489,9 @@ export default function DesktopVariantNav() {
             {VARIANT_LABEL[v.key]}
           </button>
         ))}
+        {/* 비교하기일 때만 시안 쪽에도 해상도를 붙인다 — 세 기기의 해상도를
+            한 줄 눈높이에서 고르라고. 한 대만 볼 때는 좌측 패널 목록이 그 자리다. */}
+        {compare && sizeSelect(0)}
       </div>
 
       {/* 비교 대상 칩 — 왼쪽 기기 위. 각 칩 줄이 자기 기기 바로 위에 있어야
@@ -493,6 +520,7 @@ export default function DesktopVariantNav() {
                     {t === "asis" ? "As Is" : VARIANT_LABEL[t]}
                   </button>
                 ))}
+                {sizeSelect(slot)}
               </div>
             );
           })}
@@ -697,7 +725,14 @@ export default function DesktopVariantNav() {
         className="dvn-compare-toggle"
         data-active={compare}
         title={compare ? "비교 닫기" : "비교하기"}
-        onClick={() => setCompare((v) => !v)}
+        onClick={() => {
+          // 켤 때는 'As Is 단독'을 푼다. 둘은 다른 모드인데(단독은 시안 자리에
+          // As Is 하나, 비교는 시안 + 왼쪽 기기들) 같이 켜져 있으면 시안이 숨은
+          // 채 비교 기기만 남아 자리가 어긋난다.
+          const next = !compare;
+          setCompare(next);
+          if (next) setAsisOnly(false);
+        }}
       >
         <span className="dvn-icon" aria-hidden>
           ⇆

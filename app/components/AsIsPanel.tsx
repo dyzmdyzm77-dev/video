@@ -9,6 +9,8 @@ import VariantA1 from "../_variants/VariantA1";
 import VariantA3 from "../_variants/VariantA3";
 import VariantB from "../_variants/VariantB";
 import { useCompareTarget, type CompareSlot } from "./compareTarget";
+import { punchForSlot, useCompareSize } from "./compareSize";
+import { DeviceScopeContext } from "./deviceScope";
 import { VARIANT_LABEL } from "./variantRoute";
 import { CameraFeed } from "./CameraFeed";
 import { useDeviceWidth } from "./useDeviceWidth";
@@ -172,8 +174,25 @@ function BatteryIcon({ className, level }: { className?: string; level: number }
   );
 }
 
+// 자리 안쪽 트리는 '자기가 어느 기기에 그려지는지'를 컨텍스트로 물려받는다.
+// 크기는 CSS 가 갈라 주지만(globals.css 의 html[data-compare] .asis-frame),
+// 폭을 읽어 배치를 정하는 훅(useDeviceWidth 등)은 번호를 알아야 자기 자리
+// 변수를 본다 — 안 그러면 시안 폭 기준으로 배치를 계산한다(deviceScope.ts).
 export default function AsIsPanel({ slot = 1 }: { slot?: CompareSlot }) {
+  return (
+    <DeviceScopeContext.Provider value={slot}>
+      <AsIsPanelBody slot={slot} />
+    </DeviceScopeContext.Provider>
+  );
+}
+
+function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
   const [on, setOn] = useState(false);
+  // 비교하기로 켜진 건지(자리 해상도가 먹는 상태), As Is 단독인지 구분한다.
+  const [compareOn, setCompareOn] = useState(false);
+  // 이 자리에 못 박은 해상도(-1 = 시안과 같음). 펀치홀 위치가 기기마다 달라서
+  // 프레임에 실어 준다 — 크기와 달리 CSS 변수로는 안 풀리는 값이다.
+  const sizeIdx = useCompareSize(slot);
   // 왼쪽에 무엇을 놓을지 — 기본은 As Is, 시안끼리 비교할 수도 있다.
   // slot 1 = 시안 바로 왼쪽, slot 2 = 그 왼쪽(3개 비교일 때만 뜬다).
   const compareWith = useCompareTarget(slot);
@@ -238,6 +257,7 @@ export default function AsIsPanel({ slot = 1 }: { slot?: CompareSlot }) {
           : root.dataset.compare === "true" ||
             root.dataset.asisOnly === "true";
       setOn(isOn);
+      setCompareOn(root.dataset.compare === "true");
       // 비교하기가 꺼지면 '첫 동기화 즉시' 플래그를 되돌려, 다시 켰을 때
       // 초기 상태를 스피너 없이 맞춘다.
       if (!isOn) syncedOnceRef.current = false;
@@ -338,6 +358,10 @@ export default function AsIsPanel({ slot = 1 }: { slot?: CompareSlot }) {
   // 시작하고 딤·시트도 각자 독립으로 동작한다(screenState.ts).
   // 자리에 따라 왼쪽으로 한 칸(slot 1) 또는 두 칸(slot 2) 물러난다(globals.css).
   const frameClass = slot === 2 ? "asis-frame asis-frame--2" : "asis-frame";
+  // 자리 해상도를 따로 정했을 때만 실어 준다. 안 정했으면 속성이 없어서 문서
+  // 루트(html[data-punch])의 값을 그대로 쓴다. As Is 단독 보기는 시안 자리를
+  // 그대로 쓰므로 자리 해상도를 적용하지 않는다(CSS 도 마찬가지).
+  const punch = compareOn ? punchForSlot(sizeIdx) ?? undefined : undefined;
 
   if (compareWith !== "asis") {
     const Variant =
@@ -349,7 +373,7 @@ export default function AsIsPanel({ slot = 1 }: { slot?: CompareSlot }) {
             ? VariantA3
             : VariantB;
     return (
-      <div className={frameClass}>
+      <div className={frameClass} data-punch={punch}>
         <span className="asis-caption">{VARIANT_LABEL[compareWith]}</span>
         <div className="asis-screen asis-variant">
           <Variant
@@ -400,7 +424,7 @@ export default function AsIsPanel({ slot = 1 }: { slot?: CompareSlot }) {
   // (자체 상태바·하단탭·안드로이드 네비 포함. 중첩 .app-safe-frame 는 CSS 로 무력화)
   if (isHome) {
     return (
-      <div className={frameClass} aria-hidden>
+      <div className={frameClass} data-punch={punch} aria-hidden>
         <span className="asis-caption">As Is</span>
         <div className="asis-screen asis-home">
           <Suspense>
@@ -429,7 +453,7 @@ export default function AsIsPanel({ slot = 1 }: { slot?: CompareSlot }) {
   );
 
   return (
-    <div className={frameClass} aria-hidden>
+    <div className={frameClass} data-punch={punch} aria-hidden>
       <span className="asis-caption">As Is</span>
       <div className="asis-screen">
         {/* 상단 상태바 — 시안과 동일. */}

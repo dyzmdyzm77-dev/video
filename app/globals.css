@@ -556,36 +556,47 @@ body {
      패널 폭(--panel-w)을 뺀 남은 영역의 가운데에 놓는다. */
   /* 기기 위 칩 줄 — 각자 자기 기기 한가운데 위에 놓는다(오른쪽=시안,
      왼쪽=비교 대상). 기준은 눈금자와 같은 --device-left(= 오른쪽 기기 화면 왼쪽). */
+  /* 자리는 left 가 아니라 transform 으로 잡는다. fixed 요소의 가용 폭은
+     "left 좌표부터 창 오른쪽 끝까지"라, left 로 밀면 오른쪽 기기 칩 줄만 폭이
+     좁게 잡혀 두세 겹으로 접혔다(그만큼 아래로 내려와 눈금자·목업을 덮는다).
+     left:0 으로 두고 옮기면 어느 자리든 같은 규칙으로 접힌다.
+     접히는 기준 폭은 '자기 기기 바깥 폭'(--dpc-w) — 칩 줄이 옆 기기 위까지
+     번지지 않아야 어느 기기를 고르는 건지 읽힌다. 기기가 아주 좁아도 칩 하나에
+     한 줄씩 쌓이지 않게 180px 은 보장한다. */
   .device-preset-chips {
     position: fixed;
     top: 10px;
+    left: 0;
     z-index: 13;
     display: flex;
+    max-width: min(calc(100vw - 16px), max(180px, var(--dpc-w, 100vw)));
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     gap: 6px;
-    transform: translateX(-50%);
   }
   .dpc-right {
-    left: calc(
-      var(--device-left, 240px) + var(--device-w, 360px) *
-        var(--device-scale, 1) / 2
+    --dpc-w: calc(
+      (var(--device-w, 360px) + var(--device-margin, 10px) * 2) *
+        var(--device-scale, 1)
+    );
+    transform: translateX(
+      calc(
+        var(--device-left, 240px) + var(--device-w, 360px) *
+          var(--device-scale, 1) / 2 - 50%
+      )
     );
   }
-  /* 왼쪽 기기(비교 프레임)의 중심 — .asis-frame 의 left 계산(한 칸 = --asis-step)에
-     자기 바깥 폭의 절반을 더한 자리다. 3개 비교의 바깥 자리는 두 칸(.dpc-left2). */
+  /* 왼쪽 기기(비교 프레임)의 중심 — 그 자리의 왼쪽 변(--dev{n}-left)에 자기 바깥
+     폭의 절반을 더한 자리다. 자리마다 해상도가 달라도 칩 줄은 자기 기기 한가운데에
+     선다(compareSize.ts). */
   .dpc-left {
-    left: calc(
-      var(--device-left, 240px) - var(--device-margin, 10px) *
-        var(--device-scale, 1) - var(--asis-step) + var(--asis-outer) / 2
-    );
+    --dpc-w: var(--dev1-outer);
+    transform: translateX(calc(var(--dev1-left) + var(--dev1-outer) / 2 - 50%));
   }
   .dpc-left2 {
-    left: calc(
-      var(--device-left, 240px) - var(--device-margin, 10px) *
-        var(--device-scale, 1) - var(--asis-step) * 2 + var(--asis-outer) / 2
-    );
+    --dpc-w: var(--dev2-outer);
+    transform: translateX(calc(var(--dev2-left) + var(--dev2-outer) / 2 - 50%));
   }
   .dpc-chip {
     height: 26px;
@@ -612,6 +623,42 @@ body {
     background: #111111;
     border-color: #111111;
     color: #ffffff;
+  }
+  /* 해상도 드롭다운 — 칩 줄 맨 끝. 프리셋이 열 개라 칩으로 늘어놓으면 줄이
+     두세 겹이 돼 눈금자·기기를 덮는다(위쪽 여유는 TOP_CHROME 92px 뿐).
+     그래서 자리마다 한 칸짜리 선택으로 둔다. 모양은 칩과 같게 맞춘다. */
+  .dpc-select {
+    height: 26px;
+    max-width: 132px;
+    padding: 0 22px 0 11px;
+    border-radius: 13px;
+    border: 1px solid #e0e0e0;
+    background:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'><path d='M1 1l3 3 3-3' fill='none' stroke='%236b6b6b' stroke-width='1.2'/></svg>")
+        no-repeat right 9px center,
+      #ffffff;
+    color: #6b6b6b;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    text-overflow: ellipsis;
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease;
+  }
+  .dpc-select:hover {
+    border-color: #c8c8c8;
+    color: #333333;
+  }
+  /* 시안과 다른 해상도를 못 박아 둔 자리는 칩처럼 강조해, 어느 기기가 따로
+     노는지 한눈에 보이게 한다. */
+  .dpc-select[data-pinned="true"] {
+    border-color: #111111;
+    color: #111111;
   }
   /* 치수 눈금자를 꺼도 칩은 남긴다(사용자 요청) — 눈금자는 '보조 정보'지만
      칩은 화면을 바꾸는 조작이라 늘 손에 닿아야 한다. */
@@ -1072,15 +1119,40 @@ body {
      같이 커진다. 시안 화면 왼쪽 앵커(--device-left)에서 왼쪽으로 갭 + 자기
      바깥 폭(화면 + 베젤 양쪽)만큼 떨어뜨려 오른쪽 끝을 맞춘다.
      3개 비교면 같은 걸 한 칸 더 왼쪽에 놓는다(.asis-frame--2). */
-  /* 기기 하나의 바깥(베젤 포함) 폭과, 옆 기기까지의 한 칸 거리. 비교 프레임과
-     그 위 칩 줄이 같이 쓰므로 문서 루트에 둔다. 50 은 DeviceScaler 의
-     COMPARE_GAP 과 같은 값이어야 한다(간격은 배율을 안 탄다 — 항상 화면상 50px). */
+  /* 자리별 기기 크기와 자리(가로 위치). 비교 프레임과 그 위 칩 줄이 같이 쓰므로
+     문서 루트에 둔다. 50 은 DeviceScaler 의 COMPARE_GAP 과 같은 값이어야 한다
+     (간격은 배율을 안 탄다 — 항상 화면상 50px).
+
+     --slot{n}-* 은 "그 자리에 해상도를 못 박았을 때만" JS 가 싣는다
+     (compareSize.ts). 안 실리면 아래 폴백이 시안 값을 그대로 받으므로, 예전처럼
+     프리셋·드래그가 세 대에 동시에 먹는다. 자리 하나만 폴드로 바꾸면 그 자리만
+     떨어져 나온다.
+
+     자리 x 좌표는 '오른쪽에서 왼쪽으로' 누적한다 — 기기 폭이 자리마다 다르므로
+     예전처럼 한 칸(--asis-step)을 곱해선 안 된다. */
   html {
-    --asis-outer: calc(
-      (var(--device-w, 360px) + var(--device-margin, 10px) * 2) *
+    --dev1-w: var(--slot1-w, var(--device-w, 360px));
+    --dev1-h: var(--slot1-h, var(--device-h, 780px));
+    --dev1-m: var(--slot1-m, var(--device-margin, 10px));
+    --dev1-r: var(--slot1-r, var(--device-radius, 45px));
+    --dev2-w: var(--slot2-w, var(--device-w, 360px));
+    --dev2-h: var(--slot2-h, var(--device-h, 780px));
+    --dev2-m: var(--slot2-m, var(--device-margin, 10px));
+    --dev2-r: var(--slot2-r, var(--device-radius, 45px));
+    /* 목업 바깥(베젤 포함) 폭 — 배율까지 먹인 화면상 크기. */
+    --dev1-outer: calc(
+      (var(--dev1-w) + var(--dev1-m) * 2) * var(--device-scale, 1)
+    );
+    --dev2-outer: calc(
+      (var(--dev2-w) + var(--dev2-m) * 2) * var(--device-scale, 1)
+    );
+    /* 시안(맨 오른쪽) 목업의 왼쪽 변. --device-left 는 '화면' 왼쪽이라 베젤만큼 뺀다. */
+    --dev0-bezel: calc(
+      var(--device-left, 240px) - var(--device-margin, 10px) *
         var(--device-scale, 1)
     );
-    --asis-step: calc(50px + var(--asis-outer));
+    --dev1-left: calc(var(--dev0-bezel) - 50px - var(--dev1-outer));
+    --dev2-left: calc(var(--dev1-left) - 50px - var(--dev2-outer));
   }
   .asis-frame {
     display: block;
@@ -1091,12 +1163,9 @@ body {
       var(--device-bottom-pad, 40px) - var(--device-margin, 10px) *
         var(--device-scale, 1)
     );
-    /* 시안 베젤 왼쪽(= --device-left - margin·scale)에서 한 칸(간격 + 자기 바깥
-       폭) 왼쪽. 두 번째 자리는 두 칸(아래 --2). */
-    left: calc(
-      var(--device-left, 240px) - var(--device-margin, 10px) *
-        var(--device-scale, 1) - var(--asis-step)
-    );
+    /* 시안 베젤 왼쪽에서 간격(50) + 자기 바깥 폭만큼 왼쪽. 자리마다 기기 폭이
+       다를 수 있어 좌표는 문서 루트에서 누적해 둔다(위 html 블록). */
+    left: var(--dev1-left);
     transform-origin: 0 100%;
     transform: scale(var(--device-scale, 1));
     padding: var(--device-margin, 10px);
@@ -1123,12 +1192,39 @@ body {
       border-radius 0.22s ease,
       transform 0.22s ease;
   }
-  /* 3개 비교의 가장 바깥 자리 — 한 칸 더 왼쪽. */
-  .asis-frame--2 {
-    left: calc(
-      var(--device-left, 240px) - var(--device-margin, 10px) *
-        var(--device-scale, 1) - var(--asis-step) * 2
+  /* ── 자리별 해상도 ─────────────────────────────────────────────────────
+     비교하기일 때만 자리 변수로 갈아탄다. As Is 단독 보기(비교 꺼짐)는 기기가
+     한 대뿐이라 시안 크기를 그대로 써야 한다 — 자리에 못 박아 둔 해상도가 남아
+     있어도 거기까지 따라가면 안 된다.
+
+     프레임 안쪽(화면·목업·안 컴포넌트)은 전부 --device-w/h/margin/radius 를
+     보고 그리므로, 프레임에서 그 네 개를 자리 값으로 덮어쓰면 트리 전체가
+     그 해상도로 그려진다. 폭을 '읽어서' 배치를 정하는 JS 쪽은 컨텍스트로
+     자리 번호를 받아 --dev{n}-w 를 본다(deviceScope.ts). */
+  html[data-compare="true"] .asis-frame {
+    left: var(--dev1-left);
+    bottom: calc(
+      var(--device-bottom-pad, 40px) - var(--dev1-m) * var(--device-scale, 1)
     );
+    padding: var(--dev1-m);
+    border-radius: var(--dev1-r);
+    --device-w: var(--dev1-w);
+    --device-h: var(--dev1-h);
+    --device-margin: var(--dev1-m);
+    --device-radius: var(--dev1-r);
+  }
+  /* 3개 비교의 가장 바깥 자리 — 시안 왼쪽으로 두 칸(자리 1 의 왼쪽). */
+  html[data-compare="true"] .asis-frame--2 {
+    left: var(--dev2-left);
+    bottom: calc(
+      var(--device-bottom-pad, 40px) - var(--dev2-m) * var(--device-scale, 1)
+    );
+    padding: var(--dev2-m);
+    border-radius: var(--dev2-r);
+    --device-w: var(--dev2-w);
+    --device-h: var(--dev2-h);
+    --device-margin: var(--dev2-m);
+    --device-radius: var(--dev2-r);
   }
 
   /* ── As Is 단독 보기 ──────────────────────────────────────────────────
@@ -1833,6 +1929,54 @@ html[data-landscape="true"][data-punch="trifold"] .punch-hole {
 }
 /* Fold 8 — 세로에서 왼쪽 75% = 가로에선 아래에서 75%. */
 html[data-landscape="true"][data-punch="fold8"] .punch-hole {
+  bottom: 75%;
+  transform: translateY(50%);
+}
+
+/* 비교 자리에 해상도를 따로 못 박은 경우 — 펀치홀도 그 기기 것을 따라간다.
+   위 규칙들은 문서 루트(html[data-punch])만 보므로, 자리 프레임에 실린
+   data-punch 로 덮어쓴다(AsIsPanel 이 싣는다). 자리 해상도를 안 정했으면 속성이
+   아예 없어서 위 규칙이 그대로 먹는다.
+   가로 쪽 규칙과 명시도가 같으므로(0,2,1) 반드시 뒤에 와야 한다. */
+.asis-frame[data-punch="center"] .punch-hole {
+  left: 50%;
+  right: auto;
+  top: 5.5px;
+  bottom: auto;
+  transform: translateX(-50%);
+}
+.asis-frame[data-punch="trifold"] .punch-hole {
+  left: auto;
+  right: 167px;
+  top: 5.5px;
+  bottom: auto;
+  transform: none;
+}
+.asis-frame[data-punch="fold8"] .punch-hole {
+  left: 75%;
+  right: auto;
+  top: 5.5px;
+  bottom: auto;
+  transform: translateX(-50%);
+}
+html[data-landscape="true"] .asis-frame[data-punch="center"] .punch-hole {
+  left: 5.5px;
+  right: auto;
+  top: auto;
+  bottom: 50%;
+  transform: translateY(50%);
+}
+html[data-landscape="true"] .asis-frame[data-punch="trifold"] .punch-hole {
+  left: 5.5px;
+  right: auto;
+  bottom: auto;
+  top: 167px;
+  transform: none;
+}
+html[data-landscape="true"] .asis-frame[data-punch="fold8"] .punch-hole {
+  left: 5.5px;
+  right: auto;
+  top: auto;
   bottom: 75%;
   transform: translateY(50%);
 }

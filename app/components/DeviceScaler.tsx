@@ -20,6 +20,37 @@ function paneCount(root: HTMLElement) {
   if (root.dataset.compare !== "true") return 1;
   return root.dataset.compareSlots === "2" ? 3 : 2;
 }
+
+// 지금 서 있는 기기들의 크기(화면 px)와 베젤 여백. [0] = 오른쪽 시안,
+// 그다음이 왼쪽 비교 자리 1·2 다.
+//
+// 자리마다 해상도를 따로 고를 수 있으므로(compareSize.ts) '한 대 크기 × 대수'로
+// 묶어 계산하면 안 된다 — 폴드 펼침 옆에 360 을 세우면 덩어리 폭이 실제와 달라져
+// 가운데 정렬이 어긋나고 한쪽이 창 밖으로 밀린다. --dev{n}-* 은 CSS 가
+// '자리 값 → 없으면 시안 값' 으로 풀어 두므로 여기선 그대로 읽으면 된다.
+type Pane = { w: number; h: number; m: number };
+function panes(
+  root: HTMLElement,
+  cs: CSSStyleDeclaration,
+  w: number,
+  h: number,
+  margin: number,
+): Pane[] {
+  const n = paneCount(root);
+  const list: Pane[] = [{ w, h, m: margin }];
+  const num = (name: string, fallback: number) => {
+    const v = parseFloat(cs.getPropertyValue(name));
+    return Number.isFinite(v) && v > 0 ? v : fallback;
+  };
+  for (let slot = 1; slot < n; slot++) {
+    list.push({
+      w: num(`--dev${slot}-w`, w),
+      h: num(`--dev${slot}-h`, h),
+      m: num(`--dev${slot}-m`, margin),
+    });
+  }
+  return list;
+}
 // 기기 위로 비워 두는 세로 여유(px). 해상도 칩 줄 + 치수 눈금자가 여기 들어간다 —
 // 안 비워 두면 기기가 화면 꼭대기까지 올라와 칩·눈금자와 겹친다.
 const TOP_CHROME = 92;
@@ -102,18 +133,22 @@ export default function DeviceScaler() {
         // 두 기기의 바깥(베젤) 사이 간격이 정확히 COMPARE_GAP 이 되도록 계산한다.
         // As Is 는 시안과 같은 크기라 바깥 폭도 동일하다.
         if (root.dataset.compare === "true") {
-          // 왼쪽 비교 기기는 하나일 수도, 둘일 수도 있다(2개/3개 비교).
-          // 전부 같은 크기라 '한 덩어리' 폭 = 대수·바깥폭 + 사이 간격들이다.
-          const n = paneCount(root);
-          const outerW = (w + margin * 2) * curScale;
-          const groupW = outerW * n + COMPARE_GAP * (n - 1);
+          // 왼쪽 비교 기기는 하나일 수도, 둘일 수도 있다(2개/3개 비교). 자리마다
+          // 크기가 다를 수 있으니 '한 덩어리' 폭은 각 기기 바깥 폭을 다 더하고
+          // 사이 간격을 얹어 구한다.
+          const boxes = panes(root, cs, w, h, margin);
+          const outers = boxes.map((b) => (b.w + b.m * 2) * curScale);
+          const gaps = COMPARE_GAP * (outers.length - 1);
+          const groupW = outers.reduce((a, b) => a + b, 0) + gaps;
           const groupLeft = Math.max(
             panel + 16,
             panel + (window.innerWidth - panel - groupW) / 2,
           );
-          // --device-left 는 시안(맨 오른쪽) '화면' 왼쪽 = 그 베젤 왼쪽 + margin·scale
-          const anchor =
-            groupLeft + (outerW + COMPARE_GAP) * (n - 1) + margin * curScale;
+          // --device-left 는 시안(맨 오른쪽) '화면' 왼쪽 = 덩어리 왼쪽 + 왼쪽
+          // 기기들 폭 + 그 사이 간격들 + 자기 베젤(margin·scale).
+          const leftPart =
+            outers.slice(1).reduce((a, b) => a + b, 0) + gaps;
+          const anchor = groupLeft + leftPart + margin * curScale;
           root.style.setProperty("--device-left", `${Math.round(anchor)}px`);
           return;
         }
@@ -178,13 +213,16 @@ export default function DeviceScaler() {
       // 목업/프레임 외곽(사방 margin) + 창 여백 기준으로 맞춘다.
       // 비교하기 중엔 같은 크기의 기기가 왼쪽에 하나(2개 비교) 또는 둘(3개 비교)
       // 더 붙으므로, 가로 기준을 "기기 n대 + 갭"으로 잡아야 전부 창 안에 들어온다.
-      const cols = paneCount(root);
-      const gap = COMPARE_GAP * (cols - 1);
-      // 현재 기기가 창에 들어오는 최대 배율(오버플로 방지 상한).
+      const boxes = panes(root, cs, w, h, margin);
+      const gap = COMPARE_GAP * (boxes.length - 1);
+      // 나란히 선 기기들이 전부 창에 들어오는 최대 배율(오버플로 방지 상한).
+      // 가로는 폭의 합, 세로는 그중 가장 높은 기기가 기준이다.
+      const sumOuterW = boxes.reduce((a, b) => a + (b.w + b.m * 2), 0);
+      const maxOuterH = Math.max(...boxes.map((b) => b.h + b.m * 2));
       const sFit = Math.min(
         MAX_SCALE,
-        (window.innerHeight - TOP_CHROME) / (h + margin * 2),
-        (window.innerWidth - panel - 72 - gap) / ((w + margin * 2) * cols),
+        (window.innerHeight - TOP_CHROME) / maxOuterH,
+        (window.innerWidth - panel - 72 - gap) / sumOuterW,
       );
       // 기본 모드도 '실제 사이즈 모드처럼' 기종 간 물리 크기 비례를 유지한다.
       // 모든 기종이 공통 캔버스 밀도(px/mm)를 쓰도록: 가장 큰 프리셋(Z TriFold)이

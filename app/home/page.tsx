@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { BASE } from "../basePath";
 import AndroidNav from "../components/AndroidNav";
 import { readDeviceWidth } from "../components/useDeviceWidth";
+import { useDeviceScope } from "../components/deviceScope";
 import { WIDE_BP, HOME_W_1COL, HOME_W_2COL } from "../components/layoutRules";
 
 // SSR 경고 없이 페인트 직전 실행되는 레이아웃 이펙트를 쓰기 위한 동형 훅.
@@ -322,6 +323,10 @@ export function Inner({
   // 감시한다(배율 transform 영향 없는 레이아웃 폭). 컬럼 폭 자체는 grid 트랙(minmax
   // 280~320)이 해상도에 맞게 잡고(리플로우/2단계 없음), 전환 시 위치만 아래 FLIP 이
   // translate 로 헤더와 함께 미끄러지게 한다.
+  // 비교 자리 안에서도 홈이 뜬다(비교하기 켜고 홈 탭). 자리마다 해상도가 다를 수
+  // 있으므로 1단/2단 판정은 '이 트리가 그려지는 기기'의 폭으로 해야 한다 —
+  // 문서 루트만 보면 시안 폭으로 판정해 왼쪽 홈이 엉뚱한 단으로 뜬다(deviceScope.ts).
+  const scope = useDeviceScope();
   const [twoCol, setTwoCol] = useState(false);
   // 폭 전환(max-width) 애니메이션 허용 여부. 첫 진입엔 꺼서 480→700 '펼침'이 안 보이게.
   const [widenReady, setWidenReady] = useState(false);
@@ -368,7 +373,7 @@ export function Inner({
   // 한 프레임 그려졌다가 700 으로 CSS 전환이 돌아 홍길동·알림·플로팅 아이콘이 가운데서
   // 양옆으로 '펼쳐지는' 연출이 보인다. 확정 뒤 다음 프레임부터 전환을 허용한다.
   useIsoLayoutEffect(() => {
-    const want = readDeviceWidth() >= WIDE_BP;
+    const want = readDeviceWidth(undefined, scope) >= WIDE_BP;
     twoColRef.current = want;
     setTwoCol(want);
     const raf = requestAnimationFrame(() => setWidenReady(true));
@@ -384,7 +389,7 @@ export function Inner({
       // 목표 폭(--device-w) 기준으로 판정 — 프리셋 클릭/드래그 순간 즉시 바뀌는 값이라
       // 프레임이 0.1s 동안 자라는 것과 같은 시점에 전환을 시작할 수 있다. 변수 없는
       // 실기기에선 관측 폭(observed, 없으면 프레임)으로 폴백 — readDeviceWidth 참고.
-      const want = readDeviceWidth(observed ?? target) >= WIDE_BP;
+      const want = readDeviceWidth(observed ?? target, scope) >= WIDE_BP;
       let changed = false;
       if (want !== twoColRef.current) {
         twoColRef.current = want;
@@ -401,7 +406,7 @@ export function Inner({
       return changed;
     };
     // 현재 기기 폭(px) — 재조준용. 데스크톱 미리보기면 --device-w, 실기기면 관측 폭.
-    const readW = () => readDeviceWidth(target);
+    const readW = () => readDeviceWidth(target, scope);
     // 프리셋 클릭(devicechange)=부드러운 애니메이션. 드래그 중이면 마무리 후 정리 예약.
     const onChange = () => {
       resizingRef.current = false;
