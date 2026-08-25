@@ -271,15 +271,23 @@ export default function VariantA1({
   const [mode, setMode] = useState<"live" | "recording">(
     () => readScreenState().mode,
   );
-  // 바뀔 때마다 남겨 둔다 — 다음에 뜨는 안이 같은 화면에서 시작하게.
-  useEffect(() => {
-    writeScreenState({ single: expandedIndex, mode });
-  }, [expandedIndex, mode]);
   // 위아래 가짜 시스템 바 표시 여부. 가짜 바 자체를 눌러 토글한다.
   // 단 데스크톱 진입(initialChrome)이면 켠 채로 시작한다.
   const [chromeVisible, setChromeVisible] = useState(initialChrome);
   const [isScrubbing, setIsScrubbing] = useState(false);
-  const [playbackMs, setPlaybackMs] = useState<number | null>(null);
+  // 녹화 재생 시각. 안을 갈아끼워도 보던 시각에서 이어지도록 물려받는다
+  // (screenState.ts). 실시간이면 null 이다.
+  const [playbackMs, setPlaybackMs] = useState<number | null>(
+    () => readScreenState().ms,
+  );
+  // 바뀔 때마다 남겨 둔다 — 다음에 뜨는 안이 같은 화면에서 시작하게.
+  // 재생 시각(playbackMs)도 같이 남긴다. 안 남기면 녹화 화면인 채로 안을 바꿨을 때
+  // 새 안이 '녹화인데 시각은 없음'으로 떠서 시간바가 비고 시계가 멈춘다
+  // (screenState.ts 주석 참고). 녹화 중엔 매 틱 바뀌지만 문서 루트 dataset 쓰기
+  // 하나뿐이라(구독자 없음) 리렌더나 레이아웃을 만들지 않는다.
+  useEffect(() => {
+    writeScreenState({ single: expandedIndex, mode, ms: playbackMs });
+  }, [expandedIndex, mode, playbackMs]);
   const [isPlaying, setIsPlaying] = useState(true);
   // 배속(부호 포함): 1=기본, 2/4/16=빨리감기, 음수=되감기. 타임라인 진행 속도에 반영.
   const [playbackRate, setPlaybackRate] = useState(1);
