@@ -467,8 +467,6 @@ export default function VariantB({
           onPageChange={setCurrentPage}
           onTitleClick={() => setVariantPickerOpen(true)}
           mode={mode}
-          setMode={handleSetMode}
-          timeLabel={dateLabel}
           // 딤 위에 얹는 컨트롤 — LandscapeVideo 가 껍데기에 깔던 흰 배경도 같이 뺀다.
           controlsOnDim
           controls={

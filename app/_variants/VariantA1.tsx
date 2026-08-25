@@ -560,11 +560,6 @@ export default function VariantA1({
               ? () => setSidePanelOpen((v) => !v)
               : undefined
           }
-          // 실시간/녹화 칩 — A-2·A-3 과 같은 자리(위 가운데)·같은 모양(칩 두 개)
-          // 이다(사용자 지정 2026-08-25: "A-1 하단 왼쪽도 그냥 동일하게 다른거랑
-          // 맞춰"). 예전엔 A-1 만 딤 아래 왼쪽에 세그먼트 토글로 떠 있어서, 안을
-          // 갈아 가며 볼 때 가로 화면만 자리가 튀었다.
-          statusStyle="chips"
           // 딤 위 UI 좌우 여백 40 — 영상 자체는 제외, 끝까지 쓴다.
           edgeInset={dimEdge}
           // 아래층(AI 버튼·페이지 점) 뜨는 양 — 네 안 공통(layoutRules).
@@ -584,8 +579,6 @@ export default function VariantA1({
           onPageChange={setCurrentPage}
           onTitleClick={() => setVariantPickerOpen(true)}
           mode={mode}
-          setMode={handleSetMode}
-          timeLabel={dateLabel}
           // 딤 농도·칩 위치·페이지 점은 LandscapeVideo 기본값을 그대로 쓴다
           // — 가로 화면은 세 안이 같아야 해서 그쪽에 모아 뒀다.
           // 화면 맞춤은 세로에서 쓰던 상태를 그대로 이어받는다(회전해도 유지).
@@ -1900,7 +1893,9 @@ function ExpandedView({
               );
             })}
           </div>
-          <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+          {/* 탭 아래 구분선은 안 긋는다 — 바로 위 시간바 띠가 이미 경계를 그어
+              두 줄이 43px 사이로 겹쳐 보였다(사용자 지적 2026-08-25:
+              "구분선은 없었는데 갑자기 왜 들어가있냐"). */}
         </>
       )}
     </>

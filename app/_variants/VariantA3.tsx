@@ -581,14 +581,7 @@ export default function VariantA3({
   // 회전 = 방향 전환' 이라는 기준과 어긋났다(사용자 지적).
   //
   // 확대하면서 눕힌 경우엔 landscape 와 immersive 가 같이 켜지므로 여기로 온다.
-  // 가로 딤에 띄울 현재 시각 — 녹화면 재생 위치, 실시간이면 지금 시각.
-  // 시간바가 없는 화면에서 쓴다(시간바가 있으면 그 안 알약이 같은 값을 보여 준다).
-  const landscapeClock = (() => {
-    const d = mode === "recording" ? (playbackMs !== null ? new Date(playbackMs) : null) : now;
-    if (!d) return "";
-    const p2 = (n: number) => String(n).padStart(2, "0");
-    return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
-  })();
+  // (가로 딤의 현재 시각은 LandscapeVideo 가 직접 센다 — 세 안 공통 표시.)
   if (immersive) {
     return (
       // 패널이 열리면 영상을 밀고 옆에 선다(덮지 않는다) — 그래서 가로 배치다.
@@ -618,11 +611,6 @@ export default function VariantA3({
           // AI·크게 보기를 시간바 아래 가운데 줄로 옮겼다 — 딤 좌우 아래 원은 끈다.
           showOverlayAi={false}
           showOverlayZoom={false}
-          // 실시간/녹화를 칩 두 개로 — 고른 쪽만 흰 배경 + 검정 글자.
-          statusStyle="chips"
-          // 패널이 열려 영상 폭이 줄어도 칩은 위 가운데에 그대로 둔다
-          // (사용자 지정 2026-08-18).
-          statusAlwaysTop={lsPanel !== null}
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 — 아래 아이콘 줄과 한 값을 쓴다(dimEdge).
@@ -645,7 +633,6 @@ export default function VariantA3({
           onPageChange={setCurrentPage}
           onTitleClick={() => setVariantPickerOpen(true)}
           mode={mode}
-          setMode={handleSetMode}
           // timeLabel 을 안 넘긴다 — 딤 상단의 시각 표시를 없앤다(사용자 결정
           // 2026-08-14). 시각은 영상 위 배지에 있어서 둘이 겹쳤고, 칩 옆에 시각이
           // 붙어 있으면 가운데 정렬도 칩 기준이 아니라 '칩+시각' 기준이라
@@ -799,55 +786,9 @@ export default function VariantA3({
                               ),
                           })}
                       </div>
-                      {/* 현재 시각 — 아이콘 줄 가운데(사용자 지정 2026-08-19:
-                          "그거 아래쪽 아이콘이랑 정렬 맞춰줘"). 줄이
-                          justify-between 이라 왼쪽 묶음과 축소 버튼 사이 한가운데에
-                          앉는다. 시간바가 있는 화면에서는 그 안 알약이 같은 일을
-                          하므로 안 그린다. */}
-                      {!(mode === "recording" && expandedIndex !== null) && (
-                        <span
-                          suppressHydrationWarning
-                          className="rounded-full"
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            height: "22px",
-                            padding: "0 10px",
-                            fontSize: "13px",
-                            fontWeight: 700,
-                            lineHeight: "13px",
-                            color: "#FFFFFF",
-                            backgroundColor: "rgba(102,102,102,0.4)",
-                            backdropFilter: "blur(20px)",
-                            WebkitBackdropFilter: "blur(20px)",
-                            textShadow: "0 0 4px rgba(0,0,0,0.6)",
-                          }}
-                        >
-                          {/* 점 + 상태 글자 → 시각 순(사용자 지정 2026-08-19:
-                              "현재시간 앞에 점 + 실시간 이것도 추가해줘",
-                              "점은 빨간색", "녹화영상은 흰색 점으로").
-                              세로 딤의 실시간/녹화 배지와 같은 말·같은 구분이고,
-                              알약 하나에 묶어 아이콘 줄과 높이를 맞춘다. */}
-                          <span
-                            aria-hidden
-                            className="rounded-full"
-                            style={{
-                              width: "5px",
-                              height: "5px",
-                              // 실시간은 빨강, 녹화영상은 흰 점(사용자 지정
-                              // 2026-08-19) — 세로 딤의 두 배지와 같은 구분이다.
-                              backgroundColor:
-                                mode === "recording" ? "#FFFFFF" : "#FF3B4A",
-                              marginRight: "5px",
-                              flex: "none",
-                            }}
-                          />
-                          <span style={{ marginRight: "6px" }}>
-                            {mode === "recording" ? "녹화영상" : "실시간"}
-                          </span>
-                          {landscapeClock}
-                        </span>
-                      )}
+                      {/* 현재 시각 알약은 여기 없다 — 딤 아래 왼쪽 공통 표시로
+                          올라갔다(LandscapeVideo, 사용자 지정 2026-08-25: 세 안이
+                          같은 자리에 같은 모양으로 둔다). */}
                       {/* 크게 보기 ↔ 원래 크기로. 가로에서만 뜨는 줄이라 늘
                           '원래 크기로'다. 딤 오른쪽 아래에 있던 그 버튼이다. */}
                       <div className="flex flex-1 items-center justify-end">
@@ -898,6 +839,7 @@ export default function VariantA3({
             }}
             playbackMs={playbackMs}
             setPlaybackMs={setPlaybackMs}
+            onScrubbingChange={setIsScrubbing}
             // 패널 바깥 여백은 '아이폰 + 눕힌 화면'에서만 준다(사용자 지정
             // 2026-08-18: "제자리 확대한 경우는 ... 가로로 돌려졌을때만",
             // "IOS만 오른쪽 패널에 공간을 주고, 나머지는 안줘도 된다").
@@ -2410,6 +2352,7 @@ function ExpandedView({
       }}
     >
       <RecordingEventTimeline
+        part="bar"
         playbackMs={playbackMs}
         setPlaybackMs={setPlaybackMs}
         cameraSrc={cam.src}
@@ -2465,10 +2408,6 @@ function ExpandedView({
           </span>
         </div>
       )}
-      {/* 탭 아래 구분선 — 녹화만(A-2 와 동일). 실시간은 제목 한 줄이라 안 긋는다. */}
-      {mode === "recording" && (
-        <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
-      )}
       {/* 카메라 목록 / 움직임 감지 — 남는 공간을 채우는 영역(flex-1). 최소 높이는
           useListLayout 이 배치에 따라 잡는다 — 가로 한 줄이면 타일 세로 기준
           (TILE_MIN_H), 세로 2열이면 영역 기준(LIST_MIN_H). layoutRules.ts 참고. */}
@@ -2477,16 +2416,25 @@ function ExpandedView({
         className="relative flex min-h-0 flex-col flex-1"
       >
       {motionTab ? (
-        <MotionEventList
-          playbackMs={playbackMs}
-          setPlaybackMs={setPlaybackMs}
-          cameraSrc={cam.src}
-          // 세로가 모자라면(카메라 목록이 가로 한 줄로 넘어간 그 판정) 감지도
-          // 가로 스크롤로 간다 — 같은 영역이라 판정을 새로 만들지 않고 나눠 쓴다.
-          wide={listWide}
-          // 감지 탭일 때도 훅이 잴 '행'이 있어야 판정이 계속 돈다.
-          rowRef={listRowRef}
-        />
+        // 카메라 목록이 가로 한 줄(listWide)이면 가로 썸네일 레일, 세로 2열이면
+        // 목록과 같은 방향으로 세로 타임라인 — A-2 와 같은 규칙이다(사용자 지정
+        // 2026-08-25: 감지 탭 내용도 A-2 에 맞춘다).
+        listWide ? (
+          <RecordingEventTimeline
+            part="thumbs"
+            playbackMs={playbackMs}
+            setPlaybackMs={setPlaybackMs}
+            cameraSrc={cam.src}
+            onScrubbingChange={onScrubbingChange}
+          />
+        ) : (
+          <SideEventTimeline
+            playbackMs={playbackMs}
+            setPlaybackMs={setPlaybackMs}
+            cameraSrc={cam.src}
+            onScrubbingChange={onScrubbingChange}
+          />
+        )
       ) : (
       <div
         ref={listWide ? undefined : listScrollRef}
@@ -2531,23 +2479,17 @@ function ExpandedView({
     </>
   );
   // 오른쪽 세로 패널 본문 — A-2 그대로: 목록은 1열 세로 스크롤(타일 폭 = 패널 폭),
-  // 감지는 아래 스트립과 같은 리스트(MotionEventList). 패널이 좁아 가로 시간바가 안 맞아
-  // 적층·가로 교체에서 제외했다(사용자 결정 2026-08-14: "오른쪽 패널은 기존 유지").
+  // 감지는 세로 타임라인. 패널이 좁아 가로 시간바가 안 맞는다.
   const sidePanelBody = (
     <div ref={listAreaRef} className="relative flex min-h-0 flex-1 flex-col">
       {mode === "recording" && recTab === "motion" ? (
-        // 세로 타임라인(SideEventTimeline)이 아니라 아래 스트립과 같은 리스트다
-        // (사용자 결정 2026-08-14). 패널이 좁고 세로로 길어 리스트가 잘 맞고,
-        // 무엇보다 같은 안에서 감지 화면이 두 종류면 안 된다.
-        // 패널은 세로로 길어 항상 세로 리스트다 — wide 를 안 넘긴다.
-        <MotionEventList
+        // 세로 타임라인 — 감지 표현을 A-2 에 맞추면서 아래 스트립(세로 2열일 때)과
+        // 같은 컴포넌트를 쓴다(사용자 지정 2026-08-25). 예전엔 리스트였다.
+        <SideEventTimeline
           playbackMs={playbackMs}
           setPlaybackMs={setPlaybackMs}
           cameraSrc={cam.src}
-          // 패널은 세로로 길다 — 가로 스크롤로 가면 안 된다(사용자 지적 2026-08-18:
-          // "오른쪽 패널에 나오는 움직임감지 ... 세로 스크롤로 해야해"). 기본값이
-          // 세로지만 아래 스트립(wide={listWide})과 헷갈리지 않게 못 박아 둔다.
-          wide={false}
+          onScrubbingChange={onScrubbingChange}
         />
       ) : (
         <div
@@ -3170,6 +3112,7 @@ function RecordingEventTimeline({
   setPlaybackMs,
   cameraSrc,
   onScrubbingChange,
+  part = "both",
 }: {
   playbackMs: number | null;
   setPlaybackMs: (
@@ -3177,6 +3120,12 @@ function RecordingEventTimeline({
   ) => void;
   cameraSrc: string;
   onScrubbingChange?: (s: boolean) => void;
+  /** 어느 부분을 그릴지 — A-1·A-2 와 같은 규칙이다.
+   *   · "bar"    — 시간바만. 5버튼 아래 고정 띠(motionBlock)가 쓴다.
+   *   · "thumbs" — 썸네일 레일만. '움직임 감지' 탭 내용이다.
+   *   · "both"   — 둘 다(기본). 가로 확대 딤 패널이 한 덩어리로 쓴다.
+   *  둘로 갈라도 어긋나지 않는다 — 레일 위치가 양쪽 다 playbackMs 에서 나온다. */
+  part?: "both" | "bar" | "thumbs";
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   // 썸네일을 못 뽑는 기기 사양이면 카드에 시각+타이틀만 남긴다(eventThumbs.ts).
@@ -3184,12 +3133,15 @@ function RecordingEventTimeline({
   // 썸네일 영역(시간바 아래 남는 공간). 이 높이에 맞춰 썸네일 세로 크기를 유동
   // 조절한다(화면이 짧아지면 잘리지 않게 줄인다). 최대 72(원본), 폭은 16:9 로 연동.
   const thumbAreaRef = useRef<HTMLDivElement>(null);
+  // 썸네일 레일 위 여백. '움직임 감지' 탭으로 단독으로 설 때는 카메라 목록 탭의
+  // 타일과 같은 자리(위 12 · 아래 12)에서 시작해야 한다 — A-1·A-2 와 같은 규칙.
+  const cardTop = part === "thumbs" ? PAD_TOP : 4;
   const [thumbH, setThumbH] = useState(THUMB_MAX_H);
   const updateThumbH = () => {
     const el = thumbAreaRef.current;
     if (!el || el.clientHeight <= 0) return;
-    // 남는 영역 높이에서 상하 여백(위 4 + 아래 PAD_TOP)을 뺀 값. 일반 48 로 캡.
-    const avail = el.clientHeight - (4 + PAD_TOP);
+    // 남는 영역 높이에서 상하 여백(위 cardTop + 아래 PAD_TOP)을 뺀 값. 일반 48 로 캡.
+    const avail = el.clientHeight - (cardTop + PAD_TOP);
     setThumbH(Math.max(THUMB_MIN_H, Math.min(THUMB_MAX_H, Math.round(avail))));
   };
   // 매 렌더 뒤 재계산 — 기기 폭/높이 전환처럼 ResizeObserver 만으로는 놓치는 경우가
@@ -3586,10 +3538,12 @@ function RecordingEventTimeline({
       onPointerCancel={handlePointerUp}
     >
       {/* ── 시간바(다채널 RecordingControls 와 동일한 마크업·치수) ── */}
+      {part !== "thumbs" && (
       <div
         className="relative flex-none overflow-hidden"
         style={{
-          height: `${BAR_H_CLOSED}px`,
+          // 아래에 썸네일이 붙는 경우(both)만 아래 여백을 줄인 BAR_H 를 쓴다.
+          height: `${part === "both" ? BAR_H : BAR_H_CLOSED}px`,
           paddingTop: `${PAD_TOP}px`,
         }}
       >
@@ -3780,305 +3734,81 @@ function RecordingEventTimeline({
             바로 옆에 모이고, 시간바는 눈금만 남아 왼쪽 끝까지 흐른다.
             다채널 시간바(RecordingControls)는 그대로다 — 거긴 그 줄이 없다. */}
       </div>
+      )}
 
-    </div>
-  );
-}
-
-// 움직임 감지 리스트 — 아래 스트립의 '움직임 감지' 탭 내용(사용자 결정 2026-08-14).
-// 예전엔 시간바 아래 가로 썸네일 줄이었는데, 한 줄이라 몇 개 못 보고 잘렸다.
-// 세로 리스트로 바꾸면서 한 줄에 담는 정보도 늘렸다 — 왼쪽 썸네일, 오른쪽에
-// 감지 유형과 시각.
-//
-// 보여 주는 범위는 '보고 있는 그 날'이다. 재생 시각(playbackMs)이 속한 날의
-// 0시부터를 최신순으로 쌓되, 아직 오지 않은 시각은 뺀다(녹화가 없다).
-// 하루치가 ~4900건이라 다 그리면 스크롤이 버벅인다 — 상한을 두고 그만큼만 그린다.
-const MOTION_LIST_MAX = 200;
-
-function MotionEventList({
-  playbackMs,
-  setPlaybackMs,
-  cameraSrc,
-  wide = false,
-  rowRef,
-}: {
-  playbackMs: number | null;
-  setPlaybackMs: (v: number | null) => void;
-  cameraSrc: string;
-  /** useListLayout 의 '타일 행' 자리. 감지 탭일 때도 배치 판정이 계속 돌게 하려고
-   *  이 컨테이너를 대신 물려 준다 — 안 물리면 훅이 행을 못 찾아 판정을 건너뛰고,
-   *  그동안 화면이 바뀌어도 방향이 그대로 굳는다(사용자 지적: 기준이 적용 안 됨).
-   *  판정 자체는 영역 폭에서 나오는 카메라 타일 기하를 쓰므로, 여기 뭐가 들었든
-   *  카메라 목록과 같은 답이 나온다. */
-  rowRef?: React.Ref<HTMLDivElement>;
-  /** 세로로 쌓을 자리가 없나. 켜면 한 덩어리씩 가로로 나열하고 가로 스크롤한다
-   *  (사용자 결정 2026-08-14). 판정은 카메라 목록과 같은 것(useListLayout)을 쓴다 —
-   *  같은 영역을 두 탭이 나눠 쓰므로 기준이 갈리면 안 된다. */
-  wide?: boolean;
-}) {
-  // 그 날 0시(로컬). 이벤트의 at 은 자정으로부터의 초라 여기에 더하면 실제 시각이 된다.
-  const dayStart = (() => {
-    const d = new Date(playbackMs ?? Date.now());
-    d.setHours(0, 0, 0, 0);
-    return d.getTime();
-  })();
-  // 목록을 어디까지 담을지 — '그 날을 열어 본 시점'에 한 번만 정하고 붙잡는다.
-  // playbackMs 를 기준으로 삼으면 안 된다: 항목을 고르는 순간 그 시각이 새 기준이
-  // 되어 그 뒤 이벤트가 통째로 잘리고, 고른 게 최신이 되어 맨 위로 올라간다
-  // (사용자 지적: "왜 선택하면 맨위로 가니?"). 재생 중에도 매 틱 다시 계산돼
-  // 목록이 계속 밀렸다. 날짜가 바뀔 때만 다시 잡는다.
-  const [cutoff, setCutoff] = useState(() => Date.now());
-  useEffect(() => {
-    setCutoff(Date.now());
-  }, [dayStart]);
-  const rows = useMemo(() => {
-    // 지난 날이면 그 날 끝까지, 오늘이면 지금까지(아직 안 온 시각은 녹화가 없다).
-    const until = Math.min(cutoff, dayStart + 86400000);
-    const out: { ms: number; dur: number; kind: EventKind }[] = [];
-    // 뒤에서부터(최신) 훑어 상한만큼만 담는다 — 앞에서 담고 자르면 새벽 것만 남는다.
-    for (let i = TIMELINE_EVENTS.length - 1; i >= 0; i--) {
-      const ev = TIMELINE_EVENTS[i];
-      const ms = dayStart + ev.at * 1000;
-      if (ms > until) continue;
-      out.push({ ms, dur: ev.dur, kind: ev.kind });
-      if (out.length >= MOTION_LIST_MAX) break;
-    }
-    return out;
-  }, [dayStart, cutoff]);
-
-  // 고른 항목을 가운데로 맞춘다 — 카메라 목록과 같은 규칙(사용자 요청).
-  // 가로 배치면 좌우, 세로면 위아래. scrollIntoView 대신 직접 계산하는 것도
-  // 카메라 목록과 같은 이유다: 그쪽은 부모까지 같이 스크롤해 화면이 튄다.
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const activeMs = useMemo(() => {
-    if (playbackMs === null) return null;
-    const hit = rows.find(
-      (r) => playbackMs >= r.ms && playbackMs < r.ms + r.dur * 1000,
-    );
-    return hit ? hit.ms : null;
-  }, [rows, playbackMs]);
-  // 고른 항목을 스크롤 가운데로. 카메라 목록과 같은 방식이다 — 컨테이너의
-  // scrollTo 를 직접 부르고 부드럽게(smooth) 움직인다.
-  //
-  // scrollIntoView 를 썼다가 되돌렸다: 그건 '조상까지' 스크롤해서, 화면 아래에
-  // 숨어 있던 바텀시트 층이 딸려 올라왔다(사용자 지적: "화면안 선택 바텀시트는
-  // 왜 뜨는거야?"). 컨테이너만 움직이면 그런 일이 없다.
-  //
-  // 좌표는 offsetLeft/offsetTop 으로 잡는다(컨테이너가 relative 라 그 기준이다).
-  // getBoundingClientRect 를 쓰면 안 된다 — 데스크톱 목업은 프레임을 CSS
-  // transform 으로 축소해 두는데, rect 는 축소된 값을, scrollLeft/clientWidth 는
-  // 축소 전 값을 준다. 둘을 섞으면 엉뚱한 데로 간다.
-  // 부드러운 이동은 프레임마다 값을 직접 넣어 만든다. 브라우저 기본
-  // behavior:"smooth" 는 이 화면에서 아예 안 먹는다 — 녹화 틱(150ms)이 계속
-  // 리렌더를 돌려 스크롤 애니메이션이 매번 취소된다(실측: smooth 로 5000 을 주면
-  // 1.2초 뒤에도 0, auto 면 바로 5000). 매 프레임 대입하는 쪽은 리렌더가 끼어도
-  // 그다음 프레임에 다시 넣으므로 끊기지 않는다.
-  const tweenRef = useRef<number | null>(null);
-  useEffect(() => {
-    return () => {
-      if (tweenRef.current !== null) cancelAnimationFrame(tweenRef.current);
-    };
-  }, []);
-  const centerOn = (ms: number, smooth = true) => {
-    const el = scrollRef.current;
-    const target = el?.querySelector<HTMLElement>(`[data-ms="${ms}"]`);
-    if (!el || !target) return;
-    // 좌표는 offsetLeft/offsetTop 으로 잡는다(컨테이너가 relative 라 그 기준이다).
-    // getBoundingClientRect 를 쓰면 안 된다 — 데스크톱 목업은 프레임을 CSS
-    // transform 으로 축소해 두는데, rect 는 축소된 값을, scrollLeft/clientWidth 는
-    // 축소 전 값을 준다. 둘을 섞으면 엉뚱한 데로 간다.
-    const to = wide
-      ? Math.max(0, target.offsetLeft - (el.clientWidth - target.offsetWidth) / 2)
-      : Math.max(0, target.offsetTop - (el.clientHeight - target.offsetHeight) / 2);
-    const read = () => (wide ? el.scrollLeft : el.scrollTop);
-    const write = (v: number) => {
-      if (wide) el.scrollLeft = v;
-      else el.scrollTop = v;
-    };
-    if (tweenRef.current !== null) cancelAnimationFrame(tweenRef.current);
-    const from = read();
-    const dist = to - from;
-    if (Math.abs(dist) < 1) return;
-    // 움직임을 줄이는 설정이면 즉시 이동한다(카메라 목록과 같은 규칙).
-    const reduce = window.matchMedia?.(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (!smooth || reduce) {
-      write(to);
-      return;
-    }
-    // 320ms · easeOutCubic — 위 큰 영상 전환(300ms)과 결이 같다.
-    const DUR = 320;
-    const t0 = performance.now();
-    let done = false;
-    const step = (now: number) => {
-      const t = Math.min(1, (now - t0) / DUR);
-      write(from + dist * (1 - Math.pow(1 - t, 3)));
-      if (t < 1) tweenRef.current = requestAnimationFrame(step);
-      else {
-        tweenRef.current = null;
-        done = true;
-      }
-    };
-    tweenRef.current = requestAnimationFrame(step);
-    // 안전장치 — 화면이 안 보이는 탭에서는 requestAnimationFrame 이 아예 안 돈다
-    // (실측: 백그라운드 탭에서 700ms 동안 0프레임). 그때도 자리는 맞아야 하니
-    // 시간이 지나면 목적지로 스냅한다. 눈에 보이는 상태면 이미 도착해 있어
-    // 아무 일도 안 한다.
-    window.setTimeout(() => {
-      if (!done) write(to);
-    }, DUR + 80);
-  };
-  // 재생이 이벤트를 만나면(시간바의 빨간 선과 겹치는 순간) 그 항목이 선택되고,
-  // 자리도 가운데로 따라온다(사용자 지적 2026-08-14: "위치도 가운데로 와야지").
-  // 예전에 이걸 껐던 건 즉시 이동이라 몇 초마다 툭툭 끊겨 보였기 때문이다 —
-  // 지금은 320ms 로 미끄러지므로 따라와도 눈에 거슬리지 않는다.
-  // 탭에 처음 들어온 순간만 즉시 맞춘다(그때는 이미 가운데 있어야 하는 상태다).
-  // 그림이 그려진 뒤에 재야 해서 한 프레임 미룬다.
-  const openedRef = useRef(false);
-  useEffect(() => {
-    openedRef.current = false;
-  }, [wide]);
-  useEffect(() => {
-    if (activeMs === null) return;
-    const first = !openedRef.current;
-    openedRef.current = true;
-    // 한 프레임 미룬다 — 그림이 그려진 뒤에 offset 을 재야 한다. rAF 가 아니라
-    // setTimeout 인 건, 화면이 안 보이는 탭에서 rAF 가 아예 안 돌아 호출 자체가
-    // 사라지기 때문이다(실측: 그 상태에서 재생이 다음 이벤트로 넘어가도 목록이
-    // 그대로 있었다).
-    const t = window.setTimeout(() => centerOn(activeMs, !first), 0);
-    return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeMs, wide]);
-
-  // 가로로 나열할 땐 오른쪽이 최신이다 — 시간바와 같은 방향(오른쪽 = 최신,
-  // 왼쪽 = 과거)이라야 둘이 같은 축으로 읽힌다(사용자 지적 2026-08-14).
-  // rows 는 최신순(내림차순)이라 가로일 때만 뒤집는다. 세로로 쌓을 땐 최신이
-  // 맨 위인 게 목록의 상식이라 그대로 둔다.
-  const ordered = wide ? [...rows].reverse() : rows;
-
-  return (
-    // 바깥 껍데기 — 카메라 목록과 같은 구조다(껍데기가 pb-3, 그 안이 '행').
-    // useListLayout 은 chrome 을 '행의 offsetTop + 껍데기의 아래 여백'으로 재는데,
-    // 스크롤 컨테이너에 직접 rowRef 를 물리면 그 컨테이너 자기 여백이 chrome 에서
-    // 빠져 감지 쪽 영역만 12 작아진다(131 vs 143). 그러면 카드 높이도 카메라
-    // 타일보다 작아진다(사용자 지적: "항목 높이를 카메라 목록 썸네일에 맞추라니까").
-    <div className="flex min-h-0 flex-1 flex-col pb-3">
-    <div
-      ref={(el) => {
-        scrollRef.current = el;
-        if (typeof rowRef === "function") rowRef(el);
-        else if (rowRef) (rowRef as React.RefObject<HTMLDivElement | null>).current = el;
-      }}
-      className={
-        wide
-          ? // 가로 한 줄 — 한 덩어리씩 옆으로 나열하고 가로 스크롤(사용자 결정).
-            // 세로로 쌓을 자리가 없을 때다. 좌우 여백(px-5)은 스크롤 안쪽 패딩이라
-            // 첫/마지막만 20px 띄운다 — 카메라 목록 가로 배치와 같은 규칙.
-            "relative flex min-h-0 flex-1 items-stretch gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          : "relative flex min-h-0 flex-1 flex-col overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      }
-    >
-      {ordered.map((r) => {
-        // 지금 재생 중인 이벤트인가. 구간(ms ~ ms+dur)만 보고 각자 판정하면 둘이
-        // 같이 켜진다 — 이벤트가 4~8초 간격으로 묶여 나오고 길이가 4~15초라
-        // 구간이 겹친다(사용자 지적: "리스트 두개가 선택되는건 뭐지?").
-        // 위에서 하나만 고른 activeMs 와 맞춰 항상 한 줄만 켠다.
-        const active = r.ms === activeMs;
-        return (
-          <button
-            key={r.ms}
-            data-ms={r.ms}
-            type="button"
-            onClick={() => {
-              setPlaybackMs(r.ms);
-              // 이미 활성인 항목을 다시 눌러도 가운데로 와야 한다 — 그때는
-              // activeMs 가 안 바뀌어 위 효과가 안 돈다(사용자 요청).
-              centerOn(r.ms);
-            }}
-            className={
-              wide
-                ? "flex h-full flex-none items-center gap-2 text-left"
-                : "flex flex-none items-center gap-3 px-5 text-left"
-            }
-            style={
-              wide
-                ? {
-                    // 가로 덩어리 — 고른 것만 파란 테두리, 나머지는 회색
-                    // (사용자 지정 2026-08-14). 썸네일 쪽 파란 테두리는 뺐다 —
-                    // 덩어리 테두리와 겹쳐 두 겹으로 보였다.
-                    // 라운드는 8 — 4 는 각져 보였다(사용자 지정). 안쪽 썸네일은
-                    // 카메라 목록 타일과 같은 4 로 둔다(덩어리 안쪽이라 안 겹친다).
-                    padding: "6px 8px",
-                    borderRadius: "8px",
-                    border: active ? "1px solid #1D6CEB" : "1px solid #EBEBEB",
-                    backgroundColor: active
-                      ? "rgba(29,108,235,0.08)"
-                      : undefined,
-                  }
-                : {
-                    paddingTop: "8px",
-                    paddingBottom: "8px",
-                    backgroundColor: active
-                      ? "rgba(29,108,235,0.08)"
-                      : undefined,
-                  }
-            }
-          >
-            {/* 썸네일 — 카메라 목록 타일과 같은 16:9 · 같은 4px 라운드.
-                움직이는 GIF 를 그대로 쓰면 한 화면에 수십 장이 동시에 디코딩되니
-                첫 프레임만 그리는 FrozenImage 를 쓴다(목록 타일과 같은 이유). */}
-            {/* 썸네일 — 가로일 땐 높이를 덩어리(= 목록 영역)에 맞춘다. 카메라 목록
-                타일도 같은 기준(h-full aspect-video)이라 두 탭의 그림 높이가 같아
-                보인다. 덩어리 안쪽 여백(6)만큼만 타일보다 작다(사용자 지정).
-                세로일 땐 예전처럼 폭 96 고정. */}
+      {/* ── 썸네일 레일 — '움직임 감지' 탭 내용(A-2 와 같은 사양, 사용자 지정
+          2026-08-25). 예전엔 여기 대신 세로 리스트(MotionEventList)를 썼는데,
+          세 안의 감지 탭을 A-2 기준으로 통일하면서 레일로 되돌렸다.
+          카드 높이는 영역에서 나오고(thumbH) 위·아래 여백은 카메라 목록 타일과
+          같은 12·12 라, 탭을 바꿔도 그림이 같은 자리에 있다. ── */}
+      {part !== "bar" && (
+      <div ref={thumbAreaRef} className="relative min-h-0 flex-1">
+        {/* 레일 — 영역 전체 높이(top0 bottom0)를 갖고 시간바와 같은 translateX 로 흐른다 */}
+        <div
+          className="absolute left-0 right-0"
+          style={{
+            top: 0,
+            bottom: 0,
+            transform: railTransform,
+            transition: railTransition,
+          }}
+        >
+          {/* 움직임 이벤트 썸네일 — 위치마다 대표 카드 하나(겹침·묶음 배지 없음).
+              탭하면 그 시각으로 이동한다. */}
+          {clusters.filter((c) => inView(c.secOffset)).map((cluster) => (
             <div
-              className={
-                wide
-                  ? "relative h-full flex-none overflow-hidden bg-neutral-900"
-                  : "relative flex-none overflow-hidden bg-neutral-900"
-              }
-              style={
-                wide
-                  ? { aspectRatio: "16 / 9", borderRadius: "4px" }
-                  : {
-                      width: "96px",
-                      aspectRatio: "16 / 9",
-                      borderRadius: "4px",
-                    }
-              }
+              key={`E${cluster.key}`}
+              data-event-ms={cluster.ms}
+              className="absolute flex items-start"
+              style={{
+                left: `calc(50% + ${xOf(cluster.secOffset)}px)`,
+                top: `${cardTop}px`,
+                bottom: `${PAD_TOP}px`,
+                // 카드의 '왼쪽 끝'이 자기 시각에 온다(가운데 정렬 아님) — 탭하면
+                // 그 시각이 중앙선으로 오므로 결과적으로 왼쪽 끝이 선에 맞는다.
+                pointerEvents: "auto",
+                cursor: "pointer",
+              }}
             >
-              <FrozenImage
-                src={cameraSrc}
-                alt=""
-                className="absolute inset-0 h-full w-full"
-                style={{ objectFit: "cover" }}
-              />
-            </div>
-            {/* 유형 + 시각. 유형은 이상 상황(넘어짐·폭행)만 빨강 — 썸네일 위 칩
-                (EventKindChip)과 같은 규칙이라 화면을 훑을 때 눈이 같은 것에 걸린다. */}
-            <div className="flex min-w-0 flex-col gap-[6px]">
-              <span
-                className="text-[14px] font-bold leading-none"
-                style={{ color: r.kind === "움직임" ? "#262626" : "#E2202D" }}
+              <div
+                className={`relative overflow-hidden rounded-md ${eventThumbs ? "bg-neutral-900" : ""}`}
+                style={{
+                  height: `${thumbH}px`,
+                  aspectRatio: "16 / 9",
+                  // 지금 재생 중인 이벤트면 파란 테두리(썸네일 끈 사양과 같은 규칙).
+                  ...(eventThumbs && isActiveEvent(cluster.ms, cluster.durSec)
+                    ? { border: "2px solid #1D6CEB" }
+                    : null),
+                }}
               >
-                {r.kind}
-              </span>
-              <span
-                className="text-[12px] leading-none"
-                style={{ color: "#8C8C8C" }}
-              >
-                {formatEventTime(r.ms)}
-              </span>
+                {eventThumbs && <EventKindChip kind={cluster.kind} />}
+                {eventThumbs ? (
+                  <FrozenImage
+                    src={cameraSrc}
+                    alt=""
+                    className="h-full w-full"
+                    style={{ objectFit: "cover" }}
+                  />
+                ) : (
+                  <EventCardFace
+                    ms={cluster.ms}
+                    active={isActiveEvent(cluster.ms, cluster.durSec)}
+                  />
+                )}
+              </div>
             </div>
-          </button>
-        );
-      })}
-    </div>
+          ))}
+        </div>
+      </div>
+      )}
     </div>
   );
 }
+
+// 움직임 감지 '리스트'(MotionEventList)는 없앴다 — 감지 표현을 A-2 에 맞추면서
+// 가로 썸네일 레일(RecordingEventTimeline part="thumbs") · 세로 타임라인
+// (SideEventTimeline) 둘로 정리됐다(사용자 지정 2026-08-25). 리스트가 필요하면
+// 커밋 이력에서 되살릴 것.
 
 function LiveBadge({ onClick }: { onClick?: () => void }) {
   return (
@@ -5389,8 +5119,9 @@ function TimelineSkeleton({ visible }: { visible: boolean }) {
 // 열면 영상을 밀고 옆에 선다(덮지 않는다). 닫기는 패널 안 X 버튼, 또는 열려 있는
 // 쪽 아이콘을 한 번 더 누르기.
 //
-// 내용은 1080+ 오른쪽 패널과 같다: 목록은 1열 세로 스크롤, 감지는 아래 스트립과
-// 같은 리스트(MotionEventList). 같은 안에서 감지 화면이 두 종류면 안 된다.
+// 내용은 세로 화면과 같은 규칙이다: 목록은 1열(오른쪽) 또는 가로 한 줄(아래),
+// 감지는 아래 판이면 가로 시간바 + 썸네일, 오른쪽 패널이면 세로 타임라인
+// (A-1·A-2 와 같다 — 사용자 지정 2026-08-25).
 /** 패널 내용이 기기 오른쪽 모서리에서 떨어지는 거리 — 딤 아이콘과 같은 값. */
 const LS_PANEL_PAD = 16;
 function LandscapeSidePanel({
@@ -5404,6 +5135,7 @@ function LandscapeSidePanel({
   onSelect,
   playbackMs,
   setPlaybackMs,
+  onScrubbingChange,
   edge,
   onClose,
 }: {
@@ -5425,7 +5157,12 @@ function LandscapeSidePanel({
   selectedIndex: number | null;
   onSelect: (i: number) => void;
   playbackMs: number | null;
-  setPlaybackMs: (v: number | null) => void;
+  /** 감지 타임라인이 스크럽으로 값을 굴리므로 갱신 함수 형태도 받는다. */
+  setPlaybackMs: (
+    v: number | null | ((prev: number | null) => number | null),
+  ) => void;
+  /** 타임라인을 끌고 있는 동안 딤 UI 를 걷기 위한 신호(세로와 같은 사양). */
+  onScrubbingChange?: (s: boolean) => void;
   /** 오른쪽 모서리까지의 총 거리(딤 아이콘과 같은 값). 패널 안 여백을 뺀 만큼만
    *  바깥에 더 붙인다 — 안 빼면 여백이 두 번 들어간다. */
   edge: number;
@@ -5522,15 +5259,24 @@ function LandscapeSidePanel({
         </button>
       </div>
       {showMotion ? (
-        // 오른쪽 패널은 세로로 길어 세로 스크롤, 아래 판은 낮고 넓어 가로 스크롤
-        // (사용자 지정 2026-08-18: "아래에서 나올땐 가로 스크롤이어야겠지??").
-        // 판정은 부모가 정한 position 하나를 그대로 따른다.
-        <MotionEventList
-          playbackMs={playbackMs}
-          setPlaybackMs={setPlaybackMs}
-          cameraSrc={cam.src}
-          wide={bottom}
-        />
+        // 아래 판(낮고 넓다)은 세로 화면의 가로-한-줄 배치와 같은 시간바 + 썸네일,
+        // 오른쪽 패널(좁고 길다)은 세로 타임라인 — A-1·A-2 와 같은 규칙이다
+        // (사용자 지정 2026-08-25: 감지 표현을 A-2 에 맞춘다).
+        bottom ? (
+          <RecordingEventTimeline
+            playbackMs={playbackMs}
+            setPlaybackMs={setPlaybackMs}
+            cameraSrc={cam.src}
+            onScrubbingChange={onScrubbingChange}
+          />
+        ) : (
+          <SideEventTimeline
+            playbackMs={playbackMs}
+            setPlaybackMs={setPlaybackMs}
+            cameraSrc={cam.src}
+            onScrubbingChange={onScrubbingChange}
+          />
+        )
       ) : bottom ? (
         // 아래 판의 카메라 목록 — 세로 화면 하단 스트립과 같은 가로 한 줄이다.
         // 타일은 행 높이를 채우고(h-full) 16:9, 좌우 여백은 스크롤 안쪽 패딩.

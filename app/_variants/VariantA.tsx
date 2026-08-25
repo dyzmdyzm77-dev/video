@@ -507,8 +507,6 @@ export default function VariantA({
           onGallery={() => setSheetOpen(true)}
           onMore={() => setMoreOpen(true)}
           onAi={() => setAiOpen(true)}
-          // 실시간/녹화를 칩 두 개로 — 고른 쪽만 흰 배경 + 검정 글자.
-          statusStyle="chips"
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 40 — A-1 가로와 같은 값으로(사용자 지정).
@@ -529,7 +527,6 @@ export default function VariantA({
           onPageChange={setCurrentPage}
           onTitleClick={() => setVariantPickerOpen(true)}
           mode={mode}
-          setMode={handleSetMode}
           // 딤 상단의 날짜·시각은 안 띄운다(사용자 지정 2026-08-19: 하단 가운데로
           // 옮기려다 "시간바랑 겹치네" → "빼자 그럼"). 시각은 시간바 중앙 알약이
           // 이미 보여 준다. A-3 도 같은 이유로 안 넘긴다.
@@ -1948,7 +1945,9 @@ function ExpandedView({
               );
             })}
           </div>
-          <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+          {/* 탭 아래 구분선은 안 긋는다 — 바로 위 시간바 띠가 이미 경계를 그어
+              두 줄이 43px 사이로 겹쳐 보였다(사용자 지적 2026-08-25:
+              "구분선은 없었는데 갑자기 왜 들어가있냐"). */}
         </>
       )}
     </>

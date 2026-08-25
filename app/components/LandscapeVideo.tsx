@@ -110,8 +110,6 @@ export default function LandscapeVideo({
   edgeInsetRight,
   bottomInset,
   headerAlign = "center",
-  statusStyle = "segment",
-  statusActiveStyle = "brand",
   scrubbing = false,
   auxHidden = false,
   onExpand,
@@ -120,8 +118,6 @@ export default function LandscapeVideo({
   subtitle,
   onTitleClick,
   mode = "live",
-  setMode,
-  timeLabel,
   recordingLabel = "녹화",
   singleBadge,
   singleBadgeAlign,
@@ -134,8 +130,6 @@ export default function LandscapeVideo({
   // 화면인데 딤 농도·칩 위치·페이지 점이 서로 달랐다(사용자 지적).
   // 기본값을 여기로 올려 세 안이 자동으로 같아지게 한다. 바꿀 일이 있으면
   // 이 파일만 고치면 된다.
-  statusPlacement = "top-center",
-  statusAlwaysTop = false,
   showPageIndicator = false,
   dimAlpha = LANDSCAPE_DIM_ALPHA,
   dimTopHeight,
@@ -211,15 +205,6 @@ export default function LandscapeVideo({
    *  (사용자 지정 2026-08-14: "5버튼 누를 때는 5버튼만 남기고 나머지는 사라지고").
    *  스크럽과 달리 가운데 컨트롤은 살려 둔다. 기본 false = 기존 그대로. */
   auxHidden?: boolean;
-  /** 실시간/녹화 표시 방식.
-   *   segment = 지금까지의 기본. 한 덩어리 알약 안에 LIVE·녹화(빨강/회색).
-   *   chips   = '실시간'·'녹화' 칩 두 개. 고른 쪽만 흰 배경 + 검정 글자
-   *             (사용자 지정, A-1안 가로). */
-  statusStyle?: "segment" | "chips";
-  /** 토글에서 '고른 쪽' 색.
-   *   brand = 지금까지의 기본(LIVE 빨강 · 녹화 회색, 흰 글자).
-   *   white = 흰 배경 + 검정 글자(사용자 지정, A-2안 가로). */
-  statusActiveStyle?: "brand" | "white";
   /** 타일 더블탭 — 그 카메라 단일 화면으로. */
   onExpand?: (i: number) => void;
   /** 단일 화면 더블탭 — 다채널로 복귀. */
@@ -229,12 +214,12 @@ export default function LandscapeVideo({
   title?: string;
   subtitle?: string;
   onTitleClick?: () => void;
-  /** 딤 하단 왼쪽 — 지금 실시간인지 녹화인지, 그리고 현재 시각.
-   *  가로는 날짜 바가 없어서 여기 말고는 알 길이 없다. 세로 날짜 바와 같은 정보다. */
+  /** 딤 아래 왼쪽 표시 — 지금 실시간인지 녹화인지. 시각과 한 알약으로 묶인다.
+   *  가로는 날짜 바가 없어서 여기 말고는 알 길이 없다.
+   *  전환(실시간↔녹화)은 여기서 안 한다 — 세로 화면에서만 한다(사용자 지정
+   *  2026-08-25: "가로에서 실시간/녹화 칩 빼라"). */
   mode?: "live" | "recording";
-  setMode?: (m: "live" | "recording") => void;
-  timeLabel?: string;
-  /** 녹화 쪽 칩 문구. 기본 "녹화" — 세로 토글을 "녹화영상"으로 바꾼 안(A-3)만
+  /** 녹화 쪽 문구. 기본 "녹화" — 세로 토글을 "녹화영상"으로 바꾼 안(A-3)만
    *  같은 말로 맞춘다(사용자 지적: 가로만 말이 달랐다). */
   recordingLabel?: string;
   /** 단일 화면 영상 배지 문구. 안 주면 카메라 이름(지금까지의 동작).
@@ -262,20 +247,6 @@ export default function LandscapeVideo({
    *  영상이 비친다(A-1). 끄면(기본) 기존처럼 흰 바에 얹는다 — 밝은 UI 를 그대로
    *  넘기는 안은 배경이 없으면 글자·눈금이 영상에 묻힌다. */
   controlsOnDim?: boolean;
-  /** 실시간/녹화 칩 + 시각을 어디에 둘지.
-   *  "bottom-left"(기본) — 딤 아래 왼쪽, 녹화 컨트롤 바로 위. 기존 그대로.
-   *  "top-center"      — 딤 위 가운데. 장소명(왼쪽)·딤 아이콘(오른쪽)과 같은 줄에
-   *                      앉는다. 녹화 컨트롤은 그대로 아래 남는다.
-   *  "top-right"       — 오른쪽 위. 딤 아이콘이 쓰던 자리를 칩이 가져가고,
-   *                      아이콘은 그 아래 줄로 내려간다(A-3, 사용자 지정
-   *                      2026-08-14). 좁은 폭에서도 자리를 안 옮긴다 —
-   *                      가운데 정렬과 달리 장소명과 물릴 일이 없다. */
-  statusPlacement?: "bottom-left" | "top-center" | "top-right";
-  /** 폭이 좁아도 칩 줄을 위 가운데에 둔다. 오른쪽 패널이 열리면 영상 폭이
-   *  패널만큼 줄어 자동으로 아래로 내려가는데, 그때 칩이 따라 내려오는 게
-   *  더 어색하다(사용자 지정 2026-08-18: "오른쪽 패널 나오면서 실시간 녹화 탭이
-   *  아래로 내려오는데 그냥 위로 올려줘"). */
-  statusAlwaysTop?: boolean;
   /** 딤 그라데이션 사양 — 안 주면 GridSelectionOverlay 기본값(0.6 / 25% / 20%).
    *  세로에서 더 진한 딤을 쓰는 안(A-1: 0.8)은 가로도 같은 값을 넘겨야 한다.
    *  안 그러면 같은 화면인데 가로만 옅어 보인다. */
@@ -502,115 +473,74 @@ export default function LandscapeVideo({
     }, CLICK_GAP);
   };
 
-  // 딤 아래 왼쪽 — 실시간/녹화 + 현재 시각. 세로 날짜 바의 내용을 그대로 옮겼다.
-  // 칩 색은 딤(어두운 배경)에 맞춰 바꾼다 — 세로의 밝은 회색 트랙은 여기서 안 보인다.
-  const seg = (active: boolean, activeBg: string) => ({
-    height: "20px",
-    paddingLeft: "10px",
-    paddingRight: "10px",
-    borderRadius: "9999px",
-    // statusActiveStyle="white" 면 고른 쪽을 흰 배경 + 검정 글자로 채운다
-    // (사용자 지정, A-2안 가로). 기본은 예전대로 LIVE 빨강 · 녹화 회색.
-    backgroundColor: active
-      ? statusActiveStyle === "white"
-        ? "#FFFFFF"
-        : activeBg
-      : "transparent",
-    color: active
-      ? statusActiveStyle === "white"
-        ? "#262626"
-        : "#ffffff"
-      : "rgba(255,255,255,0.7)",
-  });
-  // 실시간/녹화 칩 + 현재 시각 한 줄. 내용은 자리와 무관하게 같고, statusPlacement
-  // 가 아래 왼쪽에 둘지 위 가운데에 둘지만 정한다.
-  // 칩 두 개 방식(statusStyle="chips") — 한 덩어리 세그먼트 대신 '실시간'·'녹화'
-  // 를 따로 떼고, 고른 쪽만 흰 배경 + 검정 글자로 채운다(사용자 지정, A-1안 가로).
-  // 고른 쪽은 흰 알약, 안 고른 쪽은 딤 위 버튼과 같은 규격.
-  // A-3(dimStyle="a3")은 그 '버튼과 같은 규격'이 원 버튼과 완전히 같은 값이다 —
-  // #666666 40% + blur(20) + 테두리 없음 + 흰 글자 + 같은 그림자
-  // (사용자 지정 2026-08-14: "미선택된 경우는 버튼이랑 똑같은 스타일로 가자").
-  // 다른 안은 예전 그대로(검정 35% + 흰 테두리).
-  const chip = (on: boolean): React.CSSProperties => ({
-    height: "26px",
-    padding: "0 12px",
-    borderRadius: "9999px",
-    border: on
-      ? "1px solid #FFFFFF"
-      : dimStyle === "a3"
-        ? "none"
-        : "1px solid rgba(255,255,255,0.35)",
-    backgroundColor: on
-      ? "#FFFFFF"
-      : dimStyle === "a3"
-        ? "rgba(102,102,102,0.4)"
-        : "rgba(0,0,0,0.35)",
-    color: on ? "#262626" : "#FFFFFF",
-    ...(!on && dimStyle === "a3"
-      ? {
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          textShadow: "0 0 4px rgba(0,0,0,0.6)",
-        }
-      : null),
-  });
+  // 실시간 시계 — 아래 알약이 쓴다. 녹화면 playbackMs 를 쓰므로 안 돈다.
+  const [nowTick, setNowTick] = useState<Date | null>(null);
+  useEffect(() => {
+    if (mode === "recording") return;
+    setNowTick(new Date());
+    const id = setInterval(() => setNowTick(new Date()), 1000);
+    return () => clearInterval(id);
+  }, [mode]);
+
+  // 딤 아래 왼쪽 — '● 실시간/녹화영상 + 현재 시각' 알약 하나.
+  //
+  // 예전엔 여기(또는 위 가운데)에 실시간↔녹화 토글 칩이 있었는데 뺐다
+  // (사용자 지정 2026-08-25: "가로에서 상단 센터 실시간/녹화 탭 빼자",
+  //  "실시간, 녹화영상 칩 빼라니까"). 가로는 영상만 보는 화면이라 모드를 바꾸는
+  // 자리가 아니고, 세로 화면에 같은 토글이 이미 있다. 남긴 건 '지금 무엇을
+  // 보고 있는지 + 몇 시인지'뿐이다.
+  //
+  // 시각은 녹화면 재생 위치(playbackMs), 실시간이면 지금 시각이다 — 안마다
+  // 따로 만들지 않게 여기서 센다(A-3 이 자기 아이콘 줄에 넣어 뒀던 그 알약을
+  // 공통으로 올린 것).
+  const clock = (() => {
+    const d =
+      mode === "recording"
+        ? playbackMs != null
+          ? new Date(playbackMs)
+          : null
+        : nowTick;
+    if (!d) return "";
+    const p2 = (n: number) => String(n).padStart(2, "0");
+    return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+  })();
   const statusRow = (
-    <div className="flex items-center gap-2">
-      {statusStyle === "chips" ? (
-        <div className="flex items-center" style={{ gap: "6px" }}>
-          <button
-            type="button"
-            onClick={() => setMode?.("live")}
-            className="inline-flex items-center text-[12px] font-bold leading-none transition-colors"
-            style={chip(mode === "live")}
-          >
-            실시간
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode?.("recording")}
-            className="inline-flex items-center text-[12px] font-bold leading-none transition-colors"
-            style={chip(mode === "recording")}
-          >
-            {recordingLabel}
-          </button>
-        </div>
-      ) : (
-      <div
-        className="inline-flex items-center rounded-full"
+    <span
+      suppressHydrationWarning
+      className="rounded-full"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        height: "22px",
+        padding: "0 10px",
+        fontSize: "13px",
+        fontWeight: 700,
+        lineHeight: "13px",
+        color: "#FFFFFF",
+        // 딤 위 버튼과 같은 규격(#666666 40% + blur) — A-3 이 쓰던 값을 셋이 같이 쓴다.
+        backgroundColor: "rgba(102,102,102,0.4)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        textShadow: "0 0 4px rgba(0,0,0,0.6)",
+      }}
+    >
+      {/* 실시간은 빨강 점, 녹화는 흰 점 — 세로 딤의 두 배지와 같은 구분이다. */}
+      <span
+        aria-hidden
+        className="rounded-full"
         style={{
-          backgroundColor: "rgba(255,255,255,0.22)",
-          padding: "2px",
-          gap: "2px",
+          width: "5px",
+          height: "5px",
+          backgroundColor: mode === "recording" ? "#FFFFFF" : "#FF3B4A",
+          marginRight: "5px",
+          flex: "none",
         }}
-      >
-        <button
-          type="button"
-          onClick={() => setMode?.("live")}
-          className="inline-flex items-center text-[10px] font-bold leading-none tracking-wide transition-colors"
-          style={seg(mode === "live", "#ff3b4a")}
-        >
-          LIVE
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode?.("recording")}
-          className="inline-flex items-center text-[10px] font-bold leading-none tracking-wide transition-colors"
-          style={seg(mode === "recording", "#757575")}
-        >
-          {recordingLabel}
-        </button>
-      </div>
-      )}
-      {timeLabel && (
-        <span
-          suppressHydrationWarning
-          className="text-[14px] font-medium leading-none text-white"
-        >
-          {timeLabel}
-        </span>
-      )}
-    </div>
+      />
+      <span style={{ marginRight: "6px" }}>
+        {mode === "recording" ? recordingLabel : "실시간"}
+      </span>
+      {clock}
+    </span>
   );
 
   // 딤 위에 얹는 덩어리 공통 처리 — 딤과 같이 뜨고, 만지는 동안 자동 숨김 타이머를
@@ -666,71 +596,18 @@ export default function LandscapeVideo({
   );
 
 
-  // 딤 첫 줄에 셋(장소명·칩줄·아이콘)이 다 들어가는 폭인가. 세로에서 '크게
-  // 보기'로 들어오면 폭이 기기 폭 그대로라 못 들어간다 — 그때는 아이콘 줄만
-  // 둘째 줄로 내린다(ONE_ROW_MIN_W 주석 참고).
   const shellRef = useRef<HTMLDivElement>(null);
-  const [narrow, setNarrow] = useState(false);
-  useEffect(() => {
-    const measure = () => {
-      const el = shellRef.current;
-      if (!el || el.offsetWidth <= 0) return;
-      setNarrow(el.offsetWidth < ONE_ROW_MIN_W);
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    if (shellRef.current) ro.observe(shellRef.current);
-    // 프리셋 변경·드래그 리사이즈·회전은 ResizeObserver 만으로는 놓칠 수 있다
-    // (useGridLayout 과 같은 이유).
-    const evts = ["devicechange", "deviceresize", "resize"];
-    evts.forEach((e) => window.addEventListener(e, measure));
-    return () => {
-      ro.disconnect();
-      evts.forEach((e) => window.removeEventListener(e, measure));
-    };
-  }, []);
 
-  // 칩줄을 위 가운데 두는 건 폭이 넉넉할 때만이다. 좁으면(세로에서 '크게 보기')
-  // 가운데 정렬한 칩줄이 왼쪽 장소명과 물린다 — 실측으로 폭 285 에서 장소명
-  // 16~115, 칩줄 71~213 로 44px 겹쳤다. 그때는 칩줄을 원래 자리(딤 아래 왼쪽,
-  // 컨트롤 바로 위)로 내린다. 위 첫 줄엔 장소명 + 아이콘만 남아 편하게 들어간다.
-  const topCenter =
-    statusPlacement === "top-center" && (!narrow || statusAlwaysTop);
-  // 오른쪽 위에 둘 땐 폭을 따지지 않는다 — 아이콘 줄을 아래로 내려 자리를 비우므로
-  // 장소명과 겹칠 일이 없다. 아이콘이 내려갈 거리(칩 높이 26 + 사이 10).
-  const topRight = statusPlacement === "top-right";
-  const ICON_ROW_DROP = 36;
+  // 알약은 늘 딤 아래 왼쪽이다(위 가운데·오른쪽 배치는 없앴다 — 사용자 지정
+  // 2026-08-25). 그래서 폭이 좁은지 재던 것도, 아이콘 줄을 내리던 것도 필요 없다.
 
-  // 위 가운데 — 장소명(왼쪽)·딤 아이콘(오른쪽)과 한 줄로 읽히게 맞춘다. 아이콘 줄이
-  // top 12 에 높이 32(중심 28)라 여기도 같은 값을 쓴다.
-  // 이 층은 아이콘 줄과 같은 높이에 겹쳐 있고 딤(overlay)보다 뒤에 그려진다.
-  // 껍데기까지 클릭을 받으면 폭이 좁을 때 아이콘 위를 덮어 삼키므로 통과시킨다.
-  const statusTop = topCenter
-    ? dimLayer(
-        "left-1/2 flex -translate-x-1/2 items-center",
-        { top: `${12 + topInset}px`, height: "32px" },
-        statusRow,
-        "wrap",
-      )
-    : topRight
-      ? dimLayer(
-          "flex items-center justify-end",
-          { top: "12px", right: `${edgeR}px`, height: "32px" },
-          statusRow,
-          "wrap",
-        )
-      : null;
-
-  // 딤 아래 — (기본이면) 칩 줄 + 녹화 플레이어·시간바. 둘을 한 덩어리로 쌓아
-  // 바 높이를 몰라도 칩 줄이 항상 그 위에 앉는다. 위 가운데로 올린 경우엔
-  // 컨트롤만 남으므로, 컨트롤도 없으면 아예 그리지 않는다.
+  // 딤 아래 — 상태 알약 + 녹화 플레이어·시간바. 둘을 한 덩어리로 쌓아 바 높이를
+  // 몰라도 알약이 항상 그 위에 앉는다.
   // 이 층은 화면 폭 전체를 덮으므로 껍데기가 클릭을 받으면 안 된다 — 오른쪽
   // 아래 AI·메뉴 버튼이 같은 높이에 있어 통째로 삼켜졌다(사용자 지적: "메뉴
   // 아이콘이랑 AI 아이콘도 안눌려져"). 껍데기는 통과시키고, 실제 내용(칩 줄 ·
   // 컨트롤)만 자기 크기만큼 클릭을 받는다.
-  const statusBottom =
-    !(topCenter || topRight) || controls
-      ? dimLayer(
+  const statusBottom = dimLayer(
           "inset-x-0",
           {
             // 딤 아래 줄(AI·페이지 점)이 12 보다 더 떠 있으면 이 층도 같이 뜬다
@@ -740,22 +617,17 @@ export default function LandscapeVideo({
             bottom: `${(bottomInset ?? 12) - 12}px`,
           },
           <>
-            {!topCenter && !topRight && (
-              <div
-                className="pointer-events-none pb-3 transition-opacity duration-150 ease-out"
-                style={{
-                  paddingLeft: `${edgeL}px`,
-                  paddingRight: `${edgeR}px`,
-                  // 이 층은 시간바 때문에 남겨 두지만 칩 줄은 같이 걷는다.
-                  opacity: auxOff ? 0 : 1,
-                }}
-              >
-                {/* 칩만 클릭을 받는다 — 줄 전체가 받으면 오른쪽 버튼을 덮는다. */}
-                <span className="pointer-events-auto inline-flex">
-                  {statusRow}
-                </span>
-              </div>
-            )}
+            <div
+              className="pointer-events-none pb-3 transition-opacity duration-150 ease-out"
+              style={{
+                paddingLeft: `${edgeL}px`,
+                paddingRight: `${edgeR}px`,
+                // 이 층은 시간바 때문에 남겨 두지만 알약은 같이 걷는다.
+                opacity: auxOff ? 0 : 1,
+              }}
+            >
+              <span className="inline-flex">{statusRow}</span>
+            </div>
             {controls && (
               <div
                 data-no-swipe=""
@@ -769,8 +641,7 @@ export default function LandscapeVideo({
           true,
           // 아이콘 원·시각 알약이 블러를 쓴다 — 이 층도 페이드 없이 바로 뜬다.
           true,
-        )
-      : null;
+  );
 
   // 딤 위 헤더 — 딤과 같이 뜨고 같이 사라진다(세로 A-1 OverlayHeader 와 동일).
   // 껍데기는 가로 전체를 덮는 띠라 클릭을 통과시켜야 한다(pointer-events: none).
@@ -910,7 +781,7 @@ export default function LandscapeVideo({
       edgeInsetLeft={edgeL}
       {...(bottomInset != null ? { bottomInset } : null)}
       // 칩을 오른쪽 위로 올린 안(A-3)에선 아이콘 줄이 그만큼 아래로 내려간다.
-      topInset={(topRight ? ICON_ROW_DROP : 0) + topInset}
+      topInset={topInset}
       onFit={cycle}
       fit={fit}
       dimAlpha={dimAlpha}
@@ -1042,7 +913,6 @@ export default function LandscapeVideo({
         ))}
       {overlay}
       {header}
-      {statusTop}
       {statusBottom}
       {/* 가운데 컨트롤 — 딤과 같이 뜨고 같이 사라진다. 자리만 잡아 주고 내용은
           안이 넘긴다(A-2안 가로: 시간바 없이 플레이어 버튼 5개만). */}
