@@ -1881,14 +1881,37 @@ function ExpandedView({
               }}
             />
           </div>
-          {/* 사이드 패널에선 탭이 오른쪽으로 빠져 이 선 바로 아래가 하단 탭바다.
-              탭바가 이미 위 테두리를 갖고 있어서 두 줄이 붙어 2px 로 보인다. */}
-          {!sidePanel && (
-            <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
-          )}
+          {/* 5버튼 아래 구분선 — 그 아래로 시간바(motionBlock)가 이어진다.
+              사이드 패널에서도 시간바는 왼쪽 컬럼에 따라가므로 여기서도 긋는다. */}
+          <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
         </>
       )}
     </>
+  );
+  // 시간바 — 5버튼 바로 아래에 늘 있다(사용자 지정 2026-08-25, A-3 과 같은 자리).
+  // 예전엔 '움직임 감지' 탭 안에 썸네일과 한 덩어리로 들어 있었는데, 그 탭 영역은
+  // 카메라 목록 스트립과 같은 높이로 못 박혀 있어서(MOTION_MIN_H) 세로가 짧은
+  // 기기(405×648 Z Fold 접힘 등)에선 시간바+썸네일이 다 못 들어가 잘렸다.
+  // 밖으로 꺼내면 탭에는 썸네일만 남고, 재생 위치는 어느 탭을 보든 잡을 수 있다.
+  const motionBlock = mode === "recording" && (
+    <div
+      className="relative flex flex-none flex-col"
+      style={{
+        height: `${BAR_H_CLOSED}px`,
+        // 아래 구분선 — 시간바와 탭의 경계. 사이드 패널에선 이게 왼쪽 컬럼의
+        // 마지막이라 바로 아래가 하단 탭바다. 탭바가 이미 위 테두리를 갖고 있어
+        // 두 줄이 2px 로 붙는다 — 그때만 뺀다.
+        borderBottom: sidePanel ? undefined : "1px solid #EBEBEB",
+      }}
+    >
+      <RecordingEventTimeline
+        part="bar"
+        playbackMs={playbackMs}
+        setPlaybackMs={setPlaybackMs}
+        cameraSrc={cam.src}
+        onScrubbingChange={onScrubbingChange}
+      />
+    </div>
   );
   const tabsBlock = (
     <>
@@ -1933,11 +1956,13 @@ function ExpandedView({
         className="relative flex min-h-0 flex-col flex-1"
       >
       {mode === "recording" && recTab === "motion" ? (
-        // 카메라 목록이 가로 한 줄(listWide)일 때만 가로 시간바. 목록이 세로
-        // 2열이면(!listWide) 목록과 같은 방향으로 감지 탭도 세로 타임라인을 쓴다
-        // (사이드 패널과 같은 컴포넌트 — 사용자 결정: "목록이 세로일 땐 감지도 세로").
+        // 시간바는 여기 없다 — 5버튼 아래 띠(motionBlock)로 나갔다. 탭에 남는 건
+        // 그 아래 있던 썸네일 레일뿐이다. 목록이 세로 2열이면(!listWide) 목록과
+        // 같은 방향으로 감지도 세로 타임라인을 쓴다(사이드 패널과 같은 컴포넌트
+        // — 사용자 결정: "목록이 세로일 땐 감지도 세로").
         listWide ? (
           <RecordingEventTimeline
+            part="thumbs"
             playbackMs={playbackMs}
             setPlaybackMs={setPlaybackMs}
             cameraSrc={cam.src}
@@ -2031,6 +2056,9 @@ function ExpandedView({
             {videoBlock}
             {dateBarBlock}
             {playerBlock}
+            {/* 시간바 — 5버튼 바로 아래. 패널이 나와도 재생 위치를 잡을 게
+                있어야 한다(A-3 과 같은 자리). */}
+            {motionBlock}
           </div>
           <div
             className="flex min-h-0 flex-none flex-col overflow-hidden"
@@ -2045,6 +2073,7 @@ function ExpandedView({
           {videoBlock}
           {dateBarBlock}
           {playerBlock}
+          {motionBlock}
           {tabsBlock}
           {bottomStrip}
         </>
@@ -2603,11 +2632,23 @@ function SideEventTimeline({
 }
 
 
+// 시간바 블록 치수(px) — 다채널 RecordingControls 시간바와 완전히 동일한 값이다.
+// 컴포넌트 안에 있던 걸 밖으로 뺐다: 시간바만 떼어 5버튼 아래 띠로 놓으면서 그
+// 높이를 부모(motionBlock)가 알아야 해서다 — A-3 과 같은 구조.
+const PAD_TOP = 12; // 시간바 위 여백(다채널과 동일)
+const PAD_BOTTOM = 4; // 시간바 아래 여백. 삼각형 제거로 줄여 썸네일을 위로 붙인다.
+const RAIL_H = 28; // 라벨+눈금 영역 높이. 눈금 아래 빈 공간 줄여 썸네일을 위로.
+const BAR_H = PAD_TOP + RAIL_H + PAD_BOTTOM; // 시간바 블록 전체 높이(=44)
+// 시간바만 놓을 때(썸네일이 아래 없을 때)는 위아래를 같게 — PAD_BOTTOM 4 는 바로
+// 아래 썸네일을 위로 붙이려고 줄인 값이라, 썸네일이 없으면 아래만 얇아 보인다.
+const BAR_H_CLOSED = PAD_TOP + RAIL_H + PAD_TOP; // =52
+
 function RecordingEventTimeline({
   playbackMs,
   setPlaybackMs,
   cameraSrc,
   onScrubbingChange,
+  part = "both",
 }: {
   playbackMs: number | null;
   setPlaybackMs: (
@@ -2615,6 +2656,14 @@ function RecordingEventTimeline({
   ) => void;
   cameraSrc: string;
   onScrubbingChange?: (s: boolean) => void;
+  /** 이 컴포넌트의 어느 부분을 그릴지.
+   *   · "bar"    — 시간바만. 5버튼 아래 고정 띠(motionBlock)가 쓴다.
+   *   · "thumbs" — 썸네일 레일만. '움직임 감지' 탭 내용이다.
+   *   · "both"   — 둘 다(기본). 가로 확대 딤 패널은 예전처럼 한 덩어리로 쓴다.
+   *
+   *  둘로 갈라도 어긋나지 않는다 — 레일 위치는 양쪽 다 playbackMs 하나에서
+   *  나오고, 어느 쪽을 끌든 그 값을 바꾼다. */
+  part?: "both" | "bar" | "thumbs";
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   // 썸네일을 못 뽑는 기기 사양이면 카드에 시각+타이틀만 남긴다(eventThumbs.ts).
@@ -2984,14 +3033,6 @@ function RecordingEventTimeline({
     };
   };
 
-  // 레이아웃(px) — 다채널 RecordingControls 시간바 블록과 완전히 동일한 치수로
-  // 시간바(라벨+눈금)를 그리고, 그 아래에 썸네일만 별도 레일로 붙인다.
-  const PAD_TOP = 12; // 시간바 위 여백(다채널과 동일)
-  const PAD_BOTTOM = 4; // 시간바 아래 여백. 삼각형 제거로 줄여 썸네일을 위로 붙인다.
-  const RAIL_H = 28; // 라벨+눈금 영역 높이. 눈금 아래 빈 공간 줄여 썸네일을 위로.
-  const BAR_H = PAD_TOP + RAIL_H + PAD_BOTTOM; // 시간바 블록 전체 높이(=62)
-  const CARD_TOP = 8; // 썸네일 레일 기준 카드 윗변(시간바 바로 아래 약간 띄움)
-
   const currentTimeLabel = playbackMs
     ? (() => {
         const d = new Date(playbackMs);
@@ -3024,9 +3065,14 @@ function RecordingEventTimeline({
       onPointerCancel={handlePointerUp}
     >
       {/* ── 시간바(다채널 RecordingControls 와 동일한 마크업·치수) ── */}
+      {part !== "thumbs" && (
       <div
         className="relative flex-none overflow-hidden"
-        style={{ height: `${BAR_H}px`, paddingTop: `${PAD_TOP}px` }}
+        style={{
+          // 썸네일이 아래 붙는 경우(both)만 아래 여백을 줄인 BAR_H 를 쓴다.
+          height: `${part === "bar" ? BAR_H_CLOSED : BAR_H}px`,
+          paddingTop: `${PAD_TOP}px`,
+        }}
       >
         {/* 스크롤 레일 (라벨 + 눈금) — 다채널과 동일 */}
         <div
@@ -3151,9 +3197,13 @@ function RecordingEventTimeline({
           }}
         />
       </div>
+      )}
 
       {/* ── 썸네일 영역(시간바 아래 남는 세로 공간). 카드 높이는 CSS min(60px,100%)
-          라 이 영역보다 절대 커지지 않는다(짧은 화면에서도 잘리지 않고 줄어든다). ── */}
+          라 이 영역보다 절대 커지지 않는다(짧은 화면에서도 잘리지 않고 줄어든다).
+          시간바가 5버튼 아래로 나간 뒤로는, 세로 화면에서 '움직임 감지' 탭이
+          받는 건 이 레일뿐이다. ── */}
+      {part !== "bar" && (
       <div ref={thumbAreaRef} className="relative min-h-0 flex-1">
         {/* 레일 — 영역 전체 높이(top0 bottom0)를 갖고 시간바와 같은 translateX 로 흐른다 */}
         <div
@@ -3219,6 +3269,7 @@ function RecordingEventTimeline({
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 }
