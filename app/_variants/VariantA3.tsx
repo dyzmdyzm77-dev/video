@@ -3104,18 +3104,20 @@ function SideEventTimeline({
 // 시간바 블록 치수(px) — 다채널 RecordingControls 시간바와 같은 값이다.
 // 컴포넌트 안에 있던 걸 밖으로 뺐다: 썸네일을 접으면 감지 영역 높이가 딱 BAR_H 가
 // 되는데, 그 높이를 부모(motionBlock)가 알아야 해서다.
+// 하단 스트립(탭 줄 · 카메라 목록 · 움직임 감지)의 위아래 여백. 남는 세로는
+// 영상이 가져간다는 규칙(layoutRules)에 맞춰 12·14 에서 여기로 모았다.
+const STRIP_PAD = 8;
+
 const PAD_TOP = 12; // 시간바 위 여백
 const PAD_BOTTOM = 4; // 시간바 아래 여백. 삼각형 제거로 줄여 썸네일을 위로 붙인다.
 const RAIL_H = 28; // 라벨+눈금 영역 높이. 눈금 아래 빈 공간 줄여 썸네일을 위로.
 const BAR_H = PAD_TOP + RAIL_H + PAD_BOTTOM; // 시간바 블록 전체 높이(=44)
-// 시간바만 놓는 띠(5버튼 아래)의 높이. 아래 여백을 4 로 두는 이유는 바로 아래
-// 탭 줄이 자기 위 여백(STRIP_PAD)을 갖고 있어서다 — 12 를 주면 둘이 겹쳐 26px 이
-// 비고, 그만큼 영상이 깎인다(사용자 지적 2026-08-25: "여백 왜케 많아").
-const BAR_H_CLOSED = PAD_TOP + RAIL_H + PAD_BOTTOM; // =44
+// 시간바만 놓는 띠(5버튼 아래)의 높이 — 위아래 여백이 같은 8 이다(사용자 지정
+// 2026-08-26: "위 12 아래 4 말고 둘 다 8"). 아래 스트립(레일)도 위아래 8 이라
+// 이 화면의 여백이 한 값으로 정리된다. 썸네일이 아래 붙는 경우(both)만 위 12 ·
+// 아래 4 인 BAR_H 를 그대로 쓴다 — 거긴 바로 밑에 썸네일이 이어진다.
+const BAR_H_CLOSED = STRIP_PAD + RAIL_H + STRIP_PAD; // =44
 
-// 하단 스트립(탭 줄 · 카메라 목록 · 움직임 감지)의 위아래 여백. 남는 세로는
-// 영상이 가져간다는 규칙(layoutRules)에 맞춰 12·14 에서 여기로 모았다.
-const STRIP_PAD = 8;
 
 function RecordingEventTimeline({
   playbackMs,
@@ -3146,6 +3148,10 @@ function RecordingEventTimeline({
   // 썸네일 레일 위 여백. '움직임 감지' 탭으로 단독으로 설 때는 카메라 목록 탭의
   // 타일과 같은 자리(위 12 · 아래 12)에서 시작해야 한다 — A-1·A-2 와 같은 규칙.
   const cardTop = part === "thumbs" ? STRIP_PAD : 4;
+  // 시간바 블록 위 여백. 시간바만 놓을 때는 레일과 같은 8, 썸네일이 아래 붙는
+  // 경우(both)는 예전대로 12 다. 이 값이 바뀌면 아래 절대배치(현재시각 알약 ·
+  // 중앙선)도 같이 따라가야 눈금과 안 어긋난다 — 그래서 좌표를 이 값에서 뽑는다.
+  const barPad = part === "bar" ? STRIP_PAD : PAD_TOP;
   // 레일 아래 여백도 같은 값 — 카메라 목록 타일(위아래 STRIP_PAD)과 자리를 맞춘다.
   const cardBottom = part === "thumbs" ? STRIP_PAD : PAD_TOP;
   const [thumbH, setThumbH] = useState(THUMB_MAX_H);
@@ -3556,7 +3562,7 @@ function RecordingEventTimeline({
         style={{
           // 아래에 썸네일이 붙는 경우(both)만 아래 여백을 줄인 BAR_H 를 쓴다.
           height: `${part === "both" ? BAR_H : BAR_H_CLOSED}px`,
-          paddingTop: `${PAD_TOP}px`,
+          paddingTop: `${barPad}px`,
         }}
       >
         {/* 스크롤 레일 (라벨 + 눈금) — 다채널과 동일 */}
@@ -3698,7 +3704,7 @@ function RecordingEventTimeline({
             겹쳤다. 6 이면 배지가 6~26 이라 마커 바로 위에 앉는다. */}
         <div
           className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
-        style={{ top: "6px", lineHeight: 0 }}
+        style={{ top: `${barPad - 6}px`, lineHeight: 0 }}
         >
           {/* 알약 배지 — 흰 배경 + 원래 글자색(#353535). 검정 반투명으로 갔다가
               되돌렸다(사용자 지정). '원'을 넣어 달라고 했지만 글자가 가로로 길어
@@ -3734,7 +3740,7 @@ function RecordingEventTimeline({
         <div
           className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-[1px]"
           style={{
-            top: "27px",
+            top: `${barPad + 15}px`,
             width: "2px",
             height: "14px",
             backgroundColor: "#111111",
