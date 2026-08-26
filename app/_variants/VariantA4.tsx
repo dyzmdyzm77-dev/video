@@ -1630,7 +1630,8 @@ function ExpandedView({
           left: "4px",
           height: "17px",
           padding: "0 4px",
-          borderRadius: "2px",
+          // 감지 카드의 유형 칩·시각 라벨과 같은 4px(사용자 지정 2026-08-26).
+          borderRadius: "4px",
         }}
       >
         {c.label}
@@ -2883,7 +2884,9 @@ function MotionEventList({
                     bottom: "3px",
                     height: "17px",
                     padding: "0 4px",
-                    borderRadius: "2px",
+                    // 라운드는 이 안에서 하나로 맞춘다(사용자 지정 2026-08-26) —
+                    // 타일·썸네일·유형 칩(EventKindChip)이 모두 4px 다.
+                    borderRadius: "4px",
                   }}
                 >
                   {formatEventStamp(r.ms)}
@@ -2955,7 +2958,10 @@ function MotionEventList({
                   // 유형은 상태 표시라 구분한다.
                   height: "17px",
                   padding: "0 6px",
-                  borderRadius: "9999px",
+                  // 가로 카드의 유형 칩(EventKindChip)과 같은 4px — 알약이었는데
+                  // 같은 목록의 두 배치가 다른 라운드를 쓰고 있었다(사용자 지정
+                  // 2026-08-26: 라운드 값을 하나로).
+                  borderRadius: "4px",
                   fontSize: "10px",
                   fontWeight: 600,
                   // 이상 상황(넘어짐·폭행)만 빨강 — 썸네일 위 EventKindChip 과 같은
