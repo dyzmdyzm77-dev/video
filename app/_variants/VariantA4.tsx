@@ -2978,7 +2978,9 @@ function MotionEventList({
               </span>
               <span
                 suppressHydrationWarning
-                className="whitespace-nowrap text-[11px] leading-none"
+                // 날짜 시간 — 11 → 12(사용자 지정 2026-08-26). 위 유형 칩(10)보다
+                // 커서, 줄에서 먼저 읽히는 건 언제 찍힌 것인가가 된다.
+                className="whitespace-nowrap text-[12px] leading-none"
                 style={{ color: "#8C8C8C" }}
               >
                 {formatEventStamp(r.ms)}
