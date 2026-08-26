@@ -80,12 +80,13 @@ import {
 } from "../components/layoutRules";
 
 // A-4 의 가로 한 줄 타일 바닥(px). 공유 기본값 TILE_MIN_H(88)를 이 안만 낮춘 값
-// (사용자 지정 2026-08-26: "A-4만 72로"). 카메라 목록·움직임 감지 스트립이 같이
+// (사용자 지정 2026-08-26: 72 로 낮췄다가 "아직 커 보인다" 해서 64). 카메라
+// 목록·움직임 감지 스트립이 같이
 // 이 값을 따른다 — layoutRules.ts 의 '두 탭은 1px 도 안 어긋난다' 규칙 그대로다.
-const A4_TILE_MIN_H = 72;
+const A4_TILE_MIN_H = 64;
 // 그 타일이 들어가는 스트립 높이 = 타일 + 영역이 갖는 위아래 여백(STRIP_PAD 12
 // 두 번). 공유 MOTION_MIN_H(108) 를 그대로 쓰면 타일 바닥만 낮춰도 스트립이
-// 108 로 못 박혀 타일이 84 에서 안 내려간다 — 둘을 같이 낮춰야 72 가 나온다.
+// 108 로 못 박혀 타일이 84 에서 안 내려간다 — 둘을 같이 낮춰야 이 값이 나온다.
 // 값은 아래 STRIP_PAD 와 같은 12 다(모듈 초기화 순서 때문에 숫자로 적는다).
 const A4_MOTION_H = A4_TILE_MIN_H + 12 * 2;
 
@@ -2677,6 +2678,12 @@ function MotionEventList({
 }) {
   const eventThumbs = useEventThumbs();
   const dragScroll = useDragScroll();
+  // 가로 카드에 카메라 명을 넣을 자리가 있나. 세 줄(칩 17 + 3 + 11 + 3 + 11 = 45)이
+  // 카드 안에 여유 있게 들어가는 높이일 때만 넣는다 — 자리가 생기면 넣고 아니면
+  // 빼자는 결정(사용자 지정 2026-08-26). 카드 높이는 스트립(= 카메라 목록 타일)에서
+  // 오므로 기기마다 다르다: 지금 값이면 750(64)엔 들어가고 405(48)엔 안 들어간다.
+  // 세로 목록은 줄 높이가 넉넉해 늘 넣는다.
+  const [roomForName, setRoomForName] = useState(false);
   // 그 날 0시(로컬). 이벤트의 at 은 자정으로부터의 초라 여기에 더하면 실제 시각이 된다.
   const dayStart = (() => {
     const d = new Date(playbackMs ?? Date.now());
@@ -2721,6 +2728,17 @@ function MotionEventList({
   // transform 으로 축소해 두는데 rect 는 축소된 값을, scrollLeft 는 축소 전 값을
   // 준다. 둘을 섞으면 엉뚱한 데로 간다.
   const scrollRef = useRef<HTMLDivElement>(null);
+  // 카드 높이는 스트립이 정하고 그 스트립은 기기·모드마다 다르다 — 상수로 못 박지
+  // 않고 실제 높이를 재서 판정한다. 45 에 위아래 숨통을 더한 52 가 경계다.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const measure = () => setRoomForName(el.clientHeight >= 52);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [wide]);
   const tweenRef = useRef<number | null>(null);
   useEffect(() => {
     return () => {
@@ -2930,10 +2948,10 @@ function MotionEventList({
               >
                 {r.kind}
               </span>
-              {/* 카메라 명은 세로 목록에만 둔다(사용자 지정 2026-08-26: 가로
-                  스크롤 쪽은 빼도 된다) — 가로 카드는 48px 화면에서 세 줄이
-                  빠듯하고, 단일 화면이라 어차피 지금 보고 있는 카메라 하나다. */}
-              {!wide && (
+              {/* 카메라 명 — 세로 목록엔 늘, 가로 카드엔 자리가 날 때만(위
+                  roomForName). 단일 화면이라 어차피 지금 보고 있는 카메라
+                  하나여서, 낮은 스트립에선 빼는 쪽이 낫다. */}
+              {(!wide || roomForName) && (
                 <span
                   className="truncate text-[11px] font-medium leading-none"
                   style={{ color: active ? "#1D6CEB" : "#262626" }}
