@@ -2799,16 +2799,26 @@ function MotionEventList({
             }}
             className={
               wide
-                ? // 카드 바깥에 테두리·여백을 두지 않는다 — 안쪽 썸네일이 카메라
-                  // 목록 타일과 '같은 크기'여야 해서다(사용자 지정 2026-08-26).
-                  // 여백을 주면 그만큼 그림이 작아져 탭을 옮길 때 눈에 띈다.
-                  "flex h-full flex-none items-center gap-2 text-left"
-                : "flex flex-none items-center gap-3 text-left"
+                ? "flex h-full flex-none items-center gap-2 overflow-hidden text-left"
+                : "flex flex-none items-center gap-3 overflow-hidden text-left"
             }
+            // 카드 테두리(사용자 요청 2026-08-26). 안쪽 여백은 여전히 안 준다 —
+            // 썸네일이 카메라 목록 타일과 '같은 크기'여야 해서다. 그래서 그림이
+            // 타일보다 작아지는 건 테두리 1px 두 줄, 88 → 86 뿐이다.
+            // 썸네일은 카드 왼쪽 끝에 붙고 모서리는 카드가 잘라 준다(overflow-hidden).
+            // 고른 카드는 테두리만 파랗게 — 썸네일 위에 또 테두리를 그리면 두 겹이 된다.
+            style={{
+              borderRadius: "8px",
+              border: active ? "1px solid #1D6CEB" : "1px solid #EBEBEB",
+              backgroundColor: active ? "rgba(29,108,235,0.06)" : "#FFFFFF",
+              paddingRight: "10px",
+            }}
           >
-            {/* 썸네일 — 카메라 목록 타일과 같은 16:9 · 같은 4px 라운드 · 같은 높이.
+            {/* 썸네일 — 카메라 목록 타일과 같은 16:9 · 카드 높이를 꽉 채운다.
                 움직이는 GIF 를 그대로 쓰면 한 화면에 수십 장이 동시에 디코딩되니
                 첫 프레임만 그리는 FrozenImage 를 쓴다(목록 타일과 같은 이유).
+                라운드를 여기서 안 준다 — 카드가 잘라 주므로 왼쪽 모서리는 카드
+                모서리를 그대로 따르고, 오른쪽은 각져서 글자 쪽에 붙는다.
                 썸네일을 못 뽑는 기기 설정(eventThumbs)에선 아예 빼고 글자만 남긴다 —
                 유형·카메라·시각이 이미 다 적혀 있어 빈 회색 박스가 필요 없다. */}
             {eventThumbs && (
@@ -2820,8 +2830,8 @@ function MotionEventList({
                 }
                 style={
                   wide
-                    ? { aspectRatio: "16 / 9", borderRadius: "4px" }
-                    : { width: "96px", aspectRatio: "16 / 9", borderRadius: "4px" }
+                    ? { aspectRatio: "16 / 9" }
+                    : { width: "96px", aspectRatio: "16 / 9" }
                 }
               >
                 <FrozenImage
@@ -2830,30 +2840,27 @@ function MotionEventList({
                   className="absolute inset-0 h-full w-full"
                   style={{ objectFit: "cover" }}
                 />
-                {active && (
-                  // 선택 표시는 카메라 목록 타일과 같은 방식(안쪽 파란 테두리) —
-                  // 바깥에 그리면 카드가 커져 썸네일 높이가 타일과 어긋난다.
-                  <div
-                    className="pointer-events-none absolute inset-0"
-                    style={{
-                      boxShadow: "inset 0 0 0 2px #1D6CEB",
-                      borderRadius: "4px",
-                    }}
-                  />
-                )}
               </div>
             )}
             {/* 유형(칩) · 카메라 명 · 날짜 시간 — 사용자 지정 2026-08-26.
-                작은 화면에선 영역이 48px 까지 내려가므로 세 줄 합이 46 이다
-                (18 + 3 + 11 + 3 + 11). 줄을 더 넣거나 키우면 넘친다. */}
-            <div className="flex min-w-0 flex-col justify-center gap-[3px]">
+                작은 화면에선 영역이 48px 까지 내려가므로 세 줄 합이 45 다
+                (17 + 3 + 11 + 3 + 11). 줄을 더 넣거나 키우면 넘친다. */}
+            <div
+              className="flex min-w-0 flex-col justify-center gap-[3px]"
+              // 썸네일이 없을 땐(NVR) 글자가 카드 테두리에 붙으므로 왼쪽 여백을 준다.
+              style={eventThumbs ? undefined : { paddingLeft: "10px" }}
+            >
               <span
                 className="inline-flex flex-none items-center self-start leading-none"
                 style={{
-                  height: "18px",
-                  padding: "0 7px",
+                  // 크기는 카메라 목록 타일 안 카메라 이름 라벨과 같다 — 높이 17 ·
+                  // 글자 10(사용자 지정 2026-08-26). 두 탭이 같은 자리에서 번갈아
+                  // 보이므로 글자 크기가 다르면 탭을 옮길 때 눈에 걸린다.
+                  // 모서리만 알약이다(라벨은 2px) — 유형은 상태 표시라 구분한다.
+                  height: "17px",
+                  padding: "0 6px",
                   borderRadius: "9999px",
-                  fontSize: "11px",
+                  fontSize: "10px",
                   fontWeight: 600,
                   // 이상 상황(넘어짐·폭행)만 빨강 — 썸네일 위 EventKindChip 과 같은
                   // 규칙이라 화면을 훑을 때 눈이 같은 것에 걸린다.
