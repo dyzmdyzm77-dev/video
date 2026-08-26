@@ -534,7 +534,12 @@ export default function LandscapeVideo({
         : nowTick;
     if (!d) return "";
     const p2 = (n: number) => String(n).padStart(2, "0");
-    return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+    const hms = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+    // 모드 알약으로 갈아탄 화면(A-4 가로)에서는 날짜까지 적는다(사용자 지정
+    // 2026-08-27). 서식은 세로 화면 시각 표시와 같다 — 같은 값을 두 화면이
+    // 다르게 적으면 안 된다. 나머지 안은 지금까지처럼 시:분:초뿐이다.
+    if (!modePillHeader) return hms;
+    return `${d.getFullYear()}.${p2(d.getMonth() + 1)}.${p2(d.getDate())}. ${hms}`;
   })();
   // 딤의 '보조' UI(장소명·칩 줄·우상단 아이콘·페이지 점)를 걷는 조건.
   // 스크럽 중이거나, 안이 5버튼만 남기라고 할 때(auxHidden).
