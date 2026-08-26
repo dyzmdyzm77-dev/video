@@ -654,7 +654,9 @@ export default function LandscapeVideo({
               <div
                 // flex 로 둔다 — 그냥 블록이면 안쪽 인라인 요소의 줄 상자가
                 // 위에 4px 을 더 만들어 알약이 그만큼 내려간다.
-                className="pointer-events-none absolute flex transition-opacity duration-150 ease-out"
+                // z-10 — 같은 층의 시간바(눈금·라벨이 절대배치라 나중에 그려진다)
+                // 밑으로 깔려 반쯤 가려졌다(사용자 지적 2026-08-26).
+                className="pointer-events-none absolute z-10 flex transition-opacity duration-150 ease-out"
                 style={{
                   left: `${edgeL}px`,
                   // 알약 높이 22 의 절반을 빼서 '중심'을 맞춘다.
