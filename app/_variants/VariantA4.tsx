@@ -3242,7 +3242,17 @@ function RecordingEventTimeline({
     if (!el || el.clientHeight <= 0) return;
     // 남는 영역 높이에서 상하 여백(위 cardTop + 아래 PAD_TOP)을 뺀 값. 일반 48 로 캡.
     const avail = el.clientHeight - (cardTop + cardBottom);
-    setThumbH(Math.max(THUMB_MIN_H, Math.min(THUMB_MAX_H, Math.round(avail))));
+    // '움직임 감지' 탭으로 단독으로 설 때는 상한을 두지 않는다 — 그 영역은
+    // 카메라 목록 스트립과 같은 높이로 못 박혀 있으므로(useListLayout), 남는
+    // 세로를 그대로 쓰면 썸네일이 목록 타일과 같은 크기가 된다.
+    // 예전엔 48(THUMB_MAX_H)로 막혀 있어서, 타일이 그보다 커지는 넓은 기기
+    // (750×832 에서 타일 88)에서 감지 쪽만 훨씬 작아 보였다(사용자 지적
+    // 2026-08-26: "카메라 목록이랑 사이즈 맞추라고 했잖아").
+    // 시간바와 한 덩어리인 경우(both, 가로 딤 패널)는 남는 세로가 그 화면 사정에
+    // 달렸으니 예전처럼 상한을 지킨다.
+    const capped =
+      part === "thumbs" ? avail : Math.min(THUMB_MAX_H, avail);
+    setThumbH(Math.max(THUMB_MIN_H, Math.round(capped)));
   };
   // 매 렌더 뒤 재계산 — 기기 폭/높이 전환처럼 ResizeObserver 만으로는 놓치는 경우가
   // 있어서(관측 노드 교체·콜백 누락) 렌더 기준으로도 한 번 더 맞춘다. 값이 같으면
