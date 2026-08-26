@@ -379,6 +379,11 @@ export default function VariantA4({
     const t = setTimeout(() => setLsPanelTab("list"), 300);
     return () => clearTimeout(t);
   }, [lsPanel]);
+  // 다채널로 나가면 패널을 닫는다. 패널을 여는 두 버튼(메뉴 · 움직임 감지)이
+  // 둘 다 단일 전용이라, 단일에서 열어 둔 채 나가면 다시 누를 버튼이 없다.
+  useEffect(() => {
+    if (expandedIndex === null) setLsPanel(null);
+  }, [expandedIndex]);
   // 시간바 아래 아이콘 줄도 같은 값을 쓴다(그 줄만 LandscapeVideo 밖에 있다).
   // 앱 창 밀림 보정은 폐기했다 — 이유는 LandscapeVideo 의 edgeL/edgeR 주석 참고.
   const dimEdgeL = dimEdge;
@@ -801,14 +806,22 @@ export default function VariantA4({
                       >
                         {btn({ key: "ai", label: "AI 검색", src: `${BASE}/ai_Icon.svg`, onClick: () => setAiOpen(true) })}
                         {/* 메뉴 — 오른쪽 패널을 '카메라 목록' 탭으로 연다.
-                            열려 있는 쪽을 다시 누르면 닫힌다(사용자 지정 2026-08-18). */}
-                        {btn({
-                          key: "menu",
-                          label: "메뉴",
-                          src: `${BASE}/nav/menu.svg`,
-                          onClick: () =>
-                            setLsPanel((v) => (v === "list" ? null : "list")),
-                        })}
+                            열려 있는 쪽을 다시 누르면 닫힌다(사용자 지정 2026-08-18).
+                            단일에서만 — 다채널은 화면에 이미 카메라가 다 깔려 있고
+                            타일을 누르면 그 카메라 단일로 가므로, 목록을 또 띄우는
+                            건 같은 일을 두 번 하는 것이다(사용자 지적 2026-08-27:
+                            "가로 녹화 다채널에서 왜 카메라 목록 버튼이 있니?").
+                            아래 '움직임 감지'를 다채널에서 뺀 것과 같은 이유다.
+                            실시간·녹화 둘 다 뺀다 — 다채널이면 모드와 무관하다.
+                            AI 검색은 남긴다(사용자 지정: "목록 버튼만"). */}
+                        {expandedIndex !== null &&
+                          btn({
+                            key: "menu",
+                            label: "메뉴",
+                            src: `${BASE}/nav/menu.svg`,
+                            onClick: () =>
+                              setLsPanel((v) => (v === "list" ? null : "list")),
+                          })}
                         {/* 움직임 감지는 녹화 + 단일에서만 — 실시간엔 지나간 이벤트가
                             없고(사용자 지적 2026-08-14), 다채널은 어느 카메라 기준인지
                             모호하다. 누르면 같은 패널이 '움직임 감지' 탭으로 열린다. */}
