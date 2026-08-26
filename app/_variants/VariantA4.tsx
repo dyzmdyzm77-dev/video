@@ -4639,7 +4639,17 @@ function RecordingControls({
         style={{ height: "48px", gap: "8px" }}
       >
         {/* 녹화영상 배지는 뺐다 — A-4 만(사용자 지정 2026-08-26).
-            날짜·시각은 줄 한가운데다. */}
+            날짜·시각은 줄 한가운데고, 날짜를 고르는 입구는 단일 화면과 같은
+            왼쪽 달력 버튼이다(사용자 지정 2026-08-26: "화살표 빼고 왼쪽에 달력
+            버튼 넣어줘, 단일처럼"). 규격도 단일과 같은 28 원 + 아이콘 24. */}
+        <button
+          type="button"
+          aria-label="날짜, 시간 선택"
+          onClick={onOpenDateTime}
+          className="flex h-[28px] w-[28px] flex-none items-center justify-center rounded-full border border-neutral-300"
+        >
+          <img src={`${BASE}/time.svg`} alt="" className="h-6 w-6" />
+        </button>
         <button
           type="button"
           onClick={onOpenDateTime}
@@ -4655,12 +4665,10 @@ function RecordingControls({
             whiteSpace: "nowrap" as const,
           }}
         >
-          {/* 화살표 — 한 번 뺐다가 되살렸다(사용자 지정 2026-08-19: "화살표
-              되살려"). 뺀 이유는 시간바 왼쪽 달력 버튼이 같은 일을 하고 있어서
-              였는데, 다채널 녹화에서 시간바를 통째로 빼면서 그 버튼도 같이
-              사라졌다 — 지금은 이 줄이 날짜를 바꾸는 유일한 입구다. */}
+          {/* 화살표는 뺐다 — A-4 만(사용자 지정 2026-08-26). 날짜를 고르는
+              입구가 왼쪽 달력 버튼으로 돌아와서 같은 말을 두 번 하게 됐다.
+              글자는 그대로 눌러도 시트가 열린다. */}
           <span suppressHydrationWarning>{labelDate}</span>
-          <ChevronDownIcon className="h-6 w-6" />
         </button>
         <RowSkeleton visible={rowLoading} />
       </div>
