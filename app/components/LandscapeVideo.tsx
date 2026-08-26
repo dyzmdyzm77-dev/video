@@ -65,6 +65,11 @@ const LANDSCAPE_DIM_BOTTOM = "60%";
 // 아이콘 줄만 헤더 아래(둘째 줄)로 내린다. 장소명 + 칩줄은 둘이서는 들어간다.
 const ONE_ROW_MIN_W = 560;
 
+/** 시간바 위에 겹쳐 놓는 상태 알약의 윗변(컨트롤 블록 기준, px).
+ *  시간바 한가운데 현재시각 알약의 중심이 컨트롤 블록 위에서 16~17px 지점이라
+ *  (A-2 16 · A-3 17), 높이 22 인 알약의 윗변은 17 − 11 = 6 이다. */
+const STATUS_TOP_IN_CONTROLS = 6;
+
 // 장소명 옆 화살표 — 세로 화면과 같은 에셋(More.svg)을 마스크로 찍는다.
 // 예전엔 여기서만 인라인 SVG(M6 9l6 6 6-6)로 직접 그려, 같은 자리인데 굵기와
 // 모양이 세로와 달랐다(사용자 지적). 색은 currentColor 를 따라간다.
@@ -617,23 +622,43 @@ export default function LandscapeVideo({
             bottom: `${(bottomInset ?? 12) - 12}px`,
           },
           <>
-            <div
-              className="pointer-events-none pb-3 transition-opacity duration-150 ease-out"
-              style={{
-                paddingLeft: `${edgeL}px`,
-                paddingRight: `${edgeR}px`,
-                // 이 층은 시간바 때문에 남겨 두지만 알약은 같이 걷는다.
-                opacity: auxOff ? 0 : 1,
-              }}
-            >
-              <span className="inline-flex">{statusRow}</span>
-            </div>
+            {/* 컨트롤(시간바)이 없는 화면 — 알약이 이 층의 마지막 줄이다. */}
+            {!controls && (
+              <div
+                className="pointer-events-none pb-3 transition-opacity duration-150 ease-out"
+                style={{
+                  paddingLeft: `${edgeL}px`,
+                  paddingRight: `${edgeR}px`,
+                  opacity: auxOff ? 0 : 1,
+                }}
+              >
+                <span className="inline-flex">{statusRow}</span>
+              </div>
+            )}
             {controls && (
               <div
                 data-no-swipe=""
-                className={`pointer-events-auto w-full${controlsOnDim ? "" : " bg-white"}`}
+                className={`relative pointer-events-auto w-full${controlsOnDim ? "" : " bg-white"}`}
               >
                 {controls}
+                {/* 시간바가 있으면 알약을 그 위에 겹쳐 놓는다 — 시간바 한가운데
+                    현재시각 알약과 '같은 높이'로(사용자 지정 2026-08-26).
+                    실측: 그 알약의 중심은 컨트롤 블록 위에서 16~17px 지점이다
+                    (A-2 16 · A-3 17 — 둘 다 시간바 위 여백 12 + 라벨 높이의 절반).
+                    알약 높이가 22 니 윗변은 16.5 − 11 ≈ 5. */}
+                <div
+                  // flex 로 둔다 — 그냥 블록이면 안쪽 인라인 요소의 줄 상자가
+                  // 위에 4px 을 더 만들어 알약이 그만큼 내려간다.
+                  className="pointer-events-none absolute flex transition-opacity duration-150 ease-out"
+                  style={{
+                    left: `${edgeL}px`,
+                    top: `${STATUS_TOP_IN_CONTROLS}px`,
+                    // 이 층은 시간바 때문에 남겨 두지만 알약은 같이 걷는다.
+                    opacity: auxOff ? 0 : 1,
+                  }}
+                >
+                  <span className="inline-flex">{statusRow}</span>
+                </div>
               </div>
             )}
           </>,
