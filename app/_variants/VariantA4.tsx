@@ -832,20 +832,11 @@ export default function VariantA4({
                             onClick: () =>
                               setLsPanel((v) => (v === "list" ? null : "list")),
                           })}
-                        {/* 움직임 감지는 녹화 + 단일에서만 — 실시간엔 지나간 이벤트가
-                            없고(사용자 지적 2026-08-14), 다채널은 어느 카메라 기준인지
-                            모호하다. 누르면 같은 패널이 '움직임 감지' 탭으로 열린다. */}
-                        {mode === "recording" &&
-                          expandedIndex !== null &&
-                          btn({
-                            key: "motion",
-                            label: "움직임 감지",
-                            src: `${BASE}/Type=Line.svg`,
-                            onClick: () =>
-                              setLsPanel((v) =>
-                                v === "motion" ? null : "motion",
-                              ),
-                          })}
+                        {/* 움직임 감지 버튼은 없앴다(사용자 지정 2026-08-27).
+                            메뉴로 연 패널이 '카메라 목록 | 움직임 감지' 두 탭을
+                            이미 갖고 있어, 감지로 가는 길은 그 탭이다 — 딤에
+                            버튼을 따로 두면 같은 자리로 가는 문이 두 개가 된다.
+                            이제 딤 왼쪽은 AI · 메뉴 둘뿐이다. */}
                       </div>
                       {/* 현재 시각 알약은 여기 없다 — 딤 아래 왼쪽 공통 표시로
                           올라갔다(LandscapeVideo, 사용자 지정 2026-08-25: 세 안이
