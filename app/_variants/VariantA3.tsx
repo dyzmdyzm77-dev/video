@@ -2386,7 +2386,8 @@ function ExpandedView({
               onClick={() => setRecTab(t.key)}
               className="relative text-[15px] font-bold leading-none"
               style={{
-                padding: "14px 0",
+                // 위아래 12 — 예전 14 에서 줄였다(여백을 영상에 넘긴다).
+                padding: "12px 0",
                 color: recTab === t.key ? "#1D6CEB" : "#A6A6A6",
               }}
             >
@@ -2440,8 +2441,8 @@ function ExpandedView({
         ref={listWide ? undefined : listScrollRef}
         className={
           listWide
-            ? "flex min-h-0 flex-1 flex-col pb-3"
-            : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            ? "flex min-h-0 flex-1 flex-col pb-2"
+            : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         }
       >
 
@@ -2460,7 +2461,7 @@ function ExpandedView({
           }
           // 탭 줄이 영역 밖으로 나가면서 위 여백은 A-2 와 같은 12 로 잡는다 —
           // 타일이 세 안 모두 같은 자리에서 시작해야 한다.
-          style={{ marginTop: "12px" }}
+          style={{ marginTop: `${STRIP_PAD}px` }}
         >
           {CAMERAS.map((c, i) =>
             cameraTile(
@@ -3103,9 +3104,14 @@ const PAD_TOP = 12; // 시간바 위 여백
 const PAD_BOTTOM = 4; // 시간바 아래 여백. 삼각형 제거로 줄여 썸네일을 위로 붙인다.
 const RAIL_H = 28; // 라벨+눈금 영역 높이. 눈금 아래 빈 공간 줄여 썸네일을 위로.
 const BAR_H = PAD_TOP + RAIL_H + PAD_BOTTOM; // 시간바 블록 전체 높이(=44)
-// 접었을 때(썸네일 없음)는 위아래를 같게 — PAD_BOTTOM 4 는 바로 아래 썸네일을
-// 위로 붙이려고 줄인 값이라, 썸네일이 사라지면 아래만 얇아 보인다.
-const BAR_H_CLOSED = PAD_TOP + RAIL_H + PAD_TOP; // =52
+// 시간바만 놓는 띠(5버튼 아래)의 높이. 아래 여백을 4 로 두는 이유는 바로 아래
+// 탭 줄이 자기 위 여백(STRIP_PAD)을 갖고 있어서다 — 12 를 주면 둘이 겹쳐 26px 이
+// 비고, 그만큼 영상이 깎인다(사용자 지적 2026-08-25: "여백 왜케 많아").
+const BAR_H_CLOSED = PAD_TOP + RAIL_H + PAD_BOTTOM; // =44
+
+// 하단 스트립(탭 줄 · 카메라 목록 · 움직임 감지)의 위아래 여백. 남는 세로는
+// 영상이 가져간다는 규칙(layoutRules)에 맞춰 12·14 에서 여기로 모았다.
+const STRIP_PAD = 8;
 
 function RecordingEventTimeline({
   playbackMs,
@@ -3135,13 +3141,15 @@ function RecordingEventTimeline({
   const thumbAreaRef = useRef<HTMLDivElement>(null);
   // 썸네일 레일 위 여백. '움직임 감지' 탭으로 단독으로 설 때는 카메라 목록 탭의
   // 타일과 같은 자리(위 12 · 아래 12)에서 시작해야 한다 — A-1·A-2 와 같은 규칙.
-  const cardTop = part === "thumbs" ? PAD_TOP : 4;
+  const cardTop = part === "thumbs" ? STRIP_PAD : 4;
+  // 레일 아래 여백도 같은 값 — 카메라 목록 타일(위아래 STRIP_PAD)과 자리를 맞춘다.
+  const cardBottom = part === "thumbs" ? STRIP_PAD : PAD_TOP;
   const [thumbH, setThumbH] = useState(THUMB_MAX_H);
   const updateThumbH = () => {
     const el = thumbAreaRef.current;
     if (!el || el.clientHeight <= 0) return;
     // 남는 영역 높이에서 상하 여백(위 cardTop + 아래 PAD_TOP)을 뺀 값. 일반 48 로 캡.
-    const avail = el.clientHeight - (cardTop + PAD_TOP);
+    const avail = el.clientHeight - (cardTop + cardBottom);
     setThumbH(Math.max(THUMB_MIN_H, Math.min(THUMB_MAX_H, Math.round(avail))));
   };
   // 매 렌더 뒤 재계산 — 기기 폭/높이 전환처럼 ResizeObserver 만으로는 놓치는 경우가
@@ -3763,7 +3771,7 @@ function RecordingEventTimeline({
               style={{
                 left: `calc(50% + ${xOf(cluster.secOffset)}px)`,
                 top: `${cardTop}px`,
-                bottom: `${PAD_TOP}px`,
+                bottom: `${cardBottom}px`,
                 // 카드의 '왼쪽 끝'이 자기 시각에 온다(가운데 정렬 아님) — 탭하면
                 // 그 시각이 중앙선으로 오므로 결과적으로 왼쪽 끝이 선에 맞는다.
                 pointerEvents: "auto",
