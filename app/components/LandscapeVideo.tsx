@@ -559,24 +559,30 @@ export default function LandscapeVideo({
   // 올려보냈으면 아래 알약에는 시각만 남고, 시각도 없으면 알약을 안 그린다.
   const modeMovedUp = singleNameBadge && expandedIndex !== null;
 
-  // 영상 위 이름 배지 밑에 붙는 '● 실시간/녹화영상'. 서식은 이름 배지와 같다
-  // (검정 55% · 10px · 높이 17 · 라운드 2 — CameraFeed 의 그 배지) — 두 줄이
-  // 한 덩어리로 읽혀야 해서 알약(22px·13px)을 그대로 쓰지 않는다.
-  // 딤과 같이 뜨고 사라진다: 자리는 영상에 붙어 있지만 딤 UI 다.
-  const modeUnderBadge = modeMovedUp ? (
+  // '● 실시간/녹화영상' 알약. 아래 시각 알약과 같은 규격이다(22px · 13px ·
+   //  #666666 40% + blur) — 같은 화면의 알약 둘이 다르게 생기면 안 된다.
+  const modePill = (
     <span
-      className="inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white transition-opacity duration-300 ease-out"
+      className="rounded-full"
       style={{
-        height: "17px",
-        padding: "0 4px",
-        borderRadius: "2px",
-        opacity: dim && !auxOff ? 1 : 0,
+        display: "inline-flex",
+        alignItems: "center",
+        height: "22px",
+        padding: "0 10px",
+        fontSize: "13px",
+        fontWeight: 700,
+        lineHeight: "13px",
+        color: "#FFFFFF",
+        backgroundColor: "rgba(102,102,102,0.4)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        textShadow: "0 0 4px rgba(0,0,0,0.6)",
       }}
     >
       {modeDot}
       {modeText}
     </span>
-  ) : null;
+  );
 
   const statusRow =
     modeMovedUp && hideStatusClock ? null : (
@@ -702,7 +708,14 @@ export default function LandscapeVideo({
                 // 밑으로 깔려 반쯤 가려졌다(사용자 지적 2026-08-26).
                 className="pointer-events-none absolute z-10 flex transition-opacity duration-150 ease-out"
                 style={{
-                  left: `${edgeL}px`,
+                  // 모드를 헤더로 올려보낸 화면(A-4 가로 단일)에서는 시각 알약을
+                  // 가운데로 옮긴다 — 같은 화면의 녹화 쪽은 시간바가 한가운데에
+                  // 시각을 띄우므로, 왼쪽에 두면 실시간↔녹화에서 시각이 좌우로
+                  // 튄다(사용자 지정 2026-08-26: "가로 녹화 단일이랑 동일한 위치로").
+                  // 높이(statusRaise)는 원래부터 그 시간바 클록에 맞춰 둔 값이다.
+                  ...(modeMovedUp
+                    ? { left: "50%", transform: "translateX(-50%)" }
+                    : { left: `${edgeL}px` }),
                   // 알약 높이 22 의 절반을 빼서 '중심'을 맞춘다.
                   bottom: `${statusRaise - 11}px`,
                   // 이 층은 시간바 때문에 남겨 두지만 알약은 같이 걷는다.
@@ -800,9 +813,28 @@ export default function LandscapeVideo({
       </div>
     ) : null;
 
-  // 이름 배지로 갈아탄 단일 화면은 헤더 줄 자체가 없다 — cameraHeader 를 안 그리면
-  // 기본 헤더(장소명 + 지점명)로 흘러내려 결국 같은 자리에 글자가 남는다.
-  const header = modeMovedUp ? null : cameraHeader ?? (title ? (
+  // 모드 알약을 헤더 자리에 놓는 화면 — 뒤로가기가 있던 그 자리다(사용자 지정
+  // 2026-08-26: "위치는 아까 그 뒤로가기 버튼 있는 위치에"). 껍데기 규격은 아래
+  // 기본 헤더·cameraHeader 와 같게 둔다(높이 · 좌우 여백 · topInset) — 그래야
+  // 안을 오가도 왼쪽 선과 높이가 안 흔들린다.
+  const modeHeader = modeMovedUp ? (
+    <div
+      className="pointer-events-none absolute inset-x-0 top-0 flex items-center transition-opacity duration-300 ease-out"
+      style={{
+        height: `${OVERLAY_HEADER_H}px`,
+        opacity: dim && !auxOff ? 1 : 0,
+        paddingLeft: `${edgeL}px`,
+        paddingRight: `${edgeR}px`,
+        marginTop: `${topInset}px`,
+      }}
+    >
+      {modePill}
+    </div>
+  ) : null;
+
+  // 모드 알약으로 갈아탄 단일 화면은 헤더 줄이 그 알약뿐이다 — cameraHeader 를
+  // 안 그리면 기본 헤더(장소명 + 지점명)로 흘러내려 같은 자리에 글자가 남는다.
+  const header = modeMovedUp ? modeHeader : cameraHeader ?? (title ? (
     <div
       className={`pointer-events-none absolute inset-x-0 top-0 flex transition-opacity duration-300 ease-out ${
         headerAlign === "top" ? "items-start" : "items-center"
@@ -1046,7 +1078,6 @@ export default function LandscapeVideo({
             // 카메라 이름을 그대로 띄운다 — A-2 가 쓰는 그 배지다.
             badge={singleNameBadge ? undefined : singleBadge}
             badgeAlign={singleNameBadge ? "left" : singleBadgeAlign}
-            underBadge={modeUnderBadge}
             src={cam.src}
             fit={fit}
             paused={paused}
