@@ -2585,11 +2585,11 @@ function ExpandedView({
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {videoBlock}
-            {dateBarBlock}
-            {/* A-4 는 시간바가 5버튼 위다(사용자 지정 2026-08-26). 패널이 나와도
-                재생 위치를 잡을 게 있어야 하는 건 그대로. */}
-            {motionBlock}
+            {/* 세로 화면과 같은 순서 — 영상 → 5버튼 → 날짜 → 시간바.
+                패널이 나와도 재생 위치를 잡을 게 있어야 하는 건 그대로. */}
             {playerBlock}
+            {dateBarBlock}
+            {motionBlock}
           </div>
           <div
             className="flex min-h-0 flex-none flex-col overflow-hidden"
@@ -2602,12 +2602,11 @@ function ExpandedView({
       ) : (
         <>
           {videoBlock}
-          {dateBarBlock}
-          {/* A-4 는 시간바가 먼저, 5버튼이 그 아래다(사용자 지정 2026-08-26:
-              "시간바랑 5버튼 위치를 바꾸자"). 시간바는 bottomStrip 첫 줄이 아니라
-              여기서 직접 그리고, 5버튼(playerBlock)을 그 뒤에 둔다. */}
-          {motionBlock}
+          {/* A-4 순서: 영상 → 5버튼 → 날짜(현재시각 알약) → 시간바 → 탭
+              (사용자 지정 2026-08-26: "5버튼을 현재시간 알약 위쪽으로"). */}
           {playerBlock}
+          {dateBarBlock}
+          {motionBlock}
           {bottomStrip}
         </>
       )}
