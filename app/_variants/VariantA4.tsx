@@ -76,7 +76,6 @@ import {
   LANDSCAPE_EDGE,
   LANDSCAPE_EDGE_ANDROID,
   LANDSCAPE_TOP_INSET,
-  PANEL_BOTTOM_H,
 } from "../components/layoutRules";
 
 // A-4 의 가로 한 줄 타일 바닥(px). 공유 기본값 TILE_MIN_H(88)를 이 안만 낮춘 값
@@ -89,6 +88,10 @@ const A4_TILE_MIN_H = 64;
 // 108 로 못 박혀 타일이 84 에서 안 내려간다 — 둘을 같이 낮춰야 이 값이 나온다.
 // 값은 아래 STRIP_PAD 와 같은 12 다(모듈 초기화 순서 때문에 숫자로 적는다).
 const A4_MOTION_H = A4_TILE_MIN_H + 12 * 2;
+// 가로 딤에서 '아래로' 나오는 판의 높이 = 탭 줄 48 + 구분선 1 + 스트립.
+// 공유 PANEL_BOTTOM_H 는 스트립을 MOTION_MIN_H(108)로 잡는데, A-4 는 스트립을
+// 낮췄으니 판도 같이 낮아져야 카드가 세로 화면과 같은 크기가 된다.
+const A4_PANEL_BOTTOM_H = 48 + 1 + A4_MOTION_H;
 
 const CAMERAS = [
   { label: "카메라 01", src: `${BASE}/cameras/cam1.gif` },
@@ -2678,12 +2681,6 @@ function MotionEventList({
 }) {
   const eventThumbs = useEventThumbs();
   const dragScroll = useDragScroll();
-  // 가로 카드에 카메라 명을 넣을 자리가 있나. 세 줄(칩 17 + 3 + 11 + 3 + 11 = 45)이
-  // 카드 안에 여유 있게 들어가는 높이일 때만 넣는다 — 자리가 생기면 넣고 아니면
-  // 빼자는 결정(사용자 지정 2026-08-26). 카드 높이는 스트립(= 카메라 목록 타일)에서
-  // 오므로 기기마다 다르다: 지금 값이면 750(64)엔 들어가고 405(48)엔 안 들어간다.
-  // 세로 목록은 줄 높이가 넉넉해 늘 넣는다.
-  const [roomForName, setRoomForName] = useState(false);
   // 그 날 0시(로컬). 이벤트의 at 은 자정으로부터의 초라 여기에 더하면 실제 시각이 된다.
   const dayStart = (() => {
     const d = new Date(playbackMs ?? Date.now());
@@ -2728,17 +2725,6 @@ function MotionEventList({
   // transform 으로 축소해 두는데 rect 는 축소된 값을, scrollLeft 는 축소 전 값을
   // 준다. 둘을 섞으면 엉뚱한 데로 간다.
   const scrollRef = useRef<HTMLDivElement>(null);
-  // 카드 높이는 스트립이 정하고 그 스트립은 기기·모드마다 다르다 — 상수로 못 박지
-  // 않고 실제 높이를 재서 판정한다. 45 에 위아래 숨통을 더한 52 가 경계다.
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const measure = () => setRoomForName(el.clientHeight >= 52);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [wide]);
   const tweenRef = useRef<number | null>(null);
   useEffect(() => {
     return () => {
@@ -2844,6 +2830,79 @@ function MotionEventList({
       {rows.map((r) => {
         const active = r.ms === activeMs;
         const alert = r.kind !== "움직임";
+        // 가로 카드는 '카메라 목록 타일 한 장' 그 자체다(사용자 지정 2026-08-26:
+        // "사이즈를 카메라 목록 썸네일이랑 맞추자"). 글자 칸을 옆에 달았더니 카드
+        // 폭이 타일의 두 배(204 vs 114)라 두 탭이 다른 규격으로 보였다. 유형·시각은
+        // 그림 위에 얹어 카드 크기가 타일과 정확히 같게 만든다.
+        // 세로 목록은 그대로 '썸네일 + 글자' 줄이다 — 폭이 남아 얹을 이유가 없다.
+        if (wide) {
+          return (
+            <button
+              key={r.ms}
+              data-ms={r.ms}
+              type="button"
+              onClick={() => {
+                setPlaybackMs(r.ms);
+                // 이미 활성인 항목을 다시 눌러도 가운데로 와야 한다.
+                centerOn(r.ms);
+              }}
+              className="relative h-full aspect-video flex-none overflow-hidden bg-neutral-900 text-left"
+              // 카메라 목록 타일과 같은 4px — 타일과 나란히 놓고 봐도 같은 규격이다.
+              style={{ borderRadius: "4px" }}
+            >
+              {eventThumbs ? (
+                <>
+                  {/* 움직이는 GIF 를 그대로 쓰면 한 화면에 수십 장이 동시에
+                      디코딩되니 첫 프레임만 그리는 FrozenImage 를 쓴다(목록 타일과
+                      같은 이유). */}
+                  <FrozenImage
+                    src={cameraSrc}
+                    alt=""
+                    className="absolute inset-0 h-full w-full"
+                    style={{ objectFit: "cover" }}
+                  />
+                  {/* 유형 — 썸네일 위 칩은 안 전체가 같이 쓰는 것 하나다
+                      (EventKindChip: 움직임=검정 반투명, 이상 상황=빨강). 왼쪽 위는
+                      카메라 목록 타일의 이름 라벨과 같은 자리라 눈이 같은 데를 본다. */}
+                  <EventKindChip kind={r.kind} />
+                </>
+              ) : (
+                // 썸네일을 못 뽑는 저장 방식(NVR) — 그림 자리에 흰 카드(유형 + 시각).
+                // 크기는 그대로라 목록 타일과 여전히 같다.
+                <EventCardFace ms={r.ms} active={active} />
+              )}
+              {/* 시각 — 그림 아래쪽 왼쪽. 라벨 서식은 카메라 목록 타일의 이름
+                  라벨과 같다(높이 17 · 글자 10 · 검정 55%). 썸네일이 없을 땐 흰
+                  카드가 이미 시각을 적고 있어 얹지 않는다. */}
+              {eventThumbs && (
+                <div
+                  suppressHydrationWarning
+                  className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
+                  style={{
+                    left: "3px",
+                    bottom: "3px",
+                    height: "17px",
+                    padding: "0 4px",
+                    borderRadius: "2px",
+                  }}
+                >
+                  {formatEventStamp(r.ms)}
+                </div>
+              )}
+              {active && (
+                // 고른 카드 — 카메라 목록 타일의 선택 표시와 같은 안쪽 파란 테두리.
+                // 바깥에 그리면 카드가 커져 타일과 크기가 어긋난다.
+                <div
+                  className="pointer-events-none absolute inset-0"
+                  style={{
+                    boxShadow: "inset 0 0 0 2px #1D6CEB",
+                    borderRadius: "4px",
+                  }}
+                />
+              )}
+            </button>
+          );
+        }
         return (
           <button
             key={r.ms}
@@ -2851,66 +2910,32 @@ function MotionEventList({
             type="button"
             onClick={() => {
               setPlaybackMs(r.ms);
-              // 이미 활성인 항목을 다시 눌러도 가운데로 와야 한다.
               centerOn(r.ms);
             }}
-            className={
-              wide
-                ? "flex h-full flex-none items-center gap-2 overflow-hidden text-left"
-                : "flex flex-none items-center gap-3 text-left"
-            }
-            style={
-              wide
-                ? {
-                    // 카드 테두리(사용자 요청 2026-08-26). 안쪽 여백은 여전히 안 준다 —
-                    // 썸네일이 카메라 목록 타일과 '같은 크기'여야 해서다. 그래서 그림이
-                    // 타일보다 작아지는 건 테두리 1px 두 줄, 88 → 86 뿐이다.
-                    // 썸네일은 카드 왼쪽 끝에 붙고 모서리는 카드가 잘라 준다.
-                    // 고른 카드는 테두리만 파랗게 — 썸네일 위에 또 테두리를 그리면
-                    // 두 겹이 된다.
-                    borderRadius: "8px",
-                    border: active ? "1px solid #1D6CEB" : "1px solid #EBEBEB",
-                    backgroundColor: active ? "rgba(29,108,235,0.06)" : "#FFFFFF",
-                    paddingRight: "10px",
-                  }
-                : {
-                    // 세로는 카드가 아니라 구분선으로 나눈 줄이다. 마지막 줄에도
-                    // 선을 남긴다 — 목록이 스크롤 중이면 아래가 더 있다는 표시가 되고,
-                    // 끝까지 왔을 땐 영역 바닥에 붙어 안 보인다.
-                    //
-                    // 좌우 여백은 줄이 갖는다(컨테이너가 아니라) — 그래야 썸네일이
-                    // 카메라 목록 타일과 같은 선에서 시작하고(사용자 지정 2026-08-26),
-                    // 구분선은 테두리라 그 여백 밖까지 끝에서 끝까지 간다.
-                    paddingTop: "8px",
-                    paddingBottom: "8px",
-                    paddingLeft: `${inset}px`,
-                    paddingRight: `${inset}px`,
-                    borderBottom: "1px solid #EBEBEB",
-                    backgroundColor: active ? "rgba(29,108,235,0.06)" : undefined,
-                  }
-            }
+            className="flex flex-none items-center gap-3 text-left"
+            style={{
+              // 세로는 카드가 아니라 구분선으로 나눈 줄이다. 마지막 줄에도 선을
+              // 남긴다 — 목록이 스크롤 중이면 아래가 더 있다는 표시가 되고, 끝까지
+              // 왔을 땐 영역 바닥에 붙어 안 보인다.
+              //
+              // 좌우 여백은 줄이 갖는다(컨테이너가 아니라) — 그래야 썸네일이 카메라
+              // 목록 타일과 같은 선에서 시작하고(사용자 지정 2026-08-26), 구분선은
+              // 테두리라 그 여백 밖까지 끝에서 끝까지 간다.
+              paddingTop: "8px",
+              paddingBottom: "8px",
+              paddingLeft: `${inset}px`,
+              paddingRight: `${inset}px`,
+              borderBottom: "1px solid #EBEBEB",
+              backgroundColor: active ? "rgba(29,108,235,0.06)" : undefined,
+            }}
           >
-            {/* 썸네일 — 카메라 목록 타일과 같은 16:9 · 카드 높이를 꽉 채운다.
-                움직이는 GIF 를 그대로 쓰면 한 화면에 수십 장이 동시에 디코딩되니
-                첫 프레임만 그리는 FrozenImage 를 쓴다(목록 타일과 같은 이유).
-                라운드를 여기서 안 준다 — 카드가 잘라 주므로 왼쪽 모서리는 카드
-                모서리를 그대로 따르고, 오른쪽은 각져서 글자 쪽에 붙는다.
+            {/* 썸네일 — 카메라 목록 타일과 같은 16:9 · 같은 4px 라운드.
                 썸네일을 못 뽑는 기기 설정(eventThumbs)에선 아예 빼고 글자만 남긴다 —
                 유형·카메라·시각이 이미 다 적혀 있어 빈 회색 박스가 필요 없다. */}
             {eventThumbs && (
               <div
-                className={
-                  wide
-                    ? "relative h-full flex-none overflow-hidden bg-neutral-900"
-                    : "relative flex-none overflow-hidden bg-neutral-900"
-                }
-                style={
-                  wide
-                    ? { aspectRatio: "16 / 9" }
-                    : // 세로 줄엔 감싸는 카드가 없으니 모서리를 스스로 둥글린다 —
-                      // 카메라 목록 타일과 같은 4px.
-                      { width: "96px", aspectRatio: "16 / 9", borderRadius: "4px" }
-                }
+                className="relative flex-none overflow-hidden bg-neutral-900"
+                style={{ width: "96px", aspectRatio: "16 / 9", borderRadius: "4px" }}
               >
                 <FrozenImage
                   src={cameraSrc}
@@ -2920,21 +2945,14 @@ function MotionEventList({
                 />
               </div>
             )}
-            {/* 유형(칩) · 카메라 명 · 날짜 시간 — 사용자 지정 2026-08-26.
-                작은 화면에선 영역이 48px 까지 내려가므로 세 줄 합이 45 다
-                (17 + 3 + 11 + 3 + 11). 줄을 더 넣거나 키우면 넘친다. */}
-            <div
-              className="flex min-w-0 flex-col justify-center gap-[3px]"
-              // 썸네일이 없을 땐(NVR) 글자가 카드 테두리에 붙으므로 왼쪽 여백을 준다.
-              style={eventThumbs ? undefined : { paddingLeft: "10px" }}
-            >
+            {/* 유형(칩) · 카메라 명 · 날짜 시간 — 사용자 지정 2026-08-26. */}
+            <div className="flex min-w-0 flex-col justify-center gap-[3px]">
               <span
                 className="inline-flex flex-none items-center self-start leading-none"
                 style={{
                   // 크기는 카메라 목록 타일 안 카메라 이름 라벨과 같다 — 높이 17 ·
-                  // 글자 10(사용자 지정 2026-08-26). 두 탭이 같은 자리에서 번갈아
-                  // 보이므로 글자 크기가 다르면 탭을 옮길 때 눈에 걸린다.
-                  // 모서리만 알약이다(라벨은 2px) — 유형은 상태 표시라 구분한다.
+                  // 글자 10(사용자 지정 2026-08-26). 모서리만 알약이다(라벨은 2px) —
+                  // 유형은 상태 표시라 구분한다.
                   height: "17px",
                   padding: "0 6px",
                   borderRadius: "9999px",
@@ -2948,17 +2966,12 @@ function MotionEventList({
               >
                 {r.kind}
               </span>
-              {/* 카메라 명 — 세로 목록엔 늘, 가로 카드엔 자리가 날 때만(위
-                  roomForName). 단일 화면이라 어차피 지금 보고 있는 카메라
-                  하나여서, 낮은 스트립에선 빼는 쪽이 낫다. */}
-              {(!wide || roomForName) && (
-                <span
-                  className="truncate text-[11px] font-medium leading-none"
-                  style={{ color: active ? "#1D6CEB" : "#262626" }}
-                >
-                  {cameraLabel}
-                </span>
-              )}
+              <span
+                className="truncate text-[11px] font-medium leading-none"
+                style={{ color: active ? "#1D6CEB" : "#262626" }}
+              >
+                {cameraLabel}
+              </span>
               <span
                 suppressHydrationWarning
                 className="whitespace-nowrap text-[11px] leading-none"
@@ -5094,7 +5107,7 @@ function LandscapeSidePanel({
           ? {
               // 아래에서 나오는 판 — 바텀시트와 같은 결: 윗변만 둥글게, 높이 고정.
               width: "100%",
-              height: open ? `${PANEL_BOTTOM_H}px` : "0px",
+              height: open ? `${A4_PANEL_BOTTOM_H}px` : "0px",
               transition: "height 240ms cubic-bezier(0.22, 1, 0.36, 1)",
               borderTop: open ? "1px solid #EBEBEB" : "none",
               borderTopLeftRadius: "10px",
@@ -5115,7 +5128,7 @@ function LandscapeSidePanel({
       className="flex min-h-0 flex-1 flex-col"
       style={
         bottom
-          ? { width: "100%", height: `${PANEL_BOTTOM_H}px` }
+          ? { width: "100%", height: `${A4_PANEL_BOTTOM_H}px` }
           : { width: `${full}px`, paddingRight: `${extra}px` }
       }
     >
@@ -5167,17 +5180,25 @@ function LandscapeSidePanel({
         </button>
       </div>
       {showMotion ? (
-        // 아래 판(낮고 넓다)은 세로 화면의 가로-한-줄 배치와 같은 시간바 + 썸네일,
-        // 오른쪽 패널(좁고 길다)은 리스트다 — 세로 타임라인이었는데 세로 화면 감지
-        // 탭과 같은 것으로 바꿨다(사용자 지정 2026-08-26: "가로일 때 오른쪽 패널도
-        // 리스트 형태로"). 아래 판은 시간바가 붙어 있어 그대로 둔다.
+        // 아래 판(낮고 넓다)은 가로 스크롤 카드, 오른쪽 패널(좁고 길다)은 세로
+        // 구분선 목록 — 세로 화면의 감지 탭과 같은 규칙이다(사용자 지정
+        // 2026-08-26: 아래 판도 타임라인 말고 가로 스크롤로). 시간바는 딤의
+        // 재생 줄에 이미 있어서 판에는 안 넣는다.
         bottom ? (
-          <RecordingEventTimeline
-            playbackMs={playbackMs}
-            setPlaybackMs={setPlaybackMs}
-            cameraSrc={cam.src}
-            onScrubbingChange={onScrubbingChange}
-          />
+          // 위아래 여백은 세로 화면 스트립과 같은 12 — 판 높이에서 이만큼 빼면
+          // 카드가 세로 화면과 같은 크기(A4_TILE_MIN_H)가 된다.
+          <div
+            className="flex min-h-0 flex-1 flex-col"
+            style={{ paddingTop: "12px", paddingBottom: "12px" }}
+          >
+            <MotionEventList
+              playbackMs={playbackMs}
+              setPlaybackMs={setPlaybackMs}
+              cameraSrc={cam.src}
+              cameraLabel={cam.label}
+              wide
+            />
+          </div>
         ) : (
           <MotionEventList
             playbackMs={playbackMs}
@@ -5191,7 +5212,11 @@ function LandscapeSidePanel({
       ) : bottom ? (
         // 아래 판의 카메라 목록 — 세로 화면 하단 스트립과 같은 가로 한 줄이다.
         // 타일은 행 높이를 채우고(h-full) 16:9, 좌우 여백은 스크롤 안쪽 패딩.
-        <div className="flex min-h-0 flex-1 items-stretch gap-2 overflow-x-auto overflow-y-hidden px-5 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        // 위아래 12 — 감지 탭 카드와 같은 여백이라 두 탭 타일 높이가 같다.
+        <div
+          className="flex min-h-0 flex-1 items-stretch gap-2 overflow-x-auto overflow-y-hidden px-5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          style={{ paddingTop: "12px", paddingBottom: "12px" }}
+        >
           {CAMERAS.map((c, i) => (
             <button
               key={c.label}
