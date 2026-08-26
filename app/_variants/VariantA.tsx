@@ -1961,9 +1961,14 @@ function ExpandedView({
           이라, 탭을 바꿔도 위(영상·날짜·버튼·탭) 위치가 안 움직인다. 최소 높이는
           useListLayout 이 배치에 따라 잡는다 — 가로 한 줄이면 타일 세로 기준
           (TILE_MIN_H), 세로 2열이면 영역 기준(LIST_MIN_H). layoutRules.ts 참고. */}
+      {/* 위아래 여백(STRIP_PAD)은 이 영역이 갖는다 — 스크롤되는 안쪽에 두면
+          목록을 굴리는 순간 사라져 타일이 탭 글자에 붙는다(사용자 지적
+          2026-08-26: "세로 스크롤하면 마진 준 게 사라진다"). 밖에 두면 그 띠는
+          안 굴러가고, 타일은 그 아래에서 잘린다. */}
       <div
         ref={listAreaRef}
         className="relative flex min-h-0 flex-col flex-1"
+        style={{ paddingTop: `${STRIP_PAD}px`, paddingBottom: `${STRIP_PAD}px` }}
       >
       {mode === "recording" && recTab === "motion" ? (
         // 시간바는 여기 없다 — 5버튼 아래 띠(motionBlock)로 나갔다. 탭에 남는 건
@@ -1991,8 +1996,8 @@ function ExpandedView({
         ref={listWide ? undefined : listScrollRef}
         className={
           listWide
-            ? "flex min-h-0 flex-1 flex-col pb-2"
-            : "flex min-h-0 flex-1 flex-col overflow-y-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            ? "flex min-h-0 flex-1 flex-col"
+            : "flex min-h-0 flex-1 flex-col overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         }
       >
 
@@ -2009,7 +2014,6 @@ function ExpandedView({
               ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "grid grid-cols-2 gap-2 px-5"
           }
-          style={{ marginTop: `${STRIP_PAD}px` }}
         >
           {CAMERAS.map((c, i) =>
             cameraTile(
@@ -2695,13 +2699,15 @@ function RecordingEventTimeline({
   //     목록 타일은 위아래 STRIP_PAD 이므로 여기도 같은 값을 쓴다.
   //     같은 여백 → 남는 세로도 같음 → 타일과 썸네일 크기(48)까지 자동으로 같다.
   //   · "both"(가로 확대 딤 패널) — 바로 위가 시간바라 4 로 붙인다. 예전 그대로.
-  const cardTop = part === "thumbs" ? STRIP_PAD : 4;
+  // 감지 탭으로 단독으로 설 때는 위아래 여백을 영역(bottomStrip)이 갖고 있으므로
+  // 레일 자신은 0 이다 — 두 번 주면 카메라 목록 타일보다 8 씩 더 들어간다.
+  const cardTop = part === "thumbs" ? 0 : 4;
   // 시간바 블록 위 여백. 시간바만 놓을 때는 레일과 같은 8, 썸네일이 아래 붙는
   // 경우(both)는 예전대로 12 다. 이 값이 바뀌면 아래 절대배치(현재시각 알약 ·
   // 중앙선)도 같이 따라가야 눈금과 안 어긋난다 — 그래서 좌표를 이 값에서 뽑는다.
   const barPad = part === "bar" ? STRIP_PAD : PAD_TOP;
   // 레일 아래 여백도 같은 값 — 카메라 목록 타일(위아래 STRIP_PAD)과 자리를 맞춘다.
-  const cardBottom = part === "thumbs" ? STRIP_PAD : PAD_TOP;
+  const cardBottom = part === "thumbs" ? 0 : PAD_TOP;
   const [thumbH, setThumbH] = useState(THUMB_MAX_H);
   const updateThumbH = () => {
     const el = thumbAreaRef.current;

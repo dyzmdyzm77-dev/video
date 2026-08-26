@@ -78,10 +78,18 @@ export function useListLayout(motionH?: number, pin = false) {
       // 감지 탭에선 직전에 재 둔 값을 쓴다(위·아래 여백은 탭이 바뀌어도 같다).
       let chrome = chromeRef.current;
       if (row) {
-        const padB = parseFloat(
-          getComputedStyle(row.parentElement as Element).paddingBottom || "0",
-        );
-        chrome = row.offsetTop + (Number.isFinite(padB) ? padB : 0);
+        // 타일 아래로 빠지는 여백 — 스크롤 래퍼의 padding-bottom 과 영역 자신의
+        // padding-bottom 둘 다. 영역 쪽에 둔 여백은 스크롤을 해도 안 사라지라고
+        // 밖에 뺀 것이라(사용자 지적 2026-08-26), 높이 계산에서 빠지면 안 된다.
+        const num = (v: string) => {
+          const n = parseFloat(v || "0");
+          return Number.isFinite(n) ? n : 0;
+        };
+        const padB =
+          num(getComputedStyle(row.parentElement as Element).paddingBottom) +
+          num(getComputedStyle(el).paddingBottom);
+        // offsetTop 은 영역(position:relative) 기준이라 영역의 padding-top 이 이미 들어 있다.
+        chrome = row.offsetTop + padB;
         chromeRef.current = chrome;
       }
 
