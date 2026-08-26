@@ -14,6 +14,7 @@ import {
   useCompareSize,
 } from "./compareSize";
 import { DEFAULT_PRESET, DEVICES, presetName } from "./devicePresets";
+import { downloadShot } from "./captureShot";
 import {
   exitImmersive,
   readImmersive,
@@ -115,6 +116,8 @@ export default function DesktopVariantNav() {
   }, [routeVariant]);
   const [open, setOpen] = useState(true);
   const [active, setActive] = useState(DEFAULT_PRESET); // 강조 표시할 DEVICES 인덱스
+  // PNG 저장 진행 상태 — 큰 화면은 1초 남짓 걸려서 누른 티가 나야 한다.
+  const [shooting, setShooting] = useState(false);
   const [showRuler, setShowRuler] = useState(true); // 목업 위 치수 눈금자 표시 여부
   const [actualSize, setActualSize] = useState(false); // 배율 1:1 고정 여부
   const [compare, setCompare] = useState(false); // As Is(현재 앱) 나란히 비교 여부
@@ -716,6 +719,32 @@ export default function DesktopVariantNav() {
         </span>
         <span className="dvn-label">
           {actualSize ? "되돌리기" : "실제 사이즈로 보기"}
+        </span>
+      </button>
+
+      {/* PNG 저장 — 지금 보고 있는 화면을 앱 프레임 원본 크기로 받는다.
+          비교하기가 켜져 있으면 나란히 선 기기들을 한 장으로 이어 붙인다
+          (사용자 요청 2026-08-26). 자세한 규칙은 captureShot.ts. */}
+      <button
+        type="button"
+        className="dvn-actual-toggle"
+        data-active={shooting}
+        disabled={shooting}
+        title={shooting ? "PNG 만드는 중…" : "PNG 로 저장"}
+        onClick={async () => {
+          setShooting(true);
+          try {
+            await downloadShot();
+          } finally {
+            setShooting(false);
+          }
+        }}
+      >
+        <span className="dvn-icon" aria-hidden>
+          {shooting ? "…" : "PNG"}
+        </span>
+        <span className="dvn-label">
+          {shooting ? "만드는 중…" : "PNG 로 저장"}
         </span>
       </button>
 
