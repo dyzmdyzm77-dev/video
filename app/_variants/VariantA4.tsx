@@ -1337,7 +1337,19 @@ function GridView({
               줄 한가운데다(단일 화면 날짜 줄과 같은 규칙). */}
           <span
             suppressHydrationWarning
-            className="absolute left-1/2 -translate-x-1/2 text-[14px] font-medium leading-none text-[#353535]"
+            className="absolute left-1/2 inline-flex -translate-x-1/2 items-center text-[14px] font-medium leading-none"
+            style={{
+              // 검정 50% 알약 — 흰 줄 위에서도 시각이 한 덩어리로 읽힌다
+              // (사용자 지정 2026-08-26: "알약 형태로 블랙 50%로 둘러줘").
+              height: "26px",
+              padding: "0 10px",
+              borderRadius: "9999px",
+              backgroundColor: "rgba(0,0,0,0.5)",
+              color: "#FFFFFF",
+              // 가운데(left:50%) 절대배치라 남는 폭이 절반뿐이다 — 안 막으면
+              // 날짜와 시각이 두 줄로 접힌다.
+              whiteSpace: "nowrap" as const,
+            }}
           >
             {dateLabel}
           </span>
@@ -2203,14 +2215,38 @@ function ExpandedView({
           <button
             type="button"
             onClick={onOpenDateTime}
-            className="absolute left-1/2 flex -translate-x-1/2 items-center text-[14px] font-medium leading-none text-[#353535]"
+            className="absolute left-1/2 flex -translate-x-1/2 items-center text-[14px] font-medium leading-none"
+            style={{
+              // 검정 50% 알약 — 흰 줄 위에서도 시각이 한 덩어리로 읽힌다
+              // (사용자 지정 2026-08-26: "알약 형태로 블랙 50%로 둘러줘").
+              height: "26px",
+              padding: "0 10px",
+              borderRadius: "9999px",
+              backgroundColor: "rgba(0,0,0,0.5)",
+              color: "#FFFFFF",
+              // 가운데(left:50%) 절대배치라 남는 폭이 절반뿐이다 — 안 막으면
+              // 날짜와 시각이 두 줄로 접힌다.
+              whiteSpace: "nowrap" as const,
+            }}
           >
             <span suppressHydrationWarning>{recordingDateLabel}</span>
           </button>
         ) : (
           <span
             suppressHydrationWarning
-            className="absolute left-1/2 -translate-x-1/2 text-[14px] font-medium leading-none text-[#353535]"
+            className="absolute left-1/2 inline-flex -translate-x-1/2 items-center text-[14px] font-medium leading-none"
+            style={{
+              // 검정 50% 알약 — 흰 줄 위에서도 시각이 한 덩어리로 읽힌다
+              // (사용자 지정 2026-08-26: "알약 형태로 블랙 50%로 둘러줘").
+              height: "26px",
+              padding: "0 10px",
+              borderRadius: "9999px",
+              backgroundColor: "rgba(0,0,0,0.5)",
+              color: "#FFFFFF",
+              // 가운데(left:50%) 절대배치라 남는 폭이 절반뿐이다 — 안 막으면
+              // 날짜와 시각이 두 줄로 접힌다.
+              whiteSpace: "nowrap" as const,
+            }}
           >
             {dateLabel}
           </span>
@@ -3734,50 +3770,18 @@ function RecordingEventTimeline({
               `linear-gradient(to right, rgba(255,255,255,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
-        {/* 중앙 고정 현재 시각 라벨(다채널과 동일 — 다크).
-            top 은 10 → 6: 알약 배지(20)가 되면서 아래 현재시각 마커(27~41)와
-            겹쳤다. 6 이면 배지가 6~26 이라 마커 바로 위에 앉는다. */}
-        <div
-          className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
-        style={{ top: `${barPad - 6}px`, lineHeight: 0 }}
-        >
-          {/* 알약 배지 — 흰 배경 + 원래 글자색(#353535). 검정 반투명으로 갔다가
-              되돌렸다(사용자 지정). '원'을 넣어 달라고 했지만 글자가 가로로 길어
-              정원은 안 맞는다. 높이 20 · 좌우 8 · rounded-full, 테두리는 없다.
-              배경을 깔아야 하는 이유는 달력 버튼과 같다: 아래로 흐르는 눈금이
-              글자에 겹쳐 지저분해진다. */}
-          <span
-            suppressHydrationWarning
-            className="rounded-full"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              height: "22px",
-              // 배경은 없다(사용자 지정 2026-08-18: "현재시간에 흰색 둘러져있는건
-              // 빼자"). 원래는 아래로 흐르는 눈금이 글자에 겹치는 걸 막으려고
-              // 흰색 70% 를 깔았는데, 시간바 배경이 연한 회색(TIMEBAR_BG)이 되면서
-              // 그 흰 알약만 도드라졌다. 눈금은 이 글자 아래(top 20~)로 지나가고
-              // 글자는 top 6~26 이라 실제로 겹치는 폭도 좁다.
-              color: "#353535",
-              backgroundColor: "transparent",
-              fontSize: "13px",
-              fontWeight: 700,
-              lineHeight: "13px",
-              padding: "0 10px",
-              verticalAlign: "top",
-            }}
-          >
-            {currentTimeLabel}
-          </span>
-        </div>
-        {/* 중앙 고정 현재 시각 선 — 눈금(8px)보다 살짝 길고 검정. 세모 대신 현재 시각 표시.
-            눈금은 top 18(+PAD_TOP 12 = 30)~38, 이 선은 27~41 로 위아래 살짝 더 길다. */}
+        {/* 중앙 현재시각 라벨은 없앴다 — A-4 만(사용자 지정 2026-08-26: "시간바에
+            현재시간 표시하는 거 빼도 될 것 같다"). 같은 값이 바로 위 날짜 줄
+            한가운데(검정 알약)에 이미 떠 있다. */}
+        {/* 중앙 고정 현재 시각 선 — 라벨이 빠진 만큼 위로 늘려 작은 시각 글자
+            윗변(레일 top = barPad)에서 시작한다(사용자 지정 2026-08-26).
+            아래 끝은 그대로 barPad+29 — 눈금(barPad+18~26)보다 조금 더 내려온다. */}
         <div
           className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-[1px]"
           style={{
-            top: `${barPad + 15}px`,
+            top: `${barPad}px`,
             width: "2px",
-            height: "14px",
+            height: "29px",
             backgroundColor: "#111111",
           }}
         />
@@ -4633,14 +4637,24 @@ function RecordingControls({
         <button
           type="button"
           onClick={onOpenDateTime}
-          className="absolute left-1/2 flex -translate-x-1/2 items-center gap-0 text-[14px] font-medium leading-none text-[#353535]"
+          className="absolute left-1/2 flex -translate-x-1/2 items-center gap-0 text-[14px] font-medium leading-none"
+          style={{
+            // 검정 50% 알약 — 흰 줄 위에서도 시각이 한 덩어리로 읽힌다
+            // (사용자 지정 2026-08-26: "알약 형태로 블랙 50%로 둘러줘").
+            height: "26px",
+            padding: "0 10px",
+            borderRadius: "9999px",
+            backgroundColor: "rgba(0,0,0,0.5)",
+            color: "#FFFFFF",
+            whiteSpace: "nowrap" as const,
+          }}
         >
           {/* 화살표 — 한 번 뺐다가 되살렸다(사용자 지정 2026-08-19: "화살표
               되살려"). 뺀 이유는 시간바 왼쪽 달력 버튼이 같은 일을 하고 있어서
               였는데, 다채널 녹화에서 시간바를 통째로 빼면서 그 버튼도 같이
               사라졌다 — 지금은 이 줄이 날짜를 바꾸는 유일한 입구다. */}
           <span suppressHydrationWarning>{labelDate}</span>
-          <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
+          <ChevronDownIcon className="h-6 w-6" />
         </button>
         <RowSkeleton visible={rowLoading} />
       </div>
