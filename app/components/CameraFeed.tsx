@@ -16,6 +16,12 @@ type CameraFeedProps = {
    *  카메라 이름이 아니라 시각을 띄우는 A-3 단일 화면용(사용자 결정 2026-08-14).
    *  다채널 타일은 그대로 왼쪽 위다. */
   badgeAlign?: "left" | "center" | "bottom-left" | "bottom-center";
+  /** 이름 배지 바로 아래에 한 줄 더 얹는다(왼쪽 위 구석 기준). A-4 가로 단일이
+   *  '실시간/녹화'를 여기에 넣는다 — 예전엔 딤 아래 왼쪽 알약에 있던 것이다
+   *  (사용자 지정 2026-08-26). 자리만 잡아 주고 모양은 넘기는 쪽이 만든다:
+   *  딤과 같이 페이드해야 하는데 여기선 딤 상태를 모른다.
+   *  이름 배지(top 4 · 높이 17) 아래 3px 을 띄운 24px 이 시작점이다. */
+  underBadge?: React.ReactNode;
   src: string;
   paused?: boolean;
   // 녹화 모드: 타임라인 시각(playbackMs)에 해당하는 프레임을 직접 그려
@@ -174,6 +180,7 @@ function CameraFeedImpl({
   label,
   badge,
   badgeAlign = "left",
+  underBadge,
   src,
   paused = false,
   playbackMs = null,
@@ -272,6 +279,13 @@ function CameraFeedImpl({
       >
         {badge ?? label}
       </div>
+      )}
+
+      {/* 이름 배지 아래 한 줄 더 — 배지와 왼쪽 선을 맞춘다(둘 다 left 4). */}
+      {underBadge && (
+        <div className="absolute" style={{ left: "4px", top: "24px" }}>
+          {underBadge}
+        </div>
       )}
     </div>
   );

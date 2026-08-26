@@ -124,6 +124,7 @@ export default function LandscapeVideo({
   statusRaise,
   singleBadge,
   singleBadgeAlign,
+  singleNameBadge = false,
   singleHeaderCamera = false,
   gridHeaderLabel,
   controls,
@@ -248,6 +249,17 @@ export default function LandscapeVideo({
   /** 그 배지를 어디에 둘지. 기본 "left" = 왼쪽 위 구석(지금까지의 동작).
    *  A-3 은 세로와 같이 아래 가운데("bottom-center"). */
   singleBadgeAlign?: "left" | "center" | "bottom-left" | "bottom-center";
+  /** 단일 화면 좌상단을 '영상 위 이름 배지 + 그 아래 실시간/녹화'로 바꾼다
+   *  (사용자 지정 2026-08-26, A-4). 켜면 셋이 같이 움직인다:
+   *    · 딤 헤더(뒤로가기 + 큰 카메라 이름)를 단일에서는 안 그린다 — 가로를
+   *      빠져나가는 건 딤 아이콘 줄의 '원래 크기로'가 이미 맡고 있다.
+   *    · 영상 이름 배지를 되살린다(A-2 가 쓰는 그 배지 그대로).
+   *    · 딤 아래 왼쪽 알약에서 '● 실시간/녹화영상'을 떼어 이름 배지 밑으로 옮긴다.
+   *      알약에는 시각만 남는다 — hideStatusClock 이 켜져 시각마저 없으면 알약
+   *      자체를 안 그린다(빈 알약만 떠 있게 두지 않는다).
+   *  다채널(그리드) 헤더는 그대로다 — 거긴 카메라가 하나가 아니라 이름 배지로
+   *  대신할 수 없다. */
+  singleNameBadge?: boolean;
   /** 단일 화면 딤 헤더를 '뒤로가기 + 카메라 이름'으로 바꿀지. 기본 false =
    *  지금까지처럼 장소명 + 지점명(계약번호). A-3 만 켠다(사용자 결정 2026-08-14) —
    *  가로 단일에서 지금 보는 게 어느 카메라인지가 장소보다 급하고, 다채널로
@@ -523,7 +535,51 @@ export default function LandscapeVideo({
     const p2 = (n: number) => String(n).padStart(2, "0");
     return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
   })();
-  const statusRow = (
+  // 딤의 '보조' UI(장소명·칩 줄·우상단 아이콘·페이지 점)를 걷는 조건.
+  // 스크럽 중이거나, 안이 5버튼만 남기라고 할 때(auxHidden).
+  const auxOff = scrubbing || auxHidden;
+
+  // 실시간은 빨강 점, 녹화는 흰 점 — 세로 딤의 두 배지와 같은 구분이다.
+  const modeDot = (
+    <span
+      aria-hidden
+      className="rounded-full"
+      style={{
+        width: "5px",
+        height: "5px",
+        backgroundColor: mode === "recording" ? "#FFFFFF" : "#FF3B4A",
+        marginRight: "5px",
+        flex: "none",
+      }}
+    />
+  );
+  const modeText = mode === "recording" ? recordingLabel : "실시간";
+
+  // 단일 화면에서 모드를 좌상단 이름 배지 밑으로 올려보냈나(singleNameBadge).
+  // 올려보냈으면 아래 알약에는 시각만 남고, 시각도 없으면 알약을 안 그린다.
+  const modeMovedUp = singleNameBadge && expandedIndex !== null;
+
+  // 영상 위 이름 배지 밑에 붙는 '● 실시간/녹화영상'. 서식은 이름 배지와 같다
+  // (검정 55% · 10px · 높이 17 · 라운드 2 — CameraFeed 의 그 배지) — 두 줄이
+  // 한 덩어리로 읽혀야 해서 알약(22px·13px)을 그대로 쓰지 않는다.
+  // 딤과 같이 뜨고 사라진다: 자리는 영상에 붙어 있지만 딤 UI 다.
+  const modeUnderBadge = modeMovedUp ? (
+    <span
+      className="inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white transition-opacity duration-300 ease-out"
+      style={{
+        height: "17px",
+        padding: "0 4px",
+        borderRadius: "2px",
+        opacity: dim && !auxOff ? 1 : 0,
+      }}
+    >
+      {modeDot}
+      {modeText}
+    </span>
+  ) : null;
+
+  const statusRow =
+    modeMovedUp && hideStatusClock ? null : (
     <span
       suppressHydrationWarning
       className="rounded-full"
@@ -543,30 +599,18 @@ export default function LandscapeVideo({
         textShadow: "0 0 4px rgba(0,0,0,0.6)",
       }}
     >
-      {/* 실시간은 빨강 점, 녹화는 흰 점 — 세로 딤의 두 배지와 같은 구분이다. */}
-      <span
-        aria-hidden
-        className="rounded-full"
-        style={{
-          width: "5px",
-          height: "5px",
-          backgroundColor: mode === "recording" ? "#FFFFFF" : "#FF3B4A",
-          marginRight: "5px",
-          flex: "none",
-        }}
-      />
-      <span style={hideStatusClock ? undefined : { marginRight: "6px" }}>
-        {mode === "recording" ? recordingLabel : "실시간"}
-      </span>
+      {modeMovedUp ? null : modeDot}
+      {modeMovedUp ? null : (
+        <span style={hideStatusClock ? undefined : { marginRight: "6px" }}>
+          {modeText}
+        </span>
+      )}
       {hideStatusClock ? null : clock}
     </span>
   );
 
   // 딤 위에 얹는 덩어리 공통 처리 — 딤과 같이 뜨고, 만지는 동안 자동 숨김 타이머를
   // 붙잡고, 클릭이 영상 탭(딤 토글·더블탭 전환)으로 새어나가지 않게 막는다.
-  // 딤의 '보조' UI(장소명·칩 줄·우상단 아이콘·페이지 점)를 걷는 조건.
-  // 스크럽 중이거나, 안이 5버튼만 남기라고 할 때(auxHidden).
-  const auxOff = scrubbing || auxHidden;
   const dimLayer = (
     className: string,
     style: React.CSSProperties,
@@ -695,7 +739,9 @@ export default function LandscapeVideo({
       ? cameras[expandedIndex]?.label
       : (gridHeaderLabel ?? title);
   const cameraHeader =
-    singleHeaderCamera && backHeaderLabel ? (
+    // 이름 배지로 갈아탄 단일 화면에는 헤더를 안 그린다(뒤로가기도 같이 빠진다 —
+    // 사용자 지정 2026-08-26). 다채널은 그대로 헤더를 쓴다.
+    singleHeaderCamera && backHeaderLabel && !modeMovedUp ? (
       <div
         className="pointer-events-none absolute inset-x-0 top-0 flex items-center transition-opacity duration-300 ease-out"
         style={{
@@ -754,7 +800,9 @@ export default function LandscapeVideo({
       </div>
     ) : null;
 
-  const header = cameraHeader ?? (title ? (
+  // 이름 배지로 갈아탄 단일 화면은 헤더 줄 자체가 없다 — cameraHeader 를 안 그리면
+  // 기본 헤더(장소명 + 지점명)로 흘러내려 결국 같은 자리에 글자가 남는다.
+  const header = modeMovedUp ? null : cameraHeader ?? (title ? (
     <div
       className={`pointer-events-none absolute inset-x-0 top-0 flex transition-opacity duration-300 ease-out ${
         headerAlign === "top" ? "items-start" : "items-center"
@@ -994,8 +1042,11 @@ export default function LandscapeVideo({
         >
           <CameraFeed
             label={cam.label}
-            badge={singleBadge}
-            badgeAlign={singleBadgeAlign}
+            // singleNameBadge 면 안이 넘긴 singleBadge(A-4 는 "" = 숨김)를 무시하고
+            // 카메라 이름을 그대로 띄운다 — A-2 가 쓰는 그 배지다.
+            badge={singleNameBadge ? undefined : singleBadge}
+            badgeAlign={singleNameBadge ? "left" : singleBadgeAlign}
+            underBadge={modeUnderBadge}
             src={cam.src}
             fit={fit}
             paused={paused}
