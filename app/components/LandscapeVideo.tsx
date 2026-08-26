@@ -561,6 +561,13 @@ export default function LandscapeVideo({
   );
   const modeText = mode === "recording" ? recordingLabel : "실시간";
 
+  // 알약 크기 — 모드 알약을 쓰는 화면(A-4)은 세로 화면 날짜·시각 알약과 같은
+  // 크기다(사용자 지정 2026-08-27: "사이즈는 세로에서 쓰는거랑 동일하게 해").
+  // 세로는 높이 26 · 글자 14 다(VariantA4 의 dateLabel 알약). 나머지 안은
+  // 지금까지의 22 · 13 그대로 — 가로만 쓰는 값이라 안끼리 다를 이유가 없었다.
+  const pillH = modePillHeader ? 26 : 22;
+  const pillFS = modePillHeader ? 14 : 13;
+
   // 모드를 헤더 자리 알약으로 올려보냈나(modePillHeader). 올려보냈으면 아래
   // 알약에는 시각만 남고, 시각도 없으면 알약을 안 그린다.
   // 단일·다채널을 안 가른다 — 두 화면이 같은 자리에 같은 걸 둬야 한다.
@@ -574,11 +581,11 @@ export default function LandscapeVideo({
       style={{
         display: "inline-flex",
         alignItems: "center",
-        height: "22px",
+        height: `${pillH}px`,
         padding: "0 10px",
-        fontSize: "13px",
+        fontSize: `${pillFS}px`,
         fontWeight: 700,
-        lineHeight: "13px",
+        lineHeight: `${pillFS}px`,
         color: "#FFFFFF",
         backgroundColor: "rgba(102,102,102,0.4)",
         backdropFilter: "blur(20px)",
@@ -599,11 +606,11 @@ export default function LandscapeVideo({
       style={{
         display: "inline-flex",
         alignItems: "center",
-        height: "22px",
+        height: `${pillH}px`,
         padding: "0 10px",
-        fontSize: "13px",
+        fontSize: `${pillFS}px`,
         fontWeight: 700,
-        lineHeight: "13px",
+        lineHeight: `${pillFS}px`,
         color: "#FFFFFF",
         // 딤 위 버튼과 같은 규격(#666666 40% + blur) — A-3 이 쓰던 값을 셋이 같이 쓴다.
         backgroundColor: "rgba(102,102,102,0.4)",
@@ -723,8 +730,8 @@ export default function LandscapeVideo({
                   ...(modeMovedUp
                     ? { left: "50%", transform: "translateX(-50%)" }
                     : { left: `${edgeL}px` }),
-                  // 알약 높이 22 의 절반을 빼서 '중심'을 맞춘다.
-                  bottom: `${statusRaise - 11}px`,
+                  // 알약 높이의 절반을 빼서 '중심'을 맞춘다.
+                  bottom: `${statusRaise - pillH / 2}px`,
                   // 이 층은 시간바 때문에 남겨 두지만 알약은 같이 걷는다.
                   opacity: auxOff ? 0 : 1,
                 }}
