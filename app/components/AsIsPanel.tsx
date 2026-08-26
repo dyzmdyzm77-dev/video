@@ -7,7 +7,7 @@ import AndroidNav from "./AndroidNav";
 import VariantA from "../_variants/VariantA";
 import VariantA1 from "../_variants/VariantA1";
 import VariantA3 from "../_variants/VariantA3";
-import VariantB from "../_variants/VariantB";
+import VariantA4 from "../_variants/VariantA4";
 import { useCompareTarget, type CompareSlot } from "./compareTarget";
 import { punchForSlot, useCompareSize } from "./compareSize";
 import { DeviceScopeContext } from "./deviceScope";
@@ -246,7 +246,7 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
   const qs = `platform=${platform}${chromeVisible ? "&chrome=1" : ""}`;
   // 지금 어떤 화면인지 — 라우트를 그대로 따라간다(양방향 연동의 핵심).
   const isHome = pathname === "/home";
-  const from = ["a", "a1", "a2", "a3", "b"].includes(params.get("from") ?? "")
+  const from = ["a", "a1", "a2", "a3", "a4"].includes(params.get("from") ?? "")
     ? (params.get("from") as string)
     : "a1";
 
@@ -376,7 +376,7 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
           ? VariantA
           : compareWith === "a3"
             ? VariantA3
-            : VariantB;
+            : VariantA4;
     return (
       <div className={frameClass} data-punch={punch}>
         <span className="asis-caption">{VARIANT_LABEL[compareWith]}</span>

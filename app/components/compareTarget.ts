@@ -32,7 +32,7 @@ export const MAX_COMPARE_SLOTS = 2;
 
 export const COMPARE_TARGET_EVENT = "comparetargetchange";
 
-const TARGETS: CompareTarget[] = ["asis", "a1", "a2", "a3", "b"];
+const TARGETS: CompareTarget[] = ["asis", "a1", "a2", "a3", "a4"];
 
 const dataKey = (slot: CompareSlot) =>
   slot === 2 ? "compareWith2" : "compareWith";

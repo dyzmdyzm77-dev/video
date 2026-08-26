@@ -8,11 +8,11 @@ import {
 } from "./variantRoute";
 
 // 상단 제목(안 이름 — VARIANT_LABEL)을 누르면 뜨는 바텀시트.
-// A안·B안 사이를 전환한다. 현재 보고 있는 안에는 체크 표시.
+// 개선안(A-1 ~ A-4) 사이를 전환한다. 현재 보고 있는 안에는 체크 표시.
 
 // 순서·라벨은 사용자가 정한다(2026-08-11: A안 → 'A-2안', 자리는 두 번째).
 
-const OPTIONS: VariantKey[] = ["a1", "a2", "a3", "b"];
+const OPTIONS: VariantKey[] = ["a1", "a2", "a3", "a4"];
 
 export default function VariantPicker({
   open,

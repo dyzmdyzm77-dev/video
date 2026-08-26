@@ -41,7 +41,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **기기 폭은 `useDeviceWidth()` / `readDeviceWidth()` 로만 읽는다.** 인라인으로 다시 만들지 말 것.
   비교하기에서는 자리마다 해상도가 다를 수 있다 — 훅은 `DeviceScopeContext`(`deviceScope.ts`)로
   자기 자리 폭을 본다. 컨텍스트 밖(모듈 함수)에서 부를 땐 scope 를 넘길 것.
-- **적용 범위는 개선안 3개(A · A-1 · B) + 홈.** `AsIsPanel`(현행 앱 재현)과
+- **적용 범위는 개선안 4개(A-1 · A-2 · A-3 · A-4) + 홈.** `AsIsPanel`(현행 앱 재현)과
   `AndroidNav`(OS 태스크바 경계)는 값이 같아도 일부러 안 엮는다.
 
-변경하면 3개 안이 **모두** 같이 바뀌어야 한다 — 하나만 고치지 말 것.
+변경하면 네 안이 **모두** 같이 바뀌어야 한다 — 하나만 고치지 말 것.
+(B안은 2026-08-26 에 지웠다. A-4안은 A-3안 복사본으로 출발한다.)
