@@ -1936,10 +1936,10 @@ function ExpandedView({
                   onClick={() => setRecTab(t.key)}
                   className="relative text-[15px] font-bold leading-none"
                   style={{
-                    // 위 12 · 아래 0 — 탭 글자와 아래 레일 사이는 레일 자기 여백
-                // (STRIP_PAD 8)만 남긴다(사용자 지정 2026-08-26: "탭 타이틀이랑
-                // 레일 사이도 8로"). 아래 패딩까지 두면 8 + 12 로 20 이 됐다.
-                padding: "12px 0 0",
+                    // 위 8 · 아래 0 — 글자를 기준으로 위(구분선까지)와 아래(레일까지)가
+                // 똑같이 8 이 된다(사용자 지적 2026-08-26: "탭 위쪽 마진이 아래보다
+                // 많아 보여"). 아래 8 은 레일이 자기 여백으로 갖고 있다(STRIP_PAD).
+                padding: "8px 0 0",
                     color: active ? "#1D6CEB" : "#A6A6A6",
                   }}
                 >
