@@ -2566,12 +2566,14 @@ function ExpandedView({
     <div ref={listAreaRef} className="relative flex min-h-0 flex-1 flex-col">
       {mode === "recording" && recTab === "motion" ? (
         // 리스트 — 아래 스트립 감지 탭과 같은 컴포넌트다(사용자 지정 2026-08-26).
-        // 패널은 좁고 기니 위아래로 쌓는다. 여백은 패널 카메라 목록과 같은 값.
+        // 패널은 좁고 기니 위아래로 쌓는다.
         <MotionEventList
           playbackMs={playbackMs}
           setPlaybackMs={setPlaybackMs}
           cameraSrc={cam.src}
           cameraLabel={cam.label}
+          // 이 패널의 카메라 목록은 좌우 16(px-4)이다.
+          inset={16}
         />
       ) : (
         <div
@@ -2667,9 +2669,10 @@ function MotionEventList({
   /** 카메라 목록이 가로 한 줄인가(useListLayout 판정). 켜면 카드를 옆으로 나열하고
    *  가로 스크롤, 끄면 위아래로 쌓고 세로 스크롤한다. */
   wide?: boolean;
-  /** 세로 목록에서 줄 안쪽 좌우 여백(px). 그 자리 탭 글자와 같은 값을 넘긴다 —
-   *  하단 스트립·1080+ 패널은 20(px-5), 가로 딤 패널은 16 이다(사용자 지정
-   *  2026-08-26: 정렬을 카메라 목록 탭 글자에 맞춘다). */
+  /** 세로 목록에서 줄 안쪽 좌우 여백(px). 그 자리 '카메라 목록' 타일의 왼쪽과
+   *  같은 값을 넘긴다(사용자 지정 2026-08-26) — 하단 스트립은 20(px-5), 오른쪽
+   *  패널들은 16(px-4). 두 탭이 같은 자리에서 번갈아 보이므로 그림이 시작하는
+   *  선이 어긋나면 탭을 옮길 때 눈에 걸린다. */
   inset?: number;
 }) {
   const eventThumbs = useEventThumbs();
@@ -2857,9 +2860,9 @@ function MotionEventList({
                     // 선을 남긴다 — 목록이 스크롤 중이면 아래가 더 있다는 표시가 되고,
                     // 끝까지 왔을 땐 영역 바닥에 붙어 안 보인다.
                     //
-                    // 좌우 여백은 줄이 갖는다(컨테이너가 아니라) — 그래야 그림·글자는
-                    // 그 자리 탭 글자('카메라 목록')와 같은 데서 시작하고(사용자 지정
-                    // 2026-08-26), 구분선은 테두리라 여백 밖까지 끝에서 끝까지 간다.
+                    // 좌우 여백은 줄이 갖는다(컨테이너가 아니라) — 그래야 썸네일이
+                    // 카메라 목록 타일과 같은 선에서 시작하고(사용자 지정 2026-08-26),
+                    // 구분선은 테두리라 그 여백 밖까지 끝에서 끝까지 간다.
                     paddingTop: "8px",
                     paddingBottom: "8px",
                     paddingLeft: `${inset}px`,
@@ -5163,7 +5166,7 @@ function LandscapeSidePanel({
             setPlaybackMs={setPlaybackMs}
             cameraSrc={cam.src}
             cameraLabel={cam.label}
-            // 이 패널의 탭 줄은 좌우 16 이다(위 padding: "0 16px").
+            // 이 패널의 카메라 목록은 좌우 16(px-4)이다.
             inset={16}
           />
         )
