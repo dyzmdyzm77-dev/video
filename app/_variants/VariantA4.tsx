@@ -595,10 +595,16 @@ export default function VariantA4({
     return (
       // 패널이 열리면 영상을 밀고 옆에 선다(덮지 않는다) — 그래서 가로 배치다.
       <div
-        className={`app-safe-frame flex h-full w-full overflow-hidden bg-black${
+        className={`app-safe-frame relative flex h-full w-full overflow-hidden bg-black${
           panelBottom ? " flex-col" : ""
         }`}
       >
+        {/* 펀치홀 — 기기에 뚫린 구멍이라 확대·가로에서도 그대로 있어야 한다.
+            프레임 직속이고 z 를 가장 높게 준다(사용자 지정 2026-08-26:
+            "그게 레이어 최상단에 있어야 해"). A-4 만. */}
+        {platform === "android" && chromeVisible && (
+          <span className="punch-hole" style={{ zIndex: 100 }} aria-hidden />
+        )}
         <div className="relative flex min-h-0 min-w-0 flex-1">
         <LandscapeVideo
           cameras={CAMERAS}
@@ -909,18 +915,22 @@ export default function VariantA4({
   }
 
   return (
-    <div className="app-safe-frame h-full w-full flex flex-col items-center bg-white">
+    <div className="app-safe-frame relative h-full w-full flex flex-col items-center bg-white">
+    {/* 펀치홀 카메라 점 — Android 환경에서 시스템 바가 보일 때만. 누르면 토글.
+        iOS 환경에선 실제 상태바를 쓰므로 가짜 상단 바를 그리지 않는다.
+        프레임 직속이다 — 안쪽 컬럼에 두면 그 컬럼이 z-auto 라, 뒤에 오는
+        형제 층(z-30·z-40 딤 등)에 덮인다. 구멍은 늘 맨 위여야 한다
+        (사용자 지정 2026-08-26). A-4 만. */}
+    {platform === "android" && chromeVisible && (
+      <button
+        type="button"
+        aria-label="시스템 바 토글"
+        onClick={toggleChrome}
+        className="punch-hole"
+        style={{ zIndex: 100 }}
+      />
+    )}
     <div className="relative flex min-h-0 flex-1 w-full flex-col overflow-hidden bg-white">
-      {/* 펀치홀 카메라 점 — Android 환경에서 시스템 바가 보일 때만. 누르면 토글.
-          iOS 환경에선 실제 상태바를 쓰므로 가짜 상단 바를 그리지 않는다. */}
-      {platform === "android" && chromeVisible && (
-        <button
-          type="button"
-          aria-label="시스템 바 토글"
-          onClick={toggleChrome}
-          className="punch-hole"
-        />
-      )}
       {/* 안드로이드 상태바 — Android 환경에서만 */}
       {platform === "android" && chromeVisible && (
         <div
