@@ -98,7 +98,21 @@
       "PowerShell(foreach \\($p in @\\('/a','/a1','/b'\\)\\) { $r = Invoke-WebRequest -Uri \"http://localhost:3000$p\" -UseBasicParsing -TimeoutSec 90; \"$p -> $\\($r.StatusCode\\)\" })",
       "Bash(git checkout *)",
       "Bash(git merge *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(npm install *)",
+      "Bash(awk 'NR==38' /Users/jihoonkim/Desktop/video-main/app/components/AsIsPanel.tsx)",
+      "Bash(grep -rn \"px\\\\`\\\\|showRuler\\\\|눈금\\\\|치수\\\\|ruler\\\\|dimension\\\\|{w}\\\\|device-w\\\\|아래\\\\|비율\" /Users/jihoonkim/Desktop/video-main/app/components/DeviceResizer.tsx)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(git config *)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git fetch *)",
+      "Bash(git reset *)",
+      "Bash(git commit -q -m ' *)",
+      "Bash(gh pr create --base main --head asis-video-improvements --title 'As Is 영상 화면 개선 \\(실시간 시계·바텀시트·펀치홀·비율\\)' --body ' *)",
+      "Bash(git pull *)",
+      "Bash(python3 -c \"import json;json.load\\(open\\('.claude/settings.local.json'\\)\\);print\\('JSON OK'\\)\")"
     ]
   }
 }
