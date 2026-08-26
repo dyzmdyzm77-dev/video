@@ -48,6 +48,7 @@ import {
   useDeviceWidth,
 } from "../components/useDeviceWidth";
 import { useListLayout } from "../components/useListLayout";
+import { useDragScroll } from "../components/useDragScroll";
 import {
   TIMELINE_EVENTS,
   type EventKind,
@@ -1541,6 +1542,9 @@ function ExpandedView({
   );
   // 카메라 목록 — 선택 카메라 타일을 가운데로 맞출 때 쓴다(가로면 좌우, 세로면 위아래).
   const listScrollRef = useRef<HTMLDivElement>(null);
+  // 마우스로 목록을 끌어서 굴린다(데스크톱 미리보기 전용) — 실기기 터치는
+  // 브라우저 기본 스크롤 그대로다. useDragScroll.ts 참고.
+  const dragScroll = useDragScroll();
   // 목록 타일 하나. 아래 가로 스트립과 오른쪽 세로 패널이 같은 걸 쓴다 — 타일 자체는
   // 어디 놓이든 같고(16:9 · 라벨 · 선택 표시), 크기를 어떻게 잡느냐만 다르다.
   const cameraTile = (c: (typeof CAMERAS)[number], i: number, cls: string) => (
@@ -2467,8 +2471,7 @@ function ExpandedView({
               ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               : "grid grid-cols-2 gap-2 px-5"
           }
-          // 탭 줄이 영역 밖으로 나가면서 위 여백은 A-2 와 같은 12 로 잡는다 —
-          // 타일이 세 안 모두 같은 자리에서 시작해야 한다.
+          {...(listWide ? dragScroll : {})}
         >
           {CAMERAS.map((c, i) =>
             cameraTile(
@@ -2503,6 +2506,7 @@ function ExpandedView({
         <div
           ref={listScrollRef}
           className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          {...dragScroll}
         >
           {CAMERAS.map((c, i) =>
             cameraTile(

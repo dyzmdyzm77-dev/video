@@ -38,6 +38,7 @@ import { useAutoHide } from "../components/useAutoHide";
 import { useDimSync } from "../components/dimSync";
 import AndroidNav from "../components/AndroidNav";
 import { useListLayout } from "../components/useListLayout";
+import { useDragScroll } from "../components/useDragScroll";
 import { TIMELINE_EVENTS } from "../components/timelineEvents";
 import CloudEventScreen from "../components/CloudEventScreen";
 import DateTimePickerSheet from "../components/DateTimePickerSheet";
@@ -1188,6 +1189,8 @@ function ExpandedView({
   // 항상 16:9, 목록 방향은 안들이 공유하는 useListLayout 이 정한다.
   // headerPad = 목록 영역에서 타일이 못 쓰는 세로(제목 52 or 여백 24 + pb-4 16).
   const [listAreaRef, listRowRef, listWide] = useListLayout();
+  // 마우스로 목록을 끌어서 굴린다(데스크톱 미리보기 전용). useDragScroll.ts 참고.
+  const dragScroll = useDragScroll();
   const [recTab, setRecTab] = useState<"list" | "motion">("motion");
   // 실시간↔녹화 전환 시 되감기/빨리감기 배속을 0배(기본)로 원복.
   // ExpandedView는 모드가 바뀌어도 언마운트되지 않아 배속 인덱스가 남으므로 명시적으로 리셋.
@@ -1660,6 +1663,8 @@ function ExpandedView({
               ? "flex min-h-0 flex-1 flex-col pb-3"
               : "flex-1 overflow-y-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           }
+          // 실제로 굴러가는 쪽에만 드래그를 건다(세로 2열이면 이 래퍼).
+          {...(listWide ? {} : dragScroll)}
         >
         {/* 620px 이상: 가로 스크롤(좌우 여백은 스크롤 안쪽 패딩 — 첫/마지막만
             띄우고 중간은 화면 끝까지). 미만: 세로 2열 그리드(px-5 여백). */}
@@ -1671,6 +1676,7 @@ function ExpandedView({
               : "grid grid-cols-2 gap-2 px-5"
           }
           style={{ marginTop: "12px" }}
+          {...(listWide ? dragScroll : {})}
         >
           {CAMERAS.map((c, i) => (
             <button

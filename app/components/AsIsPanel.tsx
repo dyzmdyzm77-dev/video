@@ -14,6 +14,7 @@ import { DeviceScopeContext } from "./deviceScope";
 import { VARIANT_LABEL } from "./variantRoute";
 import { CameraFeed } from "./CameraFeed";
 import { useDeviceWidth } from "./useDeviceWidth";
+import { useDragScroll } from "./useDragScroll";
 import { Inner as HomeScreen } from "../home/page";
 
 // 데스크톱 전용: "비교하기"를 켜면 현재 시안(가운데 기기) 왼쪽에 As Is(현재 앱)
@@ -223,6 +224,10 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
   // 값이 layoutRules.ts 의 WIDE_BP 와 같지만 일부러 상수를 안 쓴다 — As Is 는 현행 앱
   // 재현(비교 기준)이라, 개선안 기준선을 옮겨도 여기는 따라오면 안 된다.
   const wide = useDeviceWidth() >= 620;
+  // 목록을 마우스로 끌어서 굴린다(데스크톱 미리보기 전용) — 시안 쪽과 같은 훅.
+  // As Is 는 비교 기준이라 사양은 안 건드리지만, 미리보기 조작은 같아야
+  // 나란히 놓고 볼 때 한쪽만 안 끌려 고장처럼 보이지 않는다.
+  const dragScroll = useDragScroll();
   // 바텀시트 펼침/접힘 — 기본 펼침(들어가면 가로 목록이 바로 보임).
   const [sheetOpen, setSheetOpen] = useState(true);
   // 실시간 시계 — 매초 갱신(시안 To Be 와 동일). 패널은 클라이언트에서만
@@ -515,7 +520,7 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
                     <SheetArrow open={sheetOpen} />
                   </button>
                 </div>
-                <div className="asis-sheet-body">
+                <div className="asis-sheet-body" {...dragScroll}>
                   <div className="asis-sheet-grid">
                     {CAMS.map((cam, i) => renderTile(cam, i))}
                   </div>
@@ -531,6 +536,7 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
             {mode === "single" && <p className="asis-section">카메라 목록</p>}
             <div
               className={`asis-scroll${mode === "grid" ? " asis-scroll--grid" : ""}`}
+              {...dragScroll}
             >
               <div className="asis-grid">
                 {CAMS.map((cam, i) => renderTile(cam, i))}
