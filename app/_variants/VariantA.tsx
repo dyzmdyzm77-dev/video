@@ -1940,10 +1940,9 @@ function ExpandedView({
                   onClick={() => setRecTab(t.key)}
                   className="relative text-[15px] font-bold leading-none"
                   style={{
-                    // 위 8 · 아래 0 — 글자를 기준으로 위(구분선까지)와 아래(레일까지)가
-                // 똑같이 8 이 된다(사용자 지적 2026-08-26: "탭 위쪽 마진이 아래보다
-                // 많아 보여"). 아래 8 은 레일이 자기 여백으로 갖고 있다(STRIP_PAD).
-                padding: "8px 0 0",
+                    // 위 STRIP_PAD · 아래 0 — 아래쪽 여백은 레일이 자기 몫으로 갖고
+                // 있어서(영역 padding), 글자 기준 위아래가 같은 값이 된다.
+                padding: `${STRIP_PAD}px 0 0`,
                     color: active ? "#1D6CEB" : "#A6A6A6",
                   }}
                 >
@@ -2658,19 +2657,23 @@ function SideEventTimeline({
 // 시간바 블록 치수(px) — 다채널 RecordingControls 시간바와 완전히 동일한 값이다.
 // 컴포넌트 안에 있던 걸 밖으로 뺐다: 시간바만 떼어 5버튼 아래 띠로 놓으면서 그
 // 높이를 부모(motionBlock)가 알아야 해서다 — A-3 과 같은 구조.
-// 하단 스트립(탭 줄 · 카메라 목록 · 움직임 감지)의 위아래 여백. 남는 세로는
-// 영상이 가져간다는 규칙(layoutRules)에 맞춰 12·14 에서 여기로 모았다.
-const STRIP_PAD = 8;
+// 하단 스트립(탭 줄 · 카메라 목록 · 움직임 감지)의 위아래 여백.
+// 8 까지 조였다가 12 로 되돌렸다(사용자 지정 2026-08-26: "위아래 8에서 12로").
+// 탭 글자 위 여백도 같은 값이라, 글자를 기준으로 위(구분선까지)와 아래(레일까지)가
+// 똑같이 이만큼이다.
+const STRIP_PAD = 12;
 
 const PAD_TOP = 12; // 시간바 위 여백(다채널과 동일)
 const PAD_BOTTOM = 4; // 시간바 아래 여백. 삼각형 제거로 줄여 썸네일을 위로 붙인다.
 const RAIL_H = 28; // 라벨+눈금 영역 높이. 눈금 아래 빈 공간 줄여 썸네일을 위로.
 const BAR_H = PAD_TOP + RAIL_H + PAD_BOTTOM; // 시간바 블록 전체 높이(=44)
-// 시간바만 놓는 띠(5버튼 아래)의 높이 — 위아래 여백이 같은 8 이다(사용자 지정
-// 2026-08-26: "위 12 아래 4 말고 둘 다 8"). 아래 스트립(레일)도 위아래 8 이라
-// 이 화면의 여백이 한 값으로 정리된다. 썸네일이 아래 붙는 경우(both)만 위 12 ·
-// 아래 4 인 BAR_H 를 그대로 쓴다 — 거긴 바로 밑에 썸네일이 이어진다.
-const BAR_H_CLOSED = STRIP_PAD + RAIL_H + STRIP_PAD; // =44
+// 시간바만 놓는 띠(5버튼 아래)의 위아래 여백 — 같은 8 이다(사용자 지정
+// 2026-08-26: "위 12 아래 4 말고 둘 다 8"). 아래 스트립 여백(STRIP_PAD)과는
+// 따로 둔다 — 스트립은 그 뒤 12 로 올렸고(사용자 지정), 시간바는 8 그대로다.
+const BAR_PAD = 8;
+// 썸네일이 아래 붙는 경우(both)만 위 12 · 아래 4 인 BAR_H 를 쓴다 — 거긴 바로
+// 밑에 썸네일이 이어진다.
+const BAR_H_CLOSED = BAR_PAD + RAIL_H + BAR_PAD; // =44
 
 
 function RecordingEventTimeline({
@@ -2714,7 +2717,7 @@ function RecordingEventTimeline({
   // 시간바 블록 위 여백. 시간바만 놓을 때는 레일과 같은 8, 썸네일이 아래 붙는
   // 경우(both)는 예전대로 12 다. 이 값이 바뀌면 아래 절대배치(현재시각 알약 ·
   // 중앙선)도 같이 따라가야 눈금과 안 어긋난다 — 그래서 좌표를 이 값에서 뽑는다.
-  const barPad = part === "bar" ? STRIP_PAD : PAD_TOP;
+  const barPad = part === "bar" ? BAR_PAD : PAD_TOP;
   // 레일 아래 여백도 같은 값 — 카메라 목록 타일(위아래 STRIP_PAD)과 자리를 맞춘다.
   const cardBottom = part === "thumbs" ? 0 : PAD_TOP;
   const [thumbH, setThumbH] = useState(THUMB_MAX_H);
