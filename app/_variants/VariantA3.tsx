@@ -639,6 +639,12 @@ export default function VariantA3({
           onPageChange={setCurrentPage}
           onTitleClick={() => setVariantPickerOpen(true)}
           mode={mode}
+          // 시간바가 한가운데에 현재 시각을 띄우는 화면(단일 녹화)에서는 알약에서
+          // 시각을 뺀다(사용자 지정 2026-08-26).
+          hideStatusClock={mode === "recording" && expandedIndex !== null}
+          // 알약 높이 — 시간바 클록이 앉는 자리. A-3 은 컨트롤이 시간바 + 아이콘
+          // 줄이라 바닥에서 73 이다(A-2 는 시간바만이라 35).
+          statusRaise={73}
           // timeLabel 을 안 넘긴다 — 딤 상단의 시각 표시를 없앤다(사용자 결정
           // 2026-08-14). 시각은 영상 위 배지에 있어서 둘이 겹쳤고, 칩 옆에 시각이
           // 붙어 있으면 가운데 정렬도 칩 기준이 아니라 '칩+시각' 기준이라

@@ -477,12 +477,7 @@ export default function VariantA({
   // 가로 딤에 띄울 현재 시각 — 녹화면 재생 위치, 실시간이면 지금 시각.
   // 시간바가 없는 화면에서 쓴다(시간바가 있으면 그 안 알약이 같은 값을 보여 준다).
   // A-3 과 같은 계산식이다.
-  const landscapeClock = (() => {
-    const d = mode === "recording" ? (playbackMs !== null ? new Date(playbackMs) : null) : now;
-    if (!d) return "";
-    const p2 = (n: number) => String(n).padStart(2, "0");
-    return `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
-  })();
+  // (가로 딤의 현재 시각은 LandscapeVideo 가 직접 센다 — 네 안 공통 표시.)
 
   // 가로 모드 — 지금은 영상만 보여준다(헤더·목록·탭바·시스템 바 전부 없음).
   // '영상만' 화면은 크게 보기(확대)일 때만이다.
@@ -529,6 +524,12 @@ export default function VariantA({
           onPageChange={setCurrentPage}
           onTitleClick={() => setVariantPickerOpen(true)}
           mode={mode}
+          // 시간바가 한가운데에 현재 시각을 띄우는 화면(단일 녹화)에서는 알약에서
+          // 시각을 뺀다 — 같은 값이 한 줄에 두 번 뜬다(사용자 지정 2026-08-26).
+          hideStatusClock={mode === "recording" && expandedIndex !== null}
+          // 알약 높이 — 시간바 클록이 앉는 자리(컨트롤 바닥에서 35). 실시간·다채널
+          // 에서도 같은 값이라 모드를 바꿔도 안 튄다(사용자 지적 2026-08-26).
+          statusRaise={35}
           // 딤 상단의 날짜·시각은 안 띄운다(사용자 지정 2026-08-19: 하단 가운데로
           // 옮기려다 "시간바랑 겹치네" → "빼자 그럼"). 시각은 시간바 중앙 알약이
           // 이미 보여 준다. A-3 도 같은 이유로 안 넘긴다.
@@ -562,61 +563,10 @@ export default function VariantA({
                   onSpeedChange={setPlaybackRate}
                 />
               ) : null}
-              {/* 현재 시각 알약 — 딤 하단 정중앙(사용자 지정 2026-08-20: "A-2안도
-                  그 가로 딤 하단에 시간이랑 점+실시간 그거 좀 넣어줘"). 점 + 상태
-                  글자 + 시각 순으로, A-3 딤 아이콘 줄에 있는 그 알약과 같은 규격을
-                  그대로 쓴다 — 가로 화면은 안끼리 같아야 한다.
-                  시간바가 있는 화면(녹화 + 단일)에서는 안 그린다: 그 안 중앙 알약이
-                  이미 같은 값을 보여 주고, 겹쳐서 상단 날짜·시각을 뺐던 것과 같은
-                  이유다(c3273bf: "시간바랑 겹치네" → "빼자 그럼"). */}
-              {!(mode === "recording" && expandedIndex !== null) && (
-                <div
-                  className="flex w-full justify-center"
-                  style={{
-                    // 딤 오른쪽 아래 원 버튼(34)과 세로 가운데를 맞춘다 — 이 층은
-                    // 그 줄보다 12 아래에서 시작하므로(statusBottom 의 bottom),
-                    // 12 + (34-22)/2 만큼 띄운다.
-                    paddingBottom: "18px",
-                  }}
-                >
-                  <span
-                    suppressHydrationWarning
-                    className="rounded-full"
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      height: "22px",
-                      padding: "0 10px",
-                      fontSize: "13px",
-                      fontWeight: 700,
-                      lineHeight: "13px",
-                      color: "#FFFFFF",
-                      backgroundColor: "rgba(102,102,102,0.4)",
-                      backdropFilter: "blur(20px)",
-                      WebkitBackdropFilter: "blur(20px)",
-                      textShadow: "0 0 4px rgba(0,0,0,0.6)",
-                    }}
-                  >
-                    <span
-                      aria-hidden
-                      className="rounded-full"
-                      style={{
-                        width: "5px",
-                        height: "5px",
-                        // 실시간은 빨강, 녹화영상은 흰 점(A-3 과 같은 구분).
-                        backgroundColor:
-                          mode === "recording" ? "#FFFFFF" : "#FF3B4A",
-                        marginRight: "5px",
-                        flex: "none",
-                      }}
-                    />
-                    <span style={{ marginRight: "6px" }}>
-                      {mode === "recording" ? "녹화영상" : "실시간"}
-                    </span>
-                    {landscapeClock}
-                  </span>
-                </div>
-              )}
+              {/* 현재 시각 알약은 여기 없다 — 딤 아래 왼쪽 공통 표시로 올라갔다
+                  (LandscapeVideo, 2026-08-25). 여기 하나를 더 그리고 있어서
+                  실시간 가로에서 같은 알약이 가운데·왼쪽 두 개로 보였다
+                  (사용자 지적 2026-08-26: "센터꺼는 없애야지"). */}
             </>
           }
           centerControls={

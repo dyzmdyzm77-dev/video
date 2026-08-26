@@ -65,10 +65,6 @@ const LANDSCAPE_DIM_BOTTOM = "60%";
 // 아이콘 줄만 헤더 아래(둘째 줄)로 내린다. 장소명 + 칩줄은 둘이서는 들어간다.
 const ONE_ROW_MIN_W = 560;
 
-/** 시간바 위에 겹쳐 놓는 상태 알약의 윗변(컨트롤 블록 기준, px).
- *  시간바 한가운데 현재시각 알약의 중심이 컨트롤 블록 위에서 16~17px 지점이라
- *  (A-2 16 · A-3 17), 높이 22 인 알약의 윗변은 17 − 11 = 6 이다. */
-const STATUS_TOP_IN_CONTROLS = 6;
 
 // 장소명 옆 화살표 — 세로 화면과 같은 에셋(More.svg)을 마스크로 찍는다.
 // 예전엔 여기서만 인라인 SVG(M6 9l6 6 6-6)로 직접 그려, 같은 자리인데 굵기와
@@ -124,6 +120,8 @@ export default function LandscapeVideo({
   onTitleClick,
   mode = "live",
   recordingLabel = "녹화",
+  hideStatusClock = false,
+  statusRaise,
   singleBadge,
   singleBadgeAlign,
   singleHeaderCamera = false,
@@ -227,6 +225,22 @@ export default function LandscapeVideo({
   /** 녹화 쪽 문구. 기본 "녹화" — 세로 토글을 "녹화영상"으로 바꾼 안(A-3)만
    *  같은 말로 맞춘다(사용자 지적: 가로만 말이 달랐다). */
   recordingLabel?: string;
+  /** 알약에서 시각을 뺀다. 아래 시간바가 이미 한가운데에 현재 시각을 띄우는
+   *  화면(가로 단일 녹화)에서 켠다 — 같은 값이 한 줄에 두 번 뜬다(사용자 지정
+   *  2026-08-26: "그때 시간은 빼자"). 시간바가 없는 화면은 이 알약이 유일한
+   *  시계라 그대로 둔다. */
+  hideStatusClock?: boolean;
+  /** 상태 알약의 '중심'을 딤 아래층 바닥에서 얼마나 띄울지(px).
+   *
+   *  녹화 화면에서는 시간바 한가운데 현재시각과 같은 높이여야 하고(사용자 지정
+   *  2026-08-26), 실시간에서도 그 자리에 있어야 한다 — 모드를 바꿀 때 알약이
+   *  위아래로 튀면 안 된다(사용자 지적: "실시간 + 현재시간은 위치가 왜 그래?").
+   *  그래서 안마다 '시간바 클록이 앉는 높이'를 이 값으로 넘기고, 두 모드가 같은
+   *  값을 쓴다. 안 넘기면 예전처럼 컨트롤 위에 쌓는다(시간바가 아예 없는 A-1).
+   *
+   *  값 = 컨트롤 블록 바닥에서 시간바 클록 중심까지의 거리(안마다 컨트롤 구성이
+   *  달라 다르다 — A-2 는 시간바만이라 35, A-3 은 시간바 + 아이콘 줄이라 73). */
+  statusRaise?: number;
   /** 단일 화면 영상 배지 문구. 안 주면 카메라 이름(지금까지의 동작).
    *  A-3 은 세로와 같이 시각을 띄운다(사용자 결정 2026-08-14).
    *  다채널 타일은 그대로 카메라 이름이다 — 세로에서도 타일은 안 바꿨다. */
@@ -541,10 +555,10 @@ export default function LandscapeVideo({
           flex: "none",
         }}
       />
-      <span style={{ marginRight: "6px" }}>
+      <span style={hideStatusClock ? undefined : { marginRight: "6px" }}>
         {mode === "recording" ? recordingLabel : "실시간"}
       </span>
-      {clock}
+      {hideStatusClock ? null : clock}
     </span>
   );
 
@@ -622,8 +636,10 @@ export default function LandscapeVideo({
             bottom: `${(bottomInset ?? 12) - 12}px`,
           },
           <>
-            {/* 컨트롤(시간바)이 없는 화면 — 알약이 이 층의 마지막 줄이다. */}
-            {!controls && (
+            {/* 알약 — statusRaise 를 받으면 이 층 바닥에서 그만큼 띄운 자리에
+                절대배치한다(모드가 바뀌어도 같은 높이). 안 받으면 예전처럼
+                컨트롤 위에 쌓는다. */}
+            {statusRaise == null ? (
               <div
                 className="pointer-events-none pb-3 transition-opacity duration-150 ease-out"
                 style={{
@@ -634,31 +650,28 @@ export default function LandscapeVideo({
               >
                 <span className="inline-flex">{statusRow}</span>
               </div>
+            ) : (
+              <div
+                // flex 로 둔다 — 그냥 블록이면 안쪽 인라인 요소의 줄 상자가
+                // 위에 4px 을 더 만들어 알약이 그만큼 내려간다.
+                className="pointer-events-none absolute flex transition-opacity duration-150 ease-out"
+                style={{
+                  left: `${edgeL}px`,
+                  // 알약 높이 22 의 절반을 빼서 '중심'을 맞춘다.
+                  bottom: `${statusRaise - 11}px`,
+                  // 이 층은 시간바 때문에 남겨 두지만 알약은 같이 걷는다.
+                  opacity: auxOff ? 0 : 1,
+                }}
+              >
+                <span className="inline-flex">{statusRow}</span>
+              </div>
             )}
             {controls && (
               <div
                 data-no-swipe=""
-                className={`relative pointer-events-auto w-full${controlsOnDim ? "" : " bg-white"}`}
+                className={`pointer-events-auto w-full${controlsOnDim ? "" : " bg-white"}`}
               >
                 {controls}
-                {/* 시간바가 있으면 알약을 그 위에 겹쳐 놓는다 — 시간바 한가운데
-                    현재시각 알약과 '같은 높이'로(사용자 지정 2026-08-26).
-                    실측: 그 알약의 중심은 컨트롤 블록 위에서 16~17px 지점이다
-                    (A-2 16 · A-3 17 — 둘 다 시간바 위 여백 12 + 라벨 높이의 절반).
-                    알약 높이가 22 니 윗변은 16.5 − 11 ≈ 5. */}
-                <div
-                  // flex 로 둔다 — 그냥 블록이면 안쪽 인라인 요소의 줄 상자가
-                  // 위에 4px 을 더 만들어 알약이 그만큼 내려간다.
-                  className="pointer-events-none absolute flex transition-opacity duration-150 ease-out"
-                  style={{
-                    left: `${edgeL}px`,
-                    top: `${STATUS_TOP_IN_CONTROLS}px`,
-                    // 이 층은 시간바 때문에 남겨 두지만 알약은 같이 걷는다.
-                    opacity: auxOff ? 0 : 1,
-                  }}
-                >
-                  <span className="inline-flex">{statusRow}</span>
-                </div>
               </div>
             )}
           </>,

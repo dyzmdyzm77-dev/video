@@ -469,6 +469,10 @@ export default function VariantB({
           onPageChange={setCurrentPage}
           onTitleClick={() => setVariantPickerOpen(true)}
           mode={mode}
+          // B 는 가로에서 시간바를 안 그린다(플레이어 버튼만) — 알약이 유일한
+          // 시계라 시각을 그대로 둔다. 알약 높이는 녹화·실시간이 같아야 해서
+          // 지금 자리(컨트롤 바닥에서 99)를 값으로 못 박는다.
+          statusRaise={99}
           // 딤 위에 얹는 컨트롤 — LandscapeVideo 가 껍데기에 깔던 흰 배경도 같이 뺀다.
           controlsOnDim
           controls={
