@@ -1333,10 +1333,11 @@ function GridView({
           className="relative flex flex-none items-center px-5"
           style={{ height: "48px", gap: "8px" }}
         >
-          <LiveBadge onClick={onToggleChrome} />
+          {/* 실시간 배지는 뺐다 — A-4 만(사용자 지정 2026-08-26). 날짜·시각은
+              줄 한가운데다(단일 화면 날짜 줄과 같은 규칙). */}
           <span
             suppressHydrationWarning
-            className="text-[14px] font-medium leading-none text-[#353535]"
+            className="absolute left-1/2 -translate-x-1/2 text-[14px] font-medium leading-none text-[#353535]"
           >
             {dateLabel}
           </span>
@@ -2189,11 +2190,12 @@ function ExpandedView({
             <img src={`${BASE}/time.svg`} alt="" className="h-6 w-6" />
           </button>
         )}
-        {mode === "recording" ? (
-          <RecBadge onClick={onToggleTimeline} />
-        ) : (
-          <LiveBadge onClick={onToggleChrome} />
-        )}
+        {/* 실시간/녹화영상 배지는 뺐다 — A-4 만(사용자 지정 2026-08-26).
+            지금 무엇을 보고 있는지는 위 헤더의 실시간/녹화영상 탭이 이미
+            말해 준다. 남은 건 날짜·시각과 양 끝 버튼뿐이다. */}
+        {/* 날짜·시각은 줄 한가운데다(사용자 지정 2026-08-26). 양 끝 버튼(달력·캡처)
+            개수가 모드마다 달라서 흐름에 두면 가운데가 아니라 그 사이 가운데로
+            간다 — 줄 기준 정가운데로 못 박으려고 절대배치한다. */}
         {mode === "recording" ? (
           // 시각 옆 아래 화살표는 뺐다(사용자 지정 2026-08-14). 날짜·시간 선택으로
           // 들어가는 길은 바로 왼쪽 달력 버튼과 '녹화영상' 탭이 이미 있어서,
@@ -2201,14 +2203,14 @@ function ExpandedView({
           <button
             type="button"
             onClick={onOpenDateTime}
-            className="ml-2 flex items-center text-[14px] font-medium leading-none text-[#353535]"
+            className="absolute left-1/2 flex -translate-x-1/2 items-center text-[14px] font-medium leading-none text-[#353535]"
           >
             <span suppressHydrationWarning>{recordingDateLabel}</span>
           </button>
         ) : (
           <span
             suppressHydrationWarning
-            className="ml-2 text-[14px] font-medium leading-none text-[#353535]"
+            className="absolute left-1/2 -translate-x-1/2 text-[14px] font-medium leading-none text-[#353535]"
           >
             {dateLabel}
           </span>
@@ -4623,11 +4625,12 @@ function RecordingControls({
         className="relative flex items-center px-5"
         style={{ height: "48px", gap: "8px" }}
       >
-        <RecBadge onClick={onToggleTimeline} />
+        {/* 녹화영상 배지는 뺐다 — A-4 만(사용자 지정 2026-08-26).
+            날짜·시각은 줄 한가운데다. */}
         <button
           type="button"
           onClick={onOpenDateTime}
-          className="flex items-center gap-0 text-[14px] font-medium leading-none text-[#353535]"
+          className="absolute left-1/2 flex -translate-x-1/2 items-center gap-0 text-[14px] font-medium leading-none text-[#353535]"
         >
           {/* 화살표 — 한 번 뺐다가 되살렸다(사용자 지정 2026-08-19: "화살표
               되살려"). 뺀 이유는 시간바 왼쪽 달력 버튼이 같은 일을 하고 있어서
