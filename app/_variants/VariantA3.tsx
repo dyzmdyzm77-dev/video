@@ -592,10 +592,14 @@ export default function VariantA3({
     return (
       // 패널이 열리면 영상을 밀고 옆에 선다(덮지 않는다) — 그래서 가로 배치다.
       <div
-        className={`app-safe-frame flex h-full w-full overflow-hidden bg-black${
+        className={`app-safe-frame relative flex h-full w-full overflow-hidden bg-black${
           panelBottom ? " flex-col" : ""
         }`}
       >
+        {/* 펀치홀 — 기기에 뚫린 구멍이라 확대·가로에서도 그대로 있어야 한다. */}
+        {platform === "android" && chromeVisible && (
+          <span className="punch-hole" style={{ zIndex: 100 }} aria-hidden />
+        )}
         <div className="relative flex min-h-0 min-w-0 flex-1">
         <LandscapeVideo
           cameras={CAMERAS}
@@ -852,12 +856,11 @@ export default function VariantA3({
             playbackMs={playbackMs}
             setPlaybackMs={setPlaybackMs}
             onScrubbingChange={setIsScrubbing}
-            // 패널 바깥 여백은 '아이폰 + 눕힌 화면'에서만 준다(사용자 지정
-            // 2026-08-18: "제자리 확대한 경우는 ... 가로로 돌려졌을때만",
-            // "IOS만 오른쪽 패널에 공간을 주고, 나머지는 안줘도 된다").
-            // 그 외(안드로이드 · 제자리 확대)는 패널 제 여백(16)만 남기고 기기
-            // 끝에 붙인다.
-            edge={!isAndroid && wideNow ? dimEdge : 0}
+            // 패널 바깥 여백은 안 준다(사용자 지정 2026-08-26: "IOS만 해당되고
+            // 웹은 안드로이드랑 동일하니 안 줘도 될 것 같아"). 예전엔 아이폰 +
+            // 눕힌 화면에서만 dimEdge(60)에서 패널 제 여백(16)을 뺀 44 를 바깥에
+            // 더 붙였다. 이제 어느 기기든 기기 오른쪽 끝에 붙는다.
+            edge={0}
             onClose={() => setLsPanel(null)}
           />
         )}
@@ -906,18 +909,22 @@ export default function VariantA3({
   }
 
   return (
-    <div className="app-safe-frame h-full w-full flex flex-col items-center bg-white">
+    <div className="app-safe-frame relative h-full w-full flex flex-col items-center bg-white">
+    {/* 펀치홀 카메라 점 — Android 환경에서 시스템 바가 보일 때만. 누르면 토글.
+        iOS 환경에선 실제 상태바를 쓰므로 가짜 상단 바를 그리지 않는다.
+        프레임 직속이다 — 안쪽 컬럼에 두면 그 컬럼이 z-auto 라, 뒤에 오는
+        형제 층(z-30·z-40 딤 등)에 통째로 덮인다. 구멍은 늘 맨 위여야 한다
+        (사용자 지정 2026-08-26). */}
+    {platform === "android" && chromeVisible && (
+      <button
+        type="button"
+        aria-label="시스템 바 토글"
+        onClick={toggleChrome}
+        className="punch-hole"
+        style={{ zIndex: 100 }}
+      />
+    )}
     <div className="relative flex min-h-0 flex-1 w-full flex-col overflow-hidden bg-white">
-      {/* 펀치홀 카메라 점 — Android 환경에서 시스템 바가 보일 때만. 누르면 토글.
-          iOS 환경에선 실제 상태바를 쓰므로 가짜 상단 바를 그리지 않는다. */}
-      {platform === "android" && chromeVisible && (
-        <button
-          type="button"
-          aria-label="시스템 바 토글"
-          onClick={toggleChrome}
-          className="punch-hole"
-        />
-      )}
       {/* 안드로이드 상태바 — Android 환경에서만 */}
       {platform === "android" && chromeVisible && (
         <div

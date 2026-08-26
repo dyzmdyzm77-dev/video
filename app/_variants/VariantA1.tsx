@@ -533,10 +533,14 @@ export default function VariantA1({
     const panelBottom = deviceRatio < PANEL_BOTTOM_RATIO;
     return (
       <div
-        className={`app-safe-frame flex h-full w-full overflow-hidden bg-black ${
+        className={`app-safe-frame relative flex h-full w-full overflow-hidden bg-black ${
           panelBottom ? "flex-col" : ""
         }`}
       >
+        {/* 펀치홀 — 기기에 뚫린 구멍이라 확대·가로에서도 그대로 있어야 한다. */}
+        {platform === "android" && chromeVisible && (
+          <span className="punch-hole" style={{ zIndex: 100 }} aria-hidden />
+        )}
         {/* 패널이 열리면 영상이 그만큼 밀린다(덮지 않는다, 사용자 결정). */}
         <div className="relative min-h-0 flex-1 overflow-hidden">
         <LandscapeVideo
@@ -666,18 +670,22 @@ export default function VariantA1({
   }
 
   return (
-    <div className="app-safe-frame h-full w-full flex flex-col items-center bg-white">
+    <div className="app-safe-frame relative h-full w-full flex flex-col items-center bg-white">
+    {/* 펀치홀 카메라 점 — Android 환경에서 시스템 바가 보일 때만. 누르면 토글.
+        iOS 환경에선 실제 상태바를 쓰므로 가짜 상단 바를 그리지 않는다.
+        프레임 직속이다 — 안쪽 컬럼에 두면 그 컬럼이 z-auto 라, 뒤에 오는
+        형제 층(z-30·z-40 딤 등)에 통째로 덮인다. 구멍은 늘 맨 위여야 한다
+        (사용자 지정 2026-08-26). */}
+    {platform === "android" && chromeVisible && (
+      <button
+        type="button"
+        aria-label="시스템 바 토글"
+        onClick={toggleChrome}
+        className="punch-hole"
+        style={{ zIndex: 100 }}
+      />
+    )}
     <div className="relative flex min-h-0 flex-1 w-full flex-col overflow-hidden bg-white">
-      {/* 펀치홀 카메라 점 — Android 환경에서 시스템 바가 보일 때만. 누르면 토글.
-          iOS 환경에선 실제 상태바를 쓰므로 가짜 상단 바를 그리지 않는다. */}
-      {platform === "android" && chromeVisible && (
-        <button
-          type="button"
-          aria-label="시스템 바 토글"
-          onClick={toggleChrome}
-          className="punch-hole"
-        />
-      )}
       {/* 안드로이드 상태바 — Android 환경에서만 */}
       {platform === "android" && chromeVisible && (
         <div
@@ -2075,19 +2083,9 @@ function ExpandedView({
 //
 // 열면 영상을 밀고 옆에 선다(덮지 않는다). 닫기는 패널 안 X 버튼뿐이다
 // (사용자 결정) — 영상을 눌러 닫히면 영상 조작과 헷갈린다.
-/** 가로 확대 화면의 오른쪽 패널 — 내용이 기기 오른쪽 모서리에서 떨어지는 거리.
- *  딤 위 UI 의 edgeInset 이 40 이던 시절 거기에 20 을 더 준 값이다(사용자 지정:
- *  "우측마진 40더 줬었잖아. 20 더 줘도 되겠어"). 패널은 흰 판이라 아이콘 줄보다
- *  더 떨어져야 같은 정도로 떨어져 보인다는 이유였다.
- *  그 edgeInset 이 2026-08-18 에 LANDSCAPE_EDGE(60)로 올라가면서 지금은 둘이
- *  같아졌다 — '20 더'를 지키려면 80 이지만, 그건 따로 확인받고 올릴 값이라
- *  숫자는 그대로 둔다. */
-const LANDSCAPE_PANEL_EDGE = 60;
-/** 패널 안 탭 줄·목록이 이미 쓰고 있는 좌우 여백. 위 값은 '모서리까지의 총
- *  거리'라, 패널에 더 붙일 몫은 그만큼 뺀 값이다 — 안 빼면 60+16=76 이 된다. */
-const LANDSCAPE_PANEL_PAD = 16;
-const LANDSCAPE_PANEL_EXTRA = LANDSCAPE_PANEL_EDGE - LANDSCAPE_PANEL_PAD;
-
+/* 패널 바깥에 더 붙이던 여백(예전 LANDSCAPE_PANEL_EXTRA 44)은 없앴다 —
+   A-3·A-4 와 같이 기기 끝에 붙는다(사용자 지정 2026-08-26). 패널 안쪽 여백은
+   탭 줄·목록이 각자 16 으로 갖고 있다. */
 function LandscapeSidePanel({
   mode,
   position = "right",
@@ -2131,11 +2129,12 @@ function LandscapeSidePanel({
               borderTopRightRadius: "10px",
             }
           : {
-              // 내용 칸은 1080+ 패널과 같은 폭(SIDE_PANEL_W)으로 두고, 오른쪽에 여백만
-              // 더 붙인다 — 가로 확대는 화면 끝까지 쓰는 화면이라 패널 내용이 기기
-              // 오른쪽 모서리에 딱 붙어 있었다(사용자 지정).
-              width: `${SIDE_PANEL_W + LANDSCAPE_PANEL_EXTRA}px`,
-              paddingRight: `${LANDSCAPE_PANEL_EXTRA}px`,
+              // 폭은 1080+ 패널과 같은 SIDE_PANEL_W. 오른쪽에 더 붙이던 여백
+              // (LANDSCAPE_PANEL_EXTRA 44)은 뺐다 — 그만큼 패널이 딤 오른쪽
+              // 버튼에서 멀어 보였다(사용자 지적 2026-08-26: "A-1은 오른쪽
+              // 패널이랑 딤 오른쪽 버튼이 멀어 보이니 A-3 과 동일하게").
+              // 이제 A-3·A-4 처럼 기기 오른쪽 끝에 붙고 안쪽 여백 16 만 남는다.
+              width: `${SIDE_PANEL_W}px`,
               borderLeft: "1px solid #EBEBEB",
               // 왼쪽 위·아래만 둥글게 — 영상 쪽에서 흰 판이 밀고 들어오는 모양이라
               // 바텀시트 윗변과 같은 결이다(사용자 지정). 오른쪽은 기기 모서리에
