@@ -2558,7 +2558,6 @@ function ExpandedView({
           setPlaybackMs={setPlaybackMs}
           cameraSrc={cam.src}
           cameraLabel={cam.label}
-          panel
         />
       ) : (
         <div
@@ -2645,7 +2644,6 @@ function MotionEventList({
   cameraSrc,
   cameraLabel,
   wide = false,
-  panel = false,
 }: {
   playbackMs: number | null;
   setPlaybackMs: (v: number | null) => void;
@@ -2654,10 +2652,6 @@ function MotionEventList({
   /** 카메라 목록이 가로 한 줄인가(useListLayout 판정). 켜면 카드를 옆으로 나열하고
    *  가로 스크롤, 끄면 위아래로 쌓고 세로 스크롤한다. */
   wide?: boolean;
-  /** 오른쪽 세로 패널(1080+ · 가로 딤) 안인가. 그 안에선 좌우·위아래 여백을
-   *  패널의 카메라 목록(px-4 py-3)과 같은 값으로 맞춘다 — 하단 스트립은 위아래
-   *  여백을 영역이 갖고 있어서(STRIP_PAD) 여기서 주면 두 번 들어간다. */
-  panel?: boolean;
 }) {
   const eventThumbs = useEventThumbs();
   const dragScroll = useDragScroll();
@@ -2754,18 +2748,38 @@ function MotionEventList({
       if (!done) write(to);
     }, DUR + 80);
   };
-  // 스크롤은 '사용자가 고를 때'와 '탭에 들어온 순간'만 움직인다. 재생이 이벤트를
-  // 지날 때마다 따라가게 두면 목록이 몇 초마다 저절로 튄다 — 지금 재생 중인
-  // 이벤트는 파란 표시로만 알리고 자리는 안 건드린다.
+  // 재생이 감지 지점에 닿으면 그 항목을 가운데로 끌어온다(사용자 지정 2026-08-26:
+  // "시간바에서 해당 움직임 감지 지점 오면 가운데로 오게"). 시간바의 현재 시각과
+  // 목록이 같은 것을 가리켜야 하니 목록이 따라간다.
+  //
+  // 탭에 처음 들어온 순간만 즉시 이동이다 — 그때는 이미 가운데 있어야 하는
+  // 상태라 미끄러질 이유가 없다. 그 뒤 재생이 다음 이벤트로 넘어갈 때는
+  // 부드럽게(320ms) 움직여, 화면이 왜 움직였는지 눈으로 따라갈 수 있게 한다.
+  // 항목을 직접 눌렀을 때도 여기로 들어온다(onClick 의 centerOn 과 목적지가
+  // 같아 두 번 불러도 결과는 하나다).
   const openedRef = useRef(false);
   useEffect(() => {
     openedRef.current = false;
   }, [wide]);
   useEffect(() => {
-    if (openedRef.current || activeMs === null) return;
+    if (activeMs === null) return;
+    const first = !openedRef.current;
     openedRef.current = true;
-    const raf = requestAnimationFrame(() => centerOn(activeMs, false));
-    return () => cancelAnimationFrame(raf);
+    // 그림이 그려진 뒤에 재야 해서 한 프레임 미룬다. 타이머를 같이 거는 건
+    // 화면이 안 보이는 상태(백그라운드 탭·데스크톱 목업 미리보기)에서는 rAF 가
+    // 아예 안 돌아서다 — 그때도 자리는 맞아야 한다. 둘 중 먼저 온 하나만 쓴다.
+    let ran = false;
+    const run = () => {
+      if (ran) return;
+      ran = true;
+      centerOn(activeMs, !first);
+    };
+    const raf = requestAnimationFrame(run);
+    const timer = window.setTimeout(run, 80);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMs, wide]);
 
@@ -2781,9 +2795,9 @@ function MotionEventList({
           : // 세로로 쌓을 자리가 넉넉한 배치(오른쪽 패널 · 세로 2열 스트립)는
             // 카드가 아니라 '구분선으로 나눈 목록'이다(사용자 지정 2026-08-26).
             // 줄끼리 붙여 놓고(gap 없음) 줄마다 아래 선을 그린다.
-            `relative flex min-h-0 flex-1 flex-col overflow-y-auto ${
-              panel ? "px-4" : "px-5"
-            } [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`
+            // 좌우 여백은 없다(사용자 지정 2026-08-26) — 구분선이 영역 끝에서
+            // 끝까지 가야 '목록'으로 읽힌다. 여백은 카드였을 때만 필요했다.
+            "relative flex min-h-0 flex-1 flex-col overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       }
       {...dragScroll}
     >
@@ -5124,7 +5138,6 @@ function LandscapeSidePanel({
             setPlaybackMs={setPlaybackMs}
             cameraSrc={cam.src}
             cameraLabel={cam.label}
-            panel
           />
         )
       ) : bottom ? (
