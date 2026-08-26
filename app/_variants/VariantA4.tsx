@@ -2386,7 +2386,7 @@ function ExpandedView({
   );
   const bottomStrip = (
     <>
-      {motionBlock}
+      {/* 시간바는 여기 없다 — 5버튼 위로 올라갔다(위 return 참고). */}
       {/* 탭 줄 — 녹화면 '카메라 목록 | 움직임 감지' 두 탭(사용자 결정 2026-08-14),
           실시간이면 감지가 없으니 '카메라 목록' 제목 하나만.
           위아래 14 로 같다 — 사이드 패널 탭(tabsBlock)의 padding 14px 0 과 같은 값.
@@ -2550,11 +2550,10 @@ function ExpandedView({
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {videoBlock}
             {dateBarBlock}
-            {playerBlock}
-            {/* 시간바 — 5버튼 바로 아래(사용자 지정 2026-08-14). 패널이 나와도
-                재생 위치를 잡을 게 있어야 한다. 세로 화면과 같은 시간바라
-                감지 빨간 선도 그대로 따라온다(달력 버튼은 위 날짜 줄에 있다). */}
+            {/* A-4 는 시간바가 5버튼 위다(사용자 지정 2026-08-26). 패널이 나와도
+                재생 위치를 잡을 게 있어야 하는 건 그대로. */}
             {motionBlock}
+            {playerBlock}
           </div>
           <div
             className="flex min-h-0 flex-none flex-col overflow-hidden"
@@ -2568,6 +2567,10 @@ function ExpandedView({
         <>
           {videoBlock}
           {dateBarBlock}
+          {/* A-4 는 시간바가 먼저, 5버튼이 그 아래다(사용자 지정 2026-08-26:
+              "시간바랑 5버튼 위치를 바꾸자"). 시간바는 bottomStrip 첫 줄이 아니라
+              여기서 직접 그리고, 5버튼(playerBlock)을 그 뒤에 둔다. */}
+          {motionBlock}
           {playerBlock}
           {bottomStrip}
         </>
