@@ -2521,7 +2521,6 @@ function ExpandedView({
           playbackMs={playbackMs}
           setPlaybackMs={setPlaybackMs}
           cameraSrc={cam.src}
-          cameraLabel={cam.label}
           wide={listWide}
         />
       ) : (
@@ -2576,7 +2575,6 @@ function ExpandedView({
           playbackMs={playbackMs}
           setPlaybackMs={setPlaybackMs}
           cameraSrc={cam.src}
-          cameraLabel={cam.label}
           // 이 패널의 카메라 목록은 좌우 16(px-4)이다.
           inset={16}
         />
@@ -2663,14 +2661,12 @@ function MotionEventList({
   playbackMs,
   setPlaybackMs,
   cameraSrc,
-  cameraLabel,
   wide = false,
   inset = 20,
 }: {
   playbackMs: number | null;
   setPlaybackMs: (v: number | null) => void;
   cameraSrc: string;
-  cameraLabel: string;
   /** 카메라 목록이 가로 한 줄인가(useListLayout 판정). 켜면 카드를 옆으로 나열하고
    *  가로 스크롤, 끄면 위아래로 쌓고 세로 스크롤한다. */
   wide?: boolean;
@@ -2955,7 +2951,8 @@ function MotionEventList({
                 />
               </div>
             )}
-            {/* 유형(칩) · 카메라 명 · 날짜 시간 — 사용자 지정 2026-08-26. */}
+            {/* 유형(칩) · 날짜 시간 — 카메라 명은 뺐다(사용자 지정 2026-08-26).
+                단일 화면이라 어차피 지금 보고 있는 카메라 하나뿐이다. */}
             <div className="flex min-w-0 flex-col justify-center gap-[3px]">
               <span
                 className="inline-flex flex-none items-center self-start leading-none"
@@ -2978,12 +2975,6 @@ function MotionEventList({
                 }}
               >
                 {r.kind}
-              </span>
-              <span
-                className="truncate text-[11px] font-medium leading-none"
-                style={{ color: active ? "#1D6CEB" : "#262626" }}
-              >
-                {cameraLabel}
               </span>
               <span
                 suppressHydrationWarning
@@ -5208,8 +5199,7 @@ function LandscapeSidePanel({
               playbackMs={playbackMs}
               setPlaybackMs={setPlaybackMs}
               cameraSrc={cam.src}
-              cameraLabel={cam.label}
-              wide
+                  wide
             />
           </div>
         ) : (
@@ -5217,8 +5207,7 @@ function LandscapeSidePanel({
             playbackMs={playbackMs}
             setPlaybackMs={setPlaybackMs}
             cameraSrc={cam.src}
-            cameraLabel={cam.label}
-            // 이 패널의 카메라 목록은 좌우 16(px-4)이다.
+              // 이 패널의 카메라 목록은 좌우 16(px-4)이다.
             inset={16}
           />
         )
