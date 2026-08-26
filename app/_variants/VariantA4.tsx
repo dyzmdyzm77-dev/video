@@ -855,12 +855,12 @@ export default function VariantA4({
             playbackMs={playbackMs}
             setPlaybackMs={setPlaybackMs}
             onScrubbingChange={setIsScrubbing}
-            // 패널 바깥 여백은 '아이폰 + 눕힌 화면'에서만 준다(사용자 지정
-            // 2026-08-18: "제자리 확대한 경우는 ... 가로로 돌려졌을때만",
-            // "IOS만 오른쪽 패널에 공간을 주고, 나머지는 안줘도 된다").
-            // 그 외(안드로이드 · 제자리 확대)는 패널 제 여백(16)만 남기고 기기
-            // 끝에 붙인다.
-            edge={!isAndroid && wideNow ? dimEdge : 0}
+            // 패널 바깥 여백은 안 준다 — A-4 만(사용자 지정 2026-08-26:
+            // "그 여백 IOS만 해당되고 웹은 안드로이드랑 동일하니 안 줘도 될 것
+            // 같아"). 예전엔 아이폰 + 눕힌 화면에서만 dimEdge(60)에서 패널 제
+            // 여백(16)을 뺀 44 를 바깥에 더 붙였다. 이제 어느 기기든 패널이
+            // 기기 오른쪽 끝에 붙고, 안쪽 여백 16 만 남는다.
+            edge={0}
             onClose={() => setLsPanel(null)}
           />
         )}
