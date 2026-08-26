@@ -2,6 +2,7 @@ import { BASE } from "../basePath";
 import { nextVideoFit, videoFitIcon, type VideoFit } from "./videoFit";
 import { requestDeviceRotate, useDeviceLandscape } from "./deviceRotate";
 import { toggleImmersive, useImmersive } from "./immersive";
+import { useDeviceScope } from "./deviceScope";
 import { memo, useEffect, useRef, useState } from "react";
 
 type CameraFeedProps = {
@@ -379,6 +380,10 @@ export function GridSelectionOverlay({
     };
   };
 }) {
+  // 확대(크게 보기)를 눌렀을 때 '어느 기기에서 눌렀나' — 비교하기에서 자리마다
+  // 해상도가 다를 수 있어, 눕힐지 말지를 그 기기 크기로 판단한다(immersive.ts).
+  const zoomScope = useDeviceScope();
+
   // 확대 버튼의 아이콘은 '지금 어디로 가는지'를 보여준다 —
   // 평소면 확대(zoom_in), 이미 커져 있으면 되돌리기(zoom_out).
   const landscape = useDeviceLandscape();
@@ -527,7 +532,7 @@ export function GridSelectionOverlay({
             className="px-1.5 py-2"
             // 언제나 '크게 보기 ↔ 원래대로'다. 방향은 확대가 알아서 정한다
             // (immersive.ts) — 회전은 좌측 패널의 몫이고 이 버튼과 무관하다.
-            onClick={toggleImmersive}
+            onClick={() => toggleImmersive(zoomScope)}
             style={{ pointerEvents: visible ? "auto" : "none" }}
           >
             <OverlayIcon
@@ -598,7 +603,7 @@ export function GridSelectionOverlay({
           <button
             type="button"
             aria-label={landscape || immersive ? "원래 크기로" : "크게 보기"}
-            onClick={toggleImmersive}
+            onClick={() => toggleImmersive(zoomScope)}
             className="flex items-center justify-center rounded-full text-white"
             style={{
               ...circle,

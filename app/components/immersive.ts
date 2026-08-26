@@ -216,9 +216,9 @@ function fitArea(w: number, h: number): number {
 /** 눕히는 게 확실히 이득인가. 지금 면적 대비 눕혔을 때 면적으로 판정한다.
  *  기준은 단일 영상(16:9)이다 — 다채널은 배치가 알아서 바뀌어 이득이 작지만,
  *  같은 버튼이 화면마다 다르게 동작하면 안 되므로 한 기준으로 통일한다. */
-function shouldRotate(): boolean {
-  const w = readDeviceWidth();
-  const h = readDeviceHeight();
+function shouldRotate(scope: 0 | 1 | 2 = 0): boolean {
+  const w = readDeviceWidth(undefined, scope);
+  const h = readDeviceHeight(scope);
   const now = fitArea(w, h);
   if (!(now > 0)) return false;
   return fitArea(h, w) / now >= ROTATE_GAIN;
@@ -392,7 +392,7 @@ export function readImmersiveRotated(): boolean {
 /** 딤의 확대/축소 버튼에서 호출. 지금 상태를 뒤집는다.
  *  전체화면·회전은 '사용자 조작' 안에서만 허용되므로 버튼 핸들러인 여기서 바로
  *  부른다 — 상태가 바뀐 뒤 effect 에서 부르면 제스처가 끊겨 거부된다. */
-export function toggleImmersive() {
+export function toggleImmersive(scope: 0 | 1 | 2 = 0) {
   if (readImmersive()) {
     exitImmersive();
     return;
@@ -403,7 +403,12 @@ export function toggleImmersive() {
   // 전체화면 안에서만 허용되므로 전체화면이 잡힌 뒤에 건다. 잠글 방향은
   // '기기가 있어야 할 방향'이다: 앱을 CSS 로 눕혀 만든 가짜 가로라면 기기는
   // 세로로 있어야 하고, 안 눕혔으면 지금 방향 그대로다.
-  const willRotate = !readDeviceLandscape() && shouldRotate();
+  // 눕힐지는 '누른 그 기기'로 판단한다. 비교하기에서는 자리마다 해상도가 다를 수
+  // 있는데(compareSize), 늘 시안 기기만 보면 360 짜리 비교 기기에서 확대를 눌러도
+  // 시안이 넓적하다는 이유로 안 눕었다(사용자 지적 2026-08-26: "비교하기에서는
+  // 그냥 제자리 확대 되네"). 회전 자체는 화면 전체가 같이 도는 게 맞다 — 나란히
+  // 세운 기기들이 따로 놀면 비교가 안 된다.
+  const willRotate = !readDeviceLandscape() && shouldRotate(scope);
   const lockTo: "portrait" | "landscape" = willRotate
     ? "portrait"
     : window.innerWidth > window.innerHeight

@@ -48,6 +48,7 @@ import {
   useDeviceWidth,
 } from "../components/useDeviceWidth";
 import { useListLayout } from "../components/useListLayout";
+import { useDeviceScope } from "../components/deviceScope";
 import { useDragScroll } from "../components/useDragScroll";
 import {
   TIMELINE_EVENTS,
@@ -250,6 +251,10 @@ export default function VariantA3({
    *  고른 안을 어느 자리에 반영할지 — 3개 비교에서 왼쪽 둘이 섞이면 안 된다. */
   compareSlot?: CompareSlot;
 }) {
+  // 확대(크게 보기)를 눌렀을 때 '어느 기기에서 눌렀나' — 비교하기에서 자리마다
+  // 해상도가 다를 수 있어, 눕힐지 말지를 그 기기 크기로 판단한다(immersive.ts).
+  const zoomScope = useDeviceScope();
+
   // 안을 바꿔도 보던 화면 종류(다채널/단일 · 실시간/녹화)는 이어진다 —
   // 문서 루트에 남겨 두고 새로 뜨는 안이 물려받는다(components/screenState.ts).
   const [expandedIndex, setExpandedIndex] = useState<number | null>(
@@ -793,7 +798,7 @@ export default function VariantA3({
                       {/* 크게 보기 ↔ 원래 크기로. 가로에서만 뜨는 줄이라 늘
                           '원래 크기로'다. 딤 오른쪽 아래에 있던 그 버튼이다. */}
                       <div className="flex flex-1 items-center justify-end">
-                        {btn({ key: "zoom", label: "원래 크기로", src: `${BASE}/zoom_out.svg`, onClick: toggleImmersive })}
+                        {btn({ key: "zoom", label: "원래 크기로", src: `${BASE}/zoom_out.svg`, onClick: () => toggleImmersive(zoomScope) })}
                       </div>
                     </>
                   );
@@ -1473,6 +1478,10 @@ function ExpandedView({
   // 화면 맞춤 상태. 회전(가로 전환)에도 유지돼야 해서 VariantA 가 들고 내려 준다.
   fitState: ReturnType<typeof useVideoFit>;
 }) {
+  // 확대(크게 보기)를 눌렀을 때 '어느 기기에서 눌렀나' — 비교하기에서 자리마다
+  // 해상도가 다를 수 있어, 눕힐지 말지를 그 기기 크기로 판단한다(immersive.ts).
+  const zoomScope = useDeviceScope();
+
   const cam = CAMERAS[index];
   const [showControls, setShowControls] = useState(false);
   // 영상 맞춤 모드 — 딤(showControls) 상태의 화면맞춤 버튼으로 돌린다.
@@ -2027,7 +2036,7 @@ function ExpandedView({
             <button
               type="button"
               aria-label="크게 보기"
-              onClick={toggleImmersive}
+              onClick={() => toggleImmersive(zoomScope)}
               className="absolute flex items-center justify-center rounded-full"
               style={{
                 bottom: "12px",

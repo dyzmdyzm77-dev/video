@@ -38,6 +38,7 @@ import { useAutoHide } from "../components/useAutoHide";
 import { useDimSync } from "../components/dimSync";
 import AndroidNav from "../components/AndroidNav";
 import { useListLayout } from "../components/useListLayout";
+import { useDeviceScope } from "../components/deviceScope";
 import { useDragScroll } from "../components/useDragScroll";
 import { TIMELINE_EVENTS } from "../components/timelineEvents";
 import CloudEventScreen from "../components/CloudEventScreen";
@@ -1143,6 +1144,10 @@ function ExpandedView({
   captureToast?: boolean;
   onSpeedChange?: (rate: number) => void;
 }) {
+  // 확대(크게 보기)를 눌렀을 때 '어느 기기에서 눌렀나' — 비교하기에서 자리마다
+  // 해상도가 다를 수 있어, 눕힐지 말지를 그 기기 크기로 판단한다(immersive.ts).
+  const zoomScope = useDeviceScope();
+
   // 끊김 방지: 녹화 재생은 항상 캔버스 경로(프레임 단위 디코딩·캐시)로 그린다.
   const canvasDriven =
     mode === "recording" && (isScrubbing || !isPlaying || playbackRate !== 1);
@@ -1425,7 +1430,7 @@ function ExpandedView({
                 type="button"
                 aria-label="크게 보기"
                 className="px-1.5 py-2"
-                onClick={toggleImmersive}
+                onClick={() => toggleImmersive(zoomScope)}
               >
                 {/* 아이콘 원본이 진회색(#353535)이라 어두운 딤 위에선 묻힌다.
                     같은 줄의 다른 아이콘과 같이 흰색으로 뒤집는다. */}

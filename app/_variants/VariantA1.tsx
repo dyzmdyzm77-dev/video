@@ -51,6 +51,7 @@ import {
   useDeviceWidth,
 } from "../components/useDeviceWidth";
 import { useListLayout } from "../components/useListLayout";
+import { useDeviceScope } from "../components/deviceScope";
 import { useDragScroll } from "../components/useDragScroll";
 import {
   TIMELINE_EVENTS,
@@ -1227,6 +1228,10 @@ function ExpandedView({
   // 화면 맞춤 상태. 회전(가로 전환)에도 유지돼야 해서 VariantA1 이 들고 내려 준다.
   fitState: ReturnType<typeof useVideoFit>;
 }) {
+  // 확대(크게 보기)를 눌렀을 때 '어느 기기에서 눌렀나' — 비교하기에서 자리마다
+  // 해상도가 다를 수 있어, 눕힐지 말지를 그 기기 크기로 판단한다(immersive.ts).
+  const zoomScope = useDeviceScope();
+
   const cam = CAMERAS[index];
   // 단일 화면도 들어오자마자 딤을 띄운다(A-1 의 화면 전환 규칙 — 위 주석 참고).
   const [showControls, setShowControls] = useState(true);
@@ -1609,7 +1614,7 @@ function ExpandedView({
                 type="button"
                 aria-label="크게 보기"
                 className="px-1.5 py-2"
-                onClick={toggleImmersive}
+                onClick={() => toggleImmersive(zoomScope)}
               >
                 {/* 아이콘 원본이 진회색(#353535)이라 어두운 딤 위에선 묻힌다.
                     같은 줄의 다른 아이콘과 같이 흰색으로 뒤집는다. */}
