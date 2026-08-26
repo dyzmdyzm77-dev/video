@@ -2778,8 +2778,11 @@ function MotionEventList({
             // 스크롤 안쪽 패딩이라 첫/마지막만 20px 띄운다(카메라 목록과 같은 규칙).
             // 위아래 여백은 영역이 갖고 있다(스크롤해도 안 사라지게).
             "relative flex min-h-0 flex-1 items-stretch gap-3 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          : `relative flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto ${
-              panel ? "px-4 py-3" : "px-5"
+          : // 세로로 쌓을 자리가 넉넉한 배치(오른쪽 패널 · 세로 2열 스트립)는
+            // 카드가 아니라 '구분선으로 나눈 목록'이다(사용자 지정 2026-08-26).
+            // 줄끼리 붙여 놓고(gap 없음) 줄마다 아래 선을 그린다.
+            `relative flex min-h-0 flex-1 flex-col overflow-y-auto ${
+              panel ? "px-4" : "px-5"
             } [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`
       }
       {...dragScroll}
@@ -2800,19 +2803,32 @@ function MotionEventList({
             className={
               wide
                 ? "flex h-full flex-none items-center gap-2 overflow-hidden text-left"
-                : "flex flex-none items-center gap-3 overflow-hidden text-left"
+                : "flex flex-none items-center gap-3 text-left"
             }
-            // 카드 테두리(사용자 요청 2026-08-26). 안쪽 여백은 여전히 안 준다 —
-            // 썸네일이 카메라 목록 타일과 '같은 크기'여야 해서다. 그래서 그림이
-            // 타일보다 작아지는 건 테두리 1px 두 줄, 88 → 86 뿐이다.
-            // 썸네일은 카드 왼쪽 끝에 붙고 모서리는 카드가 잘라 준다(overflow-hidden).
-            // 고른 카드는 테두리만 파랗게 — 썸네일 위에 또 테두리를 그리면 두 겹이 된다.
-            style={{
-              borderRadius: "8px",
-              border: active ? "1px solid #1D6CEB" : "1px solid #EBEBEB",
-              backgroundColor: active ? "rgba(29,108,235,0.06)" : "#FFFFFF",
-              paddingRight: "10px",
-            }}
+            style={
+              wide
+                ? {
+                    // 카드 테두리(사용자 요청 2026-08-26). 안쪽 여백은 여전히 안 준다 —
+                    // 썸네일이 카메라 목록 타일과 '같은 크기'여야 해서다. 그래서 그림이
+                    // 타일보다 작아지는 건 테두리 1px 두 줄, 88 → 86 뿐이다.
+                    // 썸네일은 카드 왼쪽 끝에 붙고 모서리는 카드가 잘라 준다.
+                    // 고른 카드는 테두리만 파랗게 — 썸네일 위에 또 테두리를 그리면
+                    // 두 겹이 된다.
+                    borderRadius: "8px",
+                    border: active ? "1px solid #1D6CEB" : "1px solid #EBEBEB",
+                    backgroundColor: active ? "rgba(29,108,235,0.06)" : "#FFFFFF",
+                    paddingRight: "10px",
+                  }
+                : {
+                    // 세로는 카드가 아니라 구분선으로 나눈 줄이다. 마지막 줄에도
+                    // 선을 남긴다 — 목록이 스크롤 중이면 아래가 더 있다는 표시가 되고,
+                    // 끝까지 왔을 땐 영역 바닥에 붙어 안 보인다.
+                    paddingTop: "8px",
+                    paddingBottom: "8px",
+                    borderBottom: "1px solid #EBEBEB",
+                    backgroundColor: active ? "rgba(29,108,235,0.06)" : undefined,
+                  }
+            }
           >
             {/* 썸네일 — 카메라 목록 타일과 같은 16:9 · 카드 높이를 꽉 채운다.
                 움직이는 GIF 를 그대로 쓰면 한 화면에 수십 장이 동시에 디코딩되니
@@ -2831,7 +2847,9 @@ function MotionEventList({
                 style={
                   wide
                     ? { aspectRatio: "16 / 9" }
-                    : { width: "96px", aspectRatio: "16 / 9" }
+                    : // 세로 줄엔 감싸는 카드가 없으니 모서리를 스스로 둥글린다 —
+                      // 카메라 목록 타일과 같은 4px.
+                      { width: "96px", aspectRatio: "16 / 9", borderRadius: "4px" }
                 }
               >
                 <FrozenImage
@@ -2870,12 +2888,17 @@ function MotionEventList({
               >
                 {r.kind}
               </span>
-              <span
-                className="truncate text-[11px] font-medium leading-none"
-                style={{ color: active ? "#1D6CEB" : "#262626" }}
-              >
-                {cameraLabel}
-              </span>
+              {/* 카메라 명은 세로 목록에만 둔다(사용자 지정 2026-08-26: 가로
+                  스크롤 쪽은 빼도 된다) — 가로 카드는 48px 화면에서 세 줄이
+                  빠듯하고, 단일 화면이라 어차피 지금 보고 있는 카메라 하나다. */}
+              {!wide && (
+                <span
+                  className="truncate text-[11px] font-medium leading-none"
+                  style={{ color: active ? "#1D6CEB" : "#262626" }}
+                >
+                  {cameraLabel}
+                </span>
+              )}
               <span
                 suppressHydrationWarning
                 className="whitespace-nowrap text-[11px] leading-none"
