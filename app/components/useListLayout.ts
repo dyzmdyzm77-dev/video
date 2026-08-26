@@ -32,8 +32,17 @@ const RATIO = 16 / 9; // 타일은 항상 16:9
  *     빈 공간이 안 남는다. 가로 한 줄일 땐 영상이 16:9 를 넘겨 세로로 늘어나도 된다
  *     (사용자 결정). 세로 2열일 땐 목록이 남는 세로를 쓰므로 영상은 16:9 그대로다.
  *   videoRef 를 안 달면 못 박기만 하고 남는 세로는 빈 공간으로 남는다.
+ * tileMinH: 가로 한 줄일 때 타일 세로의 바닥(px). 기본은 네 안이 같이 쓰는
+ *   TILE_MIN_H(88). A-4 만 72 로 낮춰 부른다 — 750 처럼 넓은 화면에서 88 은
+ *   스트립이 두꺼워 카드가 커 보인다는 지적(사용자 2026-08-26)에 따른 것으로,
+ *   그 안의 카메라 목록·움직임 감지가 같이 낮아져 두 탭 크기는 계속 일치한다.
+ *   다른 안은 인자를 안 넘기므로 예전 그대로다.
  */
-export function useListLayout(motionH?: number, pin = false) {
+export function useListLayout(
+  motionH?: number,
+  pin = false,
+  tileMinH: number = TILE_MIN_H,
+) {
   const areaRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLDivElement>(null);
@@ -145,7 +154,7 @@ export function useListLayout(motionH?: number, pin = false) {
         // 높이는 셋 중 가운데를 고른다: 못 박은 값(pinned)과 타일 바닥(TILE_MIN_H)이
         // 위쪽 한계고, N개 규칙이 그보다 작으면 그쪽을 따른다 — 좁은 화면에서만
         // 줄어들고 넓은 화면은 지금 그대로다.
-        const wanted = Math.max(TILE_MIN_H + chrome, pinned);
+        const wanted = Math.max(tileMinH + chrome, pinned);
         el.style.flex = "none";
         el.style.height = `${Math.min(wanted, tileHwide + chrome)}px`;
         el.style.minHeight = "";
@@ -163,7 +172,7 @@ export function useListLayout(motionH?: number, pin = false) {
             ? // 못 박지 않는 안(A-1·B)도 같은 규칙 — N개가 보이는 높이가 더 작으면
               // 그쪽을 바닥으로 쓴다.
               `${Math.min(
-                Math.max(TILE_MIN_H + chrome, motionH ?? 0),
+                Math.max(tileMinH + chrome, motionH ?? 0),
                 tileHwide + chrome,
               )}px`
             : `${LIST_MIN_H}px`;

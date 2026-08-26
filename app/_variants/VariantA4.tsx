@@ -62,7 +62,6 @@ import DateTimePickerSheet from "../components/DateTimePickerSheet";
 import { useStorageMode } from "../components/storageMode";
 import { useGridAreaRatio } from "../components/useGridLayout";
 import {
-  MOTION_MIN_H,
   SIDE_PANEL_RATIO,
   SIDE_PANEL_W,
   THUMB_MAX_H,
@@ -79,6 +78,16 @@ import {
   LANDSCAPE_TOP_INSET,
   PANEL_BOTTOM_H,
 } from "../components/layoutRules";
+
+// A-4 의 가로 한 줄 타일 바닥(px). 공유 기본값 TILE_MIN_H(88)를 이 안만 낮춘 값
+// (사용자 지정 2026-08-26: "A-4만 72로"). 카메라 목록·움직임 감지 스트립이 같이
+// 이 값을 따른다 — layoutRules.ts 의 '두 탭은 1px 도 안 어긋난다' 규칙 그대로다.
+const A4_TILE_MIN_H = 72;
+// 그 타일이 들어가는 스트립 높이 = 타일 + 영역이 갖는 위아래 여백(STRIP_PAD 12
+// 두 번). 공유 MOTION_MIN_H(108) 를 그대로 쓰면 타일 바닥만 낮춰도 스트립이
+// 108 로 못 박혀 타일이 84 에서 안 내려간다 — 둘을 같이 낮춰야 72 가 나온다.
+// 값은 아래 STRIP_PAD 와 같은 12 다(모듈 초기화 순서 때문에 숫자로 적는다).
+const A4_MOTION_H = A4_TILE_MIN_H + 12 * 2;
 
 const CAMERAS = [
   { label: "카메라 01", src: `${BASE}/cameras/cam1.gif` },
@@ -1577,9 +1586,14 @@ function ExpandedView({
   //
   // 사이드 패널일 땐 이 훅이 할 일이 없다(가로/세로 스트립 자체가 없으니까). 인자를
   // 빼서 넘기면 훅이 이전 배치에서 걸어 둔 인라인 값들을 걷어내고 손을 뗀다.
+  // 세 번째 인자(타일 바닥 72) 가 A-4 만의 값이다 — 공유 기본값은 88 이다.
+  // 750 처럼 넓은 화면에서 88 은 스트립이 두꺼워 감지 카드가 커 보였다(사용자
+  // 지적 2026-08-26). 카메라 목록·움직임 감지가 같은 영역을 나눠 쓰므로 둘 다
+  // 같이 낮아진다 — 한쪽만 줄이면 탭을 옮길 때 크기가 어긋난다.
   const [listAreaRef, listRowRef, listWide, videoAreaRef] = useListLayout(
-    sidePanel ? undefined : MOTION_MIN_H,
+    sidePanel ? undefined : A4_MOTION_H,
     true,
+    A4_TILE_MIN_H,
   );
   // 카메라 목록 — 선택 카메라 타일을 가운데로 맞출 때 쓴다(가로면 좌우, 세로면 위아래).
   const listScrollRef = useRef<HTMLDivElement>(null);
@@ -2644,6 +2658,7 @@ function MotionEventList({
   cameraSrc,
   cameraLabel,
   wide = false,
+  inset = 20,
 }: {
   playbackMs: number | null;
   setPlaybackMs: (v: number | null) => void;
@@ -2652,6 +2667,10 @@ function MotionEventList({
   /** 카메라 목록이 가로 한 줄인가(useListLayout 판정). 켜면 카드를 옆으로 나열하고
    *  가로 스크롤, 끄면 위아래로 쌓고 세로 스크롤한다. */
   wide?: boolean;
+  /** 세로 목록에서 줄 안쪽 좌우 여백(px). 그 자리 탭 글자와 같은 값을 넘긴다 —
+   *  하단 스트립·1080+ 패널은 20(px-5), 가로 딤 패널은 16 이다(사용자 지정
+   *  2026-08-26: 정렬을 카메라 목록 탭 글자에 맞춘다). */
+  inset?: number;
 }) {
   const eventThumbs = useEventThumbs();
   const dragScroll = useDragScroll();
@@ -2837,8 +2856,14 @@ function MotionEventList({
                     // 세로는 카드가 아니라 구분선으로 나눈 줄이다. 마지막 줄에도
                     // 선을 남긴다 — 목록이 스크롤 중이면 아래가 더 있다는 표시가 되고,
                     // 끝까지 왔을 땐 영역 바닥에 붙어 안 보인다.
+                    //
+                    // 좌우 여백은 줄이 갖는다(컨테이너가 아니라) — 그래야 그림·글자는
+                    // 그 자리 탭 글자('카메라 목록')와 같은 데서 시작하고(사용자 지정
+                    // 2026-08-26), 구분선은 테두리라 여백 밖까지 끝에서 끝까지 간다.
                     paddingTop: "8px",
                     paddingBottom: "8px",
+                    paddingLeft: `${inset}px`,
+                    paddingRight: `${inset}px`,
                     borderBottom: "1px solid #EBEBEB",
                     backgroundColor: active ? "rgba(29,108,235,0.06)" : undefined,
                   }
@@ -5138,6 +5163,8 @@ function LandscapeSidePanel({
             setPlaybackMs={setPlaybackMs}
             cameraSrc={cam.src}
             cameraLabel={cam.label}
+            // 이 패널의 탭 줄은 좌우 16 이다(위 padding: "0 16px").
+            inset={16}
           />
         )
       ) : bottom ? (
