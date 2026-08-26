@@ -2847,7 +2847,14 @@ function MotionEventList({
                 // 이미 활성인 항목을 다시 눌러도 가운데로 와야 한다.
                 centerOn(r.ms);
               }}
-              className="relative h-full aspect-video flex-none overflow-hidden bg-neutral-900 text-left"
+              className={`relative h-full aspect-video flex-none overflow-hidden text-left${
+                // 검정 바탕은 썸네일이 있을 때만 깐다. 썸네일을 못 뽑는 저장
+                // 방식(NVR)에선 그 자리에 흰 카드(EventCardFace)가 들어가는데,
+                // 그 카드는 자기 라운드(6)가 이 박스의 라운드(4)보다 커서 모서리
+                // 틈으로 뒤의 검정이 비친다(사용자 지적 2026-08-26: "카드 뒤에
+                // 검정색이 비쳐"). EventCardFace 주석이 말하는 바로 그 경우다.
+                eventThumbs ? " bg-neutral-900" : ""
+              }`}
               // 카메라 목록 타일과 같은 4px — 타일과 나란히 놓고 봐도 같은 규격이다.
               style={{ borderRadius: "4px" }}
             >
