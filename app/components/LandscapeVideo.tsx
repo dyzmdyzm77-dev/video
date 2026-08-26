@@ -124,7 +124,7 @@ export default function LandscapeVideo({
   statusRaise,
   singleBadge,
   singleBadgeAlign,
-  singleNameBadge = false,
+  modePillHeader = false,
   singleHeaderCamera = false,
   gridHeaderLabel,
   controls,
@@ -249,17 +249,18 @@ export default function LandscapeVideo({
   /** 그 배지를 어디에 둘지. 기본 "left" = 왼쪽 위 구석(지금까지의 동작).
    *  A-3 은 세로와 같이 아래 가운데("bottom-center"). */
   singleBadgeAlign?: "left" | "center" | "bottom-left" | "bottom-center";
-  /** 단일 화면 좌상단을 '영상 위 이름 배지 + 그 아래 실시간/녹화'로 바꾼다
-   *  (사용자 지정 2026-08-26, A-4). 켜면 셋이 같이 움직인다:
-   *    · 딤 헤더(뒤로가기 + 큰 카메라 이름)를 단일에서는 안 그린다 — 가로를
-   *      빠져나가는 건 딤 아이콘 줄의 '원래 크기로'가 이미 맡고 있다.
-   *    · 영상 이름 배지를 되살린다(A-2 가 쓰는 그 배지 그대로).
-   *    · 딤 아래 왼쪽 알약에서 '● 실시간/녹화영상'을 떼어 이름 배지 밑으로 옮긴다.
-   *      알약에는 시각만 남는다 — hideStatusClock 이 켜져 시각마저 없으면 알약
-   *      자체를 안 그린다(빈 알약만 떠 있게 두지 않는다).
-   *  다채널(그리드) 헤더는 그대로다 — 거긴 카메라가 하나가 아니라 이름 배지로
-   *  대신할 수 없다. */
-  singleNameBadge?: boolean;
+  /** 가로 딤 헤더를 '뒤로가기 + 이름' 대신 '● 실시간/녹화영상' 알약 하나로
+   *  바꾼다(사용자 지정 2026-08-26, A-4). 켜면 넷이 같이 움직인다:
+   *    · 딤 헤더(뒤로가기 + 큰 이름)를 안 그린다 — 가로를 빠져나가는 건 딤
+   *      아이콘 줄의 '원래 크기로'가 이미 맡고 있다.
+   *    · 그 자리에 모드 알약을 놓는다(아래 시각 알약과 같은 규격).
+   *    · 딤 아래 왼쪽 알약에서 모드를 떼어 시각만 남기고, 그 알약을 가운데로
+   *      옮긴다 — 녹화 단일의 시간바 클록과 같은 점에 오게. 시각마저 없으면
+   *      (hideStatusClock) 알약 자체를 안 그린다.
+   *    · 단일 화면에서는 영상 이름 배지를 되살린다(A-2 가 쓰는 그 배지 그대로).
+   *      다채널은 타일마다 이미 자기 이름을 달고 있어 손댈 게 없다.
+   *  단일·다채널 둘 다에 걸린다(사용자 지정 2026-08-27: "다 바꿔야지"). */
+  modePillHeader?: boolean;
   /** 단일 화면 딤 헤더를 '뒤로가기 + 카메라 이름'으로 바꿀지. 기본 false =
    *  지금까지처럼 장소명 + 지점명(계약번호). A-3 만 켠다(사용자 결정 2026-08-14) —
    *  가로 단일에서 지금 보는 게 어느 카메라인지가 장소보다 급하고, 다채널로
@@ -555,9 +556,10 @@ export default function LandscapeVideo({
   );
   const modeText = mode === "recording" ? recordingLabel : "실시간";
 
-  // 단일 화면에서 모드를 좌상단 이름 배지 밑으로 올려보냈나(singleNameBadge).
-  // 올려보냈으면 아래 알약에는 시각만 남고, 시각도 없으면 알약을 안 그린다.
-  const modeMovedUp = singleNameBadge && expandedIndex !== null;
+  // 모드를 헤더 자리 알약으로 올려보냈나(modePillHeader). 올려보냈으면 아래
+  // 알약에는 시각만 남고, 시각도 없으면 알약을 안 그린다.
+  // 단일·다채널을 안 가른다 — 두 화면이 같은 자리에 같은 걸 둬야 한다.
+  const modeMovedUp = modePillHeader;
 
   // '● 실시간/녹화영상' 알약. 아래 시각 알약과 같은 규격이다(22px · 13px ·
    //  #666666 40% + blur) — 같은 화면의 알약 둘이 다르게 생기면 안 된다.
@@ -708,7 +710,7 @@ export default function LandscapeVideo({
                 // 밑으로 깔려 반쯤 가려졌다(사용자 지적 2026-08-26).
                 className="pointer-events-none absolute z-10 flex transition-opacity duration-150 ease-out"
                 style={{
-                  // 모드를 헤더로 올려보낸 화면(A-4 가로 단일)에서는 시각 알약을
+                  // 모드를 헤더로 올려보낸 화면(A-4 가로)에서는 시각 알약을
                   // 가운데로 옮긴다 — 같은 화면의 녹화 쪽은 시간바가 한가운데에
                   // 시각을 띄우므로, 왼쪽에 두면 실시간↔녹화에서 시각이 좌우로
                   // 튄다(사용자 지정 2026-08-26: "가로 녹화 단일이랑 동일한 위치로").
@@ -752,8 +754,8 @@ export default function LandscapeVideo({
       ? cameras[expandedIndex]?.label
       : (gridHeaderLabel ?? title);
   const cameraHeader =
-    // 이름 배지로 갈아탄 단일 화면에는 헤더를 안 그린다(뒤로가기도 같이 빠진다 —
-    // 사용자 지정 2026-08-26). 다채널은 그대로 헤더를 쓴다.
+    // 모드 알약으로 갈아탄 화면에는 이 헤더를 안 그린다(뒤로가기도 같이 빠진다 —
+    // 사용자 지정 2026-08-26).
     singleHeaderCamera && backHeaderLabel && !modeMovedUp ? (
       <div
         className="pointer-events-none absolute inset-x-0 top-0 flex items-center transition-opacity duration-300 ease-out"
@@ -832,7 +834,7 @@ export default function LandscapeVideo({
     </div>
   ) : null;
 
-  // 모드 알약으로 갈아탄 단일 화면은 헤더 줄이 그 알약뿐이다 — cameraHeader 를
+  // 모드 알약으로 갈아탄 화면은 헤더 줄이 그 알약뿐이다 — cameraHeader 를
   // 안 그리면 기본 헤더(장소명 + 지점명)로 흘러내려 같은 자리에 글자가 남는다.
   const header = modeMovedUp ? modeHeader : cameraHeader ?? (title ? (
     <div
@@ -1076,8 +1078,8 @@ export default function LandscapeVideo({
             label={cam.label}
             // singleNameBadge 면 안이 넘긴 singleBadge(A-4 는 "" = 숨김)를 무시하고
             // 카메라 이름을 그대로 띄운다 — A-2 가 쓰는 그 배지다.
-            badge={singleNameBadge ? undefined : singleBadge}
-            badgeAlign={singleNameBadge ? "left" : singleBadgeAlign}
+            badge={modePillHeader ? undefined : singleBadge}
+            badgeAlign={modePillHeader ? "left" : singleBadgeAlign}
             src={cam.src}
             fit={fit}
             paused={paused}
