@@ -3177,7 +3177,9 @@ const STRIP_PAD = 12;
 
 const PAD_TOP = 12; // 시간바 위 여백
 const PAD_BOTTOM = 4; // 시간바 아래 여백. 삼각형 제거로 줄여 썸네일을 위로 붙인다.
-const RAIL_H = 28; // 라벨+눈금 영역 높이. 눈금 아래 빈 공간 줄여 썸네일을 위로.
+// 라벨+눈금 영역 높이. 눈금 줄을 17 로 올리면서 아래 빈 공간만큼 같이 줄였다
+// (28 → 22, 사용자 지정 2026-08-26) — 그만큼 시간바 띠가 얇아지고 영상이 커진다.
+const RAIL_H = 22;
 const BAR_H = PAD_TOP + RAIL_H + PAD_BOTTOM; // 시간바 블록 전체 높이(=44)
 // 시간바만 놓는 띠(5버튼 아래)의 위아래 여백 — 같은 8 이다(사용자 지정
 // 2026-08-26: "위 12 아래 4 말고 둘 다 8"). 아래 스트립 여백(STRIP_PAD)과는
@@ -3645,7 +3647,11 @@ function RecordingEventTimeline({
             transition: railTransition,
           }}
         >
-          {/* 라벨 — 중앙 근처 페이드(다채널과 동일). 화면에 보이는 범위만 렌더. */}
+          {/* 라벨 — 화면에 보이는 범위만 렌더.
+              중앙(현재 시각) 근처에서 작아지며 사라지던 연출은 뺐다 — A-4 만
+              (사용자 지정 2026-08-26: "그 동작 없어도 돼"). 가운데 라벨을 가리려던
+              것이었는데, 그 자리의 현재시각 표시 자체를 없앤 뒤로는 가릴 게 없다.
+              그래서 모든 라벨이 같은 크기·같은 진하기로 흐른다. */}
           {labels.filter(({ secOffset }) => inView(secOffset)).map(({ text, secOffset }) => (
             <span
               key={`L${secOffset}`}
@@ -3655,8 +3661,7 @@ function RecordingEventTimeline({
                 left: `calc(50% + ${xOf(secOffset)}px)`,
                 top: "0",
                 color: "#A4A4A4",
-                transformOrigin: "center center",
-                ...labelVisualStyle(secOffset),
+                transform: "translateX(-50%)",
                 fontSize: "10px",
                 fontWeight: 500,
                 lineHeight: "10px",
@@ -3687,9 +3692,10 @@ function RecordingEventTimeline({
                 className="pointer-events-none absolute rounded-[1px]"
                 style={{
                   left: `calc(50% + ${x0}px)`,
-                  // 선을 조금 두껍게(2 → 3), 자리는 큰 눈금 점의 세로 가운데
-                  // (사용자 지정 2026-08-18: "선 두께 조금 늘리고, 눈금은 점으로").
-                  top: "23px",
+                  // 선을 조금 두껍게(2 → 3). 자리는 23 → 17 로 올렸다 — 라벨과
+                  // 눈금 사이가 13 이나 비어 보였다(사용자 지정 2026-08-26:
+                  // "시간이랑 바랑 간격 좀 줄여도 되지 않을까?"). 이제 7 이다.
+                  top: "17px",
                   width: `${x1 - x0 + 2}px`,
                   height: "3px",
                   backgroundColor: "rgba(173,173,173,0.7)",
@@ -3708,8 +3714,8 @@ function RecordingEventTimeline({
                 style={{
                   left: `calc(50% + ${xOf(secOffset)}px)`,
                   // 점 지름 = 선 두께(사용자 지정 2026-08-18: "원은 선 두께랑
-                  // 맞춰야지"). 선과 같은 띠(23~26) 안에 들어가 색만 달라진다.
-                  top: "23px",
+                  // 맞춰야지"). 선과 같은 띠(17~20) 안에 들어가 색만 달라진다.
+                  top: "17px",
                   width: "3px",
                   height: "3px",
                   backgroundColor: "#353535",
@@ -3735,7 +3741,7 @@ function RecordingEventTimeline({
               style={{
                 left: `calc(50% + ${xOf(c.secOffset)}px)`,
                 // 큰 눈금과 같은 규격(3px 점)에 색만 #F59E0B.
-                top: "23px",
+                top: "17px",
                 width: "3px",
                 height: "3px",
                 backgroundColor: "#F59E0B",
@@ -3781,7 +3787,8 @@ function RecordingEventTimeline({
           style={{
             top: `${barPad}px`,
             width: "2px",
-            height: "29px",
+            // 눈금 줄(17~20)보다 3 더 내려오는 길이 — 라벨 윗변에서 시작한다.
+            height: "23px",
             backgroundColor: "#111111",
           }}
         />
