@@ -839,7 +839,10 @@ export default function VariantA4({
                             가로엔 그 줄이 없어서 날짜를 고르거나 화면을 캡처할
                             길이 아예 없었다.
                             달력은 녹화에만 — 실시간엔 고를 날짜가 없다(세로와
-                            같은 규칙). 캡처는 두 모드 다. */}
+                            같은 규칙). 캡처는 두 모드 다 있지만 단일에만 둔다
+                            (사용자 지정 2026-08-27) — 다채널은 화면에 카메라가
+                            여럿이라 무엇을 캡처한 것인지가 안 정해진다. 메뉴를
+                            단일에만 둔 것과 같은 자리다. */}
                         {mode === "recording" &&
                           btn({
                             key: "date",
@@ -847,12 +850,13 @@ export default function VariantA4({
                             src: `${BASE}/time.svg`,
                             onClick: () => setDateTimeOpen(true),
                           })}
-                        {btn({
-                          key: "capture",
-                          label: "화면 캡처",
-                          src: `${BASE}/camera.svg`,
-                          onClick: showCaptureToast,
-                        })}
+                        {expandedIndex !== null &&
+                          btn({
+                            key: "capture",
+                            label: "화면 캡처",
+                            src: `${BASE}/camera.svg`,
+                            onClick: showCaptureToast,
+                          })}
                         {/* 움직임 감지 버튼은 없앴다(사용자 지정 2026-08-27).
                             메뉴로 연 패널이 '카메라 목록 | 움직임 감지' 두 탭을
                             이미 갖고 있어, 감지로 가는 길은 그 탭이다 — 딤에
