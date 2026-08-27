@@ -2851,6 +2851,33 @@ function MotionEventList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMs, wide]);
 
+  // 유형 칩 — 세로 줄과 가로 카드(썸네일 없는 흰 면)가 같은 걸 쓴다. 예전엔
+  // 가로 쪽이 공용 EventCardFace 라 유형이 아예 안 보였다(사용자 지적 2026-08-27:
+  // "세로는 칩이 있는데 가로는 칩도 없고 시간만 뜬다").
+  // 크기는 카메라 목록 타일 안 이름 라벨과 같은 높이 17 · 글자 10 이고, 라운드도
+  // 이 화면 공통 4 다. 이상 상황(넘어짐·폭행)만 빨강 — 썸네일 위 EventKindChip 과
+  // 같은 규칙이라 훑을 때 눈이 같은 것에 걸린다. 그림 위가 아니라 흰 바탕에
+  // 얹히므로 색만 다르다(회색 바탕 + 진회색).
+  const kindChip = (kind: EventKind) => {
+    const alert = kind !== "움직임";
+    return (
+      <span
+        className="inline-flex flex-none items-center self-start leading-none"
+        style={{
+          height: "17px",
+          padding: "0 6px",
+          borderRadius: "4px",
+          fontSize: "10px",
+          fontWeight: 600,
+          color: alert ? "#FFFFFF" : "#595959",
+          backgroundColor: alert ? "#E2202D" : "#F1F1F1",
+        }}
+      >
+        {kind}
+      </span>
+    );
+  };
+
   return (
     <div
       ref={scrollRef}
@@ -2871,7 +2898,6 @@ function MotionEventList({
     >
       {rows.map((r) => {
         const active = r.ms === activeMs;
-        const alert = r.kind !== "움직임";
         // 가로 카드는 '카메라 목록 타일 한 장' 그 자체다(사용자 지정 2026-08-26:
         // "사이즈를 카메라 목록 썸네일이랑 맞추자"). 글자 칸을 옆에 달았더니 카드
         // 폭이 타일의 두 배(204 vs 114)라 두 탭이 다른 규격으로 보였다. 유형·시각은
@@ -2890,10 +2916,9 @@ function MotionEventList({
               }}
               className={`relative h-full aspect-video flex-none overflow-hidden text-left${
                 // 검정 바탕은 썸네일이 있을 때만 깐다. 썸네일을 못 뽑는 저장
-                // 방식(NVR)에선 그 자리에 흰 카드(EventCardFace)가 들어가는데,
-                // 그 카드는 자기 라운드(6)가 이 박스의 라운드(4)보다 커서 모서리
-                // 틈으로 뒤의 검정이 비친다(사용자 지적 2026-08-26: "카드 뒤에
-                // 검정색이 비쳐"). EventCardFace 주석이 말하는 바로 그 경우다.
+                // 방식(NVR)에선 그 자리에 흰 면이 들어차므로 뒤에 깔 것이 없고,
+                // 남겨 두면 라운드 모서리 틈으로 검정이 비친다(사용자 지적
+                // 2026-08-26: "카드 뒤에 검정색이 비쳐").
                 eventThumbs ? " bg-neutral-900" : ""
               }`}
               // 카메라 목록 타일과 같은 4px — 타일과 나란히 놓고 봐도 같은 규격이다.
@@ -2910,15 +2935,43 @@ function MotionEventList({
                     className="absolute inset-0 h-full w-full"
                     style={{ objectFit: "cover" }}
                   />
-                  {/* 유형 — 썸네일 위 칩은 안 전체가 같이 쓰는 것 하나다
-                      (EventKindChip: 움직임=검정 반투명, 이상 상황=빨강). 왼쪽 위는
-                      카메라 목록 타일의 이름 라벨과 같은 자리라 눈이 같은 데를 본다. */}
-                  <EventKindChip kind={r.kind} />
+                  {/* 유형 — 세로 줄·흰 면과 같은 칩이다(사용자 지정 2026-08-27:
+                      "세로랑 가로 스타일이 왜 다르냐"). 예전엔 그림 위에서만
+                      공용 EventKindChip(9px · 검정 반투명)을 썼는데, 같은 목록의
+                      두 배치가 다른 칩을 쓰고 있었다. 왼쪽 위는 카메라 목록 타일의
+                      이름 라벨과 같은 자리라 눈이 같은 데를 본다. */}
+                  <span
+                    className="pointer-events-none absolute"
+                    style={{ left: "3px", top: "3px" }}
+                  >
+                    {kindChip(r.kind)}
+                  </span>
                 </>
               ) : (
-                // 썸네일을 못 뽑는 저장 방식(NVR) — 그림 자리에 흰 카드(유형 + 시각).
-                // 크기는 그대로라 목록 타일과 여전히 같다.
-                <EventCardFace ms={r.ms} active={active} />
+                // 썸네일을 못 뽑는 저장 방식(NVR) — 그림 자리에 흰 면. 담는 건
+                // 세로 줄과 똑같이 유형 칩 + 날짜 시간이다(사용자 지정 2026-08-27).
+                // 예전엔 공용 EventCardFace 였는데, 그건 제목이 늘 '움직임 감지'라
+                // 넘어짐·폭행이 묻히고 날짜도 없었다. 크기는 그대로라 목록 타일과
+                // 여전히 같다.
+                <div
+                  className="flex h-full w-full flex-col justify-center gap-[3px]"
+                  style={{
+                    backgroundColor: active ? "#F2F7FF" : "#FFFFFF",
+                    border: active ? "2px solid #1D6CEB" : "1px solid #D9D9D9",
+                    borderRadius: "4px",
+                    paddingLeft: "6px",
+                    paddingRight: "4px",
+                  }}
+                >
+                  {kindChip(r.kind)}
+                  <span
+                    suppressHydrationWarning
+                    className="whitespace-nowrap leading-none"
+                    style={{ fontSize: "10px", color: "#8C8C8C" }}
+                  >
+                    {formatEventStamp(r.ms)}
+                  </span>
+                </div>
               )}
               {/* 시각 — 그림 아래쪽 왼쪽. 라벨 서식은 카메라 목록 타일의 이름
                   라벨과 같다(높이 17 · 글자 10 · 검정 55%). 썸네일이 없을 땐 흰
@@ -2940,9 +2993,10 @@ function MotionEventList({
                   {formatEventStamp(r.ms)}
                 </div>
               )}
-              {active && (
+              {active && eventThumbs && (
                 // 고른 카드 — 카메라 목록 타일의 선택 표시와 같은 안쪽 파란 테두리.
                 // 바깥에 그리면 카드가 커져 타일과 크기가 어긋난다.
+                // 흰 면(NVR)은 자기 테두리가 파래지므로 여기선 안 그린다.
                 <div
                   className="pointer-events-none absolute inset-0"
                   style={{
@@ -2999,28 +3053,7 @@ function MotionEventList({
             {/* 유형(칩) · 날짜 시간 — 카메라 명은 뺐다(사용자 지정 2026-08-26).
                 단일 화면이라 어차피 지금 보고 있는 카메라 하나뿐이다. */}
             <div className="flex min-w-0 flex-col justify-center gap-[3px]">
-              <span
-                className="inline-flex flex-none items-center self-start leading-none"
-                style={{
-                  // 크기는 카메라 목록 타일 안 카메라 이름 라벨과 같다 — 높이 17 ·
-                  // 글자 10(사용자 지정 2026-08-26). 모서리만 알약이다(라벨은 2px) —
-                  // 유형은 상태 표시라 구분한다.
-                  height: "17px",
-                  padding: "0 6px",
-                  // 가로 카드의 유형 칩(EventKindChip)과 같은 4px — 알약이었는데
-                  // 같은 목록의 두 배치가 다른 라운드를 쓰고 있었다(사용자 지정
-                  // 2026-08-26: 라운드 값을 하나로).
-                  borderRadius: "4px",
-                  fontSize: "10px",
-                  fontWeight: 600,
-                  // 이상 상황(넘어짐·폭행)만 빨강 — 썸네일 위 EventKindChip 과 같은
-                  // 규칙이라 화면을 훑을 때 눈이 같은 것에 걸린다.
-                  color: alert ? "#FFFFFF" : "#595959",
-                  backgroundColor: alert ? "#E2202D" : "#F1F1F1",
-                }}
-              >
-                {r.kind}
-              </span>
+              {kindChip(r.kind)}
               <span
                 suppressHydrationWarning
                 // 날짜 시간 — 11 → 12(사용자 지정 2026-08-26). 위 유형 칩(10)보다
