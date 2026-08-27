@@ -703,7 +703,9 @@ export default function LandscapeVideo({
             {/* 알약 — statusRaise 를 받으면 이 층 바닥에서 그만큼 띄운 자리에
                 절대배치한다(모드가 바뀌어도 같은 높이). 안 받으면 예전처럼
                 컨트롤 위에 쌓는다. */}
-            {statusRaise == null ? (
+            {/* 모드 알약을 헤더로 올려보낸 화면(A-4 가로)은 날짜·시각 알약도
+                헤더로 따라 올라갔다 — 이 층엔 시간바만 남는다. */}
+            {modeMovedUp ? null : statusRaise == null ? (
               <div
                 className="pointer-events-none pb-3 transition-opacity duration-150 ease-out"
                 style={{
@@ -833,7 +835,11 @@ export default function LandscapeVideo({
   // 안을 오가도 왼쪽 선과 높이가 안 흔들린다.
   const modeHeader = modeMovedUp ? (
     <div
-      className="pointer-events-none absolute inset-x-0 top-0 flex items-center transition-opacity duration-300 ease-out"
+      // items-start + 안쪽 marginTop — 모드 알약은 예전 자리(헤더 세로 가운데)에
+      // 그대로 두고, 날짜·시각 알약만 그 아래로 흘려보내려는 것이다. 세로
+      // 가운데 정렬(items-center)로 두면 두 알약이 한 덩어리로 가운데를 잡아
+      // 모드 알약이 위로 밀린다.
+      className="pointer-events-none absolute inset-x-0 top-0 flex items-start transition-opacity duration-300 ease-out"
       style={{
         height: `${OVERLAY_HEADER_H}px`,
         opacity: dim && !auxOff ? 1 : 0,
@@ -842,7 +848,19 @@ export default function LandscapeVideo({
         marginTop: `${topInset}px`,
       }}
     >
-      {modePill}
+      {/* 날짜·시각 알약은 모드 알약 바로 아래다(사용자 지정 2026-08-27).
+          예전엔 딤 아래 한가운데였는데, 같은 것을 가리키는 알약 둘이 화면
+          위아래로 떨어져 있었다. 왼쪽 선을 맞춰 세로로 쌓는다. */}
+      <div
+        className="flex flex-col items-start"
+        style={{
+          gap: "6px",
+          marginTop: `${(OVERLAY_HEADER_H - pillH) / 2}px`,
+        }}
+      >
+        {modePill}
+        {statusRow}
+      </div>
     </div>
   ) : null;
 
