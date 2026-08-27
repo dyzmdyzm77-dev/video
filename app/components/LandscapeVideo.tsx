@@ -113,6 +113,8 @@ export default function LandscapeVideo({
   headerAlign = "center",
   scrubbing = false,
   auxHidden = false,
+  overlayToast = null,
+  overlayToastKey = 0,
   onExpand,
   onBack,
   title,
@@ -209,6 +211,13 @@ export default function LandscapeVideo({
    *  (사용자 지정 2026-08-14: "5버튼 누를 때는 5버튼만 남기고 나머지는 사라지고").
    *  스크럽과 달리 가운데 컨트롤은 살려 둔다. 기본 false = 기존 그대로. */
   auxHidden?: boolean;
+  /** 안이 띄우는 화면 정중앙 토스트(가로 딤). 세로에서 쓰는 토스트를 가로에서도
+   *  같은 자리·같은 모양으로 내보내려는 것 — 지금은 '화면 캡처'가 쓴다.
+   *  값이 있으면 이쪽이 이기고, 없으면 이 컴포넌트가 스스로 띄우는 문구
+   *  (화면 맞춤·줌 배율)를 그린다. toastKey 는 같은 문구를 연달아 띄울 때도
+   *  등장 애니메이션을 다시 태우기 위한 것이다. */
+  overlayToast?: string | null;
+  overlayToastKey?: number;
   /** 타일 더블탭 — 그 카메라 단일 화면으로. */
   onExpand?: (i: number) => void;
   /** 단일 화면 더블탭 — 다채널로 복귀. */
@@ -1038,7 +1047,11 @@ export default function LandscapeVideo({
           시간바·아이콘 줄로 꽉 차 기준이 애매했다. 딤 층이 아니라 껍데기에 두므로
           딤이 꺼져 있어도 뜬다 — 맞춤 버튼을 누른 직후라 딤은 보통 떠 있다. */}
       <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
-        <VideoFitToast inline text={centerToast} toastKey={centerToastKey} />
+        <VideoFitToast
+          inline
+          text={overlayToast ?? centerToast}
+          toastKey={overlayToast ? overlayToastKey : centerToastKey}
+        />
       </div>
       {/* 전환 스켈레톤 — 세로와 같은 결(skeleton-shimmer, 타일 사이 2px 흰 선).
           단일이면 화면 전체, 다채널이면 지금 가로 배치대로 칸을 나눈다. */}

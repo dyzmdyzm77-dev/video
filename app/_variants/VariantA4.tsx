@@ -447,8 +447,11 @@ export default function VariantA4({
   // 화면 캡처 토스트 — 카메라 버튼 누르면 잠깐 노출 후 자동 사라짐.
   const [captureToast, setCaptureToast] = useState(false);
   const captureToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [captureToastKey, setCaptureToastKey] = useState(0);
   const showCaptureToast = () => {
     setCaptureToast(true);
+    // 가로 딤 토스트는 같은 문구를 연달아 띄우므로 key 로 애니메이션을 다시 태운다.
+    setCaptureToastKey((k) => k + 1);
     if (captureToastTimer.current) clearTimeout(captureToastTimer.current);
     captureToastTimer.current = setTimeout(() => setCaptureToast(false), 2000);
   };
@@ -666,9 +669,10 @@ export default function VariantA4({
           onPageChange={setCurrentPage}
           onTitleClick={() => setVariantPickerOpen(true)}
           mode={mode}
-          // 시간바가 한가운데에 현재 시각을 띄우는 화면(단일 녹화)에서는 알약에서
-          // 시각을 뺀다(사용자 지정 2026-08-26).
-          hideStatusClock={mode === "recording" && expandedIndex !== null}
+          // 알약에는 모드만 남긴다 — 날짜·시각은 뺐다(사용자 지정 2026-08-27).
+          // 딤 아래 왼쪽 줄에 달력 버튼이 생겨 날짜를 고르는 길이 따로 났고,
+          // 녹화면 시간바가 이미 한가운데에 시각을 띄운다.
+          hideStatusClock
           // 알약 높이 — 딤 오른쪽 아래 축소 아이콘과 같은 줄에 앉힌다(사용자 지정
           // 2026-08-27: "그 확대 아이콘 위치로 내려줘"). 73 은 시간바 클록 자리라
           // 아이콘 줄보다 한참 위였다. 실측으로 아이콘 중심이 영역 바닥에서 50,
@@ -828,11 +832,29 @@ export default function VariantA4({
                             onClick: () =>
                               setLsPanel((v) => (v === "list" ? null : "list")),
                           })}
+                        {/* 달력 · 화면 캡처 — 세로 날짜 줄 양 끝에 있던 둘을
+                            가로에서는 이 줄로 가져온다(사용자 지정 2026-08-27).
+                            가로엔 그 줄이 없어서 날짜를 고르거나 화면을 캡처할
+                            길이 아예 없었다.
+                            달력은 녹화에만 — 실시간엔 고를 날짜가 없다(세로와
+                            같은 규칙). 캡처는 두 모드 다. */}
+                        {mode === "recording" &&
+                          btn({
+                            key: "date",
+                            label: "날짜, 시간 선택",
+                            src: `${BASE}/time.svg`,
+                            onClick: () => setDateTimeOpen(true),
+                          })}
+                        {btn({
+                          key: "capture",
+                          label: "화면 캡처",
+                          src: `${BASE}/camera.svg`,
+                          onClick: showCaptureToast,
+                        })}
                         {/* 움직임 감지 버튼은 없앴다(사용자 지정 2026-08-27).
                             메뉴로 연 패널이 '카메라 목록 | 움직임 감지' 두 탭을
                             이미 갖고 있어, 감지로 가는 길은 그 탭이다 — 딤에
-                            버튼을 따로 두면 같은 자리로 가는 문이 두 개가 된다.
-                            이제 딤 왼쪽은 AI · 메뉴 둘뿐이다. */}
+                            버튼을 따로 두면 같은 자리로 가는 문이 두 개가 된다. */}
                       </div>
                       {/* 현재 시각 알약은 여기 없다 — 딤 아래 왼쪽 공통 표시로
                           올라갔다(LandscapeVideo, 사용자 지정 2026-08-25: 세 안이
@@ -849,6 +871,9 @@ export default function VariantA4({
             </div>
           }
           auxHidden={playerFocus}
+          // 화면 캡처 토스트 — 세로와 같은 문구를 가로 정중앙에 띄운다.
+          overlayToast={captureToast ? "현재 화면이 캡처 되었어요" : null}
+          overlayToastKey={captureToastKey}
           centerControls={
             mode === "recording" ? (
               <RecordingControls
