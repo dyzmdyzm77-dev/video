@@ -765,6 +765,14 @@ body {
 
   /* 화면 왼쪽 가장자리에 붙는 LNB 패널(좌측 레일). 전체 높이, 흰 패널.
      펼침 200px / 접힘 64px(아이콘 레일)로 슬라이드된다. */
+  /* 글자 크기는 세 단뿐이다(사용자 지정 2026-08-27) — 예전엔 11·12·13·14·15 가
+     한 패널에 섞여 있었고, 15/14/13 은 같은 위계인데 값만 갈린 것이었다.
+       · 11 — 그룹 제목(저장 방식 · 화면 시안 · 해상도)과 비율 표기. 라벨이라 작다.
+       · 12 — 고르고 누르는 것 전부(목록 · 세그먼트 · 토글 · 액션 · 입력).
+       · 13 — 패널 제목('메뉴') 하나. 한 단 위라 패널의 머리라는 게 읽힌다.
+     기호(☰ · ⟲)만 16 이다 — 글자가 아니라 그림이라 같은 12 면 작아 보인다.
+     접힘 레일의 짧은 토큰(현행 · A-1 · 360 · PNG)은 펼침 항목과 같은 12 고,
+     세그먼트 토큰만 10 이다(36px 레일에 '클라우드'가 들어가야 한다). */
   .desktop-variant-nav {
     display: flex;
     flex-direction: column;
@@ -794,7 +802,7 @@ body {
     justify-content: center;
     flex: none;
     min-width: 28px;
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 700;
     line-height: 1;
   }
@@ -821,12 +829,12 @@ body {
     border: none;
     background: transparent;
     color: #525252;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     cursor: pointer;
   }
   .desktop-variant-nav .dvn-toggle-icon {
-    font-size: 19px;
+    font-size: 16px;
     color: #525252;
     transition: color 0.15s ease;
   }
@@ -869,7 +877,7 @@ body {
     border: none;
     background: transparent;
     color: #a3a3a3;
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 600;
     text-align: left;
     cursor: pointer;
@@ -882,9 +890,8 @@ body {
     color: #000000;
   }
 
-  /* 해상도 짧은 토큰은 숫자(360/1080 등)라 폰트를 작게. */
+  /* 해상도 짧은 토큰은 숫자(360/1080 등)라 자간만 좁힌다 — 크기는 공통 12 다. */
   .desktop-variant-nav .dvn-icon-num {
-    font-size: 12px;
     letter-spacing: -0.02em;
   }
 
@@ -914,7 +921,7 @@ body {
     border-radius: 6px;
     background: transparent;
     color: #a3a3a3;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
     cursor: pointer;
@@ -931,7 +938,7 @@ body {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   }
   /* 펼침이면 라벨만, 접힘이면 짧은 토큰만. 토큰은 36px 레일에 들어가야 해서
-     기본 dvn-icon(15px/min-width 28)보다 작고 좁게 다시 잡는다. */
+     기본 dvn-icon(12px/min-width 28)보다 작고 좁게 다시 잡는다. */
   .desktop-variant-nav[data-open="true"] .dvn-seg .dvn-icon {
     display: none;
   }
@@ -958,7 +965,7 @@ body {
     border: none;
     background: transparent;
     color: #525252;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
     text-align: left;
     cursor: pointer;
@@ -988,7 +995,7 @@ body {
     border: none;
     background: transparent;
     color: #525252;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
     text-align: left;
     cursor: pointer;
@@ -998,7 +1005,7 @@ body {
     color: #000000;
   }
   .desktop-variant-nav .dvn-rotate-toggle .dvn-icon {
-    font-size: 17px;
+    font-size: 16px;
   }
   .desktop-variant-nav[data-open="true"] .dvn-rotate-toggle .dvn-icon {
     display: none;
@@ -1011,7 +1018,7 @@ body {
     gap: 6px;
     padding: 4px 2px;
     color: #525252;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
   }
@@ -1100,7 +1107,7 @@ body {
     border: none;
     background: transparent;
     color: #525252;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
     text-align: left;
     cursor: pointer;
