@@ -257,28 +257,7 @@ function CameraFeedImpl({
       {/* 라벨 — badge 에 빈 문자열을 주면 아예 안 그린다(A-3 단일 화면: 이름은
           딤 헤더가 맡는다). 안 주면 지금까지처럼 카메라 이름이다. */}
       {badge !== "" && (
-      <div
-        suppressHydrationWarning
-        className={`absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white${
-          badgeAlign === "center" || badgeAlign === "bottom-center"
-            ? " -translate-x-1/2"
-            : ""
-        }`}
-        style={{
-          ...(badgeAlign === "bottom-left" || badgeAlign === "bottom-center"
-            ? { bottom: "4px" }
-            : { top: "4px" }),
-          left:
-            badgeAlign === "center" || badgeAlign === "bottom-center"
-              ? "50%"
-              : "4px",
-          height: "17px",
-          padding: "0 4px",
-          borderRadius: "2px",
-        }}
-      >
-        {badge ?? label}
-      </div>
+        <CameraBadge text={badge ?? label} align={badgeAlign} />
       )}
 
       {/* 이름 배지 아래 한 줄 더 — 배지와 왼쪽 선을 맞춘다(둘 다 left 4). */}
@@ -755,5 +734,40 @@ function OverlayIcon({ src, size = 24 }: { src: string; size?: number }) {
         maskSize: "contain",
       }}
     />
+  );
+}
+
+/**
+ * 영상 위 이름 배지. CameraFeed 안에서도 쓰고, 밖에서도 쓴다 —
+ * 가로 단일 화면은 이 배지를 '줌 껍데기 밖'에 따로 그려야 해서다(사용자 지적
+ * 2026-08-27: "영상을 확대하는데 왜 카메라 명도 같이 확대하니, 걔는 위치
+ * 유지해야지"). 안쪽에 두면 transform: scale 을 같이 받아 글자까지 커진다.
+ * 감싸는 쪽이 position: relative 여야 한다.
+ */
+export function CameraBadge({
+  text,
+  align = "left",
+}: {
+  text: string;
+  align?: "left" | "center" | "bottom-left" | "bottom-center";
+}) {
+  const bottom = align === "bottom-left" || align === "bottom-center";
+  const center = align === "center" || align === "bottom-center";
+  return (
+    <div
+      suppressHydrationWarning
+      className={`pointer-events-none absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white${
+        center ? " -translate-x-1/2" : ""
+      }`}
+      style={{
+        ...(bottom ? { bottom: "4px" } : { top: "4px" }),
+        left: center ? "50%" : "4px",
+        height: "17px",
+        padding: "0 4px",
+        borderRadius: "2px",
+      }}
+    >
+      {text}
+    </div>
   );
 }

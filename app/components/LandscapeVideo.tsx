@@ -5,7 +5,7 @@ import { BASE } from "../basePath";
 import { bestGridForCount } from "./layoutRules";
 import { useGridAreaRatio } from "./useGridLayout";
 import type React from "react";
-import { CameraFeed, GridSelectionOverlay } from "./CameraFeed";
+import { CameraBadge, CameraFeed, GridSelectionOverlay } from "./CameraFeed";
 import { useAutoHide } from "./useAutoHide";
 import { useDimSync } from "./dimSync";
 import { VideoFitToast, useVideoFit } from "./VideoFitToast";
@@ -1121,6 +1121,11 @@ export default function LandscapeVideo({
         className="landscape-video-area h-full w-full bg-black"
         onClick={() => handleTap(null)}
       >
+        {/* 한 겹 더 — 이름 배지를 줌 밖에 두면서도 예전과 같은 자리에 찍으려는
+            것이다. 배지를 바깥 .landscape-video-area 에 직접 붙이면 그 요소의
+            좌우 여백(상태바 자리, padding-inline)까지 넘어가 영상 밖에 걸린다.
+            이 겹은 그 여백 '안쪽'을 그대로 차지하므로 기준이 영상과 같아진다. */}
+        <div className="relative h-full w-full">
         {/* 줌 껍데기 — 확대·이동은 이 한 겹에만 건다. 부모의 상태바 여백
             (padding-inline)을 그대로 받도록 absolute 가 아니라 h-full w-full 이다. */}
         <div
@@ -1139,16 +1144,27 @@ export default function LandscapeVideo({
         >
           <CameraFeed
             label={cam.label}
-            // singleNameBadge 면 안이 넘긴 singleBadge(A-4 는 "" = 숨김)를 무시하고
-            // 카메라 이름을 그대로 띄운다 — A-2 가 쓰는 그 배지다.
-            badge={modePillHeader ? undefined : singleBadge}
-            badgeAlign={modePillHeader ? "left" : singleBadgeAlign}
+            // 이름 배지는 이 안에 안 그린다 — 줌 껍데기 안이라 두 손가락으로
+            // 확대하면 글자까지 같이 커졌다(사용자 지적 2026-08-27: "영상을
+            // 확대하는데 왜 카메라 명도 같이 확대하니, 걔는 위치 유지해야지").
+            // 아래에서 껍데기 밖에 같은 배지를 그린다.
+            badge=""
             src={cam.src}
             fit={fit}
             paused={paused}
             playbackMs={playbackMs}
             driveByPlayback={driveByPlayback}
           />
+        </div>
+        {/* 이름 배지 — 줌 밖이라 확대·이동을 안 따라간다. 영상 영역 기준으로
+            늘 같은 자리다. modePillHeader(A-4)면 안이 넘긴 singleBadge("" = 숨김)를
+            무시하고 카메라 이름을 띄운다 — A-2 가 쓰는 그 배지다. */}
+        {(modePillHeader || singleBadge !== "") && (
+          <CameraBadge
+            text={modePillHeader ? cam.label : (singleBadge ?? cam.label)}
+            align={modePillHeader ? "left" : singleBadgeAlign}
+          />
+        )}
         </div>
       </div>,
     );
