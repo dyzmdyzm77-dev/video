@@ -70,7 +70,6 @@ import {
   bestGridForCount,
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
-  IMMERSIVE_EDGE,
   IMMERSIVE_EXTRA_INSET,
   LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
@@ -331,16 +330,19 @@ export default function VariantA4({
   // '확대가 화면을 돌렸는가'. 폰을 이미 눕힌 채 확대를 누르면(제자리) false 다.
   const rotatedNow = useImmersiveRotated();
   // 눕힌 화면 값은 기기별로 다르다 — 아이폰 60, 안드로이드 30(사용자 지정
-  // 2026-08-18). 제자리 확대는 양쪽 다 IMMERSIVE_EDGE.
-  // 확대가 화면을 '돌렸을 때'만 크게 준다(사용자 지정 2026-08-18: "세로, 가로
-  // 모드에서 확대 버튼 눌러서 제자리 확대되면, 딤 아이콘 좌우 마진 그대로 유지").
-  // 화면이 가로인지로 보면 안 된다 — 폰을 이미 눕힌 채 확대를 누른 경우도 가로라
-  // 넓은 값이 걸렸다. 제자리 확대는 화면이 그대로니 여백도 세로 딤과 같은 값이다.
-  const dimEdge = rotatedNow
-    ? isAndroid
-      ? LANDSCAPE_EDGE_ANDROID
-      : LANDSCAPE_EDGE
-    : IMMERSIVE_EDGE;
+  // 2026-08-18).
+  //
+  // 어떻게 들어왔는지는 안 본다(사용자 지정 2026-08-27). 예전엔 '확대가 화면을
+  // 돌렸는가'(rotatedNow)로 갈라, 세로에서 확대한 경우만 60/30 이고 가로모드나
+  // 그 상태의 제자리 확대는 16 이었다. 그런데 360 짜리 폰이면 세 경우가 결국
+  // 같은 화면이다(사용자 지적: "360은 제자리 확대랑 가로모드가 같잖아 …
+  // 그게 같은 해상도가 있잖아") — 실기기에서도 카메라 구멍·라운드 모서리는
+  // 어느 경로로 왔든 같은 변에 온다. 그래서 눕힌 값 하나로 통일한다.
+  //
+  // ※ 위아래(topInset·bottomInset)는 아직 rotatedNow 로 갈린다 —
+  //    제자리 확대일 때만 IMMERSIVE_EXTRA_INSET 20 이 더 붙는다. 같은 이유로
+  //    묶을 수 있지만 가로모드의 세로 위치가 통째로 움직이는 변경이라 그대로 뒀다.
+  const dimEdge = isAndroid ? LANDSCAPE_EDGE_ANDROID : LANDSCAPE_EDGE;
   // 시간바 아래 아이콘 줄은 LandscapeVideo 밖(controls)에 있어 그쪽 보정을 못 받는다
   // — 같은 식으로 앱 창이 화면에서 밀려난 만큼 빼서 기기 모서리 기준으로 맞춘다.
   // 가로 패널 폭 — 240 고정(사용자 지정 2026-08-19: "그냥 고정하자 240으로").
