@@ -857,18 +857,38 @@ export default function LandscapeVideo({
         marginTop: `${topInset}px`,
       }}
     >
-      {/* 날짜·시각 알약은 모드 알약 바로 아래다(사용자 지정 2026-08-27).
-          예전엔 딤 아래 한가운데였는데, 같은 것을 가리키는 알약 둘이 화면
-          위아래로 떨어져 있었다. 왼쪽 선을 맞춰 세로로 쌓는다. */}
+      {/* 날짜·시각은 모드 알약 바로 아래에 '그냥 텍스트'로 적는다(사용자 지정
+          2026-08-27). 알약으로 감쌌더니 같은 자리에 알약 둘이 겹쳐 무거웠고,
+          딤 아래 한가운데에 떨어져 있던 것보다 여기가 읽기 쉽다. 배경 없이
+          흰 글자 + 그림자만으로 영상 위에서 읽히게 한다(딤 위 글자 공통 규칙).
+          모드 알약은 예전 자리(헤더 세로 가운데)에 그대로 두고 이 줄만 아래로
+          흘려보낸다 — 그래서 items-start + marginTop 이다. */}
       <div
         className="flex flex-col items-start"
         style={{
-          gap: "6px",
+          gap: "4px",
           marginTop: `${(OVERLAY_HEADER_H - pillH) / 2}px`,
         }}
       >
         {modePill}
-        {statusRow}
+        {clock ? (
+          <span
+            suppressHydrationWarning
+            style={{
+              // 알약 글자(14)보다 한 단 작다 — 딸린 줄이라는 게 읽혀야 한다.
+              // 왼쪽 2px 은 알약 안쪽 여백(10) 때문에 생기는 눈속임 보정이 아니라,
+              // 글자 왼쪽 선을 알약 '테두리'가 아니라 점에 가깝게 맞춘 값이다.
+              paddingLeft: "2px",
+              fontSize: "12px",
+              fontWeight: 600,
+              lineHeight: "12px",
+              color: "#FFFFFF",
+              textShadow: "0 0 4px rgba(0,0,0,0.6)",
+            }}
+          >
+            {clock}
+          </span>
+        ) : null}
       </div>
     </div>
   ) : null;
