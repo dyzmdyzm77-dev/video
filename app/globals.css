@@ -1304,6 +1304,14 @@ body {
   html[data-compare="true"] .device-caption {
     display: block;
   }
+  /* As Is 단독 보기(비교 꺼짐)에는 라벨을 안 붙인다 — 시안 단독(.device-caption)도
+     비교하기일 때만 뜨고, 기기가 한 대뿐이라 무엇인지 헷갈릴 일이 없다.
+     결정적으로 이 라벨은 프레임 '안'에 있어서 회전하면 기기와 같이 돌아 90° 로
+     눕는다. 시안엔 돌 라벨이 없으니 As Is 만 이상하게 보였다(사용자 지적
+     2026-08-31: "돌아갈때 As Is 가.. 다른 시안이랑 동작이 다르다"). */
+  html:not([data-compare="true"]) .asis-caption {
+    display: none;
+  }
   /* 화면 — 시안 기기와 항상 같은 크기. */
   .asis-screen {
     position: relative;
