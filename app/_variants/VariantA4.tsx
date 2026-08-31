@@ -2957,7 +2957,7 @@ function MotionEventList({
                 // 넘어짐·폭행이 묻히고 날짜도 없었다. 크기는 그대로라 목록 타일과
                 // 여전히 같다.
                 <div
-                  className="flex h-full w-full flex-col justify-center gap-[3px]"
+                  className="flex h-full w-full flex-col justify-center gap-[8px]"
                   style={{
                     backgroundColor: active ? "#F2F7FF" : "#FFFFFF",
                     border: active ? "2px solid #1D6CEB" : "1px solid #D9D9D9",
@@ -2970,7 +2970,7 @@ function MotionEventList({
                   <span
                     suppressHydrationWarning
                     className="whitespace-nowrap leading-none"
-                    style={{ fontSize: "10px", color: "#8C8C8C" }}
+                    style={{ fontSize: "14px", color: "#8C8C8C" }}
                   >
                     {formatEventStamp(r.ms)}
                   </span>
@@ -2982,11 +2982,14 @@ function MotionEventList({
               {eventThumbs && (
                 <div
                   suppressHydrationWarning
-                  className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
+                  className="absolute inline-flex items-center bg-black/55 text-[14px] font-medium leading-none text-white"
                   style={{
                     left: "3px",
                     bottom: "3px",
-                    height: "17px",
+                    // 글자를 14 로 키우면서 라벨 높이도 17 → 20(사용자 지정
+                    // 2026-08-31). 17 은 10px 글자에 맞춘 값이라 그대로 두면
+                    // 글자가 라벨을 꽉 채워 답답하다.
+                    height: "20px",
                     padding: "0 4px",
                     // 라운드는 이 안에서 하나로 맞춘다(사용자 지정 2026-08-26) —
                     // 타일·썸네일·유형 칩(EventKindChip)이 모두 4px 다.
