@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useDeviceScope } from "./deviceScope";
+import { useDeviceScope, type DeviceScope } from "./deviceScope";
 
 // 현재 "기기 화면 폭"(px)을 읽는다. 폭 기준 분기(app/components/layoutRules.ts 의
 // WIDE_BP)는 전부 이 함수 하나를 통해야 한다 — 예전엔 안·홈이 각자 인라인으로
@@ -35,12 +35,12 @@ export function readForcedPortrait(): boolean {
 // scope: 어느 기기의 크기를 읽을지(0 = 시안, 1·2 = 비교 자리). 자리 변수
 // (--dev1-w 등)는 CSS 가 '자리에 못 박은 값 → 없으면 시안 값' 순서로 풀어 두므로,
 // 자리 해상도를 안 정한 경우엔 시안과 같은 값이 나온다(compareSize.ts).
-const sizeVar = (axis: "w" | "h", scope: 0 | 1 | 2) =>
+const sizeVar = (axis: "w" | "h", scope: DeviceScope) =>
   scope ? `--dev${scope}-${axis}` : `--device-${axis}`;
 
 export function readDeviceWidth(
   fallback?: number | Element | null,
-  scope: 0 | 1 | 2 = 0,
+  scope: DeviceScope = 0,
 ): number {
   if (typeof window === "undefined") return 360;
   if (readForcedPortrait()) return window.innerHeight || 360;
@@ -67,7 +67,7 @@ export function readDeviceWidth(
 // 기기 화면 세로(px). 폭과 같은 규칙으로 읽는다 — 데스크톱 미리보기면 --device-h,
 // 실기기면 뷰포트 높이. 화면 비율(가로/세로)을 보는 분기(layoutRules 의
 // SIDE_PANEL_RATIO)에 쓴다. 여기 말고 딴 데서 --device-h 를 직접 읽지 말 것.
-export function readDeviceHeight(scope: 0 | 1 | 2 = 0): number {
+export function readDeviceHeight(scope: DeviceScope = 0): number {
   if (typeof window === "undefined") return 780;
   if (readForcedPortrait()) return window.innerWidth || 780;
   const desktopPreview =
@@ -100,7 +100,7 @@ export function readDeviceHeight(scope: 0 | 1 | 2 = 0): number {
  *  그 규칙이 세로 방향에서만 적용되기 때문이다(globals.css 의
  *  `@media (orientation: portrait)`). 가로로 눕힌 폰에서는 data-landscape 가
  *  켜져 있어도 앱은 안 돌아가 있다 — 플래그만 보면 거기서 '세로'로 잘못 읽는다. */
-export function readDeviceWide(scope: 0 | 1 | 2 = 0): boolean {
+export function readDeviceWide(scope: DeviceScope = 0): boolean {
   if (typeof window === "undefined") return false;
   const wide = readDeviceWidth(undefined, scope) > readDeviceHeight(scope);
   const desktopPreview =
@@ -128,7 +128,7 @@ export function readCssRotated(): boolean {
 
 /** readDeviceWide 를 구독한다. SSR·첫 렌더는 세로(false)로 맞춰 하이드레이션
  *  불일치를 막는다. */
-export function useDeviceWide(scope?: 0 | 1 | 2): boolean {
+export function useDeviceWide(scope?: DeviceScope): boolean {
   const ctx = useDeviceScope();
   const s = scope ?? ctx;
   const [wide, setWide] = useState(false);
@@ -150,7 +150,7 @@ export function useDeviceWide(scope?: 0 | 1 | 2): boolean {
 }
 
 /** 화면 비율(가로/세로). 1 보다 크면 가로가 더 긴 화면. */
-export function useDeviceRatio(scope?: 0 | 1 | 2) {
+export function useDeviceRatio(scope?: DeviceScope) {
   const ctx = useDeviceScope();
   const s = scope ?? ctx;
   const [r, setR] = useState(
@@ -169,7 +169,7 @@ export function useDeviceRatio(scope?: 0 | 1 | 2) {
 // scope 를 안 주면 컨텍스트(DeviceScopeContext)를 따른다 — 비교 자리 안에서
 // 부른 훅은 그 자리 폭을, 시안 쪽은 시안 폭을 본다. 자리 프레임 자신처럼
 // 컨텍스트를 제공하는 쪽만 번호를 직접 넘긴다(자기가 만든 값은 자기가 못 읽는다).
-export function useDeviceWidth(scope?: 0 | 1 | 2) {
+export function useDeviceWidth(scope?: DeviceScope) {
   const ctx = useDeviceScope();
   const s = scope ?? ctx;
   // 첫 렌더부터 실제 폭으로 시작한다. 360 고정으로 시작하면 페이지 전환 때마다

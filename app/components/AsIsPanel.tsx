@@ -197,7 +197,7 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
   // 프레임에 실어 준다 — 크기와 달리 CSS 변수로는 안 풀리는 값이다.
   const sizeIdx = useCompareSize(slot);
   // 왼쪽에 무엇을 놓을지 — 기본은 As Is, 시안끼리 비교할 수도 있다.
-  // slot 1 = 시안 바로 왼쪽, slot 2 = 그 왼쪽(3개 비교일 때만 뜬다).
+  // slot 1 = 시안 바로 왼쪽, slot 2·3 = 그 왼쪽(3개·4개 비교일 때만 뜬다).
   const compareWith = useCompareTarget(slot);
   // 기본은 다채널(그리드, 시안과 동일) — 큰 영상 없이 목록 8개가 모두 재생된다.
   // 타일을 클릭하면 그 카메라가 큰 영상으로 올라오는 단일채널 모드로 전환되고,
@@ -267,11 +267,15 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
       // 두 번째 자리는 '3개 비교'일 때만 뜬다 — As Is 단독은 기기가 한 대뿐이라
       // 여기에 해당하지 않는다.
       const root = document.documentElement;
+      // 자리 1 은 비교하기 또는 As Is 단독. 바깥 자리(2·3)는 비교하기이면서
+      // 그 자리까지 켜져 있을 때만 — data-compare-slots 가 '왼쪽 자리 수'다
+      // (2개 비교 = 1, 3개 = 2, 4개 = 3).
       const isOn =
-        slot === 2
-          ? root.dataset.compare === "true" && root.dataset.compareSlots === "2"
-          : root.dataset.compare === "true" ||
-            root.dataset.asisOnly === "true";
+        slot === 1
+          ? root.dataset.compare === "true" ||
+            root.dataset.asisOnly === "true"
+          : root.dataset.compare === "true" &&
+            Number(root.dataset.compareSlots) >= slot;
       setOn(isOn);
       setCompareOn(root.dataset.compare === "true");
       // 비교하기가 꺼지면 '첫 동기화 즉시' 플래그를 되돌려, 다시 켰을 때
@@ -373,7 +377,8 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
   // 진짜 컴포넌트라, 오른쪽과 같은 화면 종류(다채널/단일·실시간/녹화)에서
   // 시작하고 딤·시트도 각자 독립으로 동작한다(screenState.ts).
   // 자리에 따라 왼쪽으로 한 칸(slot 1) 또는 두 칸(slot 2) 물러난다(globals.css).
-  const frameClass = slot === 2 ? "asis-frame asis-frame--2" : "asis-frame";
+  const frameClass =
+    slot === 1 ? "asis-frame" : `asis-frame asis-frame--${slot}`;
   // 자리 해상도를 따로 정했을 때만 실어 준다. 안 정했으면 속성이 없어서 문서
   // 루트(html[data-punch])의 값을 그대로 쓴다. As Is 단독 보기는 시안 자리를
   // 그대로 쓰므로 자리 해상도를 적용하지 않는다(CSS 도 마찬가지).

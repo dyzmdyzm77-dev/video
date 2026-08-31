@@ -65,6 +65,7 @@ export default function RootLayout({
             useSearchParams 를 쓰므로 Suspense 로 감싸야 /_not-found 등 정적
             프리렌더가 깨지지 않는다. */}
         <Suspense>
+          <AsIsPanel slot={3} />
           <AsIsPanel slot={2} />
           <AsIsPanel slot={1} />
         </Suspense>

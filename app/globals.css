@@ -631,6 +631,10 @@ body {
     --dpc-w: var(--dev2-outer);
     transform: translateX(calc(var(--dev2-left) + var(--dev2-outer) / 2 - 50%));
   }
+  .dpc-left3 {
+    --dpc-w: var(--dev3-outer);
+    transform: translateX(calc(var(--dev3-left) + var(--dev3-outer) / 2 - 50%));
+  }
   .dpc-chip {
     height: 26px;
     padding: 0 11px;
@@ -1179,12 +1183,19 @@ body {
     --dev2-h: var(--slot2-h, var(--device-h, 780px));
     --dev2-m: var(--slot2-m, var(--device-margin, 10px));
     --dev2-r: var(--slot2-r, var(--device-radius, 45px));
+    --dev3-w: var(--slot3-w, var(--device-w, 360px));
+    --dev3-h: var(--slot3-h, var(--device-h, 780px));
+    --dev3-m: var(--slot3-m, var(--device-margin, 10px));
+    --dev3-r: var(--slot3-r, var(--device-radius, 45px));
     /* 목업 바깥(베젤 포함) 폭 — 배율까지 먹인 화면상 크기. */
     --dev1-outer: calc(
       (var(--dev1-w) + var(--dev1-m) * 2) * var(--device-scale, 1)
     );
     --dev2-outer: calc(
       (var(--dev2-w) + var(--dev2-m) * 2) * var(--device-scale, 1)
+    );
+    --dev3-outer: calc(
+      (var(--dev3-w) + var(--dev3-m) * 2) * var(--device-scale, 1)
     );
     /* 시안(맨 오른쪽) 목업의 왼쪽 변. --device-left 는 '화면' 왼쪽이라 베젤만큼 뺀다. */
     --dev0-bezel: calc(
@@ -1193,6 +1204,7 @@ body {
     );
     --dev1-left: calc(var(--dev0-bezel) - 50px - var(--dev1-outer));
     --dev2-left: calc(var(--dev1-left) - 50px - var(--dev2-outer));
+    --dev3-left: calc(var(--dev2-left) - 50px - var(--dev3-outer));
   }
   .asis-frame {
     display: block;
@@ -1265,6 +1277,20 @@ body {
     --device-h: var(--dev2-h);
     --device-margin: var(--dev2-m);
     --device-radius: var(--dev2-r);
+  }
+
+  /* 4개 비교의 가장 바깥 자리 — 시안 왼쪽으로 세 칸(자리 2 의 왼쪽). */
+  html[data-compare="true"] .asis-frame--3 {
+    left: var(--dev3-left);
+    bottom: calc(
+      var(--device-bottom-pad, 40px) - var(--dev3-m) * var(--device-scale, 1)
+    );
+    padding: var(--dev3-m);
+    border-radius: var(--dev3-r);
+    --device-w: var(--dev3-w);
+    --device-h: var(--dev3-h);
+    --device-margin: var(--dev3-m);
+    --device-radius: var(--dev3-r);
   }
 
   /* ── As Is 단독 보기 ──────────────────────────────────────────────────

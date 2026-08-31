@@ -18,7 +18,8 @@ const COMPARE_GAP = 50;
 // 비교하기가 꺼져 있으면 1. data-compare-slots 는 DesktopVariantNav 가 싣는다.
 function paneCount(root: HTMLElement) {
   if (root.dataset.compare !== "true") return 1;
-  return root.dataset.compareSlots === "2" ? 3 : 2;
+  const n = Number(root.dataset.compareSlots);
+  return (Number.isInteger(n) && n >= 1 ? n : 1) + 1;
 }
 
 // 지금 서 있는 기기들의 크기(화면 px)와 베젤 여백. [0] = 오른쪽 시안,

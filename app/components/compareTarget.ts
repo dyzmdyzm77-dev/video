@@ -8,11 +8,12 @@ import type { VariantKey } from "./variantRoute";
 // ============================================================================
 // 원래는 As Is(현행 앱) 하나뿐이었다. 시안끼리도 비교하고 싶다는 요청이 있어
 // (예: A-1안 ↔ A-2안) 왼쪽 대상을 고를 수 있게 한다(2026-08-12).
-// 그 뒤 "세 개까지 나란히"라는 요청이 와서(2026-08-24) 왼쪽 자리를 둘로 늘렸다 —
-// 오른쪽(지금 보고 있는 안)까지 합쳐 최대 3개가 한 화면에 선다.
+// 그 뒤 "세 개까지 나란히"라는 요청이 와서(2026-08-24) 왼쪽 자리를 둘로 늘렸고,
+// 다시 "4개까지"(2026-08-31) 셋으로 늘렸다 — 오른쪽(지금 보고 있는 안)까지
+// 합쳐 최대 4개가 한 화면에 선다.
 //
 // 자리(slot) 번호는 오른쪽에서부터 센다:
-//   slot 1 = 시안 바로 왼쪽, slot 2 = 그 왼쪽(가장 바깥).
+//   slot 1 = 시안 바로 왼쪽, slot 2 = 그 왼쪽, slot 3 = 가장 바깥.
 // 오른쪽은 지금 보고 있는 안이다 — 상단 칩이나 좌측 패널에서 바꾸면 된다.
 // 왼쪽 둘만 여기서 정한다.
 //
@@ -24,18 +25,22 @@ import type { VariantKey } from "./variantRoute";
 
 export type CompareTarget = "asis" | VariantKey;
 
-/** 왼쪽 비교 자리 번호. 1 = 시안 바로 옆, 2 = 가장 바깥. */
-export type CompareSlot = 1 | 2;
+/** 왼쪽 비교 자리 번호. 1 = 시안 바로 옆, 3 = 가장 바깥. */
+export type CompareSlot = 1 | 2 | 3;
 
-/** 왼쪽에 놓을 수 있는 최대 개수(= 화면에 서는 기기 최대 3대). */
-export const MAX_COMPARE_SLOTS = 2;
+/** 왼쪽에 놓을 수 있는 최대 개수(= 화면에 서는 기기 최대 4대). */
+export const MAX_COMPARE_SLOTS = 3;
+
+/** 왼쪽 자리 전부. 자리마다 도는 곳들이 이 배열 하나를 쓴다. */
+export const COMPARE_SLOTS: CompareSlot[] = [1, 2, 3];
 
 export const COMPARE_TARGET_EVENT = "comparetargetchange";
 
 const TARGETS: CompareTarget[] = ["asis", "a1", "a2", "a3", "a4"];
 
+// 자리 1 은 예전 이름(data-compare-with)을 그대로 쓴다 — 옛 링크·상태가 산다.
 const dataKey = (slot: CompareSlot) =>
-  slot === 2 ? "compareWith2" : "compareWith";
+  slot === 1 ? "compareWith" : `compareWith${slot}`;
 
 export function readCompareTarget(slot: CompareSlot = 1): CompareTarget {
   if (typeof document === "undefined") return "asis";
@@ -63,7 +68,7 @@ export function useCompareTarget(slot: CompareSlot = 1): CompareTarget {
 }
 
 // ---- 몇 개를 나란히 놓을지 ------------------------------------------------
-// 왼쪽 자리 개수(0 = 비교 꺼짐, 1 = 2개 비교, 2 = 3개 비교). 켜고 끄는 것과
+// 왼쪽 자리 개수(0 = 비교 꺼짐, 1 = 2개 비교, 2 = 3개, 3 = 4개). 켜고 끄는 것과
 // 개수를 한 값으로 합치지 않고 data-compare(on/off)는 그대로 뒀다 — 비교
 // 여부만 보는 곳(DeviceScaler 의 회전 예외, CSS 캡션 등)이 여럿이라 그쪽
 // 조건을 전부 뜯어고치는 것보다 개수를 따로 싣는 편이 안전하다.
@@ -73,7 +78,7 @@ export function readCompareSlots(): number {
   const root = document.documentElement;
   if (root.dataset.compare !== "true") return 0;
   const n = Number(root.dataset.compareSlots);
-  return n === 2 ? 2 : 1;
+  return n >= 1 && n <= MAX_COMPARE_SLOTS ? n : 1;
 }
 
 /** 왼쪽 자리 개수를 구독한다(comparechange 로 갱신). */

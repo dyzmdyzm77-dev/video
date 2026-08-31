@@ -3,6 +3,7 @@
 import { toPng } from "html-to-image";
 import { VARIANT_LABEL, readVariant } from "./variantRoute";
 import { readCompareTarget, type CompareTarget } from "./compareTarget";
+import type { DeviceScope } from "./deviceScope";
 
 // ============================================================================
 // 지금 보고 있는 화면을 PNG 로 받기 (데스크톱 미리보기 전용)
@@ -27,7 +28,7 @@ type Target = { el: HTMLElement; name: string };
 
 /** 이 자리(0 = 시안, 1·2 = 비교)의 기기 크기. 자리 변수는 CSS 가 '자리 값 →
  *  없으면 시안 값' 으로 풀어 둔다(compareSize.ts). */
-function slotSize(slot: 0 | 1 | 2): string {
+function slotSize(slot: DeviceScope): string {
   const cs = getComputedStyle(document.documentElement);
   const num = (name: string, fallback: number) =>
     Math.round(parseFloat(cs.getPropertyValue(name)) || fallback);

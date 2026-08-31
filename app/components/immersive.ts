@@ -12,6 +12,7 @@ import {
   readDeviceWide,
   readDeviceWidth,
 } from "./useDeviceWidth";
+import type { DeviceScope } from "./deviceScope";
 
 // ============================================================================
 // 몰입 모드 — 영상만 화면을 꽉 채우기
@@ -216,7 +217,7 @@ function fitArea(w: number, h: number): number {
 /** 눕히는 게 확실히 이득인가. 지금 면적 대비 눕혔을 때 면적으로 판정한다.
  *  기준은 단일 영상(16:9)이다 — 다채널은 배치가 알아서 바뀌어 이득이 작지만,
  *  같은 버튼이 화면마다 다르게 동작하면 안 되므로 한 기준으로 통일한다. */
-function shouldRotate(scope: 0 | 1 | 2 = 0): boolean {
+function shouldRotate(scope: DeviceScope = 0): boolean {
   const w = readDeviceWidth(undefined, scope);
   const h = readDeviceHeight(scope);
   const now = fitArea(w, h);
@@ -392,7 +393,7 @@ export function readImmersiveRotated(): boolean {
 /** 딤의 확대/축소 버튼에서 호출. 지금 상태를 뒤집는다.
  *  전체화면·회전은 '사용자 조작' 안에서만 허용되므로 버튼 핸들러인 여기서 바로
  *  부른다 — 상태가 바뀐 뒤 effect 에서 부르면 제스처가 끊겨 거부된다. */
-export function toggleImmersive(scope: 0 | 1 | 2 = 0) {
+export function toggleImmersive(scope: DeviceScope = 0) {
   if (readImmersive()) {
     exitImmersive();
     return;

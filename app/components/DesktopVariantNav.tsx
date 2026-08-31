@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   requestCompareTarget,
   useCompareTarget,
+  COMPARE_SLOTS,
   type CompareSlot,
   type CompareTarget,
 } from "./compareTarget";
@@ -65,10 +66,12 @@ const STORAGE_MODES: { key: StorageMode; token: string; label: string }[] = [
 
 // 비교하기 왼쪽에 놓을 수 있는 것들 — As Is(현행 앱) + 네 안.
 const COMPARE_TARGETS: CompareTarget[] = ["asis", "a1", "a2", "a3", "a4"];
-// 나란히 놓을 기기 대수(오른쪽 시안 포함). 2 = 왼쪽 한 대, 3 = 왼쪽 두 대.
-const COMPARE_COUNTS: { n: 2 | 3; token: string; label: string }[] = [
+// 나란히 놓을 기기 대수(오른쪽 시안 포함). 2 = 왼쪽 한 대 … 4 = 왼쪽 세 대.
+type CompareCount = 2 | 3 | 4;
+const COMPARE_COUNTS: { n: CompareCount; token: string; label: string }[] = [
   { n: 2, token: "2", label: "2개" },
   { n: 3, token: "3", label: "3개" },
+  { n: 4, token: "4", label: "4개" },
 ];
 
 // 가로:세로 비율. 이름 없는 제너릭 폭 라벨에 "360px(6:13)"처럼 붙인다.
@@ -121,9 +124,9 @@ export default function DesktopVariantNav() {
   const [showRuler, setShowRuler] = useState(true); // 목업 위 치수 눈금자 표시 여부
   const [actualSize, setActualSize] = useState(false); // 배율 1:1 고정 여부
   const [compare, setCompare] = useState(false); // As Is(현재 앱) 나란히 비교 여부
-  // 몇 개를 나란히 볼지(오른쪽 시안 포함). 3 이면 왼쪽에 비교 기기가 둘이다
-  // (사용자 요청 2026-08-24: "최대 3개까지 비교 가능하게").
-  const [compareCount, setCompareCount] = useState<2 | 3>(2);
+  // 몇 개를 나란히 볼지(오른쪽 시안 포함). 3 이면 왼쪽에 비교 기기가 둘,
+  // 4 면 셋이다(사용자 요청 2026-08-24 "최대 3개까지" → 2026-08-31 "4개까지").
+  const [compareCount, setCompareCount] = useState<CompareCount>(2);
   // As Is 를 '화면 시안' 목록에서 골라 단독으로 보는 상태(사용자 요청 2026-08-18:
   // "As Is도 화면안 선택 목록에 넣어줄 수 있어?"). 비교하기와 달리 시안 대신
   // As Is 하나만 가운데 기기에 띄운다 — 문서 루트 플래그로 알리고 CSS 가 자리를
@@ -132,13 +135,15 @@ export default function DesktopVariantNav() {
   const [rotated, setRotated] = useState(false); // 디바이스 시각적 90° 회전(가로)
   // 확대 중에는 회전을 막는다(위 버튼 주석 참고).
   const immersive = useImmersive();
-  // 비교하기 왼쪽에 놓을 대상(기본 As Is). 자리 2 는 3개 비교일 때만 쓴다.
+  // 비교하기 왼쪽에 놓을 대상(기본 As Is). 자리 2·3 은 3개·4개 비교일 때만 쓴다.
   const compareWith = useCompareTarget(1);
   const compareWith2 = useCompareTarget(2);
+  const compareWith3 = useCompareTarget(3);
   // 비교 자리마다 따로 고른 해상도(-1 = 시안과 같음). 값은 DEVICES 인덱스이고
   // 실제 크기 반영은 compareSize.ts 가 CSS 변수로 한다.
   const size1 = useCompareSize(1);
   const size2 = useCompareSize(2);
+  const size3 = useCompareSize(3);
   // 저장 방식(NVR / 클라우드). 값은 문서 루트에 실려 안들이 구독한다.
   const storage = useStorageMode();
 
@@ -151,10 +156,11 @@ export default function DesktopVariantNav() {
       // 적는다 — 안끼리 비교할 땐 이름이 없으면 어느 쪽이 뭔지 안 읽힌다.
       const leftAll =
         compareWith === "asis" &&
-        (compareCount === 2 || compareWith2 === "asis");
+        (compareCount < 3 || compareWith2 === "asis") &&
+        (compareCount < 4 || compareWith3 === "asis");
       el.textContent = leftAll ? "To Be" : VARIANT_LABEL[variant];
     }
-  }, [compareWith, compareWith2, compareCount, variant]);
+  }, [compareWith, compareWith2, compareWith3, compareCount, variant]);
   // 직접 입력(커스텀 해상도) — 가로·세로 px.
   const [customW, setCustomW] = useState("");
   const [customH, setCustomH] = useState("");
@@ -187,10 +193,12 @@ export default function DesktopVariantNav() {
   // 있어 그대로 받는다). 썸네일 있음 = 클라우드, 없음 = NVR.
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
-    // ?compare=1 은 2개(예전 그대로), ?compare=3 이면 3개로 연다.
+    // ?compare=1 은 2개(예전 그대로), ?compare=3·4 면 그 대수로 연다.
     const cmp = sp.get("compare");
-    if (cmp === "1" || cmp === "2" || cmp === "3") setCompare(true);
+    if (cmp === "1" || cmp === "2" || cmp === "3" || cmp === "4")
+      setCompare(true);
     if (cmp === "3") setCompareCount(3);
+    if (cmp === "4") setCompareCount(4);
     const thumbs = sp.get("thumbs");
     if (thumbs === "0") requestStorageMode("nvr");
     if (thumbs === "1") requestStorageMode("cloud");
@@ -419,7 +427,14 @@ export default function DesktopVariantNav() {
   //              떨어져 나온다(사용자 요청 2026-08-25: 비교하기에서 해상도도 선택).
   // 칩으로 늘어놓지 않는 이유는 globals.css 의 .dpc-select 주석 참고(줄이 겹친다).
   const sizeSelect = (slot: 0 | CompareSlot) => {
-    const value = slot === 0 ? active : slot === 1 ? size1 : size2;
+    const value =
+      slot === 0
+        ? active
+        : slot === 1
+          ? size1
+          : slot === 2
+            ? size2
+            : size3;
     return (
       // 닫힌 상태에 보이는 건 짧은 이름(칩)뿐이라 툴팁으로 전체 이름을 준다.
       <select
@@ -503,14 +518,17 @@ export default function DesktopVariantNav() {
           포함)을 뺐는데, 고를 수 있는 게 자리마다 달라 칩 줄이 들쭉날쭉했다.
           같은 안을 두 자리에 놓는 것도 사용자 선택으로 둔다(2026-08-24). */}
       {compare &&
-        ([1, 2] as CompareSlot[])
-          .filter((slot) => slot === 1 || compareCount === 3)
-          .map((slot) => {
-            const picked = slot === 1 ? compareWith : compareWith2;
+        COMPARE_SLOTS.filter((slot) => slot <= compareCount - 1).map((slot) => {
+            const picked =
+              slot === 1
+                ? compareWith
+                : slot === 2
+                  ? compareWith2
+                  : compareWith3;
             return (
               <div
                 key={slot}
-                className={`device-preset-chips ${slot === 1 ? "dpc-left" : "dpc-left2"}`}
+                className={`device-preset-chips ${slot === 1 ? "dpc-left" : `dpc-left${slot}`}`}
               >
                 {COMPARE_TARGETS.map((t) => (
                   <button

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DEVICES, punchFor } from "./devicePresets";
-import type { CompareSlot } from "./compareTarget";
+import { COMPARE_SLOTS, type CompareSlot } from "./compareTarget";
 
 // ============================================================================
 // 비교 자리마다 해상도를 따로 고르기
@@ -26,9 +26,7 @@ export const COMPARE_SIZE_EVENT = "comparesizechange";
 /** 자리에 못 박은 해상도. -1 = 시안과 같음(따로 안 정함). */
 export function readCompareSize(slot: CompareSlot): number {
   if (typeof document === "undefined") return -1;
-  const raw = document.documentElement.dataset[
-    slot === 2 ? "devSize2" : "devSize1"
-  ];
+  const raw = document.documentElement.dataset[`devSize${slot}`];
   const n = raw === undefined || raw === "" ? NaN : Number(raw);
   return Number.isInteger(n) && n >= 0 && n < DEVICES.length ? n : -1;
 }
@@ -40,7 +38,7 @@ export function applyCompareSizes() {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   const land = root.dataset.landscape === "true";
-  ([1, 2] as CompareSlot[]).forEach((slot) => {
+  COMPARE_SLOTS.forEach((slot) => {
     const i = readCompareSize(slot);
     const p = i >= 0 ? DEVICES[i] : null;
     const set = (k: string, v: string | null) => {
@@ -61,7 +59,7 @@ export function applyCompareSizes() {
 
 export function requestCompareSize(slot: CompareSlot, i: number) {
   const root = document.documentElement;
-  const key = slot === 2 ? "devSize2" : "devSize1";
+  const key = `devSize${slot}`;
   if (i < 0) delete root.dataset[key];
   else root.dataset[key] = String(i);
   applyCompareSizes();
