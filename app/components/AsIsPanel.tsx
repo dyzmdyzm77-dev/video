@@ -13,6 +13,8 @@ import { punchForSlot, useCompareSize } from "./compareSize";
 import { DeviceScopeContext } from "./deviceScope";
 import { VARIANT_LABEL } from "./variantRoute";
 import { CameraFeed } from "./CameraFeed";
+import LandscapeVideo from "./LandscapeVideo";
+import { useImmersive } from "./immersive";
 import { useDeviceWidth } from "./useDeviceWidth";
 import { useDragScroll } from "./useDragScroll";
 import { Inner as HomeScreen } from "../home/page";
@@ -40,6 +42,13 @@ const CAMS = [
   "cam3",
   "cam4",
 ];
+
+// 가로(회전) 화면이 쓰는 형태 — 시안의 CAMERAS 와 같은 { label, src } 다.
+// 이름은 세로 타일과 같은 '사무실 NN'(시안은 '카메라 NN').
+const ASIS_CAMERAS = CAMS.map((cam, i) => ({
+  label: `사무실 ${String(i + 1).padStart(2, "0")}`,
+  src: `${BASE}/cameras/${cam}.gif`,
+}));
 
 // 실시간 날짜/시각 — As Is 고유 포맷("YYYY.MM.DD  HH:MM:SS", 요일 없음, 날짜와
 // 시각 사이 공백 2칸). 시안(To Be)은 요일 포함 포맷을 쓰지만 As Is 는 원본 그대로.
@@ -228,6 +237,13 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
   // As Is 는 비교 기준이라 사양은 안 건드리지만, 미리보기 조작은 같아야
   // 나란히 놓고 볼 때 한쪽만 안 끌려 고장처럼 보이지 않는다.
   const dragScroll = useDragScroll();
+  // 가로(회전)·확대 — 시안과 같은 조건으로 같은 '영상만' 화면을 그린다
+  // (사용자 지정 2026-08-31: "그냥 다른 시안이랑 똑같이 해. 왜 얘만 다른데").
+  // 원래 As Is 는 이 분기가 아예 없어서, 눕히면 세로 마크업이 780×360 에
+  // 그대로 눌려 카메라 그리드가 검은 띠로 찌그러졌다. 현행 앱 재현이라 세로
+  // 사양은 그대로 두되, 가로만 시안과 같은 화면을 쓴다 — 나란히 놓고 비교하는
+  // 화면이라 한쪽만 깨져 있으면 비교가 안 된다.
+  const immersive = useImmersive();
   // 바텀시트 펼침/접힘 — 기본 펼침(들어가면 가로 목록이 바로 보임).
   const [sheetOpen, setSheetOpen] = useState(true);
   // 실시간 시계 — 매초 갱신(시안 To Be 와 동일). 패널은 클라이언트에서만
@@ -456,6 +472,40 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
       </span>
     </div>
   );
+
+  // 가로(회전)·확대 — 시안(VariantA1~A4)의 가로 분기와 같은 화면이다.
+  // 헤더·목록·탭바를 다 걷고 영상만 남긴다. 카메라·제목만 As Is 것을 넣는다.
+  if (immersive) {
+    return (
+      <div className={frameClass} data-punch={punch} aria-hidden>
+        <span className="asis-caption">As Is</span>
+        <div className="asis-screen">
+          <div className="relative flex h-full w-full overflow-hidden bg-black">
+            {/* 펀치홀 — 기기에 뚫린 구멍이라 가로에서도 그대로 있어야 한다. */}
+            {platform === "android" && chromeVisible && (
+              <span className="punch-hole" style={{ zIndex: 100 }} aria-hidden />
+            )}
+            <div className="relative min-h-0 flex-1 overflow-hidden">
+              <LandscapeVideo
+                cameras={ASIS_CAMERAS}
+                expandedIndex={mode === "single" ? featured : null}
+                page={0}
+                pageSize={CAMS.length}
+                totalPages={1}
+                onExpand={(i) => transitionTo("single", i)}
+                onBack={() => transitionTo("grid", null)}
+                loading={loading}
+                title="8층 사무실"
+                subtitle="에스원 본사 · N1234567"
+                // As Is 는 녹화 상태가 없다 — 알약도 실시간 하나뿐이다.
+                mode="live"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={frameClass} data-punch={punch} aria-hidden>
