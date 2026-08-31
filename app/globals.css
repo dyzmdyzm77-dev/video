@@ -563,7 +563,15 @@ body {
      딱 바꾼다. 그 뒤 각도(--device-rot)만 트랜지션돼 제자리에서 돈다. */
   html[data-rotating="true"] .app-safe-frame,
   html[data-rotating="true"] .device-frame,
-  html[data-rotating="true"][data-asis-only="true"] .asis-frame {
+  html[data-rotating="true"][data-asis-only="true"] .asis-frame,
+  /* 화면 상자와 베젤 안쪽 검정 면도 같이 꺼야 한다 — 시안은 화면이 곧
+     .app-safe-frame 이라 위 줄 하나로 끝나지만, As Is 는 베젤(.asis-frame)과
+     화면(.asis-screen)이 따로다. 화면 쪽을 안 끄면 크기를 갈아끼우는 그 순간
+     화면만 자기 transition(width/height 0.1s)으로 늘어났다 줄어들어, 목업은
+     이미 누웠는데 안이 뒤늦게 따라온다(사용자 지적 2026-08-31: "목업은 그대로
+     돌면 되고, 화면만 바뀌는거 아니야?"). */
+  html[data-rotating="true"] .asis-screen,
+  html[data-rotating="true"] .asis-frame::after {
     transition: none;
   }
   /* 치수 눈금자·드래그 핸들은 가로에서 감춘다(회전 좌표와 얽히지 않게). */
