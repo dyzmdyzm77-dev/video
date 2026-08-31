@@ -14,7 +14,15 @@ import { DeviceScopeContext } from "./deviceScope";
 import { VARIANT_LABEL } from "./variantRoute";
 import { CameraFeed } from "./CameraFeed";
 import LandscapeVideo from "./LandscapeVideo";
-import { useImmersive } from "./immersive";
+import { useImmersive, useImmersiveRotated } from "./immersive";
+import {
+  IMMERSIVE_EDGE,
+  IMMERSIVE_EXTRA_INSET,
+  LANDSCAPE_BOTTOM_INSET,
+  LANDSCAPE_EDGE,
+  LANDSCAPE_EDGE_ANDROID,
+  LANDSCAPE_TOP_INSET,
+} from "./layoutRules";
 import { useDeviceWidth } from "./useDeviceWidth";
 import { useDragScroll } from "./useDragScroll";
 import { Inner as HomeScreen } from "../home/page";
@@ -244,6 +252,10 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
   // 사양은 그대로 두되, 가로만 시안과 같은 화면을 쓴다 — 나란히 놓고 비교하는
   // 화면이라 한쪽만 깨져 있으면 비교가 안 된다.
   const immersive = useImmersive();
+  // 딤 UI 여백도 시안과 같은 값을 쓴다 — 안 넘기면 LandscapeVideo 기본값이라
+  // 아이콘 줄·AI 버튼이 시안과 몇 px 씩 어긋난다(사용자 지적 2026-08-31:
+  // "야 뭔가 다르잖아"). 계산은 VariantA1 의 dimEdge 와 같다.
+  const rotatedNow = useImmersiveRotated();
   // 바텀시트 펼침/접힘 — 기본 펼침(들어가면 가로 목록이 바로 보임).
   const [sheetOpen, setSheetOpen] = useState(true);
   // 실시간 시계 — 매초 갱신(시안 To Be 와 동일). 패널은 클라이언트에서만
@@ -499,6 +511,23 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
                 subtitle="에스원 본사 · N1234567"
                 // As Is 는 녹화 상태가 없다 — 알약도 실시간 하나뿐이다.
                 mode="live"
+                // 아래 넷은 시안(VariantA1~A4)이 넘기는 값 그대로다 — 기본값에
+                // 두면 아이콘 줄이 6px 위, AI 버튼이 19px 아래로 어긋난다.
+                edgeInset={
+                  rotatedNow
+                    ? platform === "android"
+                      ? LANDSCAPE_EDGE_ANDROID
+                      : LANDSCAPE_EDGE
+                    : IMMERSIVE_EDGE
+                }
+                topInset={
+                  LANDSCAPE_TOP_INSET + (rotatedNow ? 0 : IMMERSIVE_EXTRA_INSET)
+                }
+                bottomInset={
+                  LANDSCAPE_BOTTOM_INSET +
+                  (rotatedNow ? 0 : IMMERSIVE_EXTRA_INSET)
+                }
+                headerAlign="top"
               />
             </div>
           </div>
