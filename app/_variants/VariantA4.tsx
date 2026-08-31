@@ -2970,7 +2970,7 @@ function MotionEventList({
                   <span
                     suppressHydrationWarning
                     className="whitespace-nowrap leading-none"
-                    style={{ fontSize: "14px", color: "#8C8C8C" }}
+                    style={{ fontSize: "12px", color: "#8C8C8C" }}
                   >
                     {formatEventStamp(r.ms)}
                   </span>
@@ -2982,14 +2982,15 @@ function MotionEventList({
               {eventThumbs && (
                 <div
                   suppressHydrationWarning
-                  className="absolute inline-flex items-center bg-black/55 text-[14px] font-medium leading-none text-white"
+                  className="absolute inline-flex items-center bg-black/55 text-[12px] font-medium leading-none text-white"
                   style={{
                     left: "3px",
                     bottom: "3px",
-                    // 글자를 14 로 키우면서 라벨 높이도 17 → 20(사용자 지정
-                    // 2026-08-31). 17 은 10px 글자에 맞춘 값이라 그대로 두면
-                    // 글자가 라벨을 꽉 채워 답답하다.
-                    height: "20px",
+                    // 글자 10 → 14 → 12(사용자 지정 2026-08-31) — 64 높이 카드에
+                    // 14 는 칩과 합쳐 그림을 너무 덮었다. 높이는 17 그대로다:
+                    // 같은 카드 반대쪽 모서리의 유형 칩과 글자·높이가 똑같아진다.
+                    // (세로 줄의 날짜·시각은 14 그대로 — 줄이 74 라 여유가 있다.)
+                    height: "17px",
                     padding: "0 4px",
                     // 라운드는 이 안에서 하나로 맞춘다(사용자 지정 2026-08-26) —
                     // 타일·썸네일·유형 칩(EventKindChip)이 모두 4px 다.
