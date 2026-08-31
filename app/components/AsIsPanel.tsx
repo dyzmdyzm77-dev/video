@@ -13,16 +13,7 @@ import { punchForSlot, useCompareSize } from "./compareSize";
 import { DeviceScopeContext } from "./deviceScope";
 import { VARIANT_LABEL } from "./variantRoute";
 import { CameraFeed } from "./CameraFeed";
-import LandscapeVideo from "./LandscapeVideo";
-import { useImmersive, useImmersiveRotated } from "./immersive";
-import {
-  IMMERSIVE_EDGE,
-  IMMERSIVE_EXTRA_INSET,
-  LANDSCAPE_BOTTOM_INSET,
-  LANDSCAPE_EDGE,
-  LANDSCAPE_EDGE_ANDROID,
-  LANDSCAPE_TOP_INSET,
-} from "./layoutRules";
+import { useImmersive } from "./immersive";
 import { useDeviceWidth } from "./useDeviceWidth";
 import { useDragScroll } from "./useDragScroll";
 import { Inner as HomeScreen } from "../home/page";
@@ -51,12 +42,6 @@ const CAMS = [
   "cam4",
 ];
 
-// 가로(회전) 화면이 쓰는 형태 — 시안의 CAMERAS 와 같은 { label, src } 다.
-// 이름은 세로 타일과 같은 '사무실 NN'(시안은 '카메라 NN').
-const ASIS_CAMERAS = CAMS.map((cam, i) => ({
-  label: `사무실 ${String(i + 1).padStart(2, "0")}`,
-  src: `${BASE}/cameras/${cam}.gif`,
-}));
 
 // 실시간 날짜/시각 — As Is 고유 포맷("YYYY.MM.DD  HH:MM:SS", 요일 없음, 날짜와
 // 시각 사이 공백 2칸). 시안(To Be)은 요일 포함 포맷을 쓰지만 As Is 는 원본 그대로.
@@ -252,10 +237,8 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
   // 사양은 그대로 두되, 가로만 시안과 같은 화면을 쓴다 — 나란히 놓고 비교하는
   // 화면이라 한쪽만 깨져 있으면 비교가 안 된다.
   const immersive = useImmersive();
-  // 딤 UI 여백도 시안과 같은 값을 쓴다 — 안 넘기면 LandscapeVideo 기본값이라
-  // 아이콘 줄·AI 버튼이 시안과 몇 px 씩 어긋난다(사용자 지적 2026-08-31:
-  // "야 뭔가 다르잖아"). 계산은 VariantA1 의 dimEdge 와 같다.
-  const rotatedNow = useImmersiveRotated();
+  // 가로 2x2 그리드의 페이지(4장씩). 세로 목록에는 페이지가 없다.
+  const [lsPage, setLsPage] = useState(0);
   // 바텀시트 펼침/접힘 — 기본 펼침(들어가면 가로 목록이 바로 보임).
   const [sheetOpen, setSheetOpen] = useState(true);
   // 실시간 시계 — 매초 갱신(시안 To Be 와 동일). 패널은 클라이언트에서만
@@ -485,50 +468,99 @@ function AsIsPanelBody({ slot }: { slot: CompareSlot }) {
     </div>
   );
 
-  // 가로(회전)·확대 — 시안(VariantA1~A4)의 가로 분기와 같은 화면이다.
-  // 헤더·목록·탭바를 다 걷고 영상만 남긴다. 카메라·제목만 As Is 것을 넣는다.
+  // ── 가로(회전) ──────────────────────────────────────────────────────────
+  // As Is 는 가로에 자기 디자인이 따로 있다(디자인 출처: public/asis/
+  // video-landscape.svg = "9.7 실시간 영상(가로)_1 2x2"). 시안의 '영상만' 화면
+  // (LandscapeVideo)을 잠깐 붙여 봤다가 되돌렸다 — 생김새가 아예 다르다
+  // (사용자 지정 2026-08-31: 레퍼런스 SVG 를 주며 "이런 느낌이야").
+  //
+  // 원본 실측(780×360):
+  //   · 위 흰 바 40 — 왼쪽 날짜·시각(#353535), 오른쪽 페이지 점 5개(r3, 간격 10,
+  //     오른쪽 끝에서 15). 세로 화면과 달리 OS 상태바는 안 그린다.
+  //   · 나머지(320)는 검정. 그 안에 타일 2×2, 한 장 282×159(=16:9), 간격 2,
+  //     좌우 107 씩 남겨 가운데 정렬. 320 = 159+2+159 이라 위아래는 꽉 찬다.
+  //   · 타일 라벨·스크림은 세로 타일과 같은 것(.asis-scrim/.asis-cam-label).
+  // 기기 크기가 달라져도 규칙은 같다 — 타일 높이는 (검정 높이 − 2)/2, 폭은
+  // 거기서 16:9 로 나오고, 남는 좌우는 검정 여백이 된다.
+  //
+  // 원본의 '영상 수신 상태가 좋지 않음'(빨간 띠) · '신호없음'(회색 판)은 안 그린다 —
+  // 세로에서 회색 '에스원' 카드를 영상으로 바꾼 것과 같은 이유로, 여기선 네 칸
+  // 모두 영상이다.
   if (immersive) {
+    const perPage = 4;
+    const pages = Math.ceil(CAMS.length / perPage);
+    const page = Math.min(lsPage, pages - 1);
+    const shown = CAMS.slice(page * perPage, page * perPage + perPage);
     return (
       <div className={frameClass} data-punch={punch} aria-hidden>
         <span className="asis-caption">As Is</span>
         <div className="asis-screen">
-          <div className="relative flex h-full w-full overflow-hidden bg-black">
+          <div className="flex h-full w-full flex-col overflow-hidden bg-white">
             {/* 펀치홀 — 기기에 뚫린 구멍이라 가로에서도 그대로 있어야 한다. */}
             {platform === "android" && chromeVisible && (
               <span className="punch-hole" style={{ zIndex: 100 }} aria-hidden />
             )}
-            <div className="relative min-h-0 flex-1 overflow-hidden">
-              <LandscapeVideo
-                cameras={ASIS_CAMERAS}
-                expandedIndex={mode === "single" ? featured : null}
-                page={0}
-                pageSize={CAMS.length}
-                totalPages={1}
-                onExpand={(i) => transitionTo("single", i)}
-                onBack={() => transitionTo("grid", null)}
-                loading={loading}
-                title="8층 사무실"
-                subtitle="에스원 본사 · N1234567"
-                // As Is 는 녹화 상태가 없다 — 알약도 실시간 하나뿐이다.
-                mode="live"
-                // 아래 넷은 시안(VariantA1~A4)이 넘기는 값 그대로다 — 기본값에
-                // 두면 아이콘 줄이 6px 위, AI 버튼이 19px 아래로 어긋난다.
-                edgeInset={
-                  rotatedNow
-                    ? platform === "android"
-                      ? LANDSCAPE_EDGE_ANDROID
-                      : LANDSCAPE_EDGE
-                    : IMMERSIVE_EDGE
-                }
-                topInset={
-                  LANDSCAPE_TOP_INSET + (rotatedNow ? 0 : IMMERSIVE_EXTRA_INSET)
-                }
-                bottomInset={
-                  LANDSCAPE_BOTTOM_INSET +
-                  (rotatedNow ? 0 : IMMERSIVE_EXTRA_INSET)
-                }
-                headerAlign="top"
-              />
+            {/* 위 흰 바 — 날짜·시각 + 페이지 점. */}
+            <div
+              className="flex flex-none items-center justify-between bg-white"
+              style={{ height: "40px", paddingLeft: "20px", paddingRight: "15px" }}
+            >
+              <span
+                suppressHydrationWarning
+                style={{ fontSize: "13px", color: "#353535", lineHeight: 1 }}
+              >
+                {now ? formatAsIsClock(now) : ""}
+              </span>
+              <span className="flex items-center" style={{ gap: "4px" }}>
+                {Array.from({ length: pages }, (_, i) => (
+                  <span
+                    key={i}
+                    onClick={() => setLsPage(i)}
+                    style={{
+                      width: "6px",
+                      height: "6px",
+                      borderRadius: "999px",
+                      cursor: "pointer",
+                      backgroundColor: i === page ? "#1D6CEB" : "#C4C4C4",
+                    }}
+                  />
+                ))}
+              </span>
+            </div>
+            {/* 검정 바닥 + 2×2 타일. 타일 높이는 행(1fr)이 정하고 폭은 16:9 로
+                따라온다 — 열이 auto 라 그만큼만 차지하고, 남는 좌우는 검정이다. */}
+            <div className="min-h-0 flex-1 bg-black">
+              <div
+                className="grid h-full"
+                style={{
+                  gridTemplateColumns: "auto auto",
+                  gridTemplateRows: "1fr 1fr",
+                  gap: "2px",
+                  justifyContent: "center",
+                }}
+              >
+                {shown.map((cam, i) => {
+                  const idx = page * perPage + i;
+                  return (
+                    <div
+                      key={idx}
+                      className="asis-tile relative h-full overflow-hidden"
+                      style={{ aspectRatio: "16 / 9" }}
+                    >
+                      <span className="asis-feed">
+                        <CameraFeed
+                          label={`사무실 ${String(idx + 1).padStart(2, "0")}`}
+                          src={`${BASE}/cameras/${cam}.gif`}
+                        />
+                        <span className="asis-scrim" />
+                        <span className="asis-cam-label">
+                          사무실 {String(idx + 1).padStart(2, "0")}
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
