@@ -89,6 +89,15 @@ const A4_TILE_MIN_H = 64;
 // 여기도 12 를 한 번만 더한다. 값은 아래 STRIP_PAD 와 같은 12 다(모듈 초기화
 // 순서 때문에 숫자로 적는다).
 const A4_MOTION_H = A4_TILE_MIN_H + 12;
+// 가로 카드(움직임 감지)의 최소 폭(px). 카드는 원래 16:9 라 세로에서 폭이
+// 따라오는데, 스트립이 얇아지는 좁은 화면(405×648 에서 85×48)에서는 그 폭이
+// 날짜·시각 라벨보다 좁아 글자가 잘렸다(사용자 지적 2026-08-31: "카드가 가로
+// 영역이 좀 작은지 텍스트가 잘려"). 그래서 16:9 는 그대로 두되 이 값 아래로는
+// 안 좁아지게 바닥을 깐다 — 넓은 화면에서는 16:9 폭이 더 커서 이 값이 안 걸린다.
+//
+// 값의 근거: 라벨(글자 12 · 좌우 padding 4+4 = 89.6) + 좌우 여백 3+3 = 95.6 → 96.
+// 여백 3 은 라벨을 얹는 자리(left/bottom 3)와 같은 값이다.
+const A4_CARD_MIN_W = 96;
 // 가로 딤에서 '아래로' 나오는 판의 높이 = 탭 줄 48 + 구분선 1 + 스트립.
 // 공유 PANEL_BOTTOM_H 는 스트립을 MOTION_MIN_H(108)로 잡는데, A-4 는 스트립을
 // 낮췄으니 판도 같이 낮아져야 카드가 세로 화면과 같은 크기가 된다.
@@ -2897,7 +2906,11 @@ function MotionEventList({
           ? // 가로 한 줄 — 카드를 옆으로 나열하고 가로 스크롤. 좌우 여백(px-5)은
             // 스크롤 안쪽 패딩이라 첫/마지막만 20px 띄운다(카메라 목록과 같은 규칙).
             // 위아래 여백은 영역이 갖고 있다(스크롤해도 안 사라지게).
-            "relative flex min-h-0 flex-1 items-stretch gap-3 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            // 카드 사이 간격은 카메라 목록 타일과 같은 8(gap-2)이다(사용자 지적
+            // 2026-08-31: "카메라 목록 썸네일 띄워진거랑 간격이 같은가?"). 12
+            // 였는데, 두 탭이 같은 자리에서 번갈아 보이므로 간격이 다르면 탭을
+            // 옮길 때 눈에 걸리고, useListLayout 의 폭 계산도 GAP 8 기준이다.
+            "relative flex min-h-0 flex-1 items-stretch gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           : // 세로로 쌓을 자리가 넉넉한 배치(오른쪽 패널 · 세로 2열 스트립)는
             // 카드가 아니라 '구분선으로 나눈 목록'이다(사용자 지정 2026-08-26).
             // 줄끼리 붙여 놓고(gap 없음) 줄마다 아래 선을 그린다.
@@ -2933,7 +2946,9 @@ function MotionEventList({
                 eventThumbs ? " bg-neutral-900" : ""
               }`}
               // 카메라 목록 타일과 같은 4px — 타일과 나란히 놓고 봐도 같은 규격이다.
-              style={{ borderRadius: "4px" }}
+              // minWidth 는 날짜·시각이 잘리지 않는 바닥(A4_CARD_MIN_W) — 좁은
+              // 화면에서만 걸리고, 그때는 카드가 타일보다 조금 넓어진다.
+              style={{ borderRadius: "4px", minWidth: `${A4_CARD_MIN_W}px` }}
             >
               {eventThumbs ? (
                 <>
