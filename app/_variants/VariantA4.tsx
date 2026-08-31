@@ -2866,8 +2866,11 @@ function MotionEventList({
         style={{
           height: "17px",
           padding: "0 6px",
-          borderRadius: "4px",
-          fontSize: "10px",
+          // 유형 칩만 완전한 알약이다(사용자 지정 2026-08-31) — 타일·썸네일·시각
+          // 라벨의 4px 규칙에서 일부러 빼낸 것으로, 훑을 때 이상 상황(넘어짐·폭행)이
+          // 모서리 모양으로도 구분되게 한다.
+          borderRadius: "999px",
+          fontSize: "12px",
           fontWeight: 600,
           color: alert ? "#FFFFFF" : "#595959",
           backgroundColor: alert ? "#E2202D" : "#F1F1F1",
