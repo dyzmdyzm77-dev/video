@@ -2074,18 +2074,54 @@ function ExpandedView({
                   "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
               }}
             />
-            {/* 카메라 이름 — 딤 왼쪽 위(사용자 지정 2026-08-14). 영상 위 라벨을
-                여기로 옮긴 것이라, 딤을 켤 때만 보인다. 위 그라데이션 스크림
-                위라 흰 글씨로 읽힌다. */}
+            {/* 카메라 이름 + '● 실시간/녹화영상' 알약 — 딤 왼쪽 위.
+                이름은 사용자 지정 2026-08-14(영상 위 라벨을 여기로 옮겼다),
+                알약은 2026-08-31("딤에다가 좌측 상단에 동일하게 넣어야지") —
+                가로 딤이 쓰는 것과 같은 알약이다(LandscapeVideo 의 modePill:
+                높이 26 · 글자 14 · 회색 40% + blur, 점은 실시간 빨강/녹화 흰색).
+                위아래 순서도 가로와 같다 — 이름이 먼저, 그 아래 알약.
+                위 그라데이션 스크림 위라 흰 글씨로 읽힌다. */}
             <div
-              className="absolute text-[18px] font-bold leading-none text-white"
-              style={{
-                top: "20px",
-                left: "16px",
-                textShadow: "0 0 4px rgba(0,0,0,0.6)",
-              }}
+              className="absolute flex flex-col items-start"
+              style={{ top: "20px", left: "16px", gap: "8px" }}
             >
-              {cam.label}
+              <span
+                className="text-[18px] font-bold leading-none text-white"
+                style={{ textShadow: "0 0 4px rgba(0,0,0,0.6)" }}
+              >
+                {cam.label}
+              </span>
+              <span
+                className="rounded-full"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  height: "26px",
+                  padding: "0 10px",
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  lineHeight: "14px",
+                  color: "#FFFFFF",
+                  backgroundColor: "rgba(102,102,102,0.4)",
+                  backdropFilter: "blur(20px)",
+                  WebkitBackdropFilter: "blur(20px)",
+                  textShadow: "0 0 4px rgba(0,0,0,0.6)",
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="rounded-full"
+                  style={{
+                    width: "5px",
+                    height: "5px",
+                    backgroundColor:
+                      mode === "recording" ? "#FFFFFF" : "#FF3B4A",
+                    marginRight: "5px",
+                    flex: "none",
+                  }}
+                />
+                {mode === "recording" ? "녹화영상" : "실시간"}
+              </span>
             </div>
             <div
               className="absolute flex items-center"
