@@ -3056,13 +3056,14 @@ function MotionEventList({
             )}
             {/* 유형(칩) · 날짜 시간 — 카메라 명은 뺐다(사용자 지정 2026-08-26).
                 단일 화면이라 어차피 지금 보고 있는 카메라 하나뿐이다. */}
-            <div className="flex min-w-0 flex-col justify-center gap-[3px]">
+            <div className="flex min-w-0 flex-col justify-center gap-[8px]">
               {kindChip(r.kind)}
               <span
                 suppressHydrationWarning
-                // 날짜 시간 — 11 → 12(사용자 지정 2026-08-26). 위 유형 칩(10)보다
+                // 날짜 시간 — 11 → 12 → 14(사용자 지정 2026-08-31). 위 유형 칩(10)보다
                 // 커서, 줄에서 먼저 읽히는 건 언제 찍힌 것인가가 된다.
-                className="whitespace-nowrap text-[12px] leading-none"
+                // 칩과의 간격도 3 → 8(같은 날) — 글자가 커진 만큼 붙어 보였다.
+                className="whitespace-nowrap text-[14px] leading-none"
                 style={{ color: "#8C8C8C" }}
               >
                 {formatEventStamp(r.ms)}
