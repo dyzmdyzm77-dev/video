@@ -28,6 +28,7 @@ import LandscapeVideo from "../components/LandscapeVideo";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import {
+  CameraBadge,
   CameraFeed,
   GridSelectionOverlay,
   useGifFrameCanvas,
@@ -1393,6 +1394,11 @@ function GridView({
           visible={gridSelected}
           currentPage={currentPage}
           totalPages={totalPages}
+          // 세로 다채널 딤에도 같은 알약(사용자 지적 2026-08-31: "세로 다채널은
+          // 왜 안해줘?"). 가로는 modePillHeader 가 단일·다채널 둘 다에 걸려
+          // 있었고, 세로만 단일에서 끝나 있었다. GridSelectionOverlay 는 네 안
+          // 공용이라 값을 넘길 때만 그린다 — 다른 안은 그대로다.
+          topLeft={<ModePill mode={mode} />}
           onGallery={onOpenSheet}
           onMore={onOpenMore}
           onAi={onOpenAi}
@@ -2054,6 +2060,11 @@ function ExpandedView({
             ))}
           </div>
           </div>
+          {/* 카메라 이름 배지 — 영상 영역 왼쪽 위(사용자 지정 2026-08-31:
+              "그 영상 영역에 카메라 이름 넣어주고"). 줌 껍데기 '밖'이라 두 손가락
+              확대에 글자가 같이 커지지 않는다(가로에서 같은 지적으로 이미 밖에
+              뺐다 — LandscapeVideo 의 CameraBadge 주석). 딤과 무관하게 늘 보인다. */}
+          <CameraBadge text={cam.label} />
           <div
             className="pointer-events-none absolute inset-0 transition-opacity duration-300 ease-out"
             style={{ opacity: showControls ? 1 : 0 }}
@@ -2074,54 +2085,12 @@ function ExpandedView({
                   "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
               }}
             />
-            {/* 카메라 이름 + '● 실시간/녹화영상' 알약 — 딤 왼쪽 위.
-                이름은 사용자 지정 2026-08-14(영상 위 라벨을 여기로 옮겼다),
-                알약은 2026-08-31("딤에다가 좌측 상단에 동일하게 넣어야지") —
-                가로 딤이 쓰는 것과 같은 알약이다(LandscapeVideo 의 modePill:
-                높이 26 · 글자 14 · 회색 40% + blur, 점은 실시간 빨강/녹화 흰색).
-                위아래 순서도 가로와 같다 — 이름이 먼저, 그 아래 알약.
-                위 그라데이션 스크림 위라 흰 글씨로 읽힌다. */}
-            <div
-              className="absolute flex flex-col items-start"
-              style={{ top: "20px", left: "16px", gap: "8px" }}
-            >
-              <span
-                className="text-[18px] font-bold leading-none text-white"
-                style={{ textShadow: "0 0 4px rgba(0,0,0,0.6)" }}
-              >
-                {cam.label}
-              </span>
-              <span
-                className="rounded-full"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  height: "26px",
-                  padding: "0 10px",
-                  fontSize: "14px",
-                  fontWeight: 700,
-                  lineHeight: "14px",
-                  color: "#FFFFFF",
-                  backgroundColor: "rgba(102,102,102,0.4)",
-                  backdropFilter: "blur(20px)",
-                  WebkitBackdropFilter: "blur(20px)",
-                  textShadow: "0 0 4px rgba(0,0,0,0.6)",
-                }}
-              >
-                <span
-                  aria-hidden
-                  className="rounded-full"
-                  style={{
-                    width: "5px",
-                    height: "5px",
-                    backgroundColor:
-                      mode === "recording" ? "#FFFFFF" : "#FF3B4A",
-                    marginRight: "5px",
-                    flex: "none",
-                  }}
-                />
-                {mode === "recording" ? "녹화영상" : "실시간"}
-              </span>
+            {/* '● 실시간/녹화영상' 알약 — 딤 왼쪽 위. 카메라 이름이 있던
+                자리다(사용자 지정 2026-08-31: "딤에서 카메라 이름은 빼줘,
+                그 위치에 알약 넣어주고"). 이름은 딤이 아니라 영상 영역에
+                배지로 나간다(아래 CameraBadge) — 가로와 같은 구성이다. */}
+            <div className="absolute" style={{ top: "20px", left: "16px" }}>
+              <ModePill mode={mode} />
             </div>
             <div
               className="absolute flex items-center"
@@ -4176,6 +4145,45 @@ function LayoutConfigSheet({
         </div>
       </div>
     </div>
+  );
+}
+
+// '● 실시간/녹화영상' 알약 — 딤 좌측 상단에 놓는다(단일·다채널·가로 공통).
+// 규격은 가로 딤이 쓰는 것과 같다(LandscapeVideo 의 modePill): 높이 26 ·
+// 글자 14 · 회색 40% + blur(20), 점은 실시간 빨강 / 녹화 흰색.
+// 세로에도 넣은 건 사용자 지정 2026-08-31("딤에다가 좌측 상단에 동일하게").
+function ModePill({ mode }: { mode: "live" | "recording" }) {
+  return (
+    <span
+      className="rounded-full"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        height: "26px",
+        padding: "0 10px",
+        fontSize: "14px",
+        fontWeight: 700,
+        lineHeight: "14px",
+        color: "#FFFFFF",
+        backgroundColor: "rgba(102,102,102,0.4)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        textShadow: "0 0 4px rgba(0,0,0,0.6)",
+      }}
+    >
+      <span
+        aria-hidden
+        className="rounded-full"
+        style={{
+          width: "5px",
+          height: "5px",
+          backgroundColor: mode === "recording" ? "#FFFFFF" : "#FF3B4A",
+          marginRight: "5px",
+          flex: "none",
+        }}
+      />
+      {mode === "recording" ? "녹화영상" : "실시간"}
+    </span>
   );
 }
 

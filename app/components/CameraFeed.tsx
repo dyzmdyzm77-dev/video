@@ -298,6 +298,7 @@ export function GridSelectionOverlay({
   showAi = true,
   showZoom = true,
   dimStyle,
+  topLeft,
   auto,
 }: {
   visible: boolean;
@@ -362,6 +363,11 @@ export function GridSelectionOverlay({
    *  안 주면 예전 그대로(34px · 검정 35% · 흰 테두리) — 다른 안은 안 건드린다.
    *  우상단 아이콘 줄 간격도 이 값일 때만 벌린다. */
   dimStyle?: "a3";
+  /** 딤 좌측 상단에 얹을 것. A-4 가 '● 실시간/녹화영상' 알약을 여기로 넣는다
+   *  (사용자 지정 2026-08-31: 세로 다채널 딤도 단일·가로와 같게). 안 주면
+   *  아무것도 안 그린다 — 다른 안은 예전 그대로다.
+   *  자리는 단일 화면 딤과 같은 top 20 · left 16 이다. */
+  topLeft?: React.ReactNode;
   /** 딤 자동 숨김 핸들(useAutoHide). 주면 아이콘을 만지는 동안 딤을 붙잡고,
    *  떼는 순간부터 5초를 다시 센다. 안 주면 기존 그대로(타이머 안 되돌림). */
   auto?: {
@@ -428,6 +434,23 @@ export function GridSelectionOverlay({
           background: `linear-gradient(to top, rgba(0,0,0,${dimAlpha}) 0%, rgba(0,0,0,0) 100%)`,
         }}
       />
+
+      {/* 딤 좌측 상단에 안이 넣어 준 것(A-4 의 모드 알약). 아래 '뒤로가기 +
+          타이틀'과 자리가 같지만 그쪽은 mode="recording" 을 넘기는 안만 쓴다 —
+          A-4 는 그걸 안 넘기므로 겹치지 않는다. */}
+      {topLeft && (
+        <div
+          className="absolute"
+          style={{
+            top: `${20 + topInset}px`,
+            left: "16px",
+            opacity: hideControls ? 0 : 1,
+            pointerEvents: "none",
+          }}
+        >
+          {topLeft}
+        </div>
+      )}
 
       {/* 녹화 모드: 딤 좌측 상단에 뒤로가기 + 타이틀 */}
       {mode === "recording" && (
