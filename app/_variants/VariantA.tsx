@@ -1926,7 +1926,13 @@ function ExpandedView({
       <div
         ref={listAreaRef}
         className="relative flex min-h-0 flex-col flex-1"
-        style={{ paddingTop: `${STRIP_PAD}px`, paddingBottom: `${STRIP_PAD}px` }}
+        // 아래 여백은 0 이다(사용자 지정 2026-08-31: "12px 흰띠 없애").
+        // 스크롤러 밖에 있어 굴려도 안 사라지는 값이라, 목록을 끝까지 내려도
+        // 하단 탭 위에 흰 띠로 남아 '영역이 잘리고 빈 자리가 있다'로 읽혔다.
+        // 위 여백만 남긴다 — 탭 글자와 타일이 붙는 건 그대로 막는다.
+        // 못 박는 스트립 높이(MOTION_MIN_H · A4_MOTION_H)도 같이 12 줄여서
+        // 타일·카드 크기는 그대로 두고 영역만 얇아지게 했다.
+        style={{ paddingTop: `${STRIP_PAD}px`, paddingBottom: "0px" }}
       >
       {mode === "recording" && recTab === "motion" ? (
         // 시간바는 여기 없다 — 5버튼 아래 띠(motionBlock)로 나갔다. 탭에 남는 건
