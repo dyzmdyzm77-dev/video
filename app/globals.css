@@ -535,10 +535,35 @@ body {
     );
   }
 
+  /* As Is 단독 보기(비교 꺼짐)의 회전 — 시안 프레임과 똑같은 규칙을 건다.
+     위 회전 규칙이 잡는 건 .app-safe-frame · .device-frame 뿐인데, 단독 보기에선
+     그 둘이 display:none 이고 화면에 남는 기기는 .asis-frame 하나다. 규칙에서
+     빠져 있어 혼자 바닥·왼쪽 앵커(transform-origin 0 100%) 그대로 돌아, 눕는
+     순간 오른쪽 아래로 밀려났다(사용자 지적 2026-08-31: "as is 는 왼쪽으로
+     회전했을 때 위치가 이상해 혼자?").
+     비교하기 중에는 지금처럼 바닥 기준이라야 시안과 나란히 서므로(위 주석),
+     단독일 때만 건다. */
+  html[data-rotate="true"][data-asis-only="true"] .asis-frame {
+    top: calc(
+      100vh - var(--device-bottom-pad, 40px) - var(--device-rot-h, 780px) *
+        var(--device-scale, 1) / 2
+    );
+    bottom: auto;
+    left: calc(
+      var(--device-left, 240px) + var(--device-rot-w, 360px) *
+        var(--device-scale, 1) / 2
+    );
+    transform-origin: center center;
+    transform: translate(-50%, -50%) scale(var(--device-scale, 1))
+      rotate(var(--device-rot, 0deg));
+    transition: transform 0.35s ease;
+  }
+
   /* 배치 스위치(flex↔fixed)·크기 갈아끼우기 순간엔 트랜지션을 꺼서 무이동으로
      딱 바꾼다. 그 뒤 각도(--device-rot)만 트랜지션돼 제자리에서 돈다. */
   html[data-rotating="true"] .app-safe-frame,
-  html[data-rotating="true"] .device-frame {
+  html[data-rotating="true"] .device-frame,
+  html[data-rotating="true"][data-asis-only="true"] .asis-frame {
     transition: none;
   }
   /* 치수 눈금자·드래그 핸들은 가로에서 감춘다(회전 좌표와 얽히지 않게). */
