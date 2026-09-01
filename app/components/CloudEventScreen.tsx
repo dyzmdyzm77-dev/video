@@ -129,6 +129,11 @@ export default function CloudEventScreen({
   const [timeKey, setTimeKey] = useState("all");
   const [kind, setKind] = useState<EventKind | "all">("all");
   const [limit, setLimit] = useState(PAGE);
+  // 목록은 '검색'을 누른 뒤에 나온다(사용자 지정 2026-09-01: "처음부터 목록이
+  // 안 나온대. 검색 이후에 나온데"). 들어오자마자 오늘 것을 다 뿌리는 게 아니라,
+  // 날짜·시간대·알고리즘을 고르고 찾는 화면이라는 뜻이다. 한 번 찾은 뒤에는
+  // 칩을 바꾸면 목록이 바로 따라간다 — 조건마다 다시 누르게 하면 번거롭다.
+  const [searched, setSearched] = useState(false);
 
   // 목록은 마운트 뒤에만 그린다. 오늘이 언제인지가 시각에 달려 있어 서버에서
   // 그리면 하이드레이션이 어긋난다(안들이 now 를 null 로 시작하는 것과 같은 이유).
@@ -259,22 +264,52 @@ export default function CloudEventScreen({
         ))}
       </div>
 
-      {/* 건수 */}
-      <div
-        className="flex-none border-t border-neutral-200"
-        style={{ padding: "10px 20px 6px" }}
-      >
-        <span
-          suppressHydrationWarning
-          className="text-[12px] font-semibold text-neutral-500"
+      {/* 검색 — 이걸 눌러야 목록이 나온다. 칩 줄 바로 아래, 폭을 다 쓴다. */}
+      <div className="flex-none" style={{ padding: "0 20px 12px" }}>
+        <button
+          type="button"
+          onClick={() => {
+            setLimit(PAGE);
+            setSearched(true);
+          }}
+          className="w-full text-[14px] font-semibold text-white"
+          style={{
+            height: "44px",
+            borderRadius: "8px",
+            backgroundColor: "#1D6CEB",
+          }}
         >
-          총 {events.length.toLocaleString()}건
-        </span>
+          검색
+        </button>
       </div>
 
-      {/* 목록 — 최신이 위. 탭하면 그 시각으로 재생을 시작한다. */}
+      {/* 건수 — 검색 전에는 안 적는다(아직 찾은 게 없다). */}
+      {searched && (
+        <div
+          className="flex-none border-t border-neutral-200"
+          style={{ padding: "10px 20px 6px" }}
+        >
+          <span
+            suppressHydrationWarning
+            className="text-[12px] font-semibold text-neutral-500"
+          >
+            총 {events.length.toLocaleString()}건
+          </span>
+        </div>
+      )}
+
+      {/* 목록 — 최신이 위. 탭하면 그 시각으로 재생을 시작한다.
+          검색 전에는 목록 대신 안내 한 줄만 둔다. */}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {shown.length === 0 && mounted && (
+        {!searched && (
+          <p
+            className="text-center text-[13px] text-neutral-400"
+            style={{ padding: "40px 0" }}
+          >
+            날짜와 조건을 고르고 검색해 주세요.
+          </p>
+        )}
+        {searched && shown.length === 0 && mounted && (
           <p
             className="text-center text-[13px] text-neutral-400"
             style={{ padding: "40px 0" }}
@@ -282,7 +317,7 @@ export default function CloudEventScreen({
             해당하는 이벤트가 없습니다.
           </p>
         )}
-        {shown.map((e) => {
+        {searched && shown.map((e) => {
           const ms = dayStart + e.at * 1000;
           const d = new Date(ms);
           return (
@@ -317,7 +352,7 @@ export default function CloudEventScreen({
             </button>
           );
         })}
-        {shown.length < events.length && (
+        {searched && shown.length < events.length && (
           <button
             type="button"
             className="w-full text-[13px] font-semibold text-[#1D6CEB]"
