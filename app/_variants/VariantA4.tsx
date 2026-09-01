@@ -63,6 +63,8 @@ import DateTimePickerSheet from "../components/DateTimePickerSheet";
 import { useStorageMode } from "../components/storageMode";
 import { useGridAreaRatio } from "../components/useGridLayout";
 import {
+  MOTION_MIN_H,
+  PANEL_BOTTOM_H,
   SIDE_PANEL_RATIO,
   SIDE_PANEL_W,
   THUMB_MAX_H,
@@ -78,18 +80,10 @@ import {
   LANDSCAPE_TOP_INSET,
 } from "../components/layoutRules";
 
-// A-4 의 가로 한 줄 타일 바닥(px). 공유 기본값 TILE_MIN_H(88)를 이 안만 낮춘 값
-// (사용자 지정 2026-08-26: 72 로 낮췄다가 "아직 커 보인다" 해서 64). 카메라
-// 목록·움직임 감지 스트립이 같이
-// 이 값을 따른다 — layoutRules.ts 의 '두 탭은 1px 도 안 어긋난다' 규칙 그대로다.
-const A4_TILE_MIN_H = 64;
-// 그 타일이 들어가는 스트립 높이 = 타일 + 영역이 갖는 위아래 여백(STRIP_PAD 12
-// 두 번). 공유 MOTION_MIN_H 를 그대로 쓰면 타일 바닥만 낮춰도 스트립이 그 값으로
-// 못 박혀 타일이 안 내려간다 — 둘을 같이 낮춰야 이 값이 나온다.
-// 아래 여백은 가로 한 줄일 때만 있다(2026-08-31, layoutRules 의 MOTION_MIN_H
-// 주석 참고). 이 값도 그 배치에서만 쓰이므로 12 를 두 번 더한다.
-// 값은 아래 STRIP_PAD 와 같은 12 다(모듈 초기화 순서 때문에 숫자로 적는다).
-const A4_MOTION_H = A4_TILE_MIN_H + 12 * 2;
+// 가로 딤에서 '아래로' 나오는 판의 높이(PANEL_BOTTOM_H)는 공용 값을 쓴다.
+// 예전엔 A-4 만 스트립을 낮춰 써서 A4_* 상수를 따로 뒀는데, 2026-09-01 에 네
+// 안이 같은 값(TILE_MIN_H 64 · MOTION_MIN_H 88)을 쓰기로 하면서 같아졌다.
+
 // 가로 카드(움직임 감지)의 최소 폭(px). 카드는 원래 16:9 라 세로에서 폭이
 // 따라오는데, 스트립이 얇아지는 좁은 화면(405×648 에서 85×48)에서는 그 폭이
 // 날짜·시각 라벨보다 좁아 글자가 잘렸다(사용자 지적 2026-08-31: "카드가 가로
@@ -99,10 +93,6 @@ const A4_MOTION_H = A4_TILE_MIN_H + 12 * 2;
 // 값의 근거: 라벨(글자 12 · 좌우 padding 4+4 = 89.6) + 좌우 여백 3+3 = 95.6 → 96.
 // 여백 3 은 라벨을 얹는 자리(left/bottom 3)와 같은 값이다.
 const A4_CARD_MIN_W = 96;
-// 가로 딤에서 '아래로' 나오는 판의 높이 = 탭 줄 48 + 구분선 1 + 스트립.
-// 공유 PANEL_BOTTOM_H 는 스트립을 MOTION_MIN_H(108)로 잡는데, A-4 는 스트립을
-// 낮췄으니 판도 같이 낮아져야 카드가 세로 화면과 같은 크기가 된다.
-const A4_PANEL_BOTTOM_H = 48 + 1 + A4_MOTION_H;
 
 const CAMERAS = [
   { label: "카메라 01", src: `${BASE}/cameras/cam1.gif` },
@@ -1657,9 +1647,8 @@ function ExpandedView({
   // 지적 2026-08-26). 카메라 목록·움직임 감지가 같은 영역을 나눠 쓰므로 둘 다
   // 같이 낮아진다 — 한쪽만 줄이면 탭을 옮길 때 크기가 어긋난다.
   const [listAreaRef, listRowRef, listWide, videoAreaRef] = useListLayout(
-    sidePanel ? undefined : A4_MOTION_H,
+    sidePanel ? undefined : MOTION_MIN_H,
     true,
-    A4_TILE_MIN_H,
   );
   // 카메라 목록 — 선택 카메라 타일을 가운데로 맞출 때 쓴다(가로면 좌우, 세로면 위아래).
   const listScrollRef = useRef<HTMLDivElement>(null);
@@ -2576,7 +2565,7 @@ function ExpandedView({
         // 내려도 하단 탭 위에 흰 띠로 남았다("12px 흰띠 없애"). 가로 한 줄은
         // 세로로 굴릴 게 없어 그 문제가 없고, 없애 두면 스트립이 하단 탭에 딱
         // 붙어 답답하다("하단 마진 어디갔어").
-        // 못 박는 스트립 높이(MOTION_MIN_H · A4_MOTION_H)가 이 여백을 포함한
+        // 못 박는 스트립 높이(MOTION_MIN_H)가 이 여백을 포함한
         // 값이고 그 값도 가로 한 줄에서만 쓰이므로, 둘의 조건이 서로 맞는다 —
         // 타일 크기는 예전 그대로다.
         style={{
@@ -5275,7 +5264,7 @@ function LandscapeSidePanel({
           ? {
               // 아래에서 나오는 판 — 바텀시트와 같은 결: 윗변만 둥글게, 높이 고정.
               width: "100%",
-              height: open ? `${A4_PANEL_BOTTOM_H}px` : "0px",
+              height: open ? `${PANEL_BOTTOM_H}px` : "0px",
               transition: "height 240ms cubic-bezier(0.22, 1, 0.36, 1)",
               borderTop: open ? "1px solid #EBEBEB" : "none",
               borderTopLeftRadius: "10px",
@@ -5296,7 +5285,7 @@ function LandscapeSidePanel({
       className="flex min-h-0 flex-1 flex-col"
       style={
         bottom
-          ? { width: "100%", height: `${A4_PANEL_BOTTOM_H}px` }
+          ? { width: "100%", height: `${PANEL_BOTTOM_H}px` }
           : { width: `${full}px`, paddingRight: `${extra}px` }
       }
     >
@@ -5354,7 +5343,7 @@ function LandscapeSidePanel({
         // 재생 줄에 이미 있어서 판에는 안 넣는다.
         bottom ? (
           // 위아래 여백은 세로 화면 스트립과 같은 12 — 판 높이에서 이만큼 빼면
-          // 카드가 세로 화면과 같은 크기(A4_TILE_MIN_H)가 된다.
+          // 카드가 세로 화면과 같은 크기(TILE_MIN_H)가 된다.
           <div
             className="flex min-h-0 flex-1 flex-col"
             style={{ paddingTop: "12px", paddingBottom: "12px" }}
