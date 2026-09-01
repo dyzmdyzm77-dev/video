@@ -103,7 +103,7 @@ export default function CloudEventScreen({
   cameraSrc,
   onLive,
   onPick,
-  modeToggle,
+  header,
 }: {
   /** 기준 시각. 이 시각이 속한 '오늘'의 이벤트를, 이 시각까지만 보여 준다. */
   initialMs: number;
@@ -113,12 +113,14 @@ export default function CloudEventScreen({
   onLive: () => void;
   /** 이벤트를 골랐을 때 — 그 시각으로 녹화 재생을 시작한다. */
   onPick: (ms: number) => void;
-  /** 맨 윗줄에 놓을 실시간↔녹화 토글. 안마다 상단 바가 달라서 그 안이 쓰는 걸
-   *  그대로 받는다(사용자 지정 2026-09-01: "상단에 그 바는 유지해야지 —
-   *  실시간이랑 녹화영상"). 여긴 클라우드 전용 화면이라 안의 헤더가 통째로
-   *  빠지는데, 모드 토글까지 다른 물건(LIVE/녹화)으로 바뀌어 있었다.
-   *  안 넘기면 예전 그대로 ModeChipToggle 이다(A-1 은 그게 자기 것이다). */
-  modeToggle?: React.ReactNode;
+  /** 맨 위에 그대로 얹을 그 안의 상단 바(장소명 + 실시간/녹화영상). 클라우드로
+   *  녹화에 들어오면 안의 헤더가 통째로 빠지는 자리라, 여기 다시 넣어 준다
+   *  (사용자 지정 2026-09-01: "상단에 그 바는 유지해야지 — 실시간이랑
+   *  녹화영상", "그 부분은 그대로 넣으라고"). 안마다 헤더가 달라서 안이 자기
+   *  것을 통째로 넘긴다. 넘기면 아래 날짜 줄의 LIVE/녹화 토글은 안 그린다 —
+   *  모드 바꾸는 물건이 한 화면에 둘이 되면 안 된다.
+   *  안 넘기면 예전 그대로다(A-1 은 자기 상단 바가 LIVE/녹화라 안 넘긴다). */
+  header?: React.ReactNode;
 }) {
   // 어느 날 것을 볼지. null 이면 호출부가 준 기준 시각(=지금)을 그대로 쓴다.
   // 날짜를 고르면 그 시각이 새 기준이 된다 — 목록은 그 날 자정부터 그 시각까지.
@@ -177,13 +179,16 @@ export default function CloudEventScreen({
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col bg-white">
-      {/* 맨 윗줄 — 실시간 화면과 같은 구조(토글 + 날짜·시각). 다만 여기선
-          날짜·시각이 버튼이라, 누르면 다른 날을 고를 수 있다. */}
+      {/* 안의 상단 바 — 그대로 얹는다. 안 넘긴 안(A-1)은 아무것도 안 그린다. */}
+      {header}
+
+      {/* 그 아래 줄 — 날짜·시각. 여기선 버튼이라, 누르면 다른 날을 고를 수 있다.
+          상단 바를 받은 안은 모드 토글을 여기 또 그리지 않는다. */}
       <div
         className="relative flex flex-none items-center px-5"
         style={{ height: "48px", gap: "8px" }}
       >
-        {modeToggle ?? (
+        {!header && (
           <ModeChipToggle
             mode="recording"
             setMode={(m) => m === "live" && onLive()}

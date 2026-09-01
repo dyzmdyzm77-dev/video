@@ -1013,12 +1013,13 @@ export default function VariantA4({
       {cloudEventScreen ? (
         <CloudEventScreen
           initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
-          // 맨 윗줄 토글은 이 안의 상단 바가 쓰는 것 그대로다(사용자 지정
-          // 2026-09-01). 클라우드 이벤트 화면은 안의 헤더가 통째로 빠지는
-          // 자리라, 여기까지 다른 토글(LIVE/녹화)이면 같은 앱에서 모드 바꾸는
-          // 물건이 두 가지가 된다.
-          modeToggle={
-            <ModeToggle
+          // 이 안의 상단 바를 통째로 얹는다(사용자 지정 2026-09-01: "상단에
+          // 그 바는 유지해야지", "그 부분은 그대로 넣으라고"). 클라우드로 녹화에
+          // 들어오면 안의 헤더가 통째로 빠지는 자리라, 장소명도 모드 토글도
+          // 사라져 있었다. 제목을 누르면 다채널 헤더와 같이 안 고르기가 열린다.
+          header={
+            <AppHeader
+              onTitleClick={() => setVariantPickerOpen(true)}
               mode="recording"
               setMode={(m) => {
                 if (m === "live") {
@@ -1026,6 +1027,7 @@ export default function VariantA4({
                   handleSetMode("live");
                 }
               }}
+              chromeVisible={chromeVisible}
             />
           }
           onLive={() => setDateTimeOpen(false)}
@@ -1302,34 +1304,13 @@ function GridView({
 
   return (
     <>
-      {/* 상단 헤더(타이틀+실시간/녹화 탭) — 녹화 모드에서도 항상 표시.
-          시스템 바를 끄는 몰입 모드에선 헤더 위 16px 여백도 함께 제거해 위로 붙인다. */}
-      <header
-        className="flex flex-none items-center px-5"
-        style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
-      >
-        <div className="flex w-full items-center justify-between">
-          {/* 장소명 + 지점명을 한 버튼으로 묶는다 — 첫 줄만 버튼이면 아래
-              지점명이나 화살표 옆 빈 곳을 눌러도 안 먹는다(사용자 지적). */}
-          <div className="flex flex-col">
-            <button
-              type="button"
-              onClick={onOpenVariantPicker}
-              className="flex flex-col items-start gap-[2px] pb-1 pr-3 text-left"
-            >
-              <span className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900">
-                {VARIANT_LABEL["a4"]}
-                <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
-              </span>
-              <span className="text-[12px] leading-none" style={{ color: "#BFBFBF" }}>
-                에스원 본사 · N1234567
-              </span>
-            </button>
-          </div>
-
-          <ModeToggle mode={mode} setMode={setMode} />
-        </div>
-      </header>
+      {/* 상단 바 — 확대뷰·클라우드 화면과 같은 것을 쓴다(AppHeader). */}
+      <AppHeader
+        onTitleClick={onOpenVariantPicker}
+        mode={mode}
+        setMode={setMode}
+        chromeVisible={chromeVisible}
+      />
 
       <section
         ref={videoAreaRef}
@@ -1963,32 +1944,13 @@ function ExpandedView({
 
   const headerBlock = (
     <>
-      {/* 확대뷰 헤더 — 다채널 화면과 동일. 녹화 모드에서도 항상 표시 */}
-      <header
-        className="flex flex-none items-center px-5"
-        style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
-      >
-        <div className="flex w-full items-center justify-between">
-          {/* 장소명 + 지점명을 한 버튼으로 — 다채널 헤더와 같은 규칙. */}
-          <div className="flex flex-col">
-            <button
-              type="button"
-              onClick={onBack}
-              className="flex flex-col items-start gap-[2px] pb-1 pr-3 text-left"
-            >
-              <span className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900">
-                {VARIANT_LABEL["a4"]}
-                <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
-              </span>
-              <span className="text-[12px] leading-none" style={{ color: "#BFBFBF" }}>
-                에스원 본사 · N1234567
-              </span>
-            </button>
-          </div>
-
-          <ModeToggle mode={mode} setMode={setMode} />
-        </div>
-      </header>
+      {/* 확대뷰 상단 바 — 다채널과 같은 것. 제목을 누르면 다채널로 돌아간다. */}
+      <AppHeader
+        onTitleClick={onBack}
+        mode={mode}
+        setMode={setMode}
+        chromeVisible={chromeVisible}
+      />
     </>
   );
   const videoBlock = (
@@ -4193,6 +4155,52 @@ function ModePill({ mode }: { mode: "live" | "recording" }) {
       />
       {mode === "recording" ? "녹화영상" : "실시간"}
     </span>
+  );
+}
+
+// 상단 바(장소명 + 실시간/녹화영상) — 다채널·확대뷰·클라우드 이벤트 화면이
+// 같은 것을 쓴다. 예전엔 화면마다 같은 마크업을 따로 갖고 있었는데, 클라우드
+// 화면에도 이 바를 넣게 되면서(사용자 지정 2026-09-01) 사본이 셋이 될 참이라
+// 하나로 합쳤다. 제목을 누르면 하는 일만 화면마다 다르다(안 고르기 / 뒤로).
+function AppHeader({
+  onTitleClick,
+  mode,
+  setMode,
+  chromeVisible,
+}: {
+  onTitleClick: () => void;
+  mode: "live" | "recording";
+  setMode: (m: "live" | "recording") => void;
+  chromeVisible: boolean;
+}) {
+  return (
+    // 시스템 바를 끄는 몰입 모드에선 헤더 위 16px 여백도 함께 제거해 위로 붙인다.
+    <header
+      className="flex flex-none items-center px-5"
+      style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
+    >
+      <div className="flex w-full items-center justify-between">
+        {/* 장소명 + 지점명을 한 버튼으로 묶는다 — 첫 줄만 버튼이면 아래
+            지점명이나 화살표 옆 빈 곳을 눌러도 안 먹는다(사용자 지적). */}
+        <div className="flex flex-col">
+          <button
+            type="button"
+            onClick={onTitleClick}
+            className="flex flex-col items-start gap-[2px] pb-1 pr-3 text-left"
+          >
+            <span className="flex items-center gap-1.5 text-[18px] font-bold leading-none text-neutral-900">
+              {VARIANT_LABEL["a4"]}
+              <ChevronDownIcon className="h-6 w-6 text-[#262626]" />
+            </span>
+            <span className="text-[12px] leading-none" style={{ color: "#BFBFBF" }}>
+              에스원 본사 · N1234567
+            </span>
+          </button>
+        </div>
+
+        <ModeToggle mode={mode} setMode={setMode} />
+      </div>
+    </header>
   );
 }
 
