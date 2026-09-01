@@ -406,6 +406,19 @@ export default function VariantA({
   const storage = useStorageMode();
   const cloudEventScreen = storage === "cloud" && dateTimeOpen;
 
+  // 저장 방식을 바꾸면, 녹화를 보던 중이었다면 그 방식의 '시점 고르기'로 다시
+  // 들어간다(사용자 지적 2026-09-01: "NVR 녹화 영상 화면 보고 있는데 클라우드
+  // 누르면 안 바뀌네"). 클라우드 화면 조건이 dateTimeOpen 이라, 이미 재생 중이면
+  // (시트를 닫은 뒤라) 방식만 바꿔도 화면이 그대로였다. NVR 은 날짜·시간 시트,
+  // 클라우드는 이벤트 목록이 그 자리다 — 둘 다 이 플래그 하나로 열린다.
+  // 실시간을 보던 중이면 건드리지 않는다(저장 방식은 녹화에만 걸리는 얘기다).
+  const storageRef = useRef(storage);
+  useEffect(() => {
+    if (storageRef.current === storage) return;
+    storageRef.current = storage;
+    if (mode === "recording") setDateTimeOpen(true);
+  }, [storage, mode]);
+
   const triggerTransitionSkeleton = () => {
     if (expandedIndex === null) {
       setGridLoading(true);
