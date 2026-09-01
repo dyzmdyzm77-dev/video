@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import type React from "react";
 import { BASE } from "../basePath";
 import DateTimePickerSheet from "./DateTimePickerSheet";
 import EventKindChip from "./EventKindChip";
@@ -102,6 +103,7 @@ export default function CloudEventScreen({
   cameraSrc,
   onLive,
   onPick,
+  modeToggle,
 }: {
   /** 기준 시각. 이 시각이 속한 '오늘'의 이벤트를, 이 시각까지만 보여 준다. */
   initialMs: number;
@@ -111,6 +113,12 @@ export default function CloudEventScreen({
   onLive: () => void;
   /** 이벤트를 골랐을 때 — 그 시각으로 녹화 재생을 시작한다. */
   onPick: (ms: number) => void;
+  /** 맨 윗줄에 놓을 실시간↔녹화 토글. 안마다 상단 바가 달라서 그 안이 쓰는 걸
+   *  그대로 받는다(사용자 지정 2026-09-01: "상단에 그 바는 유지해야지 —
+   *  실시간이랑 녹화영상"). 여긴 클라우드 전용 화면이라 안의 헤더가 통째로
+   *  빠지는데, 모드 토글까지 다른 물건(LIVE/녹화)으로 바뀌어 있었다.
+   *  안 넘기면 예전 그대로 ModeChipToggle 이다(A-1 은 그게 자기 것이다). */
+  modeToggle?: React.ReactNode;
 }) {
   // 어느 날 것을 볼지. null 이면 호출부가 준 기준 시각(=지금)을 그대로 쓴다.
   // 날짜를 고르면 그 시각이 새 기준이 된다 — 목록은 그 날 자정부터 그 시각까지.
@@ -175,7 +183,12 @@ export default function CloudEventScreen({
         className="relative flex flex-none items-center px-5"
         style={{ height: "48px", gap: "8px" }}
       >
-        <ModeChipToggle mode="recording" setMode={(m) => m === "live" && onLive()} />
+        {modeToggle ?? (
+          <ModeChipToggle
+            mode="recording"
+            setMode={(m) => m === "live" && onLive()}
+          />
+        )}
         <button
           type="button"
           onClick={() => setPickOpen(true)}

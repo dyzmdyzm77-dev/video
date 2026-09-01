@@ -1013,6 +1013,21 @@ export default function VariantA4({
       {cloudEventScreen ? (
         <CloudEventScreen
           initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
+          // 맨 윗줄 토글은 이 안의 상단 바가 쓰는 것 그대로다(사용자 지정
+          // 2026-09-01). 클라우드 이벤트 화면은 안의 헤더가 통째로 빠지는
+          // 자리라, 여기까지 다른 토글(LIVE/녹화)이면 같은 앱에서 모드 바꾸는
+          // 물건이 두 가지가 된다.
+          modeToggle={
+            <ModeToggle
+              mode="recording"
+              setMode={(m) => {
+                if (m === "live") {
+                  setDateTimeOpen(false);
+                  handleSetMode("live");
+                }
+              }}
+            />
+          }
           onLive={() => setDateTimeOpen(false)}
           onPick={(ms) => {
             setPlaybackMs(ms);
