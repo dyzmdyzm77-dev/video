@@ -1926,13 +1926,18 @@ function ExpandedView({
       <div
         ref={listAreaRef}
         className="relative flex min-h-0 flex-col flex-1"
-        // 아래 여백은 0 이다(사용자 지정 2026-08-31: "12px 흰띠 없애").
-        // 스크롤러 밖에 있어 굴려도 안 사라지는 값이라, 목록을 끝까지 내려도
-        // 하단 탭 위에 흰 띠로 남아 '영역이 잘리고 빈 자리가 있다'로 읽혔다.
-        // 위 여백만 남긴다 — 탭 글자와 타일이 붙는 건 그대로 막는다.
-        // 못 박는 스트립 높이(MOTION_MIN_H · A4_MOTION_H)도 같이 12 줄여서
-        // 타일·카드 크기는 그대로 두고 영역만 얇아지게 했다.
-        style={{ paddingTop: `${STRIP_PAD}px`, paddingBottom: "0px" }}
+        // 아래 여백은 '가로 한 줄'일 때만 준다(사용자 지정 2026-08-31).
+        // 세로 2열은 세로 스크롤이라, 스크롤러 밖에 있는 이 여백이 목록을 끝까지
+        // 내려도 하단 탭 위에 흰 띠로 남았다("12px 흰띠 없애"). 가로 한 줄은
+        // 세로로 굴릴 게 없어 그 문제가 없고, 없애 두면 스트립이 하단 탭에 딱
+        // 붙어 답답하다("하단 마진 어디갔어").
+        // 못 박는 스트립 높이(MOTION_MIN_H · A4_MOTION_H)가 이 여백을 포함한
+        // 값이고 그 값도 가로 한 줄에서만 쓰이므로, 둘의 조건이 서로 맞는다 —
+        // 타일 크기는 예전 그대로다.
+        style={{
+          paddingTop: `${STRIP_PAD}px`,
+          paddingBottom: listWide ? `${STRIP_PAD}px` : "0px",
+        }}
       >
       {mode === "recording" && recTab === "motion" ? (
         // 시간바는 여기 없다 — 5버튼 아래 띠(motionBlock)로 나갔다. 탭에 남는 건
