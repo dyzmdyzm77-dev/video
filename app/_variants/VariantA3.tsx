@@ -3205,7 +3205,15 @@ function RecordingEventTimeline({
     if (!el || el.clientHeight <= 0) return;
     // 남는 영역 높이에서 상하 여백(위 cardTop + 아래 PAD_TOP)을 뺀 값. 일반 48 로 캡.
     const avail = el.clientHeight - (cardTop + cardBottom);
-    setThumbH(Math.max(THUMB_MIN_H, Math.min(THUMB_MAX_H, Math.round(avail))));
+    // 감지 탭으로 단독으로 설 때(thumbs)는 상한을 안 건다 — 그 자리를 카메라
+    // 목록과 번갈아 쓰므로 타일과 같은 높이여야 한다(사용자 지적 2026-09-01:
+    // "750 에서 녹화 움직임 감지 가로 스크롤, 카드 사이즈 왜그러니"). 750 처럼
+    // 넓은 화면에서는 타일이 88 까지 커지는데 카드만 THUMB_MAX_H(48)에 걸려
+    // 40 을 남기고 떠 있었다. 좁은 화면은 avail 이 작아 THUMB_MIN_H 가 받는다.
+    // 시간바와 한 블록으로 서는 경우(both)는 예전 상한 그대로 — 거기선 남는
+    // 세로가 시간바 몫이라 썸네일이 다 먹으면 안 된다.
+    const cap = part === "thumbs" ? avail : Math.min(THUMB_MAX_H, avail);
+    setThumbH(Math.max(THUMB_MIN_H, Math.round(cap)));
   };
   // 매 렌더 뒤 재계산 — 기기 폭/높이 전환처럼 ResizeObserver 만으로는 놓치는 경우가
   // 있어서(관측 노드 교체·콜백 누락) 렌더 기준으로도 한 번 더 맞춘다. 값이 같으면
