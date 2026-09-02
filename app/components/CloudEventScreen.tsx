@@ -49,9 +49,16 @@ const TIME_BUCKETS: { key: string; label: string; from?: number; to?: number }[]
 // 아래 '이전 이벤트 더 보기'로 이만큼씩 늘린다.
 const PAGE = 60;
 
-// 썸네일 — 카드 하나가 96×54(16:9).
-const THUMB_W = 96;
-const THUMB_H = 54;
+// 목록은 격자다(사용자 지정 2026-09-02: "그거 목록 2줄로 바꿔. 지금 한줄인데").
+// 한 줄에 하나씩 가로로 눕히던 카드를, 썸네일 위 · 글자 아래인 세로 카드로 바꿨다.
+// 썸네일 크기는 칸 폭에 맡기고 비율(16:9)만 못 박는다.
+//
+// 열 수를 2로 못 박지는 않는다 — 폰(360)에서 2 가 되는 칸 최소폭만 주고 나머지는
+// CSS(auto-fill)에 맡긴다. 못 박으면 1080 태블릿에서 카드 하나가 470px 짜리
+// 영상만 해진다. 폭을 재서 갈라지는 게 아니라 CSS 가 채우는 것이라
+// layoutRules 의 기준선(WIDE_BP·SIDE_PANEL_BP)과는 상관없다.
+//   360 → 2열 · 620 → 3열 · 780 → 4열 · 1080 → 6열 (칸은 늘 150~200px)
+const TILE_MIN_W = 150;
 
 // 카메라 이미지는 움직이는 GIF 다. 목록엔 한 화면에 열 몇 개가 깔리므로 그대로
 // 넣으면 전부 각자 돌아가 버벅인다 — 안들이 타임라인 썸네일에 쓰는 것과 같은
@@ -336,41 +343,51 @@ export default function CloudEventScreen({
             해당하는 이벤트가 없습니다.
           </p>
         )}
-        {searched && shown.map((e) => {
-          const ms = dayStart + e.at * 1000;
-          const d = new Date(ms);
-          return (
-            <button
-              key={e.at}
-              type="button"
-              className="flex w-full items-center border-b border-neutral-100 text-left"
-              style={{ gap: "12px", padding: "10px 20px" }}
-              onClick={() => onPick(ms)}
-            >
-              <div
-                className="relative flex-none overflow-hidden rounded-md bg-neutral-900"
-                style={{ width: `${THUMB_W}px`, height: `${THUMB_H}px` }}
-              >
-                <EventKindChip kind={e.kind} />
-                <FrozenThumb src={cameraSrc ?? `${BASE}/cameras/cam1.gif`} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p
-                  suppressHydrationWarning
-                  className="text-[16px] font-bold leading-none text-neutral-900"
+        {searched && shown.length > 0 && (
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: `repeat(auto-fill, minmax(${TILE_MIN_W}px, 1fr))`,
+              columnGap: "8px",
+              rowGap: "14px",
+              padding: "12px 20px",
+            }}
+          >
+            {shown.map((e) => {
+              const ms = dayStart + e.at * 1000;
+              const d = new Date(ms);
+              return (
+                <button
+                  key={e.at}
+                  type="button"
+                  className="min-w-0 text-left"
+                  onClick={() => onPick(ms)}
                 >
-                  {pad(d.getHours())}:{pad(d.getMinutes())}:{pad(d.getSeconds())}
-                </p>
-                <p
-                  className="text-[12px] leading-none text-neutral-500"
-                  style={{ marginTop: "6px" }}
-                >
-                  {e.kind} · {e.dur}초
-                </p>
-              </div>
-            </button>
-          );
-        })}
+                  <div
+                    className="relative w-full overflow-hidden rounded-md bg-neutral-900"
+                    style={{ aspectRatio: "16 / 9" }}
+                  >
+                    <EventKindChip kind={e.kind} />
+                    <FrozenThumb src={cameraSrc ?? `${BASE}/cameras/cam1.gif`} />
+                  </div>
+                  <p
+                    suppressHydrationWarning
+                    className="truncate text-[15px] font-bold leading-none text-neutral-900"
+                    style={{ marginTop: "8px" }}
+                  >
+                    {pad(d.getHours())}:{pad(d.getMinutes())}:{pad(d.getSeconds())}
+                  </p>
+                  <p
+                    className="truncate text-[12px] leading-none text-neutral-500"
+                    style={{ marginTop: "5px" }}
+                  >
+                    {e.kind} · {e.dur}초
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        )}
         {searched && shown.length < events.length && (
           <button
             type="button"
