@@ -56,6 +56,26 @@ const THUMB_H = 54;
 // 카메라 이미지는 움직이는 GIF 다. 목록엔 한 화면에 열 몇 개가 깔리므로 그대로
 // 넣으면 전부 각자 돌아가 버벅인다 — 안들이 타임라인 썸네일에 쓰는 것과 같은
 // 수법으로 첫 프레임만 캔버스에 떠서 정지화면으로 만든다.
+function SearchIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#A4A4A4"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className="flex-none"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.6-3.6" />
+    </svg>
+  );
+}
+
 function FrozenThumb({ src }: { src: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -175,6 +195,33 @@ export default function CloudEventScreen({
         </div>
       )}
       <div className="h-px flex-none" style={{ backgroundColor: "#EBEBEB" }} />
+
+      {/* 검색창 — 필터 위, 화면 맨 위 줄. 모양만이고 실제로 칠 수 없다(사용자
+          결정, AiSearchSheet 과 같은 이유): 이 앱은 스크롤 없는 고정 화면이라
+          키보드가 뜨면 화면이 밀려 올라간 채 돌아오지 않는다. readOnly input 도
+          포커스가 잡혀 커서가 깜빡이고 기기에 따라 키보드가 떠서, input 이
+          아니라 글자로 그린다. */}
+      <div className="flex-none" style={{ padding: "12px 20px 0" }}>
+        <div
+          aria-hidden
+          className="flex items-center"
+          style={{
+            height: "40px",
+            padding: "0 14px",
+            gap: "8px",
+            borderRadius: "20px",
+            backgroundColor: "#F4F5F7",
+          }}
+        >
+          <SearchIcon />
+          <span
+            className="min-w-0 flex-1 truncate text-[14px] leading-none"
+            style={{ color: "#A4A4A4" }}
+          >
+            검색어를 입력하세요
+          </span>
+        </div>
+      </div>
 
       {/* 필터 두 줄 — 시간대 / 알고리즘. 라벨을 왼쪽에 붙이면 360px 에서 칩이
           잘려서, 라벨은 위에 작게 두고 칩 줄은 폭을 다 쓴다. */}
