@@ -6,7 +6,6 @@ import { BASE } from "../basePath";
 import DateTimePickerSheet from "./DateTimePickerSheet";
 import {
   BUTTON,
-  CHIP,
   COLOR,
   FILTER_CHIP,
   PRIMITIVE,
@@ -17,6 +16,7 @@ import {
 } from "./designTokens";
 import EventKindChip from "./EventKindChip";
 import ModeChipToggle from "./ModeChipToggle";
+import OptionSheet from "./OptionSheet";
 import { EVENT_KINDS, TIMELINE_EVENTS, type EventKind } from "./timelineEvents";
 
 // ============================================================================
@@ -43,15 +43,20 @@ import { EVENT_KINDS, TIMELINE_EVENTS, type EventKind } from "./timelineEvents";
 // 필터는 셋 — 카메라 · 날짜·시간 · 감지유형 (사용자 지정 2026-09-02: "필터가
 // 일단 카메라 선택이 있어야하고, 날짜 시간, 감지유형 이렇게야"). 예전의
 // 시간대(새벽·오전·오후·저녁) 칩은 '날짜·시간'이 대신해 뺐다.
-// 카메라·감지유형은 한 번에 하나만 고른다 — 다중 선택은 칩이 좁은 폭(360px)에서
-// '지금 뭐가 켜졌는지'를 읽기 어렵다.
+// 셋 다 한 줄에 칩으로 서고, 누르면 시트가 떠서 고른다(사용자 지정 2026-09-02:
+// "필터 한줄로 하는거 어때? 칩 형태에 그 화살표 붙은거 ... 그걸로 선택하게").
+// 고를 값을 칩으로 다 늘어놓던 예전 방식은 카메라가 넷만 돼도 두 줄을 먹었고,
+// 제목 줄까지 합쳐 세로로 세 뭉치를 썼다. 한 번에 하나만 고르는 필터라
+// 라디오 시트가 맞다 — 다중 선택은 좁은 폭(360px)에서 '지금 뭐가 켜졌는지'를
+// 읽기 어렵다.
 //
 // 색·크기·타이포는 눈대중이 아니라 `designTokens.ts` 에서 온다 — Figma
 // 디자인시스템 페이지의 값을 그대로 옮긴 파일이다. 여기에 hex 나 px 를 직접
 // 적지 말 것(2026-09-02 에 #F4F5F7·#EBEBEB·#E0E0E0 처럼 토큰에서 한두 칸씩
 // 어긋난 값들을 걷어냈다). 쓰는 컴포넌트는 넷 —
-//   검색창=Search Input(MD) · 필터 칩=Chip(SM/Mobile/Solid) ·
-//   날짜·시간=Filter Chip(MD/Mobile/Line) · 검색 버튼=Button(LG/Mobile/Primary)
+//   검색창=Search Input(MD) · 필터 셋=Filter Chip(MD/Mobile/Line/Title=On) ·
+//   고르는 시트=Bottom Sheet(Footer=None)+Bottom Sheet Option(Radio) ·
+//   검색 버튼=Button(LG/Mobile/Primary)
 // ============================================================================
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -100,30 +105,48 @@ function ChevronDownIcon({
   );
 }
 
-// 필터 한 줄 — 라벨은 위에 작게, 값 줄은 폭을 다 쓴다. 라벨을 왼쪽에 붙이면
-// 360px 에서 칩이 잘린다.
-function FilterRow({
+// 필터 칩 하나 — 디자인시스템 Filter Chip(Size=MD, Break=Mobile, Variant=Line,
+// Title=On). 왼쪽에 제목이 회색으로, 그 옆에 지금 걸린 값이 파랗게, 끝에
+// 화살표가 온다. 값이 파래서 칩만 보고도 '이 필터에 뭐가 걸렸는지'가 읽힌다.
+function FilterChipButton({
   title,
-  children,
+  value,
+  onClick,
 }: {
   title: string;
-  children: React.ReactNode;
+  value: string;
+  onClick: () => void;
 }) {
   return (
-    <div style={{ marginTop: `${SPACE.s10}px` }}>
-      <p
-        className="leading-none"
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-none items-center"
+      style={{
+        height: `${FILTER_CHIP.height}px`,
+        padding: `0 ${FILTER_CHIP.paddingRight}px 0 ${FILTER_CHIP.paddingLeft}px`,
+        gap: `${FILTER_CHIP.gap}px`,
+        borderRadius: `${FILTER_CHIP.radiusToken}px`,
+        fontSize: `${FILTER_CHIP.fontSize}px`,
+        fontWeight: FILTER_CHIP.fontWeight,
+        lineHeight: TYPE.leading,
+        border: `1px solid ${FILTER_CHIP.border}`,
+        backgroundColor: FILTER_CHIP.bg,
+      }}
+    >
+      <span style={{ color: FILTER_CHIP.title }}>{title}</span>
+      <span suppressHydrationWarning style={{ color: FILTER_CHIP.value }}>
+        {value}
+      </span>
+      <ChevronDownIcon
+        className="flex-none"
         style={{
-          fontSize: `${TYPE.size.sm}px`,
-          fontWeight: TYPE.weight.medium,
-          color: COLOR.textTertiary,
-          marginBottom: `${SPACE.s6}px`,
+          width: `${FILTER_CHIP.chevron}px`,
+          height: `${FILTER_CHIP.chevron}px`,
+          color: FILTER_CHIP.label,
         }}
-      >
-        {title}
-      </p>
-      {children}
-    </div>
+      />
+    </button>
   );
 }
 
@@ -205,6 +228,8 @@ export default function CloudEventScreen({
   // 날짜를 고르면 그 시각이 새 기준이 된다 — 목록은 그 날 자정부터 그 시각까지.
   const [viewMs, setViewMs] = useState<number | null>(null);
   const [pickOpen, setPickOpen] = useState(false);
+  const [camOpen, setCamOpen] = useState(false);
+  const [kindOpen, setKindOpen] = useState(false);
   const [camIdx, setCamIdx] = useState<number | "all">("all");
   const [kind, setKind] = useState<EventKind | "all">("all");
   const [limit, setLimit] = useState(PAGE);
@@ -254,49 +279,30 @@ export default function CloudEventScreen({
   }, [mounted, baseMs, dayStart, kind, camIdx, camCount]);
 
   const shown = events.slice(0, limit);
-  // '날짜·시간' 필터에 적히는 값 — 곧 목록의 끝점이다(그 날 자정 ~ 이 시각).
+
+  // 칩에 적히는 지금 값 셋. 칩이 한 줄에 늘어서므로 짧아야 한다 —
+  // 날짜는 연도를 뺀다(고를 수 있는 범위가 최근 30일이라 연도가 헷갈릴 일이
+  // 없고, 시트를 열면 연도까지 다 보인다).
   const b = new Date(baseMs);
-  const dateLabel = `${b.getFullYear()}.${pad(b.getMonth() + 1)}.${pad(b.getDate())}. ${pad(b.getHours())}:${pad(b.getMinutes())}`;
+  const dateLabel = `${pad(b.getMonth() + 1)}.${pad(b.getDate())} ${pad(b.getHours())}:${pad(b.getMinutes())}`;
+  // 칩 제목이 이미 '카메라'라, 값에서 그 말을 뺀다 — 안 그러면 칩이
+  // '카메라 카메라 03' 이 된다. 시트 안 목록은 제목이 따로 없으니 원래
+  // 이름('카메라 03')을 그대로 쓴다.
+  const camLabel =
+    camIdx === "all"
+      ? "전체"
+      : ((cameras?.[camIdx]?.label ?? "전체").replace(/^카메라\s*/, "") ||
+        "전체");
+  const kindLabel = kind === "all" ? "전체" : kind;
 
-  // 카메라·감지유형 칩 — 디자인시스템 Chip(Size=SM, Break=Mobile, Variant=Solid).
-  // Solid 를 쓰는 이유는 고른 칩이 파랗게 차서 좁은 폭에서도 멀리서 보이기
-  // 때문이다(Line 은 테두리·글자만 파래진다).
-  const chip = (active: boolean) => {
-    const c = active ? CHIP.solid.selected : CHIP.solid.default;
-    return {
-      flex: "none",
-      display: "inline-flex",
-      alignItems: "center",
-      height: `${CHIP.height}px`,
-      padding: `0 ${CHIP.paddingX}px`,
-      borderRadius: `${CHIP.radiusToken}px`,
-      fontSize: `${CHIP.fontSize}px`,
-      fontWeight: CHIP.fontWeight,
-      lineHeight: TYPE.leading,
-      border: `1px solid ${c.border}`,
-      backgroundColor: c.bg,
-      color: c.label,
-    } as const;
-  };
-
-  // 날짜·시간 — 디자인시스템 Filter Chip(Size=MD, Break=Mobile, Variant=Line,
-  // Title=Off). 값이 적히고 오른쪽에 화살표가 붙는 칩이라 위 Chip 과 달리
-  // 오른쪽 여백이 좁다(화살표가 그 자리를 쓴다).
-  const filterChip = {
-    flex: "none",
-    display: "inline-flex",
-    alignItems: "center",
-    gap: `${FILTER_CHIP.gap}px`,
-    height: `${FILTER_CHIP.height}px`,
-    padding: `0 ${FILTER_CHIP.paddingRight}px 0 ${FILTER_CHIP.paddingLeft}px`,
-    borderRadius: `${FILTER_CHIP.radiusToken}px`,
-    fontSize: `${FILTER_CHIP.fontSize}px`,
-    fontWeight: FILTER_CHIP.fontWeight,
-    lineHeight: TYPE.leading,
-    border: `1px solid ${FILTER_CHIP.border}`,
-    backgroundColor: FILTER_CHIP.bg,
-    color: FILTER_CHIP.label,
-  } as const;
+  const camOptions = [
+    { key: "all", label: "전체" },
+    ...(cameras ?? []).map((c, i) => ({ key: String(i), label: c.label })),
+  ];
+  const kindOptions = [
+    { key: "all", label: "전체" },
+    ...EVENT_KINDS.map((k) => ({ key: k, label: k })),
+  ];
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col bg-white">
@@ -377,85 +383,42 @@ export default function CloudEventScreen({
         </div>
       </form>
 
-      {/* 필터 셋 — 카메라 · 날짜·시간 · 감지유형. */}
+      {/* 필터 셋 — 한 줄. 셋 다 디자인시스템 Filter Chip(Title=On)이라
+          제목·값·화살표가 칩 하나에 들어간다(사용자 지정 2026-09-02: "필터
+          한줄로 하는거 어때? 칩 형태에 그 화살표 붙은거 ... 그걸로 선택하게").
+          예전엔 제목 줄 + 칩 줄이 셋이라 세로로 세 뭉치를 먹었다 — 한 줄로
+          줄면서 그만큼 목록이 위로 올라온다.
+          360 폭에서는 셋이 다 안 들어가 가로로 구른다. 줄바꿈(wrap)으로 두 줄이
+          되면 한 줄로 만든 뜻이 없으므로 안쪽을 max-content 로 못 박는다. */}
       <div
-        className="flex-none"
-        style={{ padding: `${SPACE.s2}px ${SPACE.s20}px ${SPACE.s12}px` }}
+        className="flex-none overflow-x-auto"
+        style={{
+          padding: `${SPACE.s2}px ${SPACE.s20}px ${SPACE.s12}px`,
+          scrollbarWidth: "none",
+        }}
       >
-        <FilterRow title="카메라">
-          <div
-            className="flex overflow-x-auto"
-            style={{ gap: `${SPACE.s6}px`, scrollbarWidth: "none" }}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setCamIdx("all");
-                setLimit(PAGE);
-              }}
-              style={chip(camIdx === "all")}
-            >
-              전체
-            </button>
-            {(cameras ?? []).map((c, i) => (
-              <button
-                key={c.label}
-                type="button"
-                onClick={() => {
-                  setCamIdx(i);
-                  setLimit(PAGE);
-                }}
-                style={chip(camIdx === i)}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
-        </FilterRow>
-
-        {/* 날짜·시간 — 칩이 아니라 값 하나다. 누르면 NVR 의 녹화 진입에 쓰는
-            그 '날짜, 시간 선택' 시트가 그대로 뜬다. 고른 시각이 목록의 끝점. */}
-        <FilterRow title="날짜·시간">
-          <button
-            type="button"
+        <div
+          className="flex"
+          style={{ gap: `${SPACE.s6}px`, width: "max-content" }}
+        >
+          <FilterChipButton
+            title="카메라"
+            value={camLabel}
+            onClick={() => setCamOpen(true)}
+          />
+          {/* 날짜·시간만 시트가 다르다 — NVR 의 녹화 진입에 쓰는 그 '날짜, 시간
+              선택' 휠 시트가 그대로 뜬다. 고른 시각이 목록의 끝점이 된다. */}
+          <FilterChipButton
+            title="날짜·시간"
+            value={dateLabel}
             onClick={() => setPickOpen(true)}
-            style={filterChip}
-          >
-            <span suppressHydrationWarning>{dateLabel}</span>
-            <ChevronDownIcon
-              className="flex-none"
-              style={{
-                width: `${FILTER_CHIP.chevron}px`,
-                height: `${FILTER_CHIP.chevron}px`,
-                color: FILTER_CHIP.label,
-              }}
-            />
-          </button>
-        </FilterRow>
-
-        <FilterRow title="감지유형">
-          <div
-            className="flex overflow-x-auto"
-            style={{ gap: `${SPACE.s6}px`, scrollbarWidth: "none" }}
-          >
-            {[
-              { key: "all", label: "전체" },
-              ...EVENT_KINDS.map((k) => ({ key: k, label: k })),
-            ].map((it) => (
-              <button
-                key={it.key}
-                type="button"
-                onClick={() => {
-                  setKind(it.key as EventKind | "all");
-                  setLimit(PAGE);
-                }}
-                style={chip(kind === it.key)}
-              >
-                {it.label}
-              </button>
-            ))}
-          </div>
-        </FilterRow>
+          />
+          <FilterChipButton
+            title="감지유형"
+            value={kindLabel}
+            onClick={() => setKindOpen(true)}
+          />
+        </div>
       </div>
 
       {/* 건수 — 검색 전에는 안 적는다(아직 찾은 게 없다). */}
@@ -618,6 +581,33 @@ export default function CloudEventScreen({
           검색
         </button>
       </div>
+
+      {/* 카메라·감지유형 고르기 — 칩을 누르면 뜬다. 고르는 즉시 닫히고
+          목록이 따라간다(검색을 다시 누를 필요 없다). */}
+      <OptionSheet
+        open={camOpen}
+        title="카메라"
+        options={camOptions}
+        value={camIdx === "all" ? "all" : String(camIdx)}
+        onClose={() => setCamOpen(false)}
+        onPick={(k) => {
+          setCamIdx(k === "all" ? "all" : Number(k));
+          setLimit(PAGE);
+          setCamOpen(false);
+        }}
+      />
+      <OptionSheet
+        open={kindOpen}
+        title="감지유형"
+        options={kindOptions}
+        value={kind}
+        onClose={() => setKindOpen(false)}
+        onPick={(k) => {
+          setKind(k as EventKind | "all");
+          setLimit(PAGE);
+          setKindOpen(false);
+        }}
+      />
 
       {/* 날짜·시각 고르기 — NVR 의 녹화 진입에 쓰는 그 시트 그대로다. */}
       <DateTimePickerSheet

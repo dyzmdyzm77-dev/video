@@ -87,7 +87,7 @@ export const SPACE = {
 
 /** Foundation V2 타이포. line-height 는 130% 한 값만 쓴다(140% 는 본문 단락용). */
 export const TYPE = {
-  size: { xs: 10, sm: 12, md: 14, lg: 16, xl: 18 },
+  size: { xs: 10, sm: 12, md: 14, lg: 16, xl: 18, xxl: 20 },
   weight: { regular: 400, medium: 500, bold: 700 },
   /** line-height/130 */ leading: 1.3,
 } as const;
@@ -133,6 +133,43 @@ export const FILTER_CHIP = {
   bg: PRIMITIVE.white,
   border: PRIMITIVE.gray300,
   label: PRIMITIVE.gray500,
+  /** Title=On 일 때 왼쪽 제목(회색) · 오른쪽 지금 값(파랑). 값이 파래서
+   *  '이 필터에 뭐가 걸려 있는지'가 칩만 보고도 읽힌다. */
+  title: PRIMITIVE.gray500,
+  value: PRIMITIVE.blue400,
+} as const;
+
+/** Bottom Sheet (component set `3337:23624`) — Footer=None.
+ *  제목 한 줄 + 고를 항목 목록만 있는 시트. 확인 버튼이 없다 — 고르는 즉시
+ *  닫힌다(Footer=Single/Dual 은 확인·취소가 붙는 변형이다). */
+export const BOTTOM_SHEET = {
+  /** radius/modal/md — 위 두 모서리만 */ radiusTop: RADIUS.modal,
+  paddingTop: 20,
+  paddingBottom: 40,
+  /** 헤더와 목록 사이 */ contentGap: 24,
+  headerPaddingX: 20,
+  titleFontSize: TYPE.size.xxl,
+  titleFontWeight: TYPE.weight.bold,
+  titleColor: PRIMITIVE.gray900,
+  closeSize: 24,
+  bg: PRIMITIVE.white,
+} as const;
+
+/** Bottom Sheet Option (component set `3337:23486`) — Type=Radio.
+ *  한 번에 하나만 고르는 목록 한 줄. 체크박스형(다중)도 있지만 이 화면의
+ *  필터는 하나만 고른다. */
+export const OPTION_ROW = {
+  height: 48,
+  paddingX: 20,
+  gap: 8,
+  fontSize: TYPE.size.lg,
+  fontWeight: TYPE.weight.medium,
+  color: PRIMITIVE.gray900,
+  radio: 18,
+  radioDot: 10,
+  radioBorder: PRIMITIVE.gray200,
+  radioBorderSelected: PRIMITIVE.blue400,
+  radioDotColor: PRIMITIVE.blue400,
 } as const;
 
 /** Search Input (component set `3337:18448`) — Size=MD.
