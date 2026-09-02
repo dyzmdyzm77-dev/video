@@ -4,6 +4,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import { BASE } from "../basePath";
 import DateTimePickerSheet from "./DateTimePickerSheet";
+import {
+  BUTTON,
+  CHIP,
+  COLOR,
+  FILTER_CHIP,
+  PRIMITIVE,
+  RADIUS,
+  SEARCH_INPUT,
+  SPACE,
+  TYPE,
+} from "./designTokens";
 import EventKindChip from "./EventKindChip";
 import ModeChipToggle from "./ModeChipToggle";
 import { EVENT_KINDS, TIMELINE_EVENTS, type EventKind } from "./timelineEvents";
@@ -34,6 +45,13 @@ import { EVENT_KINDS, TIMELINE_EVENTS, type EventKind } from "./timelineEvents";
 // 시간대(새벽·오전·오후·저녁) 칩은 '날짜·시간'이 대신해 뺐다.
 // 카메라·감지유형은 한 번에 하나만 고른다 — 다중 선택은 칩이 좁은 폭(360px)에서
 // '지금 뭐가 켜졌는지'를 읽기 어렵다.
+//
+// 색·크기·타이포는 눈대중이 아니라 `designTokens.ts` 에서 온다 — Figma
+// 디자인시스템 페이지의 값을 그대로 옮긴 파일이다. 여기에 hex 나 px 를 직접
+// 적지 말 것(2026-09-02 에 #F4F5F7·#EBEBEB·#E0E0E0 처럼 토큰에서 한두 칸씩
+// 어긋난 값들을 걷어냈다). 쓰는 컴포넌트는 넷 —
+//   검색창=Search Input(MD) · 필터 칩=Chip(SM/Mobile/Solid) ·
+//   날짜·시간=Filter Chip(MD/Mobile/Line) · 검색 버튼=Button(LG/Mobile/Primary)
 // ============================================================================
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -92,10 +110,15 @@ function FilterRow({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ marginTop: "10px" }}>
+    <div style={{ marginTop: `${SPACE.s10}px` }}>
       <p
-        className="leading-none text-neutral-400"
-        style={{ fontSize: "11px", fontWeight: 700, marginBottom: "6px" }}
+        className="leading-none"
+        style={{
+          fontSize: `${TYPE.size.sm}px`,
+          fontWeight: TYPE.weight.medium,
+          color: COLOR.textTertiary,
+          marginBottom: `${SPACE.s6}px`,
+        }}
       >
         {title}
       </p>
@@ -111,7 +134,7 @@ function SearchIcon() {
       height="18"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#A4A4A4"
+      stroke={SEARCH_INPUT.icon}
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -235,18 +258,45 @@ export default function CloudEventScreen({
   const b = new Date(baseMs);
   const dateLabel = `${b.getFullYear()}.${pad(b.getMonth() + 1)}.${pad(b.getDate())}. ${pad(b.getHours())}:${pad(b.getMinutes())}`;
 
-  const chip = (active: boolean) =>
-    ({
+  // 카메라·감지유형 칩 — 디자인시스템 Chip(Size=SM, Break=Mobile, Variant=Solid).
+  // Solid 를 쓰는 이유는 고른 칩이 파랗게 차서 좁은 폭에서도 멀리서 보이기
+  // 때문이다(Line 은 테두리·글자만 파래진다).
+  const chip = (active: boolean) => {
+    const c = active ? CHIP.solid.selected : CHIP.solid.default;
+    return {
       flex: "none",
-      padding: "7px 12px",
-      borderRadius: "16px",
-      fontSize: "13px",
-      fontWeight: 600,
-      lineHeight: 1,
-      border: active ? "1px solid #1D6CEB" : "1px solid #E0E0E0",
-      backgroundColor: active ? "#1D6CEB" : "#FFFFFF",
-      color: active ? "#FFFFFF" : "#595959",
-    }) as const;
+      display: "inline-flex",
+      alignItems: "center",
+      height: `${CHIP.height}px`,
+      padding: `0 ${CHIP.paddingX}px`,
+      borderRadius: `${CHIP.radiusToken}px`,
+      fontSize: `${CHIP.fontSize}px`,
+      fontWeight: CHIP.fontWeight,
+      lineHeight: TYPE.leading,
+      border: `1px solid ${c.border}`,
+      backgroundColor: c.bg,
+      color: c.label,
+    } as const;
+  };
+
+  // 날짜·시간 — 디자인시스템 Filter Chip(Size=MD, Break=Mobile, Variant=Line,
+  // Title=Off). 값이 적히고 오른쪽에 화살표가 붙는 칩이라 위 Chip 과 달리
+  // 오른쪽 여백이 좁다(화살표가 그 자리를 쓴다).
+  const filterChip = {
+    flex: "none",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: `${FILTER_CHIP.gap}px`,
+    height: `${FILTER_CHIP.height}px`,
+    padding: `0 ${FILTER_CHIP.paddingRight}px 0 ${FILTER_CHIP.paddingLeft}px`,
+    borderRadius: `${FILTER_CHIP.radiusToken}px`,
+    fontSize: `${FILTER_CHIP.fontSize}px`,
+    fontWeight: FILTER_CHIP.fontWeight,
+    lineHeight: TYPE.leading,
+    border: `1px solid ${FILTER_CHIP.border}`,
+    backgroundColor: FILTER_CHIP.bg,
+    color: FILTER_CHIP.label,
+  } as const;
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col bg-white">
@@ -258,7 +308,7 @@ export default function CloudEventScreen({
       {!header && (
         <div
           className="relative flex flex-none items-center px-5"
-          style={{ height: "48px", gap: "8px" }}
+          style={{ height: "48px", gap: `${SPACE.s8}px` }}
         >
           <ModeChipToggle
             mode="recording"
@@ -266,7 +316,10 @@ export default function CloudEventScreen({
           />
         </div>
       )}
-      <div className="h-px flex-none" style={{ backgroundColor: "#EBEBEB" }} />
+      <div
+        className="h-px flex-none"
+        style={{ backgroundColor: COLOR.lineSubtle }}
+      />
 
       {/* 검색창 — 필터 위, 화면 맨 위 줄. 진짜 input 이라 누르면 키패드가 올라온다
           (사용자 지정 2026-09-02: "입력창 누르면 키패드 올라와야지"). AI 검색
@@ -276,7 +329,7 @@ export default function CloudEventScreen({
           때 스크롤을 0 으로 되돌린다. 엔터는 아래 '검색' 버튼과 같은 동작이다. */}
       <form
         className="flex-none"
-        style={{ padding: "12px 20px 0" }}
+        style={{ padding: `${SPACE.s12}px ${SPACE.s20}px 0` }}
         onSubmit={(e) => {
           e.preventDefault();
           runSearch();
@@ -285,11 +338,12 @@ export default function CloudEventScreen({
         <div
           className="flex items-center"
           style={{
-            height: "40px",
-            padding: "0 14px",
-            gap: "8px",
-            borderRadius: "20px",
-            backgroundColor: "#F4F5F7",
+            height: `${SEARCH_INPUT.height}px`,
+            padding: `0 ${SEARCH_INPUT.paddingRight}px 0 ${SEARCH_INPUT.paddingLeft}px`,
+            gap: `${SPACE.s8}px`,
+            borderRadius: `${SEARCH_INPUT.radiusToken}px`,
+            backgroundColor: SEARCH_INPUT.bg,
+            border: `1px solid ${SEARCH_INPUT.border}`,
           }}
         >
           <SearchIcon />
@@ -308,17 +362,30 @@ export default function CloudEventScreen({
             inputMode="search"
             enterKeyHint="search"
             aria-label="검색어"
-            className="min-w-0 flex-1 bg-transparent text-[14px] leading-none text-neutral-900 outline-none placeholder:text-[#A4A4A4]"
+            // placeholder 색은 Tailwind 임의값이 문자열이라 토큰을 못 넣는다 —
+            // CSS 변수로 건네 단일 출처를 지킨다.
+            className="min-w-0 flex-1 bg-transparent leading-none outline-none placeholder:text-[var(--ph)]"
+            style={
+              {
+                fontSize: `${SEARCH_INPUT.fontSize}px`,
+                fontWeight: SEARCH_INPUT.fontWeight,
+                color: SEARCH_INPUT.text,
+                "--ph": SEARCH_INPUT.placeholder,
+              } as React.CSSProperties
+            }
           />
         </div>
       </form>
 
       {/* 필터 셋 — 카메라 · 날짜·시간 · 감지유형. */}
-      <div className="flex-none" style={{ padding: "2px 20px 12px" }}>
+      <div
+        className="flex-none"
+        style={{ padding: `${SPACE.s2}px ${SPACE.s20}px ${SPACE.s12}px` }}
+      >
         <FilterRow title="카메라">
           <div
-            className="flex gap-[6px] overflow-x-auto"
-            style={{ scrollbarWidth: "none" }}
+            className="flex overflow-x-auto"
+            style={{ gap: `${SPACE.s6}px`, scrollbarWidth: "none" }}
           >
             <button
               type="button"
@@ -352,20 +419,24 @@ export default function CloudEventScreen({
           <button
             type="button"
             onClick={() => setPickOpen(true)}
-            style={{ ...chip(false), display: "flex", alignItems: "center" }}
+            style={filterChip}
           >
             <span suppressHydrationWarning>{dateLabel}</span>
             <ChevronDownIcon
-              className="h-5 w-5 text-[#262626]"
-              style={{ marginLeft: "2px", marginRight: "-4px" }}
+              className="flex-none"
+              style={{
+                width: `${FILTER_CHIP.chevron}px`,
+                height: `${FILTER_CHIP.chevron}px`,
+                color: FILTER_CHIP.label,
+              }}
             />
           </button>
         </FilterRow>
 
         <FilterRow title="감지유형">
           <div
-            className="flex gap-[6px] overflow-x-auto"
-            style={{ scrollbarWidth: "none" }}
+            className="flex overflow-x-auto"
+            style={{ gap: `${SPACE.s6}px`, scrollbarWidth: "none" }}
           >
             {[
               { key: "all", label: "전체" },
@@ -390,12 +461,19 @@ export default function CloudEventScreen({
       {/* 건수 — 검색 전에는 안 적는다(아직 찾은 게 없다). */}
       {searched && (
         <div
-          className="flex-none border-t border-neutral-200"
-          style={{ padding: "10px 20px 6px" }}
+          className="flex-none border-t"
+          style={{
+            padding: `${SPACE.s10}px ${SPACE.s20}px ${SPACE.s6}px`,
+            borderColor: COLOR.lineSubtle,
+          }}
         >
           <span
             suppressHydrationWarning
-            className="text-[12px] font-semibold text-neutral-500"
+            style={{
+              fontSize: `${TYPE.size.sm}px`,
+              fontWeight: TYPE.weight.medium,
+              color: COLOR.textTertiary,
+            }}
           >
             총 {events.length.toLocaleString()}건
           </span>
@@ -407,16 +485,24 @@ export default function CloudEventScreen({
       <div className="min-h-0 flex-1 overflow-y-auto">
         {!searched && (
           <p
-            className="text-center text-[13px] text-neutral-400"
-            style={{ padding: "40px 0" }}
+            className="text-center"
+            style={{
+              padding: `${SPACE.s40}px 0`,
+              fontSize: `${TYPE.size.md}px`,
+              color: COLOR.textTertiary,
+            }}
           >
             조건을 고르고 검색해 주세요.
           </p>
         )}
         {searched && shown.length === 0 && mounted && (
           <p
-            className="text-center text-[13px] text-neutral-400"
-            style={{ padding: "40px 0" }}
+            className="text-center"
+            style={{
+              padding: `${SPACE.s40}px 0`,
+              fontSize: `${TYPE.size.md}px`,
+              color: COLOR.textTertiary,
+            }}
           >
             해당하는 이벤트가 없습니다.
           </p>
@@ -426,9 +512,9 @@ export default function CloudEventScreen({
             className="grid"
             style={{
               gridTemplateColumns: `repeat(auto-fill, minmax(${TILE_MIN_W}px, 1fr))`,
-              columnGap: "8px",
-              rowGap: "14px",
-              padding: "12px 20px",
+              columnGap: `${SPACE.s8}px`,
+              rowGap: `${SPACE.s14}px`,
+              padding: `${SPACE.s12}px ${SPACE.s20}px`,
             }}
           >
             {shown.map((e) => {
@@ -442,8 +528,14 @@ export default function CloudEventScreen({
                   onClick={() => onPick(ms, camOf(e.at))}
                 >
                   <div
-                    className="relative w-full overflow-hidden rounded-md bg-neutral-900"
-                    style={{ aspectRatio: "16 / 9" }}
+                    className="relative w-full overflow-hidden"
+                    style={{
+                      aspectRatio: "16 / 9",
+                      borderRadius: `${RADIUS.card}px`,
+                      // 썸네일이 뜨기 전 바탕. 의미 토큰에 '영상 자리' 색이
+                      // 없어 원시값 중 가장 어두운 회색을 쓴다.
+                      backgroundColor: PRIMITIVE.gray900,
+                    }}
                   >
                     <EventKindChip kind={e.kind} />
                     <FrozenThumb
@@ -456,14 +548,23 @@ export default function CloudEventScreen({
                   </div>
                   <p
                     suppressHydrationWarning
-                    className="truncate text-[15px] font-bold leading-none text-neutral-900"
-                    style={{ marginTop: "8px" }}
+                    className="truncate leading-none"
+                    style={{
+                      marginTop: `${SPACE.s8}px`,
+                      fontSize: `${TYPE.size.md}px`,
+                      fontWeight: TYPE.weight.bold,
+                      color: COLOR.textPrimary,
+                    }}
                   >
                     {pad(d.getHours())}:{pad(d.getMinutes())}:{pad(d.getSeconds())}
                   </p>
                   <p
-                    className="truncate text-[12px] leading-none text-neutral-500"
-                    style={{ marginTop: "5px" }}
+                    className="truncate leading-none"
+                    style={{
+                      marginTop: `${SPACE.s4}px`,
+                      fontSize: `${TYPE.size.sm}px`,
+                      color: COLOR.textTertiary,
+                    }}
                   >
                     {e.kind} · {e.dur}초
                   </p>
@@ -475,8 +576,13 @@ export default function CloudEventScreen({
         {searched && shown.length < events.length && (
           <button
             type="button"
-            className="w-full text-[13px] font-semibold text-[#1D6CEB]"
-            style={{ padding: "14px 0" }}
+            className="w-full"
+            style={{
+              padding: `${SPACE.s14}px 0`,
+              fontSize: `${TYPE.size.md}px`,
+              fontWeight: TYPE.weight.medium,
+              color: COLOR.textAccent,
+            }}
             onClick={() => setLimit((v) => v + PAGE)}
           >
             이전 이벤트 더 보기
@@ -490,16 +596,23 @@ export default function CloudEventScreen({
           하나 긋는다. 아래 하단 탭바는 이 화면 바깥이라 그 바로 위에 앉는다. */}
       <div
         className="flex-none border-t"
-        style={{ padding: "12px 20px", borderColor: "#EBEBEB" }}
+        style={{
+          padding: `${SPACE.s12}px ${SPACE.s20}px`,
+          borderColor: COLOR.lineSubtle,
+        }}
       >
         <button
           type="button"
           onClick={runSearch}
-          className="w-full text-[14px] font-semibold text-white"
+          className="w-full"
           style={{
-            height: "44px",
-            borderRadius: "8px",
-            backgroundColor: "#1D6CEB",
+            height: `${BUTTON.height}px`,
+            padding: `0 ${BUTTON.paddingX}px`,
+            borderRadius: `${BUTTON.radiusToken}px`,
+            fontSize: `${BUTTON.fontSize}px`,
+            fontWeight: BUTTON.fontWeight,
+            backgroundColor: BUTTON.primary.bg,
+            color: BUTTON.primary.label,
           }}
         >
           검색
