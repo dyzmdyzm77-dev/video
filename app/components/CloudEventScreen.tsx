@@ -123,6 +123,7 @@ export default function CloudEventScreen({
    *  안 넘기면 예전 그대로다(A-1 은 자기 상단 바가 LIVE/녹화라 안 넘긴다). */
   header?: React.ReactNode;
 }) {
+  const [query, setQuery] = useState("");
   const [timeKey, setTimeKey] = useState("all");
   const [kind, setKind] = useState<EventKind | "all">("all");
   const [limit, setLimit] = useState(PAGE);
@@ -131,6 +132,12 @@ export default function CloudEventScreen({
   // 날짜·시간대·알고리즘을 고르고 찾는 화면이라는 뜻이다. 한 번 찾은 뒤에는
   // 칩을 바꾸면 목록이 바로 따라간다 — 조건마다 다시 누르게 하면 번거롭다.
   const [searched, setSearched] = useState(false);
+
+  // 찾기 — 검색창 엔터와 아래 '검색' 버튼이 같이 쓴다.
+  const runSearch = () => {
+    setLimit(PAGE);
+    setSearched(true);
+  };
 
   // 목록은 마운트 뒤에만 그린다. 오늘이 언제인지가 시각에 달려 있어 서버에서
   // 그리면 하이드레이션이 어긋난다(안들이 now 를 null 로 시작하는 것과 같은 이유).
@@ -196,14 +203,21 @@ export default function CloudEventScreen({
       )}
       <div className="h-px flex-none" style={{ backgroundColor: "#EBEBEB" }} />
 
-      {/* 검색창 — 필터 위, 화면 맨 위 줄. 모양만이고 실제로 칠 수 없다(사용자
-          결정, AiSearchSheet 과 같은 이유): 이 앱은 스크롤 없는 고정 화면이라
-          키보드가 뜨면 화면이 밀려 올라간 채 돌아오지 않는다. readOnly input 도
-          포커스가 잡혀 커서가 깜빡이고 기기에 따라 키보드가 떠서, input 이
-          아니라 글자로 그린다. */}
-      <div className="flex-none" style={{ padding: "12px 20px 0" }}>
+      {/* 검색창 — 필터 위, 화면 맨 위 줄. 진짜 input 이라 누르면 키패드가 올라온다
+          (사용자 지정 2026-09-02: "입력창 누르면 키패드 올라와야지"). AI 검색
+          시트 입력창은 모양만인데 여기는 다르다.
+          키패드가 올라오면 브라우저가 이 고정 화면을 통째로 밀어 올리고 내려도
+          그대로 있는 문제가 있어(그래서 예전엔 글자로만 그렸다), 포커스가 빠질
+          때 스크롤을 0 으로 되돌린다. 엔터는 아래 '검색' 버튼과 같은 동작이다. */}
+      <form
+        className="flex-none"
+        style={{ padding: "12px 20px 0" }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          runSearch();
+        }}
+      >
         <div
-          aria-hidden
           className="flex items-center"
           style={{
             height: "40px",
@@ -214,14 +228,25 @@ export default function CloudEventScreen({
           }}
         >
           <SearchIcon />
-          <span
-            className="min-w-0 flex-1 truncate text-[14px] leading-none"
-            style={{ color: "#A4A4A4" }}
-          >
-            검색어를 입력하세요
-          </span>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              e.currentTarget.blur();
+              runSearch();
+            }}
+            onBlur={() => document.scrollingElement?.scrollTo(0, 0)}
+            placeholder="검색어를 입력하세요"
+            inputMode="search"
+            enterKeyHint="search"
+            aria-label="검색어"
+            className="min-w-0 flex-1 bg-transparent text-[14px] leading-none text-neutral-900 outline-none placeholder:text-[#A4A4A4]"
+          />
         </div>
-      </div>
+      </form>
 
       {/* 필터 두 줄 — 시간대 / 알고리즘. 라벨을 왼쪽에 붙이면 360px 에서 칩이
           잘려서, 라벨은 위에 작게 두고 칩 줄은 폭을 다 쓴다. */}
@@ -368,10 +393,7 @@ export default function CloudEventScreen({
       >
         <button
           type="button"
-          onClick={() => {
-            setLimit(PAGE);
-            setSearched(true);
-          }}
+          onClick={runSearch}
           className="w-full text-[14px] font-semibold text-white"
           style={{
             height: "44px",
