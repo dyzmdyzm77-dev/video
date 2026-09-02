@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import { BASE } from "../basePath";
+import DateTimePickerSheet from "./DateTimePickerSheet";
 import EventKindChip from "./EventKindChip";
 import ModeChipToggle from "./ModeChipToggle";
 import { EVENT_KINDS, TIMELINE_EVENTS, type EventKind } from "./timelineEvents";
@@ -20,30 +21,22 @@ import { EVENT_KINDS, TIMELINE_EVENTS, type EventKind } from "./timelineEvents";
 // 차지한다. 하단 탭바(홈·경비·영상·전체)는 이 화면 바깥의 형제라 그대로 남는다.
 //
 // 상단 바 아래에 날짜·시각 줄은 두지 않는다(사용자 지정 2026-09-02: "그 상단바
-// 아래쪽에 그 날짜 시간좀 빼"). 예전엔 그 줄을 눌러 '날짜, 시간 선택' 시트로
-// 다른 날을 골랐는데, 그 시트째로 뺐다 — 지금 이 화면이 다루는 범위는 오늘,
-// 기준 시각까지다. 상단 바를 안 넘기는 안(A-1)만 그 자리에 LIVE/녹화 토글이
-// 남는다. 돌아가는 길은 그 토글(또는 상단 바의 '실시간') 하나다 —
-// 뒤로가기 화살표는 따로 두지 않는다.
+// 아래쪽에 그 날짜 시간좀 빼"). 날짜를 고르는 자리는 아래 필터로 내려갔다 —
+// '날짜·시간'을 누르면 예전 그 '날짜, 시간 선택' 시트가 그대로 뜬다. 상단 바를
+// 안 넘기는 안(A-1)만 그 자리에 LIVE/녹화 토글이 남는다. 돌아가는 길은 그
+// 토글(또는 상단 바의 '실시간') 하나다 — 뒤로가기 화살표는 따로 두지 않는다.
 //
 // 네 안(A-1·A-2·A-3·B)이 이 하나를 같이 쓴다. 진입 화면이 안마다 다르게 보이면
 // 안끼리 비교가 안 되므로, 안에 두지 않고 여기 공유 컴포넌트로 뒀다.
 //
-// 상단에 필터 둘 — 시간대와 알고리즘(감지 유형). 둘 다 한 번에 하나만 고른다.
-// 다중 선택은 칩이 좁은 폭(360px)에서 '지금 뭐가 켜졌는지'를 읽기 어렵다.
+// 필터는 셋 — 카메라 · 날짜·시간 · 감지유형 (사용자 지정 2026-09-02: "필터가
+// 일단 카메라 선택이 있어야하고, 날짜 시간, 감지유형 이렇게야"). 예전의
+// 시간대(새벽·오전·오후·저녁) 칩은 '날짜·시간'이 대신해 뺐다.
+// 카메라·감지유형은 한 번에 하나만 고른다 — 다중 선택은 칩이 좁은 폭(360px)에서
+// '지금 뭐가 켜졌는지'를 읽기 어렵다.
 // ============================================================================
 
 const pad = (n: number) => String(n).padStart(2, "0");
-
-// 시간대 필터. from ≤ 시 < to (24시간). '전체'만 범위가 없다.
-const TIME_BUCKETS: { key: string; label: string; from?: number; to?: number }[] =
-  [
-    { key: "all", label: "전체" },
-    { key: "dawn", label: "새벽", from: 0, to: 6 },
-    { key: "am", label: "오전", from: 6, to: 12 },
-    { key: "pm", label: "오후", from: 12, to: 18 },
-    { key: "eve", label: "저녁", from: 18, to: 24 },
-  ];
 
 // 한 번에 그리는 줄 수. 하루가 ~3400건이라 다 그리면 화면에 들어서는 순간 멈춘다.
 // 아래 '이전 이벤트 더 보기'로 이만큼씩 늘린다.
@@ -63,6 +56,54 @@ const TILE_MIN_W = 150;
 // 카메라 이미지는 움직이는 GIF 다. 목록엔 한 화면에 열 몇 개가 깔리므로 그대로
 // 넣으면 전부 각자 돌아가 버벅인다 — 안들이 타임라인 썸네일에 쓰는 것과 같은
 // 수법으로 첫 프레임만 캔버스에 떠서 정지화면으로 만든다.
+function ChevronDownIcon({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-block bg-current ${className ?? ""}`}
+      style={{
+        ...style,
+        WebkitMaskImage: `url(${BASE}/More.svg)`,
+        maskImage: `url(${BASE}/More.svg)`,
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+      }}
+    />
+  );
+}
+
+// 필터 한 줄 — 라벨은 위에 작게, 값 줄은 폭을 다 쓴다. 라벨을 왼쪽에 붙이면
+// 360px 에서 칩이 잘린다.
+function FilterRow({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ marginTop: "10px" }}>
+      <p
+        className="leading-none text-neutral-400"
+        style={{ fontSize: "11px", fontWeight: 700, marginBottom: "6px" }}
+      >
+        {title}
+      </p>
+      {children}
+    </div>
+  );
+}
+
 function SearchIcon() {
   return (
     <svg
@@ -109,6 +150,7 @@ function FrozenThumb({ src }: { src: string }) {
 export default function CloudEventScreen({
   initialMs,
   cameraSrc,
+  cameras,
   onLive,
   onPick,
   header,
@@ -117,6 +159,8 @@ export default function CloudEventScreen({
   initialMs: number;
   /** 목록 썸네일에 쓸 카메라 이미지. 없으면 첫 카메라. */
   cameraSrc?: string;
+  /** '카메라' 필터에 늘어놓을 목록. 안마다 CAMERAS 상수를 그대로 넘긴다. */
+  cameras?: { label: string; src: string }[];
   /** 위쪽 '실시간' 을 눌렀을 때 — 실시간 화면으로 돌아간다. */
   onLive: () => void;
   /** 이벤트를 골랐을 때 — 그 시각으로 녹화 재생을 시작한다. */
@@ -131,7 +175,11 @@ export default function CloudEventScreen({
   header?: React.ReactNode;
 }) {
   const [query, setQuery] = useState("");
-  const [timeKey, setTimeKey] = useState("all");
+  // 어느 날 것을 볼지. null 이면 호출부가 준 기준 시각(=지금)을 그대로 쓴다.
+  // 날짜를 고르면 그 시각이 새 기준이 된다 — 목록은 그 날 자정부터 그 시각까지.
+  const [viewMs, setViewMs] = useState<number | null>(null);
+  const [pickOpen, setPickOpen] = useState(false);
+  const [camIdx, setCamIdx] = useState<number | "all">("all");
   const [kind, setKind] = useState<EventKind | "all">("all");
   const [limit, setLimit] = useState(PAGE);
   // 목록은 '검색'을 누른 뒤에 나온다(사용자 지정 2026-09-01: "처음부터 목록이
@@ -151,7 +199,7 @@ export default function CloudEventScreen({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const baseMs = initialMs;
+  const baseMs = viewMs ?? initialMs;
 
   const dayStart = useMemo(() => {
     const d = new Date(baseMs);
@@ -159,23 +207,30 @@ export default function CloudEventScreen({
     return d.getTime();
   }, [baseMs]);
 
+  // 어느 이벤트가 어느 카메라 것인지. 가상 이벤트(TIMELINE_EVENTS)엔 카메라가
+  // 없어서 여기서 시각으로 고르게 배정한다 — 시드처럼 늘 같은 답이 나와야
+  // 카메라를 골랐다 풀었다 해도 목록이 흔들리지 않는다. 이 배정은 이 화면
+  // 안에서만 쓴다(안들의 타임라인은 지금 보는 카메라 것을 그리는 자리라
+  // 건드리지 않는다).
+  const camCount = cameras?.length ?? 0;
+  const camOf = (at: number) => (camCount ? at % camCount : -1);
+
   // 오늘 자정부터 기준 시각까지, 최신이 위로. 아직 안 일어난 이벤트는 뺀다.
   const events = useMemo(() => {
     if (!mounted) return [];
-    const bucket = TIME_BUCKETS.find((b) => b.key === timeKey);
     const maxSec = Math.floor((baseMs - dayStart) / 1000);
     return TIMELINE_EVENTS.filter((e) => {
       if (e.at > maxSec) return false;
       if (kind !== "all" && e.kind !== kind) return false;
-      if (bucket?.from != null) {
-        const h = Math.floor(e.at / 3600);
-        if (h < bucket.from || h >= (bucket.to ?? 24)) return false;
-      }
+      if (camIdx !== "all" && camCount && e.at % camCount !== camIdx) return false;
       return true;
     }).reverse();
-  }, [mounted, baseMs, dayStart, timeKey, kind]);
+  }, [mounted, baseMs, dayStart, kind, camIdx, camCount]);
 
   const shown = events.slice(0, limit);
+  // '날짜·시간' 필터에 적히는 값 — 곧 목록의 끝점이다(그 날 자정 ~ 이 시각).
+  const b = new Date(baseMs);
+  const dateLabel = `${b.getFullYear()}.${pad(b.getMonth() + 1)}.${pad(b.getDate())}. ${pad(b.getHours())}:${pad(b.getMinutes())}`;
 
   const chip = (active: boolean) =>
     ({
@@ -255,58 +310,78 @@ export default function CloudEventScreen({
         </div>
       </form>
 
-      {/* 필터 두 줄 — 시간대 / 알고리즘. 라벨을 왼쪽에 붙이면 360px 에서 칩이
-          잘려서, 라벨은 위에 작게 두고 칩 줄은 폭을 다 쓴다. */}
-      <div className="flex-none" style={{ padding: "0 20px 12px" }}>
-        {(
-          [
-            {
-              title: "시간",
-              items: TIME_BUCKETS.map((b) => ({ key: b.key, label: b.label })),
-              active: timeKey,
-              pick: (k: string) => {
-                setTimeKey(k);
+      {/* 필터 셋 — 카메라 · 날짜·시간 · 감지유형. */}
+      <div className="flex-none" style={{ padding: "2px 20px 12px" }}>
+        <FilterRow title="카메라">
+          <div
+            className="flex gap-[6px] overflow-x-auto"
+            style={{ scrollbarWidth: "none" }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setCamIdx("all");
                 setLimit(PAGE);
-              },
-            },
-            {
-              title: "알고리즘",
-              items: [
-                { key: "all", label: "전체" },
-                ...EVENT_KINDS.map((k) => ({ key: k, label: k })),
-              ],
-              active: kind,
-              pick: (k: string) => {
-                setKind(k as EventKind | "all");
-                setLimit(PAGE);
-              },
-            },
-          ] as const
-        ).map((row) => (
-          <div key={row.title} style={{ marginTop: "4px" }}>
-            <p
-              className="leading-none text-neutral-400"
-              style={{ fontSize: "11px", fontWeight: 700, marginBottom: "6px" }}
+              }}
+              style={chip(camIdx === "all")}
             >
-              {row.title}
-            </p>
-            <div
-              className="flex gap-[6px] overflow-x-auto"
-              style={{ scrollbarWidth: "none" }}
-            >
-              {row.items.map((it) => (
-                <button
-                  key={it.key}
-                  type="button"
-                  onClick={() => row.pick(it.key)}
-                  style={chip(row.active === it.key)}
-                >
-                  {it.label}
-                </button>
-              ))}
-            </div>
+              전체
+            </button>
+            {(cameras ?? []).map((c, i) => (
+              <button
+                key={c.label}
+                type="button"
+                onClick={() => {
+                  setCamIdx(i);
+                  setLimit(PAGE);
+                }}
+                style={chip(camIdx === i)}
+              >
+                {c.label}
+              </button>
+            ))}
           </div>
-        ))}
+        </FilterRow>
+
+        {/* 날짜·시간 — 칩이 아니라 값 하나다. 누르면 NVR 의 녹화 진입에 쓰는
+            그 '날짜, 시간 선택' 시트가 그대로 뜬다. 고른 시각이 목록의 끝점. */}
+        <FilterRow title="날짜·시간">
+          <button
+            type="button"
+            onClick={() => setPickOpen(true)}
+            style={{ ...chip(false), display: "flex", alignItems: "center" }}
+          >
+            <span suppressHydrationWarning>{dateLabel}</span>
+            <ChevronDownIcon
+              className="h-5 w-5 text-[#262626]"
+              style={{ marginLeft: "2px", marginRight: "-4px" }}
+            />
+          </button>
+        </FilterRow>
+
+        <FilterRow title="감지유형">
+          <div
+            className="flex gap-[6px] overflow-x-auto"
+            style={{ scrollbarWidth: "none" }}
+          >
+            {[
+              { key: "all", label: "전체" },
+              ...EVENT_KINDS.map((k) => ({ key: k, label: k })),
+            ].map((it) => (
+              <button
+                key={it.key}
+                type="button"
+                onClick={() => {
+                  setKind(it.key as EventKind | "all");
+                  setLimit(PAGE);
+                }}
+                style={chip(kind === it.key)}
+              >
+                {it.label}
+              </button>
+            ))}
+          </div>
+        </FilterRow>
       </div>
 
       {/* 건수 — 검색 전에는 안 적는다(아직 찾은 게 없다). */}
@@ -368,7 +443,13 @@ export default function CloudEventScreen({
                     style={{ aspectRatio: "16 / 9" }}
                   >
                     <EventKindChip kind={e.kind} />
-                    <FrozenThumb src={cameraSrc ?? `${BASE}/cameras/cam1.gif`} />
+                    <FrozenThumb
+                      src={
+                        cameras?.[camOf(e.at)]?.src ??
+                        cameraSrc ??
+                        `${BASE}/cameras/cam1.gif`
+                      }
+                    />
                   </div>
                   <p
                     suppressHydrationWarning
@@ -421,6 +502,18 @@ export default function CloudEventScreen({
           검색
         </button>
       </div>
+
+      {/* 날짜·시각 고르기 — NVR 의 녹화 진입에 쓰는 그 시트 그대로다. */}
+      <DateTimePickerSheet
+        open={pickOpen}
+        initialMs={baseMs}
+        onClose={() => setPickOpen(false)}
+        onApply={(ms) => {
+          setViewMs(ms);
+          setLimit(PAGE);
+          setPickOpen(false);
+        }}
+      />
     </div>
   );
 }

@@ -1026,6 +1026,7 @@ export default function VariantA4({
       {cloudEventScreen ? (
         <CloudEventScreen
           initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
+          cameras={CAMERAS}
           // 이 안의 상단 바를 통째로 얹는다(사용자 지정 2026-09-01: "상단에
           // 그 바는 유지해야지", "그 부분은 그대로 넣으라고"). 클라우드로 녹화에
           // 들어오면 안의 헤더가 통째로 빠지는 자리라, 장소명도 모드 토글도

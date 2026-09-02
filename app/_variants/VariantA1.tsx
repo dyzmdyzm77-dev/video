@@ -721,6 +721,7 @@ export default function VariantA1({
       {cloudEventScreen ? (
         <CloudEventScreen
           initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
+          cameras={CAMERAS}
           onLive={() => setDateTimeOpen(false)}
           onPick={(ms) => {
             setPlaybackMs(ms);
