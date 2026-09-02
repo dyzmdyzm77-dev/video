@@ -979,12 +979,18 @@ export default function VariantA3({
             />
           }
           onLive={() => setDateTimeOpen(false)}
-          onPick={(ms) => {
+          onPick={(ms, cam) => {
             setPlaybackMs(ms);
             setIsPlaying(true);
             setMode("recording");
             setDateTimeOpen(false);
-            triggerTransitionSkeleton();
+            // 고른 이벤트의 카메라를 단일 화면으로 연다(사용자 지정 2026-09-02:
+            // "그 목록을 누르면 단일화면처럼 보여야해"). 예전엔 들어온 자리로
+            // 돌아가서, 다채널에서 들어왔으면 다채널이 나왔다.
+            // 스켈레톤은 handleExpand 가 켠다 — triggerTransitionSkeleton 은
+            // 이 렌더의 expandedIndex(아직 옛값)를 봐서 다채널 것을 켠다.
+            if (cam >= 0) handleExpand(cam);
+            else triggerTransitionSkeleton();
           }}
         />
       ) : expandedIndex === null ? (

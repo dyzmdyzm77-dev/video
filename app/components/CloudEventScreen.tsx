@@ -163,8 +163,11 @@ export default function CloudEventScreen({
   cameras?: { label: string; src: string }[];
   /** 위쪽 '실시간' 을 눌렀을 때 — 실시간 화면으로 돌아간다. */
   onLive: () => void;
-  /** 이벤트를 골랐을 때 — 그 시각으로 녹화 재생을 시작한다. */
-  onPick: (ms: number) => void;
+  /** 이벤트를 골랐을 때 — 그 시각으로 녹화 재생을 시작한다. 두 번째 인자는 그
+   *  이벤트가 찍힌 카메라 번호로, 안은 그 카메라를 단일 화면으로 연다(사용자
+   *  지정 2026-09-02: "그 목록을 누르면 단일화면처럼 보여야해"). 카메라 목록을
+   *  안 넘겨 배정이 없으면 -1 이다. */
+  onPick: (ms: number, camIndex: number) => void;
   /** 맨 위에 그대로 얹을 그 안의 상단 바(장소명 + 실시간/녹화영상). 클라우드로
    *  녹화에 들어오면 안의 헤더가 통째로 빠지는 자리라, 여기 다시 넣어 준다
    *  (사용자 지정 2026-09-01: "상단에 그 바는 유지해야지 — 실시간이랑
@@ -436,7 +439,7 @@ export default function CloudEventScreen({
                   key={e.at}
                   type="button"
                   className="min-w-0 text-left"
-                  onClick={() => onPick(ms)}
+                  onClick={() => onPick(ms, camOf(e.at))}
                 >
                   <div
                     className="relative w-full overflow-hidden rounded-md bg-neutral-900"
