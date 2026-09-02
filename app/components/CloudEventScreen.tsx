@@ -277,25 +277,6 @@ export default function CloudEventScreen({
         ))}
       </div>
 
-      {/* 검색 — 이걸 눌러야 목록이 나온다. 칩 줄 바로 아래, 폭을 다 쓴다. */}
-      <div className="flex-none" style={{ padding: "0 20px 12px" }}>
-        <button
-          type="button"
-          onClick={() => {
-            setLimit(PAGE);
-            setSearched(true);
-          }}
-          className="w-full text-[14px] font-semibold text-white"
-          style={{
-            height: "44px",
-            borderRadius: "8px",
-            backgroundColor: "#1D6CEB",
-          }}
-        >
-          검색
-        </button>
-      </div>
-
       {/* 건수 — 검색 전에는 안 적는다(아직 찾은 게 없다). */}
       {searched && (
         <div
@@ -375,6 +356,31 @@ export default function CloudEventScreen({
             이전 이벤트 더 보기
           </button>
         )}
+      </div>
+
+      {/* 검색 — 이걸 눌러야 목록이 나온다. 화면 맨 아래에 붙는다(사용자 지정
+          2026-09-02: "검색버튼은 하단으로"). 목록이 길어져도 자리가 안 밀리게
+          스크롤 영역 밖 형제로 두고, 목록이 밑으로 지나가 보이지 않게 윗줄을
+          하나 긋는다. 아래 하단 탭바는 이 화면 바깥이라 그 바로 위에 앉는다. */}
+      <div
+        className="flex-none border-t"
+        style={{ padding: "12px 20px", borderColor: "#EBEBEB" }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            setLimit(PAGE);
+            setSearched(true);
+          }}
+          className="w-full text-[14px] font-semibold text-white"
+          style={{
+            height: "44px",
+            borderRadius: "8px",
+            backgroundColor: "#1D6CEB",
+          }}
+        >
+          검색
+        </button>
       </div>
     </div>
   );
