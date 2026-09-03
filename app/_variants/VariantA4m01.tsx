@@ -1395,9 +1395,15 @@ function GridView({
         className="relative min-h-0 flex-1 touch-pan-y select-none overflow-hidden"
         // 단일 화면 영상과 같은 이유로 좌우 20 을 들인다 — 묶은 폭에서
         // 상단 바(시안명·실시간/녹화영상)와 끝선을 맞춘다.
+        //
+        // padding 이 아니라 margin 이다. 딤(GridSelectionOverlay)이 이 section 의
+        // absolute inset-0 자식이라, padding 으로 들이면 딤만 패딩 박스까지
+        // 퍼져 타일 밖 여백을 덮었다(사용자 지적 2026-09-03: "딤은 왜 영상에
+        // 딱 안맞고, 여백까지 가는거야"). margin 으로 넣으면 section 자체가
+        // 660 이 돼서 타일도 딤도 같은 자리다.
         style={
           clampContent
-            ? { paddingLeft: "20px", paddingRight: "20px" }
+            ? { marginLeft: "20px", marginRight: "20px" }
             : undefined
         }
         onPointerDown={handlePointerDown}
