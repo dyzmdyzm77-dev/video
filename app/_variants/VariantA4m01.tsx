@@ -69,7 +69,6 @@ import { useGridAreaRatio } from "../components/useGridLayout";
 import {
   MOTION_MIN_H,
   PANEL_BOTTOM_H,
-  SIDE_PANEL_RATIO,
   SIDE_PANEL_W,
   THUMB_MAX_H,
   THUMB_MIN_H,
@@ -1662,11 +1661,18 @@ function ExpandedView({
   // 아래 스트립에서 '움직임 감지' 탭을 보고 있나(사용자 결정 2026-08-14 — 탭이
   // 아래에도 생겼다). 실시간엔 감지 탭 자체가 없으니 녹화일 때만이다.
   const motionTab = mode === "recording" && recTab === "motion";
-  // 가로로 넓적한 화면(가로/세로 >= SIDE_PANEL_RATIO)이면 카메라 목록·움직임 감지가
-  // 화면 아래 가로 스트립이 아니라 오른쪽 끝 세로 패널로 간다(탭도 패널 안 위쪽).
-  // 그런 화면은 영상이 세로에 갇혀 있어서 하단 스트립이 영상 폭을 크게 깎는다 —
-  // 근거와 실측은 layoutRules.ts 의 SIDE_PANEL_RATIO 주석 참고.
-  const sidePanel = useDeviceRatio() >= SIDE_PANEL_RATIO;
+  // A-4(수정01)에는 오른쪽 세로 패널이 없다 — 어떤 비율이든 405 처럼 아래
+  // 가로 스트립(영상 → 날짜 → 5버튼 → 시간바 → 탭 → 목록)으로 쌓는다
+  // (사용자 지정 2026-09-03: "오른쪽 패널이 나오잖아. 그 사양 말고, 그냥 405처럼").
+  //
+  // 다른 안(A-1·A-2·A-3·A-4)은 가로로 넓적한 화면(가로/세로 >= SIDE_PANEL_RATIO)
+  // 에서 카메라 목록·움직임 감지를 오른쪽 끝 세로 패널로 보낸다 — 그런 화면은
+  // 영상이 세로에 갇혀 있어 하단 스트립이 영상 폭을 크게 깎기 때문이다
+  // (layoutRules.ts 의 SIDE_PANEL_RATIO 주석). 이 안은 그 값을 안 본다.
+  //
+  // 상수(false)로 두고 아래 sidePanel 분기를 남겨 둔다 — 지우면 되돌리기가
+  // 통째로 다시 쓰는 일이 되고, 이 안은 아직 A-4 에서 막 갈라져 나온 참이다.
+  const sidePanel = false as boolean;
   // 레이아웃 기준은 app/components/layoutRules.ts 참고 — 단일 영상은 폭과 무관하게
   // 항상 16:9, 목록 방향은 안들이 공유하는 useListLayout 이 정한다.
   //
