@@ -105,6 +105,7 @@ export default function LandscapeVideo({
   showOverlayZoom = true,
   topInset = 0,
   dimStyle,
+  dimBlur = true,
   onMenu,
   centerControls,
   edgeInset,
@@ -182,6 +183,11 @@ export default function LandscapeVideo({
   /** 딤 위 원 버튼 스타일 — GridSelectionOverlay 로 그대로 넘긴다. "a3" 면
    *  A-3안 규격(40px · #666666 50% · blur 20). 안 주면 기존 그대로. */
   dimStyle?: "a3";
+  /** 딤 위 알약·원 버튼이 뒤 영상을 흐릴지(backdrop-filter). 기본 true = 기존
+   *  그대로. A-4 만 false 를 넘긴다(사용자 지정 2026-09-03: "블러를 빼").
+   *  GridSelectionOverlay 로도 그대로 넘어간다 — 한 화면의 알약과 원 버튼이
+   *  따로 놀면 안 된다. */
+  dimBlur?: boolean;
   /** 딤의 메뉴 버튼(AI 옆). 안 주면 안 그린다 — A-2안 가로 전용. */
   onMenu?: () => void;
   /** 화면 한가운데에 얹을 컨트롤. 아래 시간바 대신 플레이어 버튼만 가운데
@@ -582,6 +588,12 @@ export default function LandscapeVideo({
   // 단일·다채널을 안 가른다 — 두 화면이 같은 자리에 같은 걸 둬야 한다.
   const modeMovedUp = modePillHeader;
 
+  // 딤 위 알약이 뒤 영상을 흐리는 값 — dimBlur 가 false 면(A-4) 안 건다.
+  // 원 버튼(GridSelectionOverlay)도 같은 플래그를 받는다.
+  const blurStyle: React.CSSProperties = dimBlur
+    ? { backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }
+    : {};
+
   // '● 실시간/녹화영상' 알약. 아래 시각 알약과 같은 규격이다(22px · 13px ·
    //  #666666 40% + blur) — 같은 화면의 알약 둘이 다르게 생기면 안 된다.
   const modePill = (
@@ -597,8 +609,7 @@ export default function LandscapeVideo({
         lineHeight: `${pillFS}px`,
         color: "#FFFFFF",
         backgroundColor: "rgba(102,102,102,0.4)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
+        ...blurStyle,
         textShadow: "0 0 4px rgba(0,0,0,0.6)",
       }}
     >
@@ -623,8 +634,7 @@ export default function LandscapeVideo({
         color: "#FFFFFF",
         // 딤 위 버튼과 같은 규격(#666666 40% + blur) — A-3 이 쓰던 값을 셋이 같이 쓴다.
         backgroundColor: "rgba(102,102,102,0.4)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
+        ...blurStyle,
         textShadow: "0 0 4px rgba(0,0,0,0.6)",
       }}
     >
@@ -957,6 +967,7 @@ export default function LandscapeVideo({
       showAi={showOverlayAi}
       showZoom={showOverlayZoom}
       dimStyle={dimStyle}
+      dimBlur={dimBlur}
       onMenu={onMenu}
       edgeInset={edgeR}
       edgeInsetLeft={edgeL}

@@ -298,6 +298,7 @@ export function GridSelectionOverlay({
   showAi = true,
   showZoom = true,
   dimStyle,
+  dimBlur = true,
   topLeft,
   auto,
 }: {
@@ -363,6 +364,11 @@ export function GridSelectionOverlay({
    *  안 주면 예전 그대로(34px · 검정 35% · 흰 테두리) — 다른 안은 안 건드린다.
    *  우상단 아이콘 줄 간격도 이 값일 때만 벌린다. */
   dimStyle?: "a3";
+  /** 딤 위 원 버튼이 뒤 영상을 흐릴지(backdrop-filter). 기본 true = 기존 그대로.
+   *  A-4 는 false 를 넘긴다(사용자 지정 2026-09-03: "블러를 빼") — 다른 안은
+   *  안 건드린다. dimStyle 안에 안 넣은 건, "a3 규격"은 크기·색·그림자를
+   *  가리키는 이름이고 블러만 안별로 갈리기 때문이다. */
+  dimBlur?: boolean;
   /** 딤 좌측 상단에 얹을 것. A-4 가 '● 실시간/녹화영상' 알약을 여기로 넣는다
    *  (사용자 지정 2026-08-31: 세로 다채널 딤도 단일·가로와 같게). 안 주면
    *  아무것도 안 그린다 — 다른 안은 예전 그대로다.
@@ -396,8 +402,12 @@ export function GridSelectionOverlay({
         height: "40px",
         border: "none",
         backgroundColor: "rgba(102,102,102,0.4)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
+        ...(dimBlur
+          ? {
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+            }
+          : null),
       }
     : {
         width: "34px",

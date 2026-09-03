@@ -661,6 +661,7 @@ export default function VariantA4({
           swapAiZoom
           // 다채널 딤 버튼도 단일 화면과 같은 규격으로(사용자 지정 2026-08-14).
           dimStyle="a3"
+          dimBlur={false}
           // AI·크게 보기를 시간바 아래 가운데 줄로 옮겼다 — 딤 좌우 아래 원은 끈다.
           showOverlayAi={false}
           showOverlayZoom={false}
@@ -795,9 +796,9 @@ export default function VariantA4({
                         // 회색 → 0.7 → 0.5 을 거쳐 여기로 왔다. 톤은 앱에 이미 쓰는
                         // 회색(#757575, 녹화 배지 배경)이고 알파만 조절한다.
                         // A-3 의 딤 버튼·시간바 알약은 전부 이 값 하나로 맞춘다.
+                        // 뒤를 흐리던 blur(20) 은 뺐다(사용자 지정 2026-09-03:
+                        // "블러를 빼") — 세로 딤 위 원 버튼·알약 공통이다.
                         backgroundColor: "rgba(102,102,102,0.4)",
-                        backdropFilter: "blur(20px)",
-                        WebkitBackdropFilter: "blur(20px)",
                       }}
                     >
                       <img
@@ -1414,6 +1415,7 @@ function GridView({
           // A-3: AI 는 우상단 아이콘 줄로, 크게 보기는 우하단 원 버튼으로 맞바꾼다.
           swapAiZoom
           dimStyle="a3"
+          dimBlur={false}
         />
         <VideoFitToast text={gridFitToast} toastKey={gridFitToastKey} />
         <SectionSkeleton visible={gridLoading} cols={cols} rows={rows} />
@@ -2142,8 +2144,6 @@ function ExpandedView({
                 width: "40px",
                 height: "40px",
                 backgroundColor: "rgba(102,102,102,0.4)",
-                backdropFilter: "blur(20px)",
-                WebkitBackdropFilter: "blur(20px)",
                 pointerEvents: showControls ? "auto" : "none",
               }}
             >
@@ -2184,8 +2184,6 @@ function ExpandedView({
                     width: "40px",
                     height: "40px",
                     backgroundColor: "rgba(102,102,102,0.4)",
-                    backdropFilter: "blur(20px)",
-                    WebkitBackdropFilter: "blur(20px)",
                   }}
                 >
                   <img
@@ -4141,7 +4139,10 @@ function LayoutConfigSheet({
 
 // '● 실시간/녹화영상' 알약 — 딤 좌측 상단에 놓는다(단일·다채널·가로 공통).
 // 규격은 가로 딤이 쓰는 것과 같다(LandscapeVideo 의 modePill): 높이 26 ·
-// 글자 14 · 회색 40% + blur(20), 점은 실시간 빨강 / 녹화 흰색.
+// 글자 14 · 회색 40%, 점은 실시간 빨강 / 녹화 흰색.
+// 블러는 뺐다(사용자 지정 2026-09-03: "블러를 빼") — A-4 세로 딤에 얹히는 것은
+// 알약도 원 버튼도 다 안 쓴다. 가로 딤(LandscapeVideo)은 아직 그대로라
+// 세로/가로가 이 한 가지만 다르다.
 // 세로에도 넣은 건 사용자 지정 2026-08-31("딤에다가 좌측 상단에 동일하게").
 function ModePill({ mode }: { mode: "live" | "recording" }) {
   return (
@@ -4157,8 +4158,6 @@ function ModePill({ mode }: { mode: "live" | "recording" }) {
         lineHeight: "14px",
         color: "#FFFFFF",
         backgroundColor: "rgba(102,102,102,0.4)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
         textShadow: "0 0 4px rgba(0,0,0,0.6)",
       }}
     >
@@ -4636,8 +4635,9 @@ function RecordingControls({
           display: "inline-flex",
           alignItems: "center",
           height: "22px",
-          // 딤 위(가로)는 아래 버튼들과 같은 값 하나를 그대로 쓴다 —
+          // 딤 위(가로)는 가로 딤 버튼들과 같은 값 하나를 그대로 쓴다 —
           // #666666 40% + blur(20) + 테두리 없음 + 흰 글자 + 같은 그림자.
+          // (세로 딤은 블러를 뺐다 — ModePill 주석 참고. 가로는 안 건드렸다.)
           // 흰 바탕(세로·사이드 패널)은 흰색 70% + 어두운 글자로 되돌렸다
           // (사용자 지정 2026-08-14) — 거긴 달력·캡처 버튼도 흰 원이라
           // 어두운 알약만 튀었다.
@@ -4647,8 +4647,6 @@ function RecordingControls({
           backgroundColor: overlay ? "rgba(102,102,102,0.4)" : "transparent",
           ...(overlay
             ? {
-                backdropFilter: "blur(20px)",
-                WebkitBackdropFilter: "blur(20px)",
                 // 버튼 규격을 따라간다면 끝까지 따라간다(사용자 지정
                 // 2026-08-14: "버튼이랑 같은 스타일할 꺼면 똑같이 가").
                 // 원 버튼 아이콘이 쓰는 그 그림자 — 가운데에서 퍼지는
@@ -5089,14 +5087,10 @@ function PlayerButton({
           : active
             ? "#F2F2F2"
             : "#FFFFFF",
-        // 딤 위 버튼은 뒤 영상을 흐린다(사용자 요청 2026-08-14) — 반투명 회색만으로는
-        // 영상 무늬가 그대로 비쳐 아이콘이 어수선해 보인다. -webkit- 접두사는 사파리용.
-        ...(overlay
-          ? {
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
-            }
-          : null),
+        // 뒤 영상을 흐리던 blur(20) 은 A-4 에서 뺐다(사용자 지정 2026-09-03:
+        // "블러를 빼"). 원래는 반투명 회색만으론 영상 무늬가 비쳐 아이콘이
+        // 어수선하다고 넣었던 값이다(2026-08-14) — 아이콘 그림자와 딤 60% 가
+        // 대비를 받쳐 준다. 다른 안(LandscapeVideo 기본값)은 그대로 흐린다.
       }}
     >
       {label != null ? (
