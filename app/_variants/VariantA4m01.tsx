@@ -19,10 +19,13 @@ import {
   type CompareSlot,
 } from "../components/compareTarget";
 import {
+  requestDeviceRotate,
   useDeviceLandscape,
   useRotatedInput,
 } from "../components/deviceRotate";
 import {
+  exitImmersive,
+  readImmersive,
   toggleImmersive,
   useImmersive,
   useImmersiveRotated,
@@ -921,8 +924,22 @@ export default function VariantA4({
                             key: "menu",
                             label: "메뉴",
                             src: `${BASE}/nav/menu.svg`,
-                            onClick: () =>
-                              setLsPanel((v) => (v === "list" ? null : "list")),
+                            // 오른쪽 패널을 열던 자리다. 이제는 세로 화면으로
+                            // 돌아간다(사용자 지정 2026-09-03: "메뉴 버튼 누르면
+                            // 오른쪽에서 패널 나오잖아. 그때 세로로 전환해줘").
+                            // 세로엔 카메라 목록·움직임 감지가 이미 탭으로 있어,
+                            // 가로에서 같은 것을 판으로 또 띄울 이유가 없다.
+                            //
+                            // 들어온 경로가 둘이라 나가는 길도 둘이다 — 확대로
+                            // 들어왔으면 축소(exitImmersive, 회전도 같이 되돌린다),
+                            // 그냥 눕혀서 들어왔으면 회전만 되돌린다. 축소 버튼과
+                            // 달리 toggleImmersive 를 못 쓴다 — 확대가 아닌
+                            // 상태에서 부르면 오히려 확대가 켜진다.
+                            onClick: () => {
+                              setLsPanel(null);
+                              if (readImmersive()) exitImmersive();
+                              else requestDeviceRotate(false);
+                            },
                           })}
                         {/* 달력 · 화면 캡처 — 세로 날짜 줄 양 끝에 있던 둘을
                             가로에서는 이 줄로 가져온다(사용자 지정 2026-08-27).
@@ -993,6 +1010,10 @@ export default function VariantA4({
         {/* 딤 왼쪽 아래 '메뉴'·'움직임 감지'가 여는 오른쪽 패널(사용자 지정
             2026-08-18). 다채널에서도 목록은 뜬다 — 거기서 카메라를 고르면 그
             카메라 단일 화면으로 넘어간다. */}
+        {/* 오른쪽 세로 패널 — 지금은 여는 길이 없다. 유일한 입구였던 딤의
+            메뉴 버튼이 '세로로 전환'으로 바뀌었기 때문이다(위 그 버튼 주석).
+            코드는 지운 게 아니라 남겨 둔다 — 되돌리려면 그 onClick 한 줄이면
+            되고, 판 자체를 다시 쓸 수도 있다. */}
         {(lsPanel || lsPanelOpen) && (
           <LandscapeSidePanel
             position={panelBottom ? "bottom" : "right"}
