@@ -36,7 +36,7 @@ export const COMPARE_SLOTS: CompareSlot[] = [1, 2, 3];
 
 export const COMPARE_TARGET_EVENT = "comparetargetchange";
 
-const TARGETS: CompareTarget[] = ["asis", "a1", "a2", "a3", "a4"];
+const TARGETS: CompareTarget[] = ["asis", "a1", "a2", "a3", "a4", "a4m01"];
 
 // 자리 1 은 예전 이름(data-compare-with)을 그대로 쓴다 — 옛 링크·상태가 산다.
 const dataKey = (slot: CompareSlot) =>

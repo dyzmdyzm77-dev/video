@@ -21,11 +21,11 @@ import { useEffect, useState } from "react";
 // 마찬가지로 URL 의 안으로 돌아온다.
 // ============================================================================
 
-export type VariantKey = "a1" | "a2" | "a3" | "a4";
+export type VariantKey = "a1" | "a2" | "a3" | "a4" | "a4m01";
 
 export const VARIANT_EVENT = "variantchange";
 
-const KEYS: VariantKey[] = ["a1", "a2", "a3", "a4"];
+const KEYS: VariantKey[] = ["a1", "a2", "a3", "a4", "a4m01"];
 
 /** 안 이름. 시안 목록 시트·좌측 패널·각 안의 상단 제목이 전부 여기서 읽는다 —
  *  UT 중 지금 어느 안을 보고 있는지 화면 위에서 바로 읽히게 하려고 원래
@@ -35,9 +35,10 @@ export const VARIANT_LABEL: Record<VariantKey, string> = {
   a2: "A-2안",
   a3: "A-3안",
   a4: "A-4안",
+  a4m01: "A-4(수정01)",
 };
 
-/** 경로(/a1·/a2·/a3·/a4)에서 안 키를 뽑는다. 모르면 A-1안(기본 진입).
+/** 경로(/a1·/a2·/a3·/a4·/a4m01)에서 안 키를 뽑는다. 모르면 A-1안(기본 진입).
  *  옛 경로 /a 는 한때 A안(지금의 A-2안)이었지만, 지금은 기본인 A-1안으로
  *  보낸다 — 그 링크를 저장해 둔 사람이 A-2안으로 떨어지던 걸 막는다.
  *  A-2안의 주소는 /a2 다. */

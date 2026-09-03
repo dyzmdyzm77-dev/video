@@ -12,7 +12,7 @@ import {
 
 // 순서·라벨은 사용자가 정한다(2026-08-11: A안 → 'A-2안', 자리는 두 번째).
 
-const OPTIONS: VariantKey[] = ["a1", "a2", "a3", "a4"];
+const OPTIONS: VariantKey[] = ["a1", "a2", "a3", "a4", "a4m01"];
 
 export default function VariantPicker({
   open,

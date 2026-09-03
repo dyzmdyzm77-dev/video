@@ -6,6 +6,7 @@ import VariantA from "./VariantA";
 import VariantA1 from "./VariantA1";
 import VariantA3 from "./VariantA3";
 import VariantA4 from "./VariantA4";
+import VariantA4m01 from "./VariantA4m01";
 import { Inner as HomeScreen } from "../home/page";
 import { useVariant, type VariantKey } from "../components/variantRoute";
 import { LANDSCAPE_EVENT } from "../components/deviceRotate";
@@ -92,5 +93,6 @@ export default function AppShell({
   if (variant === "a2") return <VariantA {...shared} />;
   if (variant === "a3") return <VariantA3 {...shared} />;
   if (variant === "a4") return <VariantA4 {...shared} />;
+  if (variant === "a4m01") return <VariantA4m01 {...shared} />;
   return <VariantA1 {...shared} />;
 }

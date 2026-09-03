@@ -51,6 +51,7 @@ const VARIANTS: { key: VariantKey; icon: string }[] = [
   { key: "a2", icon: "A-2" },
   { key: "a3", icon: "A-3" },
   { key: "a4", icon: "A-4" },
+  { key: "a4m01", icon: "A-4(수정01)" },
 ];
 
 // 해상도 프리셋(DEVICES)은 devicePresets.ts 에 있다 — 좌측 패널뿐 아니라 비교
@@ -65,7 +66,7 @@ const STORAGE_MODES: { key: StorageMode; token: string; label: string }[] = [
 ];
 
 // 비교하기 왼쪽에 놓을 수 있는 것들 — As Is(현행 앱) + 네 안.
-const COMPARE_TARGETS: CompareTarget[] = ["asis", "a1", "a2", "a3", "a4"];
+const COMPARE_TARGETS: CompareTarget[] = ["asis", "a1", "a2", "a3", "a4", "a4m01"];
 // 나란히 놓을 기기 대수(오른쪽 시안 포함). 2 = 왼쪽 한 대 … 4 = 왼쪽 세 대.
 type CompareCount = 2 | 3 | 4;
 const COMPARE_COUNTS: { n: CompareCount; token: string; label: string }[] = [
