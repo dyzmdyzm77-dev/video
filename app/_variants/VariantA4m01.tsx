@@ -226,6 +226,22 @@ const DIM_TINT = "rgba(0,0,0,0.6)";
  *  바꿔도 '눌린 티'가 같은 폭으로 나야 한다. */
 const DIM_TINT_ACTIVE = "rgba(0,0,0,0.8)";
 
+/** 단일 화면 콘텐츠를 홈과 같은 700 컬럼으로 묶기 시작하는 기기 폭(px).
+ *  이 아래에서는 예전처럼 프레임 폭을 다 쓴다.
+ *
+ *  750(Z Fold 8 울트라)은 묶지 않는다(사용자 지정 2026-09-03: "750은 냅둬").
+ *  거기서 남는 여백이 25씩이라 의도한 여백이 아니라 어긋난 것처럼 보인다.
+ *  800 으로 잡으면 750·780 은 전체 폭, 864(82씩)·1080(190씩)만 묶인다 —
+ *  사용자가 지목한 것도 그 둘이다.
+ *
+ *  layoutRules 의 기준선(WIDE_BP·SIDE_PANEL_BP)과는 상관없는 값이다 —
+ *  이 안에서만 쓰는 폭이라 여기 둔다. */
+const M01_CLAMP_BP = 800;
+
+/** 단일 화면 콘텐츠 컬럼의 최대 폭(px) — 홈 2단과 같은 값(HOME_W_2COL).
+ *  좌우 패딩 20 을 포함한 바깥 폭이라 실제 내용은 660 이다. */
+const M01_CONTENT_W = 700;
+
 /** 가로 딤이 여는 패널의 폭(px) — 아래에서 나오는 판은 높이가 대신이라 안 쓴다. */
 const LANDSCAPE_PANEL_W = 240;
 
@@ -336,6 +352,8 @@ export default function VariantA4({
   // 실기기 확대는 폰이 세로인 채 화면만 CSS 로 돌린 것이라 뷰포트 비율이 세로
   // 그대로다 — 회전이 걸려 있으면 뒤집어서 본다(A-1 과 같은 처리).
   const rawRatio = useDeviceRatio();
+  // 단일 화면 콘텐츠를 700 컬럼으로 묶을지 판정하는 데 쓴다(M01_CLAMP_BP).
+  const deviceW = useDeviceWidth();
   const ratioFlipped = useRotatedInput();
   const panelBottom =
     (ratioFlipped && rawRatio > 0 ? 1 / rawRatio : rawRatio) < 1;
@@ -1118,11 +1136,17 @@ export default function VariantA4({
         // 오른쪽 세로 패널을 뺀 뒤(sidePanel=false) 864·1080 에서 영상이 프레임
         // 폭을 끝까지 다 써서, 같은 기기의 홈 탭과 좌우 끝선이 어긋났다.
         //
-        // max-width 라 620·700 미만에서는 아무 일도 안 한다 — 폭 기준선을
-        // 새로 만들 필요가 없다(layoutRules 의 기준선과 무관).
+        // 묶는 건 M01_CLAMP_BP(800) 이상에서만이다 — 750 은 그대로 둔다
+        // (사용자 지정: "750은 냅둬"). 그 아래는 예전처럼 프레임 폭을 다 쓴다.
         // 하단 탭바·안드로이드 네비·상태바는 이 컬럼 밖이라 전체 폭 그대로다
         // (홈과 같다). 다채널(GridView)도 그대로 — 단일만이다.
-        <div className="mx-auto flex min-h-0 w-full max-w-[700px] flex-1 flex-col overflow-hidden">
+        <div
+          className="mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden"
+          style={{
+            maxWidth:
+              deviceW >= M01_CLAMP_BP ? `${M01_CONTENT_W}px` : undefined,
+          }}
+        >
         <ExpandedView
           index={expandedIndex}
           onBack={handleBack}
@@ -1673,6 +1697,9 @@ function ExpandedView({
   // 아래 스트립에서 '움직임 감지' 탭을 보고 있나(사용자 결정 2026-08-14 — 탭이
   // 아래에도 생겼다). 실시간엔 감지 탭 자체가 없으니 녹화일 때만이다.
   const motionTab = mode === "recording" && recTab === "motion";
+  // 콘텐츠를 700 컬럼으로 묶은 폭인가(M01_CLAMP_BP). 부모가 바깥 컬럼에 거는
+  // 것과 같은 판정이다 — 영상 좌우 여백을 그 폭에서만 준다.
+  const clampContent = useDeviceWidth() >= M01_CLAMP_BP;
   // A-4(수정01)에는 오른쪽 세로 패널이 없다 — 어떤 비율이든 405 처럼 아래
   // 가로 스트립(영상 → 날짜 → 5버튼 → 시간바 → 탭 → 목록)으로 쌓는다
   // (사용자 지정 2026-09-03: "오른쪽 패널이 나오잖아. 그 사양 말고, 그냥 405처럼").
@@ -2022,6 +2049,17 @@ function ExpandedView({
       <div
         ref={sidePanel ? undefined : videoAreaRef}
         className="single-video-area px-0"
+        // 700 컬럼으로 묶은 폭(M01_CLAMP_BP 이상)에서는 영상도 좌우 20 을 들여
+        // 상단 바(시안명·실시간/녹화영상)와 좌우 끝선을 맞춘다(사용자 지적
+        // 2026-09-03: "시안명이랑, 실시간 녹화영상 탭쪽이랑 정렬을 맞춰야지").
+        // 상단 바·탭 줄·목록 스트립은 전부 px-5(20)를 갖고 있어 내용이 660 인데,
+        // 영상만 끝까지 나가 700 이었다.
+        // 안 묶은 폭에서는 예전 그대로 프레임 끝까지 간다(px-0).
+        style={
+          clampContent
+            ? { paddingLeft: "20px", paddingRight: "20px" }
+            : undefined
+        }
         // 사이드 패널일 땐 왼쪽 컬럼의 남는 세로를 영상이 한도 없이 가져간다
         // (16:9 상한 해제). 크기는 globals.css 의 [data-side] 가 잡는다.
         // 훅이 쓰는 data-fill 과 속성을 나눠 둔 건, 배치가 바뀔 때 React 가 건 값과
