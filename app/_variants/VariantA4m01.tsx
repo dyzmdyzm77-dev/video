@@ -1050,14 +1050,9 @@ export default function VariantA4({
         style={{ zIndex: 100 }}
       />
     )}
-    <div
-      className="relative flex min-h-0 flex-1 w-full flex-col overflow-hidden"
-      // 700 컬럼 양옆에 남는 여백의 배경 — 홈 화면과 같은 회색이다(사용자 지정
-      // 2026-09-03: "양옆에 여백쪽 배경은 #EDF0F5 이걸로 해"). 흰색이면 컬럼이
-      // 어디서 끝나는지 안 보여 그냥 화면이 텅 빈 것처럼 보인다.
-      // 안 묶은 폭에서는 컬럼이 곧 프레임이라 예전처럼 흰색이다.
-      style={{ backgroundColor: deviceW >= M01_CLAMP_BP ? "#EDF0F5" : "#FFFFFF" }}
-    >
+    {/* 700 컬럼 양옆에 남는 여백도 흰색이다 — 홈과 같은 회색(#EDF0F5)을 깔아
+        봤는데 안 어울렸다(사용자 지정 2026-09-03: "그냥 흰색으로 해줘"). */}
+    <div className="relative flex min-h-0 flex-1 w-full flex-col overflow-hidden bg-white">
       {/* 안드로이드 상태바 — Android 환경에서만 */}
       {platform === "android" && chromeVisible && (
         <div
