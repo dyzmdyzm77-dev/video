@@ -40,9 +40,13 @@ import { EVENT_KINDS, TIMELINE_EVENTS, type EventKind } from "./timelineEvents";
 // 네 안(A-1·A-2·A-3·B)이 이 하나를 같이 쓴다. 진입 화면이 안마다 다르게 보이면
 // 안끼리 비교가 안 되므로, 안에 두지 않고 여기 공유 컴포넌트로 뒀다.
 //
-// 필터는 셋 — 카메라 · 날짜·시간 · 감지유형 (사용자 지정 2026-09-02: "필터가
-// 일단 카메라 선택이 있어야하고, 날짜 시간, 감지유형 이렇게야"). 예전의
-// 시간대(새벽·오전·오후·저녁) 칩은 '날짜·시간'이 대신해 뺐다.
+// 필터는 넷 — 계약처 · 카메라 · 날짜·시간 · 감지유형 (셋으로 시작했고 —
+// 사용자 지정 2026-09-02: "필터가 일단 카메라 선택이 있어야하고, 날짜 시간,
+// 감지유형 이렇게야" — 계약처를 카메라 앞에 더했다, 2026-09-03: "카메라 앞에
+// 계약처 필터도 넣어줘"). 예전의 시간대(새벽·오전·오후·저녁) 칩은
+// '날짜·시간'이 대신해 뺐다.
+// 계약처가 맨 앞인 건 실제 관계가 계약처 > 카메라라서다 — 넓은 것에서 좁은
+// 것으로 내려가는 순서로 읽힌다.
 // 셋 다 한 줄에 칩으로 서고, 누르면 시트가 떠서 고른다(사용자 지정 2026-09-02:
 // "필터 한줄로 하는거 어때? 칩 형태에 그 화살표 붙은거 ... 그걸로 선택하게").
 // 고를 값을 칩으로 다 늘어놓던 예전 방식은 카메라가 넷만 돼도 두 줄을 먹었고,
@@ -64,6 +68,13 @@ const pad = (n: number) => String(n).padStart(2, "0");
 // 한 번에 그리는 줄 수. 하루가 ~3400건이라 다 그리면 화면에 들어서는 순간 멈춘다.
 // 아래 '이전 이벤트 더 보기'로 이만큼씩 늘린다.
 const PAGE = 60;
+
+// 계약처 — 한 계정이 여러 사업장을 보는 경우다. 첫 칸은 안들의 상단 바에 적힌
+// 그 이름이다(AppHeader 의 "에스원 본사 · N1234567") — 지금 보고 있는 곳이
+// 목록에 없으면 필터가 남의 것처럼 보인다.
+// 카메라는 안이 prop 으로 넘기는데(안마다 CAMERAS 가 다를 수 있어서) 계약처는
+// 네 안이 같은 값을 쓰므로 여기 둔다.
+const CONTRACT_SITES = ["에스원 본사", "에스원 판교R&D센터", "에스원 부산지사"];
 
 // 목록은 격자다(사용자 지정 2026-09-02: "그거 목록 2줄로 바꿔. 지금 한줄인데").
 // 한 줄에 하나씩 가로로 눕히던 카드를, 썸네일 위 · 글자 아래인 세로 카드로 바꿨다.
@@ -228,8 +239,10 @@ export default function CloudEventScreen({
   // 날짜를 고르면 그 시각이 새 기준이 된다 — 목록은 그 날 자정부터 그 시각까지.
   const [viewMs, setViewMs] = useState<number | null>(null);
   const [pickOpen, setPickOpen] = useState(false);
+  const [siteOpen, setSiteOpen] = useState(false);
   const [camOpen, setCamOpen] = useState(false);
   const [kindOpen, setKindOpen] = useState(false);
+  const [siteIdx, setSiteIdx] = useState<number | "all">("all");
   const [camIdx, setCamIdx] = useState<number | "all">("all");
   const [kind, setKind] = useState<EventKind | "all">("all");
   const [limit, setLimit] = useState(PAGE);
@@ -266,6 +279,16 @@ export default function CloudEventScreen({
   const camCount = cameras?.length ?? 0;
   const camOf = (at: number) => (camCount ? at % camCount : -1);
 
+  // 계약처도 같은 수법으로 배정한다 — 가상 이벤트에 계약처가 없어서다.
+  // 카메라와 같은 식(at % n)을 쓰면 둘이 붙어 돌아(카메라 03 은 늘 같은
+  // 계약처) 두 필터를 같이 걸었을 때 목록이 통째로 비는 조합이 생긴다.
+  // +7 을 섞어 어긋나게 둔다. 시드처럼 늘 같은 답이라 필터를 껐다 켜도
+  // 목록이 흔들리지 않는 건 카메라와 같다.
+  //
+  // 실제로는 카메라가 계약처에 속하지만(계약처를 바꾸면 카메라 목록도 바뀐다),
+  // 프로토타입의 카메라 목록은 한 벌뿐이라 둘을 나란한 필터로 둔다.
+  const siteOf = (at: number) => (at + 7) % CONTRACT_SITES.length;
+
   // 오늘 자정부터 기준 시각까지, 최신이 위로. 아직 안 일어난 이벤트는 뺀다.
   const events = useMemo(() => {
     if (!mounted) return [];
@@ -273,10 +296,14 @@ export default function CloudEventScreen({
     return TIMELINE_EVENTS.filter((e) => {
       if (e.at > maxSec) return false;
       if (kind !== "all" && e.kind !== kind) return false;
+      if (siteIdx !== "all" && siteOf(e.at) !== siteIdx) return false;
       if (camIdx !== "all" && camCount && e.at % camCount !== camIdx) return false;
       return true;
     }).reverse();
-  }, [mounted, baseMs, dayStart, kind, camIdx, camCount]);
+    // siteOf 는 상수만 보는 순수 함수라 의존성에 넣지 않는다(넣으면 매 렌더
+    // 새 함수라 useMemo 가 매번 다시 돈다) — 대신 siteIdx 를 본다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, baseMs, dayStart, kind, siteIdx, camIdx, camCount]);
 
   const shown = events.slice(0, limit);
 
@@ -294,7 +321,14 @@ export default function CloudEventScreen({
       : ((cameras?.[camIdx]?.label ?? "전체").replace(/^카메라\s*/, "") ||
         "전체");
   const kindLabel = kind === "all" ? "전체" : kind;
+  // 계약처 이름은 그대로 쓴다 — 칩 제목('계약처')과 겹치는 말이 없어서
+  // 카메라처럼 앞을 떼어낼 게 없다.
+  const siteLabel = siteIdx === "all" ? "전체" : CONTRACT_SITES[siteIdx];
 
+  const siteOptions = [
+    { key: "all", label: "전체" },
+    ...CONTRACT_SITES.map((name, i) => ({ key: String(i), label: name })),
+  ];
   const camOptions = [
     { key: "all", label: "전체" },
     ...(cameras ?? []).map((c, i) => ({ key: String(i), label: c.label })),
@@ -401,6 +435,11 @@ export default function CloudEventScreen({
           className="flex"
           style={{ gap: `${SPACE.s6}px`, width: "max-content" }}
         >
+          <FilterChipButton
+            title="계약처"
+            value={siteLabel}
+            onClick={() => setSiteOpen(true)}
+          />
           <FilterChipButton
             title="카메라"
             value={camLabel}
@@ -582,8 +621,20 @@ export default function CloudEventScreen({
         </button>
       </div>
 
-      {/* 카메라·감지유형 고르기 — 칩을 누르면 뜬다. 고르는 즉시 닫히고
+      {/* 계약처·카메라·감지유형 고르기 — 칩을 누르면 뜬다. 고르는 즉시 닫히고
           목록이 따라간다(검색을 다시 누를 필요 없다). */}
+      <OptionSheet
+        open={siteOpen}
+        title="계약처"
+        options={siteOptions}
+        value={siteIdx === "all" ? "all" : String(siteIdx)}
+        onClose={() => setSiteOpen(false)}
+        onPick={(k) => {
+          setSiteIdx(k === "all" ? "all" : Number(k));
+          setLimit(PAGE);
+          setSiteOpen(false);
+        }}
+      />
       <OptionSheet
         open={camOpen}
         title="카메라"
