@@ -1112,6 +1112,17 @@ export default function VariantA4({
           fitState={fitState}
         />
       ) : (
+        // 단일 화면은 홈과 같은 폭 규격으로 묶는다 — 콘텐츠 700(좌우 패딩
+        // 20 포함, 실제 내용 660) 상한에 가운데 정렬이고, 남는 폭은 좌우
+        // 여백이다(사용자 지정 2026-09-03: "그 사이즈만큼, 영상쪽도 그렇게").
+        // 오른쪽 세로 패널을 뺀 뒤(sidePanel=false) 864·1080 에서 영상이 프레임
+        // 폭을 끝까지 다 써서, 같은 기기의 홈 탭과 좌우 끝선이 어긋났다.
+        //
+        // max-width 라 620·700 미만에서는 아무 일도 안 한다 — 폭 기준선을
+        // 새로 만들 필요가 없다(layoutRules 의 기준선과 무관).
+        // 하단 탭바·안드로이드 네비·상태바는 이 컬럼 밖이라 전체 폭 그대로다
+        // (홈과 같다). 다채널(GridView)도 그대로 — 단일만이다.
+        <div className="mx-auto flex min-h-0 w-full max-w-[700px] flex-1 flex-col overflow-hidden">
         <ExpandedView
           index={expandedIndex}
           onBack={handleBack}
@@ -1139,6 +1150,7 @@ export default function VariantA4({
           onSpeedChange={setPlaybackRate}
           fitState={fitState}
         />
+        </div>
       )}
 
       <DateTimePickerSheet
