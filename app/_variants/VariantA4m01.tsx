@@ -246,8 +246,11 @@ const M01_CLAMP_BP = 800;
  *  달지 않으려고 그렇게 뒀다. 그 방식은 '끝까지 가는' 층(영상·딤·구분선·
  *  시간바·목록)이 하나 생길 때마다 여백을 빠뜨리게 돼 있었다.
  *
- *  그래서 이 폭에서는 글자 줄들이 갖고 있던 px-5 를 0 으로 돌린다 — 컬럼이
- *  곧 좌우 끝선이라, 안에서 또 들이면 그 줄만 어긋난다. */
+ *  컬럼 안은 폰(360)에서와 똑같다 — 영상·그리드·구분선·시간바처럼 끝까지 가는
+ *  것은 컬럼 끝까지 가고, 글자 줄(상단 바·날짜 줄·탭 줄·목록 타일)은 자기
+ *  px-5(20)를 그대로 갖는다(사용자 지정 2026-09-03: "상단바는 마진 줘야지
+ *  양옆에"). 한때 그 px-5 를 0 으로 돌려 영상과 끝선을 맞춰 봤는데, 컬럼 밖이
+ *  회색(#EDF0F5)이 되면서 컬럼 자체가 '화면'으로 읽혀 그럴 이유가 없어졌다. */
 const M01_CONTENT_W = 700;
 
 /** 가로 딤이 여는 패널의 폭(px) — 아래에서 나오는 판은 높이가 대신이라 안 쓴다. */
@@ -1047,7 +1050,14 @@ export default function VariantA4({
         style={{ zIndex: 100 }}
       />
     )}
-    <div className="relative flex min-h-0 flex-1 w-full flex-col overflow-hidden bg-white">
+    <div
+      className="relative flex min-h-0 flex-1 w-full flex-col overflow-hidden"
+      // 700 컬럼 양옆에 남는 여백의 배경 — 홈 화면과 같은 회색이다(사용자 지정
+      // 2026-09-03: "양옆에 여백쪽 배경은 #EDF0F5 이걸로 해"). 흰색이면 컬럼이
+      // 어디서 끝나는지 안 보여 그냥 화면이 텅 빈 것처럼 보인다.
+      // 안 묶은 폭에서는 컬럼이 곧 프레임이라 예전처럼 흰색이다.
+      style={{ backgroundColor: deviceW >= M01_CLAMP_BP ? "#EDF0F5" : "#FFFFFF" }}
+    >
       {/* 안드로이드 상태바 — Android 환경에서만 */}
       {platform === "android" && chromeVisible && (
         <div
@@ -1079,16 +1089,13 @@ export default function VariantA4({
           하단 탭바·안드로이드 네비·상태바는 이 컬럼 밖이라 전체 폭 그대로다
           (홈과 같다). */}
       <div
-        className="mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden"
+        className="mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-white"
         style={{
           maxWidth: deviceW >= M01_CLAMP_BP ? `${M01_CONTENT_W}px` : undefined,
         }}
       >
       {cloudEventScreen ? (
         <CloudEventScreen
-          // 660 컬럼이 이미 좌우 여백을 갖고 있다 — 화면 자기 여백은 0 으로
-          // 돌려야 검색창·칩·검색 버튼이 상단 바와 같은 끝선에 선다.
-          edgeInset={deviceW >= M01_CLAMP_BP ? 0 : undefined}
           initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
           cameras={CAMERAS}
           // 이 안의 상단 바를 통째로 얹는다(사용자 지정 2026-09-01: "상단에
@@ -2335,7 +2342,7 @@ function ExpandedView({
   const dateBarBlock = (
     <>
       <div
-        className={`relative flex flex-none items-center ${clampContent ? "px-0" : "px-5"}`}
+        className="relative flex flex-none items-center px-5"
         style={{ height: "44px" }}
       >
         {/* 날짜·시간 선택 — 이 줄 맨 왼쪽, REC 칩보다 앞이다(사용자 지정
@@ -2588,10 +2595,7 @@ function ExpandedView({
       {mode === "recording" ? (
         // 여백을 줄이 아니라 버튼에 준다 — A-2 와 완전히 같은 마크업이라 줄 높이
         // (14+15+14=43)도, 손이 닿는 넓이도 같다.
-        <div
-          className={`flex items-center ${clampContent ? "px-0" : "px-5"}`}
-          style={{ gap: "20px" }}
-        >
+        <div className="flex items-center px-5" style={{ gap: "20px" }}>
           {([
             { key: "list", label: "카메라 목록" },
             { key: "motion", label: "움직임 감지" },
@@ -2614,7 +2618,7 @@ function ExpandedView({
         </div>
       ) : (
         <div
-          className={`relative flex flex-none items-center ${clampContent ? "px-0" : "px-5"}`}
+          className="relative flex flex-none items-center px-5"
           // (좌우는 px-5 가 잡는다 — 인라인 padding 축약형을 쓰면 그걸 덮어쓴다.)
           // 위 STRIP_PAD · 아래 0 — 녹화 탭 줄과 같은 규칙(글자 위아래가 같다).
           style={{ paddingTop: `${STRIP_PAD}px`, paddingBottom: "0px" }}
@@ -2660,8 +2664,6 @@ function ExpandedView({
           setPlaybackMs={setPlaybackMs}
           cameraSrc={cam.src}
           wide={listWide}
-          // 영역이 이미 좌우 20 을 갖고 있다(insetX) — 안에서 또 주면 40 이 된다.
-          inset={clampContent ? 0 : undefined}
         />
       ) : (
       <div
@@ -2683,8 +2685,8 @@ function ExpandedView({
           }}
           className={
             listWide
-              ? `flex min-h-0 flex-1 gap-2 ${clampContent ? "px-0" : "px-5"} overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`
-              : `grid grid-cols-2 gap-2 ${clampContent ? "px-0" : "px-5"}`
+              ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              : "grid grid-cols-2 gap-2 px-5"
           }
           {...(listWide ? dragScroll : {})}
         >
@@ -4276,13 +4278,10 @@ function AppHeader({
   setMode: (m: "live" | "recording") => void;
   chromeVisible: boolean;
 }) {
-  // 660 컬럼(M01_CLAMP_BP 이상)에서는 컬럼이 이미 좌우 여백을 갖고 있다 —
-  // 여기서 px-5 를 또 주면 글자 줄만 20 씩 들어가 영상·시간바와 어긋난다.
-  const flush = useDeviceWidth() >= M01_CLAMP_BP;
   return (
     // 시스템 바를 끄는 몰입 모드에선 헤더 위 16px 여백도 함께 제거해 위로 붙인다.
     <header
-      className={`flex flex-none items-center ${flush ? "px-0" : "px-5"}`}
+      className="flex flex-none items-center px-5"
       style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
     >
       <div className="flex w-full items-center justify-between">
