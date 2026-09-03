@@ -1059,6 +1059,23 @@ export default function VariantA4({
       {/* 클라우드에서 녹화로 들어가면 영상 자리를 이벤트 목록이 대신한다.
           시트가 아니라 화면이라 여기서 갈린다 — 아래 하단 탭바는 이 블록
           바깥의 형제라 그대로 남는다(사용자 결정). */}
+      {/* 영상 화면 전체(클라우드 목록 · 다채널 · 단일)를 홈과 같은 폭 규격으로
+          묶는다 — 콘텐츠 700(좌우 패딩 20 포함, 실제 내용 660) 상한에 가운데
+          정렬이고, 남는 폭은 좌우 여백이다(사용자 지정 2026-09-03: "그 사이즈만큼,
+          영상쪽도 그렇게" · "왜 단일만 반영해놨어?"). 오른쪽 세로 패널을 뺀 뒤
+          (sidePanel=false) 864·1080 에서 화면이 프레임 폭을 끝까지 다 써서, 같은
+          기기의 홈 탭과 좌우 끝선이 어긋났다.
+
+          묶는 건 M01_CLAMP_BP(800) 이상에서만이다 — 750 은 그대로 둔다(사용자
+          지정: "750은 냅둬"). 그 아래는 예전처럼 프레임 폭을 다 쓴다.
+          하단 탭바·안드로이드 네비·상태바는 이 컬럼 밖이라 전체 폭 그대로다
+          (홈과 같다). */}
+      <div
+        className="mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden"
+        style={{
+          maxWidth: deviceW >= M01_CLAMP_BP ? `${M01_CONTENT_W}px` : undefined,
+        }}
+      >
       {cloudEventScreen ? (
         <CloudEventScreen
           initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
@@ -1130,23 +1147,6 @@ export default function VariantA4({
           fitState={fitState}
         />
       ) : (
-        // 단일 화면은 홈과 같은 폭 규격으로 묶는다 — 콘텐츠 700(좌우 패딩
-        // 20 포함, 실제 내용 660) 상한에 가운데 정렬이고, 남는 폭은 좌우
-        // 여백이다(사용자 지정 2026-09-03: "그 사이즈만큼, 영상쪽도 그렇게").
-        // 오른쪽 세로 패널을 뺀 뒤(sidePanel=false) 864·1080 에서 영상이 프레임
-        // 폭을 끝까지 다 써서, 같은 기기의 홈 탭과 좌우 끝선이 어긋났다.
-        //
-        // 묶는 건 M01_CLAMP_BP(800) 이상에서만이다 — 750 은 그대로 둔다
-        // (사용자 지정: "750은 냅둬"). 그 아래는 예전처럼 프레임 폭을 다 쓴다.
-        // 하단 탭바·안드로이드 네비·상태바는 이 컬럼 밖이라 전체 폭 그대로다
-        // (홈과 같다). 다채널(GridView)도 그대로 — 단일만이다.
-        <div
-          className="mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden"
-          style={{
-            maxWidth:
-              deviceW >= M01_CLAMP_BP ? `${M01_CONTENT_W}px` : undefined,
-          }}
-        >
         <ExpandedView
           index={expandedIndex}
           onBack={handleBack}
@@ -1174,8 +1174,8 @@ export default function VariantA4({
           onSpeedChange={setPlaybackRate}
           fitState={fitState}
         />
-        </div>
       )}
+      </div>
 
       <DateTimePickerSheet
         open={dateTimeOpen && !cloudEventScreen}
@@ -1346,6 +1346,10 @@ function GridView({
     gridAuto.hold();
   };
 
+  // 콘텐츠를 700 컬럼으로 묶은 폭인가(M01_CLAMP_BP) — 단일 화면(ExpandedView)과
+  // 같은 판정이다. 그리드 좌우 여백을 그 폭에서만 준다.
+  const clampContent = useDeviceWidth() >= M01_CLAMP_BP;
+
   const handlePointerUp = (e: React.PointerEvent) => {
     // 손을 뗀 시점부터 5초를 다시 센다. 아래 조기 반환들보다 먼저 놓아야
     // 붙잡은 상태가 남아 딤이 영영 안 꺼지는 일이 없다.
@@ -1389,6 +1393,13 @@ function GridView({
       <section
         ref={videoAreaRef}
         className="relative min-h-0 flex-1 touch-pan-y select-none overflow-hidden"
+        // 단일 화면 영상과 같은 이유로 좌우 20 을 들인다 — 묶은 폭에서
+        // 상단 바(시안명·실시간/녹화영상)와 끝선을 맞춘다.
+        style={
+          clampContent
+            ? { paddingLeft: "20px", paddingRight: "20px" }
+            : undefined
+        }
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
