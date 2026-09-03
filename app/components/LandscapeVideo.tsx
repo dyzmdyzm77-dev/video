@@ -106,6 +106,7 @@ export default function LandscapeVideo({
   topInset = 0,
   dimStyle,
   dimBlur = true,
+  dimTint = "rgba(102,102,102,0.4)",
   onMenu,
   centerControls,
   edgeInset,
@@ -188,6 +189,10 @@ export default function LandscapeVideo({
    *  GridSelectionOverlay 로도 그대로 넘어간다 — 한 화면의 알약과 원 버튼이
    *  따로 놀면 안 된다. */
   dimBlur?: boolean;
+  /** 딤 위 알약·원 버튼의 배경. 안 주면 회색 40%(#666666) 그대로 — A-4 만 검정
+   *  40% 를 넘긴다(사용자 지정 2026-09-03: "블랙에 40% 어때").
+   *  GridSelectionOverlay 로도 그대로 넘어간다. */
+  dimTint?: string;
   /** 딤의 메뉴 버튼(AI 옆). 안 주면 안 그린다 — A-2안 가로 전용. */
   onMenu?: () => void;
   /** 화면 한가운데에 얹을 컨트롤. 아래 시간바 대신 플레이어 버튼만 가운데
@@ -608,7 +613,7 @@ export default function LandscapeVideo({
         fontWeight: 700,
         lineHeight: `${pillFS}px`,
         color: "#FFFFFF",
-        backgroundColor: "rgba(102,102,102,0.4)",
+        backgroundColor: dimTint,
         ...blurStyle,
         textShadow: "0 0 4px rgba(0,0,0,0.6)",
       }}
@@ -633,7 +638,7 @@ export default function LandscapeVideo({
         lineHeight: `${pillFS}px`,
         color: "#FFFFFF",
         // 딤 위 버튼과 같은 규격(#666666 40% + blur) — A-3 이 쓰던 값을 셋이 같이 쓴다.
-        backgroundColor: "rgba(102,102,102,0.4)",
+        backgroundColor: dimTint,
         ...blurStyle,
         textShadow: "0 0 4px rgba(0,0,0,0.6)",
       }}
@@ -968,6 +973,7 @@ export default function LandscapeVideo({
       showZoom={showOverlayZoom}
       dimStyle={dimStyle}
       dimBlur={dimBlur}
+      dimTint={dimTint}
       onMenu={onMenu}
       edgeInset={edgeR}
       edgeInsetLeft={edgeL}

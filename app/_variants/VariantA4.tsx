@@ -210,6 +210,16 @@ function BatteryIcon({ className, level }: { className?: string; level: number }
   );
 }
 
+/** 딤 위에 얹는 것들(원 버튼 · 알약 · 플레이어 버튼)의 배경. A-4 는 검정 40%
+ *  다(사용자 지정 2026-09-03: "블랙에 40% 어때"). 같은 날 블러를 뺐는데
+ *  (dimBlur), 회색 40% 는 블러가 받쳐 주던 값이라 맨몸으로 두니 영상 무늬가
+ *  그대로 비쳤다 — 검정은 밝은 영상 위에서도 흰 아이콘·글자를 받쳐 준다.
+ *  #666666 40% → 여기. 다른 안(A-1·A-2·A-3)은 회색 그대로다. */
+const DIM_TINT = "rgba(0,0,0,0.4)";
+
+/** 눌린 상태 — 한 단계 진하게. 색만 바꾸고 관계는 그대로 유지한다. */
+const DIM_TINT_ACTIVE = "rgba(0,0,0,0.6)";
+
 /** 가로 딤이 여는 패널의 폭(px) — 아래에서 나오는 판은 높이가 대신이라 안 쓴다. */
 const LANDSCAPE_PANEL_W = 240;
 
@@ -662,6 +672,7 @@ export default function VariantA4({
           // 다채널 딤 버튼도 단일 화면과 같은 규격으로(사용자 지정 2026-08-14).
           dimStyle="a3"
           dimBlur={false}
+          dimTint={DIM_TINT}
           // AI·크게 보기를 시간바 아래 가운데 줄로 옮겼다 — 딤 좌우 아래 원은 끈다.
           showOverlayAi={false}
           showOverlayZoom={false}
@@ -798,7 +809,7 @@ export default function VariantA4({
                         // A-3 의 딤 버튼·시간바 알약은 전부 이 값 하나로 맞춘다.
                         // 뒤를 흐리던 blur(20) 은 뺐다(사용자 지정 2026-09-03:
                         // "블러를 빼") — 세로 딤 위 원 버튼·알약 공통이다.
-                        backgroundColor: "rgba(102,102,102,0.4)",
+                        backgroundColor: DIM_TINT,
                       }}
                     >
                       <img
@@ -1416,6 +1427,7 @@ function GridView({
           swapAiZoom
           dimStyle="a3"
           dimBlur={false}
+          dimTint={DIM_TINT}
         />
         <VideoFitToast text={gridFitToast} toastKey={gridFitToastKey} />
         <SectionSkeleton visible={gridLoading} cols={cols} rows={rows} />
@@ -2143,7 +2155,7 @@ function ExpandedView({
                 right: "16px",
                 width: "40px",
                 height: "40px",
-                backgroundColor: "rgba(102,102,102,0.4)",
+                backgroundColor: DIM_TINT,
                 pointerEvents: showControls ? "auto" : "none",
               }}
             >
@@ -2183,7 +2195,7 @@ function ExpandedView({
                   style={{
                     width: "40px",
                     height: "40px",
-                    backgroundColor: "rgba(102,102,102,0.4)",
+                    backgroundColor: DIM_TINT,
                   }}
                 >
                   <img
@@ -4157,7 +4169,7 @@ function ModePill({ mode }: { mode: "live" | "recording" }) {
         fontWeight: 700,
         lineHeight: "14px",
         color: "#FFFFFF",
-        backgroundColor: "rgba(102,102,102,0.4)",
+        backgroundColor: DIM_TINT,
         textShadow: "0 0 4px rgba(0,0,0,0.6)",
       }}
     >
@@ -4644,7 +4656,7 @@ function RecordingControls({
           color: overlay ? "#FFFFFF" : "#353535",
           // 흰 바탕(세로)에서는 배경을 안 깐다(사용자 지정 2026-08-18) — 단일
           // 시간바와 같은 규칙이다. 딤 위(가로)는 영상이 뒤에 있어 그대로 둔다.
-          backgroundColor: overlay ? "rgba(102,102,102,0.4)" : "transparent",
+          backgroundColor: overlay ? DIM_TINT : "transparent",
           ...(overlay
             ? {
                 // 버튼 규격을 따라간다면 끝까지 따라간다(사용자 지정
@@ -5082,8 +5094,8 @@ function PlayerButton({
         border: overlay ? "none" : "1px solid #D9D9D9",
         backgroundColor: overlay
           ? active
-            ? "rgba(102,102,102,0.6)"
-            : "rgba(102,102,102,0.4)"
+            ? DIM_TINT_ACTIVE
+            : DIM_TINT
           : active
             ? "#F2F2F2"
             : "#FFFFFF",

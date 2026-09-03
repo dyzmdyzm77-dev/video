@@ -299,6 +299,7 @@ export function GridSelectionOverlay({
   showZoom = true,
   dimStyle,
   dimBlur = true,
+  dimTint = "rgba(102,102,102,0.4)",
   topLeft,
   auto,
 }: {
@@ -369,6 +370,10 @@ export function GridSelectionOverlay({
    *  안 건드린다. dimStyle 안에 안 넣은 건, "a3 규격"은 크기·색·그림자를
    *  가리키는 이름이고 블러만 안별로 갈리기 때문이다. */
   dimBlur?: boolean;
+  /** 딤 위 원 버튼의 배경. 안 주면 회색 40%(#666666) 그대로 — A-4 만 검정 40%
+   *  를 넘긴다(사용자 지정 2026-09-03: "블랙에 40% 어때"). 블러를 뺀 자리라
+   *  회색으로는 영상 무늬가 그대로 비친다. dimBlur 와 짝이다. */
+  dimTint?: string;
   /** 딤 좌측 상단에 얹을 것. A-4 가 '● 실시간/녹화영상' 알약을 여기로 넣는다
    *  (사용자 지정 2026-08-31: 세로 다채널 딤도 단일·가로와 같게). 안 주면
    *  아무것도 안 그린다 — 다른 안은 예전 그대로다.
@@ -401,7 +406,7 @@ export function GridSelectionOverlay({
         width: "40px",
         height: "40px",
         border: "none",
-        backgroundColor: "rgba(102,102,102,0.4)",
+        backgroundColor: dimTint,
         ...(dimBlur
           ? {
               backdropFilter: "blur(20px)",
