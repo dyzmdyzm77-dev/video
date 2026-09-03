@@ -238,9 +238,15 @@ const DIM_TINT_ACTIVE = "rgba(0,0,0,0.8)";
  *  이 안에서만 쓰는 폭이라 여기 둔다. */
 const M01_CLAMP_BP = 800;
 
-/** 단일 화면 콘텐츠 컬럼의 최대 폭(px) — 홈 2단과 같은 값(HOME_W_2COL).
- *  좌우 패딩 20 을 포함한 바깥 폭이라 실제 내용은 660 이다. */
-const M01_CONTENT_W = 700;
+/** 영상 화면 콘텐츠 컬럼의 폭(px) — 홈 2단 컬럼의 '내용' 폭과 같은 값
+ *  (HOME_W_2COL 700 에서 좌우 패딩 20 을 뺀 320+20+320).
+ *
+ *  700 을 쓰고 안쪽 층마다 좌우 20 을 들이던 걸 660 하나로 바꿨다(사용자 지정
+ *  2026-09-03: "여백좀 빼고 그냥 660에 맞춰라"). 그 방식은 '끝까지 가는' 층
+ *  (영상·구분선·시간바·목록)마다 여백을 따로 달아야 해서, 새 층이 생길 때마다
+ *  같은 실수를 반복하게 돼 있었다. 660 컬럼에서는 아무것도 안 하면 맞는다 —
+ *  대신 글자 줄들이 갖고 있던 px-5 를 이 폭에서만 0 으로 돌린다. */
+const M01_CONTENT_W = 660;
 
 /** 가로 딤이 여는 패널의 폭(px) — 아래에서 나오는 판은 높이가 대신이라 안 쓴다. */
 const LANDSCAPE_PANEL_W = 240;
@@ -1078,6 +1084,9 @@ export default function VariantA4({
       >
       {cloudEventScreen ? (
         <CloudEventScreen
+          // 660 컬럼이 이미 좌우 여백을 갖고 있다 — 화면 자기 여백은 0 으로
+          // 돌려야 검색창·칩·검색 버튼이 상단 바와 같은 끝선에 선다.
+          edgeInset={deviceW >= M01_CLAMP_BP ? 0 : undefined}
           initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
           cameras={CAMERAS}
           // 이 안의 상단 바를 통째로 얹는다(사용자 지정 2026-09-01: "상단에
@@ -1393,19 +1402,6 @@ function GridView({
       <section
         ref={videoAreaRef}
         className="relative min-h-0 flex-1 touch-pan-y select-none overflow-hidden"
-        // 단일 화면 영상과 같은 이유로 좌우 20 을 들인다 — 묶은 폭에서
-        // 상단 바(시안명·실시간/녹화영상)와 끝선을 맞춘다.
-        //
-        // padding 이 아니라 margin 이다. 딤(GridSelectionOverlay)이 이 section 의
-        // absolute inset-0 자식이라, padding 으로 들이면 딤만 패딩 박스까지
-        // 퍼져 타일 밖 여백을 덮었다(사용자 지적 2026-09-03: "딤은 왜 영상에
-        // 딱 안맞고, 여백까지 가는거야"). margin 으로 넣으면 section 자체가
-        // 660 이 돼서 타일도 딤도 같은 자리다.
-        style={
-          clampContent
-            ? { marginLeft: "20px", marginRight: "20px" }
-            : undefined
-        }
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
@@ -1717,14 +1713,6 @@ function ExpandedView({
   // 콘텐츠를 700 컬럼으로 묶은 폭인가(M01_CLAMP_BP). 부모가 바깥 컬럼에 거는
   // 것과 같은 판정이다 — 영상 좌우 여백을 그 폭에서만 준다.
   const clampContent = useDeviceWidth() >= M01_CLAMP_BP;
-  // 묶은 폭에서 '끝까지 가는' 층들(구분선 · 시간바 · 목록 스트립)을 영상·상단 바와
-  // 같은 660 으로 들인다(사용자 지적 2026-09-03: "카메라 목록이랑 그쪽도 사이즈
-  // 맞춰야지"). px-5 를 가진 글자 줄들은 이미 660 안에 들어와 있어 안 건드린다.
-  // padding 이 아니라 margin 이다 — 안에 absolute inset-0 층(딤·스켈레톤)이 있는
-  // 자리가 있어서, 패딩으로 들이면 그 층만 다시 700 으로 퍼진다.
-  const insetX = clampContent
-    ? { marginLeft: "20px", marginRight: "20px" }
-    : undefined;
   // A-4(수정01)에는 오른쪽 세로 패널이 없다 — 어떤 비율이든 405 처럼 아래
   // 가로 스트립(영상 → 날짜 → 5버튼 → 시간바 → 탭 → 목록)으로 쌓는다
   // (사용자 지정 2026-09-03: "오른쪽 패널이 나오잖아. 그 사양 말고, 그냥 405처럼").
@@ -2074,17 +2062,6 @@ function ExpandedView({
       <div
         ref={sidePanel ? undefined : videoAreaRef}
         className="single-video-area px-0"
-        // 700 컬럼으로 묶은 폭(M01_CLAMP_BP 이상)에서는 영상도 좌우 20 을 들여
-        // 상단 바(시안명·실시간/녹화영상)와 좌우 끝선을 맞춘다(사용자 지적
-        // 2026-09-03: "시안명이랑, 실시간 녹화영상 탭쪽이랑 정렬을 맞춰야지").
-        // 상단 바·탭 줄·목록 스트립은 전부 px-5(20)를 갖고 있어 내용이 660 인데,
-        // 영상만 끝까지 나가 700 이었다.
-        // 안 묶은 폭에서는 예전 그대로 프레임 끝까지 간다(px-0).
-        style={
-          clampContent
-            ? { paddingLeft: "20px", paddingRight: "20px" }
-            : undefined
-        }
         // 사이드 패널일 땐 왼쪽 컬럼의 남는 세로를 영상이 한도 없이 가져간다
         // (16:9 상한 해제). 크기는 globals.css 의 [data-side] 가 잡는다.
         // 훅이 쓰는 data-fill 과 속성을 나눠 둔 건, 배치가 바뀔 때 React 가 건 값과
@@ -2356,7 +2333,7 @@ function ExpandedView({
   const dateBarBlock = (
     <>
       <div
-        className="relative flex flex-none items-center px-5"
+        className={`relative flex flex-none items-center ${clampContent ? "px-0" : "px-5"}`}
         style={{ height: "44px" }}
       >
         {/* 날짜·시간 선택 — 이 줄 맨 왼쪽, REC 칩보다 앞이다(사용자 지정
@@ -2440,10 +2417,7 @@ function ExpandedView({
         )}
         <RowSkeleton visible={videoLoading} />
       </div>
-      <div
-        className="h-px"
-        style={{ backgroundColor: "#EBEBEB", ...insetX }}
-      />
+      <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
     </>
   );
   const playerBlock = (
@@ -2510,10 +2484,7 @@ function ExpandedView({
           {/* 5버튼 아래 구분선. 사이드 패널에서도 이제는 그린다 — 예전엔 이 선
               바로 아래가 하단 탭바(위 테두리 있음)라 두 줄이 2px 로 붙어서 껐는데,
               지금은 그 아래에 시간바가 들어온다(사용자 지적: "왜 구분선은 없지"). */}
-          <div
-            className="h-px"
-            style={{ backgroundColor: "#EBEBEB", ...insetX }}
-          />
+          <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
         </>
       )}
     </>
@@ -2583,7 +2554,6 @@ function ExpandedView({
     <div
       className="relative flex flex-none flex-col"
       style={{
-        ...insetX,
         height: `${BAR_H_CLOSED}px`,
         // 아래 구분선 — 시간바와 탭의 경계(사용자 요청).
         // 색·두께는 A-2 탭 스트립 밑줄과 같은 #EBEBEB 1px.
@@ -2616,7 +2586,10 @@ function ExpandedView({
       {mode === "recording" ? (
         // 여백을 줄이 아니라 버튼에 준다 — A-2 와 완전히 같은 마크업이라 줄 높이
         // (14+15+14=43)도, 손이 닿는 넓이도 같다.
-        <div className="flex items-center px-5" style={{ gap: "20px" }}>
+        <div
+          className={`flex items-center ${clampContent ? "px-0" : "px-5"}`}
+          style={{ gap: "20px" }}
+        >
           {([
             { key: "list", label: "카메라 목록" },
             { key: "motion", label: "움직임 감지" },
@@ -2639,7 +2612,7 @@ function ExpandedView({
         </div>
       ) : (
         <div
-          className="relative flex flex-none items-center px-5"
+          className={`relative flex flex-none items-center ${clampContent ? "px-0" : "px-5"}`}
           // (좌우는 px-5 가 잡는다 — 인라인 padding 축약형을 쓰면 그걸 덮어쓴다.)
           // 위 STRIP_PAD · 아래 0 — 녹화 탭 줄과 같은 규칙(글자 위아래가 같다).
           style={{ paddingTop: `${STRIP_PAD}px`, paddingBottom: "0px" }}
@@ -2671,7 +2644,6 @@ function ExpandedView({
         // 값이고 그 값도 가로 한 줄에서만 쓰이므로, 둘의 조건이 서로 맞는다 —
         // 타일 크기는 예전 그대로다.
         style={{
-          ...insetX,
           paddingTop: `${STRIP_PAD}px`,
           paddingBottom: listWide ? `${STRIP_PAD}px` : "0px",
         }}
@@ -4302,10 +4274,13 @@ function AppHeader({
   setMode: (m: "live" | "recording") => void;
   chromeVisible: boolean;
 }) {
+  // 660 컬럼(M01_CLAMP_BP 이상)에서는 컬럼이 이미 좌우 여백을 갖고 있다 —
+  // 여기서 px-5 를 또 주면 글자 줄만 20 씩 들어가 영상·시간바와 어긋난다.
+  const flush = useDeviceWidth() >= M01_CLAMP_BP;
   return (
     // 시스템 바를 끄는 몰입 모드에선 헤더 위 16px 여백도 함께 제거해 위로 붙인다.
     <header
-      className="flex flex-none items-center px-5"
+      className={`flex flex-none items-center ${flush ? "px-0" : "px-5"}`}
       style={{ height: "56px", marginTop: chromeVisible ? "16px" : "0px" }}
     >
       <div className="flex w-full items-center justify-between">

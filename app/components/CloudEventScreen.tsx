@@ -211,6 +211,7 @@ export default function CloudEventScreen({
   onLive,
   onPick,
   header,
+  edgeInset = SPACE.s20,
 }: {
   /** 기준 시각. 이 시각이 속한 '오늘'의 이벤트를, 이 시각까지만 보여 준다. */
   initialMs: number;
@@ -233,6 +234,11 @@ export default function CloudEventScreen({
    *  물건이 한 화면에 둘이 되면 안 된다.
    *  안 넘기면 예전 그대로다(A-1 은 자기 상단 바가 LIVE/녹화라 안 넘긴다). */
   header?: React.ReactNode;
+  /** 이 화면 좌우 여백(px). 기본은 SPACE.s20(20) — 지금까지의 값이다.
+   *  A-4(수정01)처럼 바깥에서 이미 컬럼 폭을 좁혀 여백을 준 안은 0 을 넘긴다
+   *  (사용자 지정 2026-09-03: "여백좀 빼고 그냥 660에 맞춰라"). 안 그러면
+   *  검색창·칩·검색 버튼만 상단 바보다 20 씩 더 들어간다. */
+  edgeInset?: number;
 }) {
   const [query, setQuery] = useState("");
   // 어느 날 것을 볼지. null 이면 호출부가 준 기준 시각(=지금)을 그대로 쓴다.
@@ -369,7 +375,7 @@ export default function CloudEventScreen({
           때 스크롤을 0 으로 되돌린다. 엔터는 아래 '검색' 버튼과 같은 동작이다. */}
       <form
         className="flex-none"
-        style={{ padding: `${SPACE.s12}px ${SPACE.s20}px 0` }}
+        style={{ padding: `${SPACE.s12}px ${edgeInset}px 0` }}
         onSubmit={(e) => {
           e.preventDefault();
           runSearch();
@@ -427,7 +433,7 @@ export default function CloudEventScreen({
       <div
         className="flex-none overflow-x-auto"
         style={{
-          padding: `${SPACE.s2}px ${SPACE.s20}px ${SPACE.s12}px`,
+          padding: `${SPACE.s2}px ${edgeInset}px ${SPACE.s12}px`,
           scrollbarWidth: "none",
         }}
       >
@@ -465,7 +471,7 @@ export default function CloudEventScreen({
         <div
           className="flex-none border-t"
           style={{
-            padding: `${SPACE.s10}px ${SPACE.s20}px ${SPACE.s6}px`,
+            padding: `${SPACE.s10}px ${edgeInset}px ${SPACE.s6}px`,
             borderColor: COLOR.lineSubtle,
           }}
         >
@@ -516,7 +522,7 @@ export default function CloudEventScreen({
               gridTemplateColumns: `repeat(auto-fill, minmax(${TILE_MIN_W}px, 1fr))`,
               columnGap: `${SPACE.s8}px`,
               rowGap: `${SPACE.s14}px`,
-              padding: `${SPACE.s12}px ${SPACE.s20}px`,
+              padding: `${SPACE.s12}px ${edgeInset}px`,
             }}
           >
             {shown.map((e) => {
@@ -599,7 +605,7 @@ export default function CloudEventScreen({
       <div
         className="flex-none border-t"
         style={{
-          padding: `${SPACE.s12}px ${SPACE.s20}px`,
+          padding: `${SPACE.s12}px ${edgeInset}px`,
           borderColor: COLOR.lineSubtle,
         }}
       >
