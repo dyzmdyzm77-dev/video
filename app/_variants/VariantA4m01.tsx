@@ -116,6 +116,22 @@ const CAMERAS = [
   { label: "카메라 16", src: `${BASE}/cameras/cam1.gif` },
 ];
 
+/** 클라우드 계약은 카메라가 최대 8 대다(사용자 지정 2026-09-03: "클라우드의
+ *  경우는 카메라 최대 8개야"). NVR 은 위 16 대 그대로다. */
+const CLOUD_MAX_CAMERAS = 8;
+
+/** 지금 저장 방식에서 실제로 보이는 카메라 목록.
+ *
+ *  CAMERAS 를 직접 쓰지 말고 이 훅을 쓸 것 — 다채널 그리드·카메라 목록·화면
+ *  구성 시트·클라우드 녹화의 '카메라' 필터가 모두 같은 개수를 봐야 한다.
+ *  (SSR·첫 렌더는 useStorageMode 가 늘 nvr 을 주므로 하이드레이션은 안전하다.)
+ *  타입 자리(typeof CAMERAS)[number] 는 그대로 CAMERAS 를 봐도 된다 — 원소
+ *  모양은 같다. */
+function useCameras() {
+  const storage = useStorageMode();
+  return storage === "cloud" ? CAMERAS.slice(0, CLOUD_MAX_CAMERAS) : CAMERAS;
+}
+
 // 화면 개수(1~16)에서 cols×rows 를 고르는 건 layoutRules.ts 의
 // bestGridForCount(count, ratio) 다 — 영상 영역 비율에 따라 같은 개수도
 // 모양이 달라질 수 있어 고정 표를 안 쓴다.
@@ -339,6 +355,8 @@ export default function VariantA4({
   // 가로 16을 디폴트로 해"). 예전엔 둘 다 null(자동)이라 영상 영역 비율에서
   // 뽑은 수로 시작했는데, 기기마다 4~16 으로 들쭉날쭉해 UT 시작 화면이 달랐다.
   // 사용자가 시트에서 '자동'을 고르면 그때 다시 null 이 된다.
+  // 클라우드면 8 대까지만 — CAMERAS 대신 늘 이걸 쓴다(useCameras 주석).
+  const cameras = useCameras();
   const [userCounts, setUserCounts] = useState<{
     portrait: number | null;
     landscape: number | null;
@@ -442,12 +460,22 @@ export default function VariantA4({
 
   const autoCount = autoGridCount(gridRatio);
   autoCountSeen.current[orientKey] = autoCount;
-  const gridCount = userCounts[orientKey] ?? autoCount;
+  // 화면에 깔 칸 수는 카메라 대수를 넘지 않는다 — 클라우드는 8 대라(useCameras)
+  // 16 칸 배치를 그대로 쓰면 뒤 8 칸이 빈 타일로 남는다.
+  const gridCount = Math.min(
+    userCounts[orientKey] ?? autoCount,
+    cameras.length,
+  );
   // 시트의 두 슬라이더 시작값 — 방향마다 '지금 쓰이는 개수'.
   const sheetCounts = {
-    portrait: userCounts.portrait ?? autoCountSeen.current.portrait ?? autoCount,
-    landscape:
+    portrait: Math.min(
+      userCounts.portrait ?? autoCountSeen.current.portrait ?? autoCount,
+      cameras.length,
+    ),
+    landscape: Math.min(
       userCounts.landscape ?? autoCountSeen.current.landscape ?? autoCount,
+      cameras.length,
+    ),
   };
   const [mode, setMode] = useState<"live" | "recording">(
     () => readScreenState().mode,
@@ -649,7 +677,7 @@ export default function VariantA4({
 
   const layoutDims = bestGridForCount(gridCount, gridRatio);
   const pageSize = layoutDims.cols * layoutDims.rows;
-  const totalPages = Math.ceil(CAMERAS.length / pageSize);
+  const totalPages = Math.ceil(cameras.length / pageSize);
 
   // 폭 경계(620)를 넘나들며 레이아웃이 바뀌어 페이지 수가 줄면 현재 페이지를 범위 안으로.
   useEffect(() => {
@@ -690,7 +718,7 @@ export default function VariantA4({
         )}
         <div className="relative flex min-h-0 min-w-0 flex-1">
         <LandscapeVideo
-          cameras={CAMERAS}
+          cameras={cameras}
           expandedIndex={expandedIndex}
           page={currentPage}
           pageSize={pageSize}
@@ -997,6 +1025,7 @@ export default function VariantA4({
           open={sheetOpen}
           selected={userCounts}
           resolved={sheetCounts}
+          maxCount={cameras.length}
           onClose={() => setSheetOpen(false)}
           onPreview={(counts) => {
             setUserCounts(counts);
@@ -1104,7 +1133,7 @@ export default function VariantA4({
       {cloudEventScreen ? (
         <CloudEventScreen
           initialMs={playbackMs ?? now?.getTime() ?? Date.now()}
-          cameras={CAMERAS}
+          cameras={cameras}
           // 이 안의 상단 바를 통째로 얹는다(사용자 지정 2026-09-01: "상단에
           // 그 바는 유지해야지", "그 부분은 그대로 넣으라고"). 클라우드로 녹화에
           // 들어오면 안의 헤더가 통째로 빠지는 자리라, 장소명도 모드 토글도
@@ -1219,6 +1248,7 @@ export default function VariantA4({
         open={sheetOpen}
         selected={userCounts}
         resolved={sheetCounts}
+        maxCount={cameras.length}
         onClose={() => setSheetOpen(false)}
         onPreview={(counts) => {
           setUserCounts(counts);
@@ -1374,6 +1404,7 @@ function GridView({
   // 콘텐츠를 700 컬럼으로 묶은 폭인가(M01_CLAMP_BP) — 단일 화면(ExpandedView)과
   // 같은 판정이다. 그리드 좌우 여백을 그 폭에서만 준다.
   const clampContent = useDeviceWidth() >= M01_CLAMP_BP;
+  const cameras = useCameras();
 
   const handlePointerUp = (e: React.PointerEvent) => {
     // 손을 뗀 시점부터 5초를 다시 센다. 아래 조기 반환들보다 먼저 놓아야
@@ -1432,7 +1463,7 @@ function GridView({
           {Array.from({ length: totalPages }).map((_, pageIdx) => {
             const slice = Array.from(
               { length: pageSize },
-              (_, i) => CAMERAS[pageIdx * pageSize + i] ?? null,
+              (_, i) => cameras[pageIdx * pageSize + i] ?? null,
             );
             return (
               <div
@@ -1680,7 +1711,9 @@ function ExpandedView({
   // 해상도가 다를 수 있어, 눕힐지 말지를 그 기기 크기로 판단한다(immersive.ts).
   const zoomScope = useDeviceScope();
 
-  const cam = CAMERAS[index];
+  // 클라우드면 8 대까지만 — CAMERAS 대신 늘 이걸 쓴다(useCameras 주석).
+  const cameras = useCameras();
+  const cam = cameras[index];
   const [showControls, setShowControls] = useState(false);
   // 영상 맞춤 모드 — 딤(showControls) 상태의 화면맞춤 버튼으로 돌린다.
   //   fill    : 영상 뷰 영역을 가득 채운다(원본 비율 무시, 늘어남/찌그러짐).
@@ -2035,7 +2068,7 @@ function ExpandedView({
     }, 350);
     controlsAuto.keepAlive();
     if (dx < 0) {
-      if (index < CAMERAS.length - 1) onSelect(index + 1);
+      if (index < cameras.length - 1) onSelect(index + 1);
     } else {
       if (index > 0) onSelect(index - 1);
     }
@@ -2118,15 +2151,15 @@ function ExpandedView({
           <div
             className="absolute inset-0 flex transition-transform duration-300 ease-out"
             style={{
-              width: `${CAMERAS.length * 100}%`,
-              transform: `translateX(-${index * (100 / CAMERAS.length)}%)`,
+              width: `${cameras.length * 100}%`,
+              transform: `translateX(-${index * (100 / cameras.length)}%)`,
             }}
           >
-            {CAMERAS.map((c, i) => (
+            {cameras.map((c, i) => (
               <div
                 key={i}
                 className="relative h-full overflow-hidden"
-                style={{ width: `${100 / CAMERAS.length}%`, flexShrink: 0 }}
+                style={{ width: `${100 / cameras.length}%`, flexShrink: 0 }}
               >
                 <ExpandedSlide
                   c={c}
@@ -2697,7 +2730,7 @@ function ExpandedView({
           }
           {...(listWide ? dragScroll : {})}
         >
-          {CAMERAS.map((c, i) =>
+          {cameras.map((c, i) =>
             cameraTile(
               c,
               i,
@@ -2733,7 +2766,7 @@ function ExpandedView({
           className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           {...dragScroll}
         >
-          {CAMERAS.map((c, i) =>
+          {cameras.map((c, i) =>
             cameraTile(
               c,
               i,
@@ -4015,6 +4048,7 @@ function LayoutConfigSheet({
   resolved,
   onClose,
   onPreview,
+  maxCount,
 }: {
   open: boolean;
   /** 방향별로 사용자가 직접 고른 개수. null 이면 그 방향은 '자동'. */
@@ -4024,7 +4058,14 @@ function LayoutConfigSheet({
   onClose: () => void;
   /** 값이 바뀔 때마다 즉시 호출 — 화면이 바로 따라온다. */
   onPreview: (counts: OrientCounts) => void;
+  /** 고를 수 있는 최대 채널 수 — 카메라 대수다. 클라우드는 8(useCameras).
+   *  안 주면 GRID_COUNT_OPTIONS 끝까지. */
+  maxCount?: number;
 }) {
+  // 카메라보다 많은 칸은 고를 수 없다 — 골라 봐야 뒤가 빈 타일이다.
+  const options = maxCount
+    ? GRID_COUNT_OPTIONS.filter((n) => n <= maxCount)
+    : GRID_COUNT_OPTIONS;
   const [auto, setAuto] = useState(
     selected.portrait === null && selected.landscape === null,
   );
@@ -4170,13 +4211,16 @@ function LayoutConfigSheet({
               <input
                 type="range"
                 min={0}
-                max={GRID_COUNT_OPTIONS.length - 1}
+                max={options.length - 1}
                 step={1}
-                value={nearestGridCountIndex(counts[key])}
+                value={Math.min(
+                  nearestGridCountIndex(counts[key]),
+                  options.length - 1,
+                )}
                 onChange={(e) => {
                   const next = {
                     ...counts,
-                    [key]: GRID_COUNT_OPTIONS[Number(e.target.value)],
+                    [key]: options[Number(e.target.value)],
                   };
                   setAuto(false);
                   setCounts(next);
@@ -4193,8 +4237,8 @@ function LayoutConfigSheet({
                 className="flex items-center justify-between text-[12px]"
                 style={{ color: "#A4A4A4" }}
               >
-                <span>{GRID_COUNT_OPTIONS[0]}</span>
-                <span>{GRID_COUNT_OPTIONS[GRID_COUNT_OPTIONS.length - 1]}</span>
+                <span>{options[0]}</span>
+                <span>{options[options.length - 1]}</span>
               </div>
             </div>
           ))}
@@ -5377,11 +5421,12 @@ function LandscapeSidePanel({
   onClose: () => void;
 }) {
   const extra = Math.max(0, edge - LS_PANEL_PAD);
+  const cameras = useCameras();
   // 감지 탭은 녹화 + 단일에서만. 실시간엔 지나간 이벤트가 없고, 다채널은 어느
   // 카메라 기준인지 모호하다(예전에 썸네일이 0번 카메라로 나오던 그 문제).
   const canMotion = mode === "recording" && selectedIndex !== null;
   const showMotion = tab === "motion" && canMotion;
-  const cam = CAMERAS[selectedIndex ?? 0];
+  const cam = cameras[selectedIndex ?? 0];
   // 전체 폭은 부모가 준 값 그대로다. 바깥 여백(extra)은 이 안에서 빠지므로
   // 타일이 쓰는 폭은 full − extra 다.
   const full = contentWidth;
@@ -5502,7 +5547,7 @@ function LandscapeSidePanel({
           className="flex min-h-0 flex-1 items-stretch gap-2 overflow-x-auto overflow-y-hidden px-5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{ paddingTop: "12px", paddingBottom: "12px" }}
         >
-          {CAMERAS.map((c, i) => (
+          {cameras.map((c, i) => (
             <button
               key={c.label}
               type="button"
@@ -5541,7 +5586,7 @@ function LandscapeSidePanel({
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {CAMERAS.map((c, i) => (
+          {cameras.map((c, i) => (
             <button
               key={c.label}
               type="button"
