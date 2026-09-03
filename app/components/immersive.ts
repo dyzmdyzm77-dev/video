@@ -465,19 +465,40 @@ export function exitImmersive() {
   ds.immersive = "false";
   ds[ROTATED_FLAG] = "false";
   ds[BY_ROTATE_FLAG] = "false";
+  // 축소 뒤에 화면을 세로로 세울 기기인가. '지금 누워 있다'만으로는 부족하다 —
+  // 갤럭시 Z 폴드처럼 펼치면 원래 가로인 기기가 있어서다. 거기서는 확대가
+  // 눕히지도 않는데(shouldRotate false) 축소만 세워 버려, 누르지도 않은 회전이
+  // 일어났다(사용자 지적 2026-09-03, Z 폴드 8 펼침: "확대 버튼을 눌러서
+  // 확장되었다가, 다시 축소 버튼을 누르면 화면이 돌아가").
+  //
+  // 그래서 '눕는 게 확실히 이득인 기기'일 때만 세운다 — 폰처럼 가로가 영상을
+  // 위해 일부러 취한 자세인 경우다. 기준은 가로 자동 확대와 같다
+  // (AUTO_IMMERSIVE_GAIN): 폰(780×360)은 3.2 배로 통과, 폴드 펼침(864×648)·
+  // 태블릿은 1.8 배로 안 통과.
+  //
+  // 아래 두 곳이 같은 값을 본다 — 전체화면을 언제 나갈지와, 화면을 세울지.
+  // 둘이 어긋나면 '세우지도 않았는데 바만 계속 숨은' 상태가 된다.
+  const touchDevice = !(
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches
+  );
+  const nowW = window.innerWidth;
+  const nowH = window.innerHeight;
+  const portraitFit = fitArea(nowH, nowW);
+  const standUp =
+    touchDevice &&
+    nowW > nowH &&
+    portraitFit > 0 &&
+    fitArea(nowW, nowH) / portraitFit >= AUTO_IMMERSIVE_GAIN;
   // 확대에서 걸어 둔 잠금은 여기서 푼다. 다만 아래에서 '세로로 세우기' 잠금을
   // 새로 걸 수 있는데(폰이 아직 누워 있는 경우), 그건 이 뒤에 걸리므로 안 죽는다.
   unlockOrientation();
   {
     // 폰이 아직 누워 있으면 전체화면을 지금 나가지 않는다 — 나가면 바가 눕힌 변에
     // 뜬다. 아래 keepBarsHiddenUntilUpright 가 세워지는 순간 대신 나간다.
-    const touchNow = !(
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(hover: hover) and (pointer: fine)").matches
-    );
-    if (!(touchNow && window.innerWidth > window.innerHeight)) {
-      syncFullscreen(false);
-    }
+    // 세울 일이 없는 기기(폴드 펼침·태블릿)는 지금 바로 나간다 — 안 그러면
+    // 기다릴 '세워지는 순간'이 없어 바가 영영 숨은 채로 남는다.
+    if (!standUp) syncFullscreen(false);
   }
   // 축소하면 앱이 걸어 둔 회전은 무조건 푼다. 어떤 경로로 눕었든(확대가 눕혔든,
   // 회전으로 켜졌든, 중간에 폰을 눕혔다 세웠든) 축소 뒤에는 기기 방향 그대로
@@ -496,11 +517,7 @@ export function exitImmersive() {
   // 세로로 세워 둔다. 돌릴 방향은 기기 각도의 반대. 폰을 세우면
   // syncImmersiveWithLandscape 가 플래그를 끈다.
   {
-    const touch = !(
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(hover: hover) and (pointer: fine)").matches
-    );
-    if (touch && window.innerWidth > window.innerHeight) {
+    if (standUp) {
       const root = document.documentElement;
       // CSS 로 세워 두는 건 '앱만' 도는 것이라 OS 바는 눕힌 그대로 남는다
       // (사용자 지적 2026-08-18: "축소버튼 누르면 화면은 세로로 돌아가는데,
