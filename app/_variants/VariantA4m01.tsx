@@ -1717,6 +1717,14 @@ function ExpandedView({
   // 콘텐츠를 700 컬럼으로 묶은 폭인가(M01_CLAMP_BP). 부모가 바깥 컬럼에 거는
   // 것과 같은 판정이다 — 영상 좌우 여백을 그 폭에서만 준다.
   const clampContent = useDeviceWidth() >= M01_CLAMP_BP;
+  // 묶은 폭에서 '끝까지 가는' 층들(구분선 · 시간바 · 목록 스트립)을 영상·상단 바와
+  // 같은 660 으로 들인다(사용자 지적 2026-09-03: "카메라 목록이랑 그쪽도 사이즈
+  // 맞춰야지"). px-5 를 가진 글자 줄들은 이미 660 안에 들어와 있어 안 건드린다.
+  // padding 이 아니라 margin 이다 — 안에 absolute inset-0 층(딤·스켈레톤)이 있는
+  // 자리가 있어서, 패딩으로 들이면 그 층만 다시 700 으로 퍼진다.
+  const insetX = clampContent
+    ? { marginLeft: "20px", marginRight: "20px" }
+    : undefined;
   // A-4(수정01)에는 오른쪽 세로 패널이 없다 — 어떤 비율이든 405 처럼 아래
   // 가로 스트립(영상 → 날짜 → 5버튼 → 시간바 → 탭 → 목록)으로 쌓는다
   // (사용자 지정 2026-09-03: "오른쪽 패널이 나오잖아. 그 사양 말고, 그냥 405처럼").
@@ -2432,7 +2440,10 @@ function ExpandedView({
         )}
         <RowSkeleton visible={videoLoading} />
       </div>
-      <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+      <div
+        className="h-px"
+        style={{ backgroundColor: "#EBEBEB", ...insetX }}
+      />
     </>
   );
   const playerBlock = (
@@ -2499,7 +2510,10 @@ function ExpandedView({
           {/* 5버튼 아래 구분선. 사이드 패널에서도 이제는 그린다 — 예전엔 이 선
               바로 아래가 하단 탭바(위 테두리 있음)라 두 줄이 2px 로 붙어서 껐는데,
               지금은 그 아래에 시간바가 들어온다(사용자 지적: "왜 구분선은 없지"). */}
-          <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+          <div
+            className="h-px"
+            style={{ backgroundColor: "#EBEBEB", ...insetX }}
+          />
         </>
       )}
     </>
@@ -2569,6 +2583,7 @@ function ExpandedView({
     <div
       className="relative flex flex-none flex-col"
       style={{
+        ...insetX,
         height: `${BAR_H_CLOSED}px`,
         // 아래 구분선 — 시간바와 탭의 경계(사용자 요청).
         // 색·두께는 A-2 탭 스트립 밑줄과 같은 #EBEBEB 1px.
@@ -2656,6 +2671,7 @@ function ExpandedView({
         // 값이고 그 값도 가로 한 줄에서만 쓰이므로, 둘의 조건이 서로 맞는다 —
         // 타일 크기는 예전 그대로다.
         style={{
+          ...insetX,
           paddingTop: `${STRIP_PAD}px`,
           paddingBottom: listWide ? `${STRIP_PAD}px` : "0px",
         }}
@@ -2670,6 +2686,8 @@ function ExpandedView({
           setPlaybackMs={setPlaybackMs}
           cameraSrc={cam.src}
           wide={listWide}
+          // 영역이 이미 좌우 20 을 갖고 있다(insetX) — 안에서 또 주면 40 이 된다.
+          inset={clampContent ? 0 : undefined}
         />
       ) : (
       <div
@@ -2691,8 +2709,8 @@ function ExpandedView({
           }}
           className={
             listWide
-              ? "flex min-h-0 flex-1 gap-2 px-5 overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              : "grid grid-cols-2 gap-2 px-5"
+              ? `flex min-h-0 flex-1 gap-2 ${clampContent ? "px-0" : "px-5"} overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`
+              : `grid grid-cols-2 gap-2 ${clampContent ? "px-0" : "px-5"}`
           }
           {...(listWide ? dragScroll : {})}
         >
