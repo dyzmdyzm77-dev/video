@@ -1116,18 +1116,6 @@ export default function VariantA4({
         className="mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-white"
         style={{
           maxWidth: deviceW >= M01_CLAMP_BP ? `${M01_CONTENT_W}px` : undefined,
-          // 컬럼 밖은 흰색이라(사용자 지정: "그냥 흰색으로 해줘") 경계가 안
-          // 보인다 — 대신 좌우에 선을 긋는다(사용자 지정 2026-09-03: "아니면
-          // 선을 그어볼까?"). 색·두께는 화면 안 구분선과 같은 #EBEBEB 1px 이다.
-          // 폭에 포함되지 않게 border-box 로 두면 콘텐츠가 698 이 되므로,
-          // 선은 바깥으로 낸다(outline 이 아니라 좌우 border + 그만큼 넓힌 폭).
-          ...(deviceW >= M01_CLAMP_BP
-            ? {
-                borderLeft: "1px solid #EBEBEB",
-                borderRight: "1px solid #EBEBEB",
-                boxSizing: "content-box" as const,
-              }
-            : null),
         }}
       >
       {cloudEventScreen ? (
