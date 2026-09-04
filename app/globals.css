@@ -1200,15 +1200,24 @@ body {
     --dev3-h: var(--slot3-h, var(--device-h, 780px));
     --dev3-m: var(--slot3-m, var(--device-margin, 10px));
     --dev3-r: var(--slot3-r, var(--device-radius, 45px));
+    /* 자리별 배율 — 시안 배율에 '상대 밀도'를 곱한다.
+       비교하기도 결국 기기 크기를 나란히 보는 것이라(사용자 지정 2026-09-04:
+       "비교하기도 결국은 디바이스 사이즈 기준으로 봐야지"), 자리마다 1 CSS px
+       의 물리 길이가 다르면 그만큼 다르게 그려져야 한다 — S26(0.1855mm/dp)
+       옆에 폴드 접힘(0.1651)을 세우면 12% 차이다.
+       --slot{n}-rel 은 DeviceScaler 가 싣는다(없으면 1 = 시안과 같은 밀도). */
+    --dev1-scale: calc(var(--device-scale, 1) * var(--slot1-rel, 1));
+    --dev2-scale: calc(var(--device-scale, 1) * var(--slot2-rel, 1));
+    --dev3-scale: calc(var(--device-scale, 1) * var(--slot3-rel, 1));
     /* 목업 바깥(베젤 포함) 폭 — 배율까지 먹인 화면상 크기. */
     --dev1-outer: calc(
-      (var(--dev1-w) + var(--dev1-m) * 2) * var(--device-scale, 1)
+      (var(--dev1-w) + var(--dev1-m) * 2) * var(--dev1-scale)
     );
     --dev2-outer: calc(
-      (var(--dev2-w) + var(--dev2-m) * 2) * var(--device-scale, 1)
+      (var(--dev2-w) + var(--dev2-m) * 2) * var(--dev2-scale)
     );
     --dev3-outer: calc(
-      (var(--dev3-w) + var(--dev3-m) * 2) * var(--device-scale, 1)
+      (var(--dev3-w) + var(--dev3-m) * 2) * var(--dev3-scale)
     );
     /* 시안(맨 오른쪽) 목업의 왼쪽 변. --device-left 는 '화면' 왼쪽이라 베젤만큼 뺀다. */
     --dev0-bezel: calc(
@@ -1268,8 +1277,9 @@ body {
      자리 번호를 받아 --dev{n}-w 를 본다(deviceScope.ts). */
   html[data-compare="true"] .asis-frame {
     left: var(--dev1-left);
+    transform: scale(var(--dev1-scale));
     bottom: calc(
-      var(--device-bottom-pad, 40px) - var(--dev1-m) * var(--device-scale, 1)
+      var(--device-bottom-pad, 40px) - var(--dev1-m) * var(--dev1-scale)
     );
     padding: var(--dev1-m);
     border-radius: var(--dev1-r);
@@ -1281,8 +1291,9 @@ body {
   /* 3개 비교의 가장 바깥 자리 — 시안 왼쪽으로 두 칸(자리 1 의 왼쪽). */
   html[data-compare="true"] .asis-frame--2 {
     left: var(--dev2-left);
+    transform: scale(var(--dev2-scale));
     bottom: calc(
-      var(--device-bottom-pad, 40px) - var(--dev2-m) * var(--device-scale, 1)
+      var(--device-bottom-pad, 40px) - var(--dev2-m) * var(--dev2-scale)
     );
     padding: var(--dev2-m);
     border-radius: var(--dev2-r);
@@ -1295,8 +1306,9 @@ body {
   /* 4개 비교의 가장 바깥 자리 — 시안 왼쪽으로 세 칸(자리 2 의 왼쪽). */
   html[data-compare="true"] .asis-frame--3 {
     left: var(--dev3-left);
+    transform: scale(var(--dev3-scale));
     bottom: calc(
-      var(--device-bottom-pad, 40px) - var(--dev3-m) * var(--device-scale, 1)
+      var(--device-bottom-pad, 40px) - var(--dev3-m) * var(--dev3-scale)
     );
     padding: var(--dev3-m);
     border-radius: var(--dev3-r);

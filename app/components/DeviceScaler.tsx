@@ -29,7 +29,13 @@ function paneCount(root: HTMLElement) {
 // 묶어 계산하면 안 된다 — 폴드 펼침 옆에 360 을 세우면 덩어리 폭이 실제와 달라져
 // 가운데 정렬이 어긋나고 한쪽이 창 밖으로 밀린다. --dev{n}-* 은 CSS 가
 // '자리 값 → 없으면 시안 값' 으로 풀어 두므로 여기선 그대로 읽으면 된다.
-type Pane = { w: number; h: number; m: number };
+// rel = 이 자리 기기의 배율 / 시안 배율. 기기마다 1 CSS px 의 물리 길이가
+// 달라서(폴드 접힘 0.1651 vs S26 0.1855mm/dp) 같은 배율로 그리면 물리 크기가
+// 어긋난다(사용자 지적 2026-09-04: "비교하기도 결국은 디바이스 사이즈 기준으로
+// 봐야지"). 밀도를 모르는 자리(제너릭 폭)는 1 — 예전 그대로 시안과 같은 배율.
+// '실제 사이즈' 모드가 아니어도 쓴다: 그 모드는 절대 크기를 맞추는 것이고,
+// 이 값은 자리끼리의 상대 크기라 늘 맞아야 한다.
+type Pane = { w: number; h: number; m: number; rel: number };
 function panes(
   root: HTMLElement,
   cs: CSSStyleDeclaration,
@@ -38,16 +44,22 @@ function panes(
   margin: number,
 ): Pane[] {
   const n = paneCount(root);
-  const list: Pane[] = [{ w, h, m: margin }];
+  const list: Pane[] = [{ w, h, m: margin, rel: 1 }];
   const num = (name: string, fallback: number) => {
     const v = parseFloat(cs.getPropertyValue(name));
     return Number.isFinite(v) && v > 0 ? v : fallback;
   };
+  const mainMmDp = parseFloat(cs.getPropertyValue("--device-mm-per-dp")) || 0;
   for (let slot = 1; slot < n; slot++) {
+    const slotMmDp = parseFloat(cs.getPropertyValue(`--slot${slot}-mmdp`)) || 0;
+    const rel = mainMmDp > 0 && slotMmDp > 0 ? slotMmDp / mainMmDp : 1;
+    // CSS 가 자리 배율(--dev{n}-scale)을 만들 때 쓴다.
+    root.style.setProperty(`--slot${slot}-rel`, String(rel));
     list.push({
       w: num(`--dev${slot}-w`, w),
       h: num(`--dev${slot}-h`, h),
       m: num(`--dev${slot}-m`, margin),
+      rel,
     });
   }
   return list;
@@ -138,7 +150,7 @@ export default function DeviceScaler() {
           // 크기가 다를 수 있으니 '한 덩어리' 폭은 각 기기 바깥 폭을 다 더하고
           // 사이 간격을 얹어 구한다.
           const boxes = panes(root, cs, w, h, margin);
-          const outers = boxes.map((b) => (b.w + b.m * 2) * curScale);
+          const outers = boxes.map((b) => (b.w + b.m * 2) * curScale * b.rel);
           const gaps = COMPARE_GAP * (outers.length - 1);
           const groupW = outers.reduce((a, b) => a + b, 0) + gaps;
           const groupLeft = Math.max(
@@ -227,8 +239,10 @@ export default function DeviceScaler() {
       const gap = COMPARE_GAP * (boxes.length - 1);
       // 나란히 선 기기들이 전부 창에 들어오는 최대 배율(오버플로 방지 상한).
       // 가로는 폭의 합, 세로는 그중 가장 높은 기기가 기준이다.
-      const sumOuterW = boxes.reduce((a, b) => a + (b.w + b.m * 2), 0);
-      const maxOuterH = Math.max(...boxes.map((b) => b.h + b.m * 2));
+      // 자리 배율(rel)까지 먹인 크기로 잰다 — 안 그러면 밀도가 다른 기기를
+      // 세웠을 때 실제 그려지는 덩어리가 계산보다 커져 창 밖으로 밀린다.
+      const sumOuterW = boxes.reduce((a, b) => a + (b.w + b.m * 2) * b.rel, 0);
+      const maxOuterH = Math.max(...boxes.map((b) => (b.h + b.m * 2) * b.rel));
       const sFit = Math.min(
         MAX_SCALE,
         (window.innerHeight - TOP_CHROME) / maxOuterH,

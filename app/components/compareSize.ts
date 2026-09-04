@@ -47,13 +47,18 @@ export function applyCompareSizes() {
       else root.style.setProperty(name, v);
     };
     if (!p) {
-      (["w", "h", "r", "m"] as const).forEach((k) => set(k, null));
+      (["w", "h", "r", "m", "mmdp"] as const).forEach((k) => set(k, null));
       return;
     }
     set("w", `${land ? p.h : p.w}px`);
     set("h", `${land ? p.w : p.h}px`);
     set("r", `${p.r}px`);
     set("m", `${p.m}px`);
+    // 이 자리 기기의 '1dp 가 몇 mm 인가'. DeviceScaler 가 시안 밀도와 견줘
+    // 자리 배율(--slot{n}-rel)을 만든다 — 비교하기도 기기 크기 기준이라
+    // 밀도가 다르면 그만큼 다르게 그려져야 한다.
+    // 세로 기준으로 낸 값이라 눕혀도 그대로 쓴다(위 w/h 는 눕히지만 밀도는 아니다).
+    set("mmdp", p.mm ? String(p.mm / (p.w + p.m * 2)) : null);
   });
 }
 
