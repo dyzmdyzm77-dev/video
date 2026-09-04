@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DEVICES, punchFor } from "./devicePresets";
+import { DEVICES, presetMmPerDp, punchFor } from "./devicePresets";
 import { COMPARE_SLOTS, type CompareSlot } from "./compareTarget";
 
 // ============================================================================
@@ -58,7 +58,7 @@ export function applyCompareSizes() {
     // 자리 배율(--slot{n}-rel)을 만든다 — 비교하기도 기기 크기 기준이라
     // 밀도가 다르면 그만큼 다르게 그려져야 한다.
     // 세로 기준으로 낸 값이라 눕혀도 그대로 쓴다(위 w/h 는 눕히지만 밀도는 아니다).
-    set("mmdp", p.mm ? String(p.mm / (p.w + p.m * 2)) : null);
+    set("mmdp", presetMmPerDp(p) ? String(presetMmPerDp(p)) : null);
   });
 }
 

@@ -14,7 +14,13 @@ import {
   requestCompareSize,
   useCompareSize,
 } from "./compareSize";
-import { DEFAULT_PRESET, DEVICES, presetName } from "./devicePresets";
+import {
+  DEFAULT_PRESET,
+  DEVICES,
+  presetMmPerDp,
+  presetName,
+  presetSize,
+} from "./devicePresets";
 import { downloadShot } from "./captureShot";
 import {
   exitImmersive,
@@ -244,11 +250,9 @@ export default function DesktopVariantNav() {
     // 세로 기준으로 낸 밀도라 눕혀도 그대로 맞는다.
     // 크기(--device-w)보다 **먼저** 심는다 — 크기가 바뀌는 순간 DeviceScaler 가
     // 다시 재는데, 나중에 심으면 그 계산이 직전 기기의 밀도를 본다.
-    if (d.mm) {
-      root.style.setProperty(
-        "--device-mm-per-dp",
-        String(d.mm / (d.w + d.m * 2)),
-      );
+    const mmPerDp = presetMmPerDp(d);
+    if (mmPerDp) {
+      root.style.setProperty("--device-mm-per-dp", String(mmPerDp));
     } else {
       root.style.removeProperty("--device-mm-per-dp");
     }
@@ -668,10 +672,10 @@ export default function DesktopVariantNav() {
                   1 CSS px 의 물리 길이가 기기마다 달라서다.
                   mm 를 모르는 제너릭 폭은 예전처럼 뷰포트+비율만 적는다. */}
               <span className="dvn-label">
-                {d.mm ? (
+                {presetSize(d) ? (
                   <>
                     {d.sub || d.label}
-                    <span className="dvn-sub">{`${d.mm}mm · ${d.w}×${d.h}`}</span>
+                    <span className="dvn-sub">{`${presetSize(d)} · ${d.w}×${d.h}`}</span>
                   </>
                 ) : (
                   `${d.label}(${ratioText(d.w, d.h)})${d.sub ? ` · ${d.sub}` : ""}`

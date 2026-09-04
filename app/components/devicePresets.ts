@@ -32,6 +32,18 @@ export type DevicePreset = {
    *  933 이지만 몸체 세로는 둘 다 같다).
    *  안 적으면 DeviceScaler 의 폭 구간표(PHYS_ANCHORS)로 근사한다. */
   mm?: number;
+  /** 실기기 몸체 세로(mm). **적으면 배율을 이쪽으로 잡는다** — 가로가 아니라.
+   *
+   *  폴드 때문이다. 접힘·펼침은 몸체 세로가 같은데(123.9), 가로를 기준으로
+   *  잡으면 세로가 뷰포트 비율로 딸려와 127.5 vs 122.6 으로 갈렸다
+   *  (사용자 지적 2026-09-04: "폴드8 펼침이랑 접힘이랑 왜 물리적 사이즈가 달라?"
+   *  → "물리사이즈는 같잖아"). 같아야 하는 쪽을 기준으로 삼는다.
+   *
+   *  가로·세로를 둘 다 정확히 맞출 수는 없다 — 뷰포트 비율과 몸체 비율이 다르다.
+   *  뷰포트 세로가 브라우저 주소창·시스템 바를 뺀 값이라서다. 그래서 한 축만
+   *  기준이 되고 다른 축은 1~3% 어긋난다(목업을 늘리면 화면 안이 왜곡되므로
+   *  배율은 가로·세로 같은 값을 쓴다). */
+  mmH?: number;
 };
 
 export const DEVICES: DevicePreset[] = [
@@ -51,11 +63,11 @@ export const DEVICES: DevicePreset[] = [
   // 몸체 치수(사용자 제공): 접힘 81.9×123.9mm · 펼침 161.4×123.9mm.
   {
     w: 476, h: 752, r: 13, m: 10, label: "476px", sub: "Z Fold 8(접힘)",
-    chip: "폴드 접힘", mm: 81.9,
+    chip: "폴드 접힘", mm: 81.9, mmH: 123.9,
   },
   {
     w: 933, h: 704, r: 13, m: 10, label: "933px", sub: "Z Fold 8(펼침)",
-    chip: "폴드 펼침", mm: 161.4,
+    chip: "폴드 펼침", mm: 161.4, mmH: 123.9,
   },
   {
     w: 750, h: 832, r: 13, m: 10, label: "750px", sub: "Z Fold 8 울트라",
@@ -72,10 +84,20 @@ export const DEFAULT_PRESET = DEVICES.findIndex(
   (d) => d.label === "360px" && d.sub === "",
 );
 
+/** 이 기기의 '1dp 가 몇 mm 인가'. 몸체 세로를 아는 기기는 세로를 기준으로 잡고
+ *  (mmH 주석 참고), 아니면 가로를 쓴다. 둘 다 없으면 0 — 그때는 DeviceScaler 가
+ *  폭 구간표로 근사한다. */
+export const presetMmPerDp = (d: DevicePreset) =>
+  d.mmH ? d.mmH / (d.h + d.m * 2) : d.mm ? d.mm / (d.w + d.m * 2) : 0;
+
 /** 좌측 패널·툴팁에 쓰는 한 줄 이름 — "Z Fold 8(펼침) · 161.4mm · 933×704".
  *  실기기 크기를 아는 프리셋은 그걸 먼저 쓰고 뷰포트를 뒤에 붙인다. */
+export const presetSize = (d: DevicePreset) =>
+  d.mm && d.mmH ? `${d.mm}×${d.mmH}mm` : d.mm ? `${d.mm}mm` : null;
+
 export const presetName = (d: DevicePreset) => {
-  const size = d.mm ? `${d.mm}mm · ${d.w}×${d.h}` : d.label;
+  const phys = presetSize(d);
+  const size = phys ? `${phys} · ${d.w}×${d.h}` : d.label;
   return d.sub ? `${d.sub} · ${size}` : size;
 };
 
