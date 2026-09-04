@@ -103,7 +103,20 @@ const ratioText = (w: number, h: number) => {
     if (Math.abs(a / b - t) < t * 0.008) return `${a}:${b}`;
   }
   const g = gcd(w, h) || 1;
-  return `${w / g}:${h / g}`;
+  const ew = w / g;
+  const eh = h / g;
+  if (ew <= 20 && eh <= 20) return `${ew}:${eh}`;
+  // 약분해도 큰 수면(폴드 접힘 476×752 → 119:188) 비율로 안 읽힌다. 20 이하
+  // 정수비 중 가장 가까운 것을 근사로 준다 — DeviceResizer 와 같은 방식이다.
+  let best = { a: 1, b: 1, err: Infinity };
+  for (let b = 1; b <= 20; b++) {
+    for (let a = 1; a <= 20; a++) {
+      if (gcd(a, b) !== 1) continue;
+      const err = Math.abs(a / b - t);
+      if (err < best.err - 1e-9) best = { a, b, err };
+    }
+  }
+  return `≈${best.a}:${best.b}`;
 };
 
 export default function DesktopVariantNav() {
