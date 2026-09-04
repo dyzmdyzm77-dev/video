@@ -239,6 +239,19 @@ export default function DesktopVariantNav() {
     const root = document.documentElement;
     // 가로 모드면 프리셋도 눕혀서 적용한다 — 안 그러면 세로로 되돌아간다.
     const land = root.dataset.landscape === "true";
+    // 실기기 몸체 폭이 적힌 프리셋은 '1dp 가 몇 mm 인가'를 그대로 넘긴다 —
+    // '실제 사이즈로 보기'가 폭 구간표 대신 이 값을 쓴다(DeviceScaler).
+    // 세로 기준으로 낸 밀도라 눕혀도 그대로 맞는다.
+    // 크기(--device-w)보다 **먼저** 심는다 — 크기가 바뀌는 순간 DeviceScaler 가
+    // 다시 재는데, 나중에 심으면 그 계산이 직전 기기의 밀도를 본다.
+    if (d.mm) {
+      root.style.setProperty(
+        "--device-mm-per-dp",
+        String(d.mm / (d.w + d.m * 2)),
+      );
+    } else {
+      root.style.removeProperty("--device-mm-per-dp");
+    }
     root.style.setProperty("--device-w", `${land ? d.h : d.w}px`);
     root.style.setProperty("--device-h", `${land ? d.w : d.h}px`);
     root.style.setProperty("--device-radius", `${d.r}px`);

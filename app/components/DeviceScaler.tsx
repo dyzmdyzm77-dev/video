@@ -58,7 +58,7 @@ const TOP_CHROME = 92;
 
 // "실제 사이즈" 환산용 상수.
 // 기기 쪽: 폭 구간별 기준 실기기의 목업 윤곽(dp + 2·margin) ↔ 몸체 물리 폭(mm).
-//   360~ = Galaxy S25(70.5mm), 750~ = Z Fold 7 펼침(143.2mm),
+//   360~ = Galaxy S26(70.5mm), 750~ = Z Fold 7 펼침(143.2mm),
 //   1080 = Z TriFold 펼침(214.1mm).
 // 구간 안에서는 기준 기기의 밀도를 그대로 쓴다(= 기기를 옆으로만 늘린 것으로
 // 취급). 그래서 드래그로 폭을 바꿔도 세로 물리 크기는 구간 내에서 일정하고,
@@ -176,9 +176,18 @@ export default function DeviceScaler() {
       if (root.dataset.actualSize === "true") {
         // 자동 감지(Apple 패널 식별 또는 96dpi 근사)한 모니터 밀도로 환산한다.
         const cssPxPerMm = detectPxPerMm().pxPerMm;
+        // 프리셋에 실기기 몸체 폭이 적혀 있으면 그 밀도를 그대로 쓴다
+        // (devicePresets 의 mm → DesktopVariantNav 가 --device-mm-per-dp 로 넘긴다).
+        // 폭 구간표는 그게 없는 경우(제너릭 폭·드래그 리사이즈)의 근사다 —
+        // 구간표만 쓰면 세 앵커의 밀도가 거의 같아(0.1855~0.1878mm/dp) 모든
+        // 기기가 한 밀도로 환산돼, 폴드처럼 화면 밀도가 다른 기기가 틀어진다.
+        const mmPerDp =
+          parseFloat(cs.getPropertyValue("--device-mm-per-dp")) || 0;
         // 배율은 구간 기준 기기에서만 결정되므로 구간 내에서 상수다.
         const a = anchorFor(w);
-        const scale = (a.mm * cssPxPerMm) / a.outerDp;
+        const scale = mmPerDp
+          ? mmPerDp * cssPxPerMm
+          : (a.mm * cssPxPerMm) / a.outerDp;
         root.style.setProperty("--device-scale", String(scale));
         // 치수 눈금자(DeviceResizer)가 mm 라벨로 쓰도록 현재 몸체 폭을 노출한다.
         root.style.setProperty(
