@@ -656,9 +656,9 @@ export default function VariantA3({
           onPageChange={setCurrentPage}
           onTitleClick={() => setVariantPickerOpen(true)}
           mode={mode}
-          // 시간바가 한가운데에 현재 시각을 띄우는 화면(단일 녹화)에서는 알약에서
-          // 시각을 뺀다(사용자 지정 2026-08-26).
-          hideStatusClock={mode === "recording" && expandedIndex !== null}
+          // 시간바가 한가운데에 현재 시각을 띄우는 화면에서는 알약에서 시각을
+          // 뺐었는데(사용자 지정 2026-08-26), 그 시간바를 뺐으므로 다시 알약이
+          // 시각을 맡는다 — 안 그러면 가로에서 시각을 볼 데가 없다.
           // 알약 높이 — 시간바 클록이 앉는 자리. A-3 은 컨트롤이 시간바 + 아이콘
           // 줄이라 바닥에서 73 이다(A-2 는 시간바만이라 35).
           statusRaise={73}
@@ -695,7 +695,13 @@ export default function VariantA3({
                 paddingRight: `${LANDSCAPE_CONTROLS_PAD}px`,
               }}
             >
-              {mode === "recording" && expandedIndex !== null && (
+              {/* 시간바는 가로(확대)에서도 뺐다(사용자 지정 2026-09-04: "확대
+                  모드일때도 시간바 없애야할듯? 가로모드일떄"). 세로 단일에서 뺀
+                  것과 짝을 맞춘다 — 한 안에서 세로엔 없고 가로엔 있으면 같은
+                  화면의 두 방향이 서로 다른 물건이 된다.
+                  아래 아이콘 줄(AI·메뉴·감지·축소)은 그대로 남는다.
+                  지우지 않고 안 그리게만 둔다 — 되돌리기가 한 줄이다. */}
+              {false && mode === "recording" && expandedIndex !== null && (
               <RecordingControls
                 overlay
                 timelineOnly
