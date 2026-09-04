@@ -1097,7 +1097,12 @@ export default function VariantA3({
         onClose={() => setVariantPickerOpen(false)}
       />
 
-      {/* 하단 탭바 — 라이브·녹화 모드 모두에서 표시. */}
+      {/* 하단 탭바(홈·경비·영상·전체) — 단일 화면에서는 안 그린다(사용자 지정
+          2026-09-04: "A-3은 단일화면 오면 하단 탭도 없애보자"). 상단 바·시간바를
+          뺀 것과 같은 방향이다 — 단일은 영상과 그 아래 목록/감지만 남긴다.
+          나가는 길은 딤 왼쪽 위 뒤로가기다.
+          다채널·클라우드 화면은 그대로 그린다. A-3 만이다. */}
+      {expandedIndex === null && (
       <nav className="mx-auto mt-auto w-full border-t border-[#EBEBEB] bg-white">
         <ul
           className="mx-auto grid w-full max-w-[480px] grid-cols-4 items-center"
@@ -1109,6 +1114,7 @@ export default function VariantA3({
           <TabItem iconSrc={`${BASE}/nav/menu.svg`} label="전체" />
         </ul>
       </nav>
+      )}
 
     </div>
 
