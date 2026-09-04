@@ -1977,18 +1977,57 @@ function ExpandedView({
                   "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
               }}
             />
-            {/* 카메라 이름 — 딤 왼쪽 위(사용자 지정 2026-08-14). 영상 위 라벨을
-                여기로 옮긴 것이라, 딤을 켤 때만 보인다. 위 그라데이션 스크림
-                위라 흰 글씨로 읽힌다. */}
+            {/* 뒤로가기 + 카메라 이름 — 딤 왼쪽 위(이름은 사용자 지정
+                2026-08-14, 뒤로가기는 2026-09-04: "그거 앞에 뒤로가기 버튼좀
+                넣어줘"). 영상 위 라벨을 여기로 옮긴 것이라 딤을 켤 때만 보인다.
+                위 그라데이션 스크림 위라 흰 글씨로 읽힌다.
+                A-3 만이다 — A-4 쪽은 이 자리가 '● 실시간/녹화영상' 알약이라
+                뒤로가기를 놓을 자리가 아니다.
+
+                누르면 다채널로 돌아간다(onBack) — 이 화면에 들어온 길이 타일
+                탭이라 그 반대로 나가는 게 맞다. 영상 탭으로 새어 나가면 딤만
+                꺼지므로 클릭을 여기서 멈춘다.
+
+                화살표는 가로 딤이 쓰는 그 에셋(Property 1=Solid.svg)이다.
+                파일 색이 #757575 라 img 로 넣으면 옆 흰 글자와 어긋난다 —
+                마스크로 찍어 흰색을 입힌다(LandscapeVideo 와 같은 방식). */}
             <div
-              className="absolute text-[18px] font-bold leading-none text-white"
+              className="absolute flex items-center"
               style={{
-                top: "20px",
+                top: "12px",
                 left: "16px",
+                gap: "4px",
                 textShadow: "0 0 4px rgba(0,0,0,0.6)",
               }}
             >
-              {cam.label}
+              <button
+                type="button"
+                aria-label="뒤로가기"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onBack();
+                }}
+                className="flex h-8 w-8 flex-none items-center justify-center"
+              >
+                <span
+                  aria-hidden
+                  className="inline-block h-7 w-7 bg-white"
+                  style={{
+                    WebkitMaskImage: `url("${BASE}/Property 1=Solid.svg")`,
+                    maskImage: `url("${BASE}/Property 1=Solid.svg")`,
+                    WebkitMaskRepeat: "no-repeat",
+                    maskRepeat: "no-repeat",
+                    WebkitMaskPosition: "center",
+                    maskPosition: "center",
+                    WebkitMaskSize: "contain",
+                    maskSize: "contain",
+                    filter: "drop-shadow(0 0 4px rgba(0,0,0,0.6))",
+                  }}
+                />
+              </button>
+              <span className="text-[18px] font-bold leading-none text-white">
+                {cam.label}
+              </span>
             </div>
             <div
               className="absolute flex items-center"
