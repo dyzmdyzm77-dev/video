@@ -927,6 +927,19 @@ body {
     color: #000000;
   }
 
+  /* 실기기 프리셋은 두 줄이다 — 위는 기기 이름, 아래는 '실제 크기 · 뷰포트'.
+     한 줄로 붙이면 좁은 패널(약 165px)에서 잘린다(사용자 지정 2026-09-04:
+     표시 기준은 실제 값, 뷰포트는 따로). 목록 항목은 가운데 정렬이라
+     두 줄이 되면 아이콘 숫자가 가운데로 오는데, 그대로 두면 맞는다. */
+  .desktop-variant-nav .dvn-sub {
+    display: block;
+    margin-top: 1px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    opacity: 0.6;
+  }
+
   /* 해상도 짧은 토큰은 숫자(360/1080 등)라 자간만 좁힌다 — 크기는 공통 12 다. */
   .desktop-variant-nav .dvn-icon-num {
     letter-spacing: -0.02em;

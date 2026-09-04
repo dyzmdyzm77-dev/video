@@ -132,9 +132,9 @@ export default function DeviceResizer() {
         const mm = parseFloat(cs.getPropertyValue("--device-phys-mm")) || 0;
         ruler.style.left = `${box.left - margin * scale}px`;
         ruler.style.width = `${box.width + margin * scale * 2}px`;
-        label.textContent = ratio
-          ? `${mm.toFixed(1)}mm · ${ratio}`
-          : `${mm.toFixed(1)}mm`;
+        // 실제 사이즈 모드는 물리 크기가 기준이다 — mm 를 앞에 두고 뷰포트를
+        // 뒤에 병기한다(사용자 지정 2026-09-04). 비율은 뷰포트 쪽 성질이라 뺐다.
+        label.textContent = `${mm.toFixed(1)}mm · ${w}×${h}`;
       } else {
         ruler.style.left = `${box.left}px`;
         ruler.style.width = `${box.width}px`;

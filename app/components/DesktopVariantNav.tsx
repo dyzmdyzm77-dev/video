@@ -661,9 +661,21 @@ export default function DesktopVariantNav() {
               <span className="dvn-icon dvn-icon-num" aria-hidden>
                 {d.w}
               </span>
+              {/* 표시 기준은 실기기 크기(mm)다 — 몸체 폭을 아는 프리셋은 그걸
+                  앞에 세우고, 뷰포트(가로×세로)는 기기마다 따로 뒤에 적는다
+                  (사용자 지정 2026-09-04: "표시 기준은 실제 값으로 하고, 뷰포트는
+                  각 디바이스별로 따로 표시"). 둘은 서로 환산되지 않는다 —
+                  1 CSS px 의 물리 길이가 기기마다 달라서다.
+                  mm 를 모르는 제너릭 폭은 예전처럼 뷰포트+비율만 적는다. */}
               <span className="dvn-label">
-                {d.label}({ratioText(d.w, d.h)})
-                {d.sub ? ` · ${d.sub}` : ""}
+                {d.mm ? (
+                  <>
+                    {d.sub || d.label}
+                    <span className="dvn-sub">{`${d.mm}mm · ${d.w}×${d.h}`}</span>
+                  </>
+                ) : (
+                  `${d.label}(${ratioText(d.w, d.h)})${d.sub ? ` · ${d.sub}` : ""}`
+                )}
               </span>
             </button>
           </li>

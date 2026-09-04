@@ -72,9 +72,12 @@ export const DEFAULT_PRESET = DEVICES.findIndex(
   (d) => d.label === "360px" && d.sub === "",
 );
 
-/** 좌측 패널·툴팁에 쓰는 한 줄 이름 — "Z Fold 8(펼침) · 864px". */
-export const presetName = (d: DevicePreset) =>
-  d.sub ? `${d.sub} · ${d.label}` : d.label;
+/** 좌측 패널·툴팁에 쓰는 한 줄 이름 — "Z Fold 8(펼침) · 161.4mm · 933×704".
+ *  실기기 크기를 아는 프리셋은 그걸 먼저 쓰고 뷰포트를 뒤에 붙인다. */
+export const presetName = (d: DevicePreset) => {
+  const size = d.mm ? `${d.mm}mm · ${d.w}×${d.h}` : d.label;
+  return d.sub ? `${d.sub} · ${size}` : size;
+};
 
 /** 펀치홀 카메라 위치 — 실기기처럼 폭 구간으로 갈린다(globals.css 가 참조). */
 export const punchFor = (w: number) =>
