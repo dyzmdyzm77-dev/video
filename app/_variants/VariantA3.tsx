@@ -1998,7 +1998,14 @@ function ExpandedView({
                 left: "16px",
                 gap: "4px",
                 textShadow: "0 0 4px rgba(0,0,0,0.6)",
+                // 딤 층 전체가 pointer-events:none 이라 여기서 다시 켜야 버튼이
+                // 눌린다(안 켜면 클릭이 뒤 영상으로 그대로 지나가 딤만 꺼진다).
+                // 딤이 꺼져 있을 땐 none — 안 보이는 버튼이 영상 탭을 먹으면 안 된다.
+                // 오른쪽 위 아이콘 줄과 같은 규칙이다.
+                pointerEvents: showControls ? "auto" : "none",
               }}
+              // 버튼을 누르고 있는 동안 딤을 붙잡고, 떼는 순간부터 5초를 다시 센다.
+              {...controlsAuto.holdProps}
             >
               <button
                 type="button"
