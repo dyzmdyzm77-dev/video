@@ -239,6 +239,11 @@ function shouldRotate(scope: DeviceScope = 0): boolean {
 // '영상이 커지느냐'는 하나의 기준으로 갈리는 것이다(AUTO_IMMERSIVE_GAIN).
 const BY_ROTATE_FLAG = "immersiveByRotate";
 
+/** 방향 전환으로 볼 면적 오차 허용치. 회전은 가로세로만 맞바뀌어 면적이 그대로고
+ *  (476×752 → 752×476 = 1.00 배), 폴더블 펼침은 화면이 통째로 커진다(1.83 배).
+ *  주소창이 뜨고 지는 정도(±10~15%)는 회전으로 봐야 하므로 0.25 로 둔다. */
+const AREA_KEEP_TOLERANCE = 0.25;
+
 /** 확대를 켜고 끌지 판단할 때 쓰는 '기기 자체의 방향'.
  *
  *  readDeviceWide 와 다르다. 그쪽은 '사용자 눈에 가로로 보이는가'라, 확대가
@@ -314,8 +319,24 @@ export function syncImmersiveWithLandscape() {
   const prev = lastState;
   lastState = { w, h, wide };
   if (prev === null || prev.wide === wide) return;
+  // '눕힌 것'인가 '화면이 커진 것'인가. 폴더블은 펼치면 가로세로가 뒤집히면서
+  // 화면 자체가 넓어지는데, 그건 회전이 아니라 다른 화면이 된 것이다 —
+  // 접힘 화면 그대로 커지길 기대하는데 확대로 들어가 버렸다(사용자 지적
+  // 2026-09-04, Z 폴드 8: "접어있다가 펼치니까 ... 확대 버튼 누른 것 처럼 바뀌네").
+  //
+  // 회전은 면적이 그대로다(476×752 → 752×476, 1.00배). 펼침은 1.83 배다.
+  // 그래서 면적이 크게 달라지면 회전으로 안 본다.
+  //
+  // 눕힘 이득(landscapeIsMuchBetter)만으로는 못 거른다 — 펼침 933×704 는
+  // 1.76 배라 통과 못 하지만, 주소창이 떠서 높이가 660 아래로만 내려가면
+  // 2.0 을 넘어 켜진다. 실기기에서 걸린 게 그 경우다(높이 660 = 경계).
+  const area = w * h;
+  const prevArea = prev.w * prev.h;
+  const rotated =
+    prevArea > 0 && Math.abs(area / prevArea - 1) <= AREA_KEEP_TOLERANCE;
   if (wide) {
     if (readImmersive()) return;
+    if (!rotated) return;
     // '눕혔다'가 아니라 '원래 방향으로 돌아왔다'면 확대할 일이 아니다.
     // 데스크톱 미리보기에는 가로로 긴 프리셋(1080×780 등)이 있는데, 그걸
     // 세로로 돌렸다가 되돌리면 '세로 → 가로' 전환으로 보여 확대가 켜졌다
