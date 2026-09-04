@@ -1292,7 +1292,20 @@ function GridView({
   // 화면 맞춤 상태. 회전(가로 전환)에도 유지돼야 해서 VariantA 가 들고 내려 준다.
   fitState: ReturnType<typeof useVideoFit>;
 }) {
-  const [gridSelected, setGridSelected] = useState(false);
+  // 화면에 들어오면 딤을 켠 채로 시작한다(사용자 지정 2026-09-04: "단일이든
+  // 다채널이든 딱 전환되서 들어가면 딤을 무조건 띄워"). 들어온 직후가 무엇을
+  // 할 수 있는지 보여 줄 자리라서다 — 5초 뒤에는 useAutoHide 가 알아서 걷는다.
+  // 다채널 ↔ 단일, 세로 ↔ 확대는 뷰가 다시 마운트돼 이 초기값으로 뜬다.
+  const [gridSelected, setGridSelected] = useState(true);
+  // 실시간 ↔ 녹화는 같은 뷰 안에서 일어나 마운트가 안 되므로 여기서 다시 띄운다.
+  const gridModeFirst = useRef(true);
+  useEffect(() => {
+    if (gridModeFirst.current) {
+      gridModeFirst.current = false;
+      return;
+    }
+    setGridSelected(true);
+  }, [mode]);
   // 다채널 타일 맞춤 모드 — 딤 상태의 '화면 맞춤' 버튼으로 돌린다. 순서·아이콘·
   // 문구·기본값은 단일 화면과 같은 곳(components/videoFit.ts)에서 온다.
   // 상태 자체는 VariantA 가 들고 있다(회전해도 유지되도록) — 여기선 받아 쓴다.
@@ -1634,7 +1647,17 @@ function ExpandedView({
   const zoomScope = useDeviceScope();
 
   const cam = CAMERAS[index];
-  const [showControls, setShowControls] = useState(false);
+  // 단일 화면도 들어오자마자 딤을 띄운다 — 다채널과 같은 규칙이다
+  // (사용자 지정 2026-09-04, GridView 의 gridSelected 주석 참고).
+  const [showControls, setShowControls] = useState(true);
+  const modeFirst = useRef(true);
+  useEffect(() => {
+    if (modeFirst.current) {
+      modeFirst.current = false;
+      return;
+    }
+    setShowControls(true);
+  }, [mode]);
   // 영상 맞춤 모드 — 딤(showControls) 상태의 화면맞춤 버튼으로 돌린다.
   //   fill    : 영상 뷰 영역을 가득 채운다(원본 비율 무시, 늘어남/찌그러짐).
   //   contain : 원본 비율 그대로, 빈 공간은 검정으로 채운다(레터박스/필러박스).

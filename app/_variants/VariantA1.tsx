@@ -884,7 +884,7 @@ function GridView({
   onPlay,
   onSpeedChange,
   videoAreaRef,
-  initialDim = false,
+  initialDim = true,
   fitState,
 }: {
   onExpand: (i: number) => void;
@@ -919,7 +919,9 @@ function GridView({
   // 이 섹션(헤더·하단 컨트롤 제외 나머지)에 단다 — 크기가 cols×rows 선택과
   // 무관해서(그 안을 나누기만 하므로) 순환 의존이 없다.
   videoAreaRef?: React.RefObject<HTMLElement | null>;
-  // 마운트 시 딤을 켠 채로 시작할지. 영상 탭 첫 진입에서만 true.
+  // 마운트 시 딤을 켠 채로 시작할지. 기본이 true 다 — 어느 화면이든 들어오면
+  // 딤을 띄운다(사용자 지정 2026-09-04: "단일이든 다채널이든 딱 전환되서
+  // 들어가면 딤을 무조건 띄워"). 예전엔 영상 탭 첫 진입에서만 켰다.
   initialDim?: boolean;
   // 화면 맞춤 상태. 회전(가로 전환)에도 유지돼야 해서 VariantA1 이 들고 내려 준다.
   fitState: ReturnType<typeof useVideoFit>;
