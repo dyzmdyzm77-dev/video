@@ -5113,13 +5113,21 @@ function RecordingControls({
         {!overlay && centerPill}
         {/* 중앙 고정 현재 시각 선 — 단일채널 RecordingEventTimeline 과 동일한 마커.
             눈금(top 30~38)보다 위아래로 살짝 긴 27~41. 예전엔 삼각형(Polygon 1.svg)
-            이었는데 단일채널만 선으로 바꿔서 두 화면이 달라 보였다. */}
+            이었는데 단일채널만 선으로 바꿔서 두 화면이 달라 보였다.
+
+            딤 위(overlay · A-4)에서는 길이를 세로 단일과 맞춘다(사용자 지정
+            2026-09-07: "현재시간 선있잖아. 그거 길이도 맞춰줘"). 세로 단일
+            시간바(RecordingEventTimeline)의 마커는 눈금 라벨 윗변에서 시작해
+            23 이고, 여기 것은 라벨보다 5 아래에서 시작해 14 였다 — 같은 화면
+            두 방향이 다른 길이였다. 360 세로/780×360 가로에서 재서 맞춘 값이라,
+            둘 다 마커가 라벨 윗변에서 시작해 라벨 아래로 13 더 내려온다.
+            흰 바탕(세로 다채널)은 손대지 않는다. */}
         <div
           className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-[1px]"
           style={{
-            top: "27px",
+            top: overlay ? "12px" : "27px",
             width: "2px",
-            height: "14px",
+            height: overlay ? "23px" : "14px",
             backgroundColor: overlay ? "#FFFFFF" : "#111111",
           }}
         />
