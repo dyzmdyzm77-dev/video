@@ -810,11 +810,17 @@ export default function VariantA4({
                       height: "26px",
                       padding: "0 10px",
                       fontSize: "14px",
-                      fontWeight: 700,
+                      // 세로 화면 날짜 알약과 **완전히** 같은 규격이다(사용자
+                      // 지적 2026-09-07: "세로때 사용된 현재시간 알약이랑,
+                      // 가로에 쓰인거랑 사이즈 같아?"). 높이·글자 크기·좌우
+                      // 여백은 원래 같았고, 굵기(700→500)·배경(60%→50%)·
+                      // 글자 그림자(있음→없음)까지 맞춘다 — 같은 값을 띄우는
+                      // 알약이 방향마다 달라 보이면 안 된다. 굵기 차이 때문에
+                      // 같은 글자인데 폭이 154.5 대 159.9 로 벌어져 있었다.
+                      fontWeight: 500,
                       lineHeight: "14px",
                       color: "#FFFFFF",
-                      backgroundColor: DIM_TINT,
-                      textShadow: "0 0 4px rgba(0,0,0,0.6)",
+                      backgroundColor: "rgba(0,0,0,0.5)",
                       whiteSpace: "nowrap",
                       // 스크럽 중에도 남는다(사용자 지적 2026-09-07: "시간바
                       // 드래그하면 현재시간은 같이 남아야지 걔는 왜 같이
@@ -1028,10 +1034,13 @@ export default function VariantA4({
                             height: "26px",
                             padding: "0 10px",
                             fontSize: "14px",
-                            fontWeight: 700,
+                            // 세로 날짜 알약과 같은 규격 — 굵기·배경 농도까지다
+                            // (사용자 지적 2026-09-07). 시간바 위 알약과도 같은
+                            // 값이라, 한 화면에 어느 쪽이 떠도 같아 보인다.
+                            fontWeight: 500,
                             lineHeight: "14px",
                             color: "#FFFFFF",
-                            backgroundColor: DIM_TINT,
+                            backgroundColor: "rgba(0,0,0,0.5)",
                             // 좁은 폭에서 날짜와 시각이 두 줄로 접히는 걸 막는다.
                             whiteSpace: "nowrap",
                           }}
