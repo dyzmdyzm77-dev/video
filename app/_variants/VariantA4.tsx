@@ -951,7 +951,10 @@ export default function VariantA4({
                           DIM_TINT) — 같은 화면의 알약 둘이 다르게 생기면 안 된다.
                           헤더 쪽 줄은 LandscapeVideo 의 hideHeaderClock 으로 끈다.
                           A-4 · A-4(수정01) 둘 다다. */}
-                      {dimClockLabel ? (
+                      {/* 녹화일 땐 안 그린다 — 시간바 위 알약이 같은 값을
+                          이미 띄운다(사용자 지정 2026-09-07: 둘을 하나로).
+                          실시간은 시간바가 없어 여기가 유일한 자리다. */}
+                      {mode !== "recording" && dimClockLabel ? (
                         <span
                           suppressHydrationWarning
                           className="pointer-events-none rounded-full"
@@ -4583,6 +4586,9 @@ function RecordingControls({
       (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
     } catch {}
   };
+  // 딤 위 알약에 날짜까지 적을 만큼 넓은가 — 딤 아이콘 줄 알약과 같은 규칙을
+  // 쓴다(layoutRules.DIM_CLOCK_DATE_BP). 좁으면 시:분:초만이다.
+  const dimClockWide = useDeviceWidth() >= DIM_CLOCK_DATE_BP;
   const centerDate = playbackMs !== null ? new Date(playbackMs) : null;
   const labelDate = centerDate
     ? `${centerDate.getFullYear()}.${pad(centerDate.getMonth() + 1)}.${pad(centerDate.getDate())}. ${pad(centerDate.getHours())}:${pad(centerDate.getMinutes())}:${pad(centerDate.getSeconds())}`
@@ -4711,10 +4717,19 @@ function RecordingControls({
         "다채널도 시간바 동일하게"). 흰 배경 + #353535, 높이 20 · 좌우 8 ·
         rounded-full, 테두리 없음. 딤 위(overlay)에서도 같은 배지다 — 흰 글자만
         띄우던 걸 배지로 바꿨다. 두 화면이 달라 보이면 안 된다.
-        top 은 10 → 6: 배지가 20 이 되면서 아래 현재시각 마커(27~41)와 겹쳤다. */}
+        top 은 10 → 6: 배지가 20 이 되면서 아래 현재시각 마커(27~41)와 겹쳤다.
+
+        딤 위(overlay · A-4)에서는 이 알약이 딤 아이콘 줄에 새로 넣었던 날짜·시각
+        알약과 한 몸이 된다(사용자 지정 2026-09-07: "녹화 단일에서는 그 현재
+        시간이 알약으로 뜨고 있잖아. 그거 아까 새로 넣은 날짜 시간 알약으로
+        교체해주고, 위치를 위로 살짝 올려줘"). 그래서 딤에서는 규격이 그 알약과
+        같아지고(26 · 14 · 날짜까지), 자리도 살짝 올라간다 — 키가 22 → 26 으로
+        커져 그대로 두면 아래 마커(27~)를 덮는다. 녹화일 때 아이콘 줄 쪽 알약은
+        안 그린다(같은 시각이 두 군데 뜨지 않게) — 실시간은 시간바가 없어 거기
+        그대로다. 흰 바탕(세로)은 손대지 않는다. */}
     <div
       className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
-      style={{ top: "6px", lineHeight: 0 }}
+      style={{ top: overlay ? "-4px" : "6px", lineHeight: 0 }}
     >
       <span
         suppressHydrationWarning
@@ -4722,7 +4737,8 @@ function RecordingControls({
         style={{
           display: "inline-flex",
           alignItems: "center",
-          height: "22px",
+          // 딤 위에서는 아이콘 줄에 넣었던 그 알약과 같은 규격(26 · 14).
+          height: overlay ? "26px" : "22px",
           // 딤 위(가로)는 가로 딤 버튼들과 같은 값 하나를 그대로 쓴다 —
           // #666666 40% + blur(20) + 테두리 없음 + 흰 글자 + 같은 그림자.
           // (세로 딤은 블러를 뺐다 — ModePill 주석 참고. 가로는 안 건드렸다.)
@@ -4742,14 +4758,18 @@ function RecordingControls({
                 textShadow: "0 0 4px rgba(0,0,0,0.6)",
               }
             : null),
-          fontSize: "13px",
+          fontSize: overlay ? "14px" : "13px",
           fontWeight: 700,
-          lineHeight: "13px",
+          lineHeight: overlay ? "14px" : "13px",
           padding: "0 10px",
           verticalAlign: "top",
+          // 좁은 폭에서 날짜와 시각이 두 줄로 접히는 걸 막는다.
+          whiteSpace: "nowrap" as const,
         }}
       >
-        {centerLabel}
+        {/* 딤 위에서는 날짜까지 — 좁으면(DIM_CLOCK_DATE_BP) 시:분:초만이다.
+            흰 바탕(세로)은 지금까지처럼 시:분:초뿐이다. */}
+        {overlay ? (dimClockWide ? labelDate : centerLabel) : centerLabel}
       </span>
     </div>
     </>
