@@ -129,6 +129,7 @@ export default function LandscapeVideo({
   singleBadge,
   singleBadgeAlign,
   modePillHeader = false,
+  hideHeaderClock = false,
   singleHeaderCamera = false,
   gridHeaderLabel,
   controls,
@@ -281,6 +282,13 @@ export default function LandscapeVideo({
    *      다채널은 타일마다 이미 자기 이름을 달고 있어 손댈 게 없다.
    *  단일·다채널 둘 다에 걸린다(사용자 지정 2026-08-27: "다 바꿔야지"). */
   modePillHeader?: boolean;
+  /** modePillHeader 를 켠 화면에서 헤더의 날짜·시각 줄만 뺀다(기본 false =
+   *  지금까지처럼 모드 알약 아래에 적는다). A-4 가 켠다(사용자 지정 2026-09-07:
+   *  "가로 딤했을때, 좌측 상단에 날짜 시간 뜨잖아. 그거 센터 하단에 넣어줘") —
+   *  그 안은 같은 값을 딤 아이콘 줄 한가운데에 알약으로 직접 그린다. 여기서
+   *  안 끄면 같은 시각이 위아래 두 군데에 뜬다.
+   *  모드 알약은 헤더에 그대로 남는다 — 옮기라고 한 건 날짜·시각뿐이다. */
+  hideHeaderClock?: boolean;
   /** 단일 화면 딤 헤더를 '뒤로가기 + 카메라 이름'으로 바꿀지. 기본 false =
    *  지금까지처럼 장소명 + 지점명(계약번호). A-3 만 켠다(사용자 결정 2026-08-14) —
    *  가로 단일에서 지금 보는 게 어느 카메라인지가 장소보다 급하고, 다채널로
@@ -886,7 +894,7 @@ export default function LandscapeVideo({
         }}
       >
         {modePill}
-        {clock ? (
+        {clock && !hideHeaderClock ? (
           <span
             suppressHydrationWarning
             style={{

@@ -79,6 +79,7 @@ import {
   bestGridForCount,
   GRID_COUNT_OPTIONS,
   nearestGridCountIndex,
+  DIM_CLOCK_DATE_BP,
   IMMERSIVE_EXTRA_INSET,
   LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
@@ -373,6 +374,10 @@ export default function VariantA4({
   // 기기가 가로로 긴 상태인가 — 판정은 useDeviceWide 하나에 모아 뒀다
   // (데스크톱 미리보기와 실기기가 회전을 다르게 표현해서다. useDeviceWidth.ts).
   const wideNow = useDeviceWide();
+  // 딤 알약에 날짜까지 적을 만큼 넓은가(layoutRules.DIM_CLOCK_DATE_BP).
+  // 가로로 눕히면 긴 변이 폭이라 대개 넓고, 360 세로 확대처럼 좁으면 시각만
+  // 남긴다 — 알약이 길면 아이콘 줄을 밀어 '원래 크기로'가 화면 밖으로 나갔다.
+  const dimClockWide = useDeviceWidth() >= DIM_CLOCK_DATE_BP;
   // 패널을 오른쪽에서 낼지, 아래에서 낼지.
   //
   // 기준은 '세로가 가로보다 긴가'(비율 < 1) 하나다. A-1 은 정사각형에 가까우면
@@ -695,6 +700,23 @@ export default function VariantA4({
 
   const dateLabel = now ? formatNow(now) : "";
 
+  // 가로 딤 아이콘 줄 한가운데 알약에 적을 날짜·시각. 녹화면 재생 위치,
+  // 실시간이면 지금 시각이다 — LandscapeVideo 의 헤더 클록이 세던 것과 같은
+  // 규칙이고, 그 헤더 줄은 hideHeaderClock 으로 끈다(같은 시각이 두 군데
+  // 뜨지 않게). 서식은 세로 화면 날짜 알약(dateLabel)과 한 함수를 쓴다.
+  const dimClockLabel = (() => {
+    const d =
+      mode === "recording"
+        ? playbackMs !== null
+          ? new Date(playbackMs)
+          : null
+        : now;
+    if (!d) return "";
+    const hms = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    // 좁은 화면에선 시:분:초만 — 날짜까지 넣으면 알약이 아이콘 줄을 밀어낸다.
+    return dimClockWide ? formatNow(d) : hms;
+  })();
+
   // 가로 모드 — 지금은 영상만 보여준다(헤더·목록·탭바·시스템 바 전부 없음).
   // '영상만' 화면은 크게 보기(확대)일 때만이다.
   //
@@ -739,6 +761,10 @@ export default function VariantA4({
           dimStyle="a3"
           dimBlur={false}
           dimTint={DIM_TINT}
+          // 날짜·시각은 헤더(모드 알약 아래)에서 딤 아이콘 줄 한가운데로
+          // 내렸다(사용자 지정 2026-09-07) — 헤더 쪽 줄은 여기서 끈다.
+          // 모드 알약은 헤더에 그대로 남는다.
+          hideHeaderClock
           // AI·크게 보기를 시간바 아래 가운데 줄로 옮겼다 — 딤 좌우 아래 원은 끈다.
           showOverlayAi={false}
           showOverlayZoom={false}
@@ -973,9 +999,42 @@ export default function VariantA4({
                             이미 갖고 있어, 감지로 가는 길은 그 탭이다 — 딤에
                             버튼을 따로 두면 같은 자리로 가는 문이 두 개가 된다. */}
                       </div>
-                      {/* 현재 시각 알약은 여기 없다 — 딤 아래 왼쪽 공통 표시로
-                          올라갔다(LandscapeVideo, 사용자 지정 2026-08-25: 세 안이
-                          같은 자리에 같은 모양으로 둔다). */}
+                      {/* 날짜·시각 알약 — 딤 헤더 왼쪽 위에 '그냥 텍스트'로
+                          붙어 있던 것을 이 줄 한가운데로 내렸다(사용자 지정
+                          2026-09-07: "가로 딤했을때, 좌측 상단에 날짜 시간 뜨잖아.
+                          그거 센터 하단에 넣어줘", "알약형태로 넣어주고",
+                          "그 아이콘들이랑 같은 정렬로").
+                          양옆 묶음이 flex-1 이라 이 알약이 화면 정중앙에 서고,
+                          줄이 items-center 라 아이콘 원들과 세로 중심이 같다 —
+                          그래서 자리를 따로 계산하지 않는다.
+                          규격은 헤더 모드 알약과 같다(높이 26 · 글자 14 ·
+                          DIM_TINT) — 같은 화면의 알약 둘이 다르게 생기면 안 된다.
+                          헤더 쪽 줄은 LandscapeVideo 의 hideHeaderClock 으로 끈다.
+                          A-4 · A-4(수정01) 둘 다다. */}
+                      {dimClockLabel ? (
+                        <span
+                          suppressHydrationWarning
+                          className="pointer-events-none rounded-full"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            // 양옆 묶음이 늘어나는 쪽이다 — 이 알약은 자기 글자
+                            // 폭 그대로 있어야 가운데가 안 흔들린다.
+                            flex: "none",
+                            height: "26px",
+                            padding: "0 10px",
+                            fontSize: "14px",
+                            fontWeight: 700,
+                            lineHeight: "14px",
+                            color: "#FFFFFF",
+                            backgroundColor: DIM_TINT,
+                            // 좁은 폭에서 날짜와 시각이 두 줄로 접히는 걸 막는다.
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {dimClockLabel}
+                        </span>
+                      ) : null}
                       {/* 크게 보기 ↔ 원래 크기로. 가로에서만 뜨는 줄이라 늘
                           '원래 크기로'다. 딤 오른쪽 아래에 있던 그 버튼이다. */}
                       <div className="flex flex-1 items-center justify-end">
