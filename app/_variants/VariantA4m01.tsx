@@ -823,11 +823,12 @@ export default function VariantA4({
                 onSpeedChange={setPlaybackRate}
               />
               )}
-              {/* 시간바 아래 아이콘 줄 — AI · 메뉴 · 움직임 감지 셋을 가운데로
-                  모은다(사용자 지정 2026-08-14). 원 모양은 딤의 다른 원 버튼
+              {/* 시간바 아래 아이콘 줄 — 메뉴 · 움직임 감지를 가운데로 모은다
+                  (사용자 지정 2026-08-14). 원 모양은 딤의 다른 원 버튼
                   (34 · 반투명 검정 + 흰 테두리)과 같은 규격이다.
-                  AI 는 원래 딤 왼쪽 아래에 있던 그 버튼이라, 그쪽은 껐다
-                  (showOverlayAi={false}) — 안 끄면 같은 버튼이 두 개가 된다. */}
+                  원래 이 줄 맨 앞에 AI 가 있었는데 뺐다(2026-09-07) — 그래서
+                  showOverlayAi={false} 는 이제 중복 방지가 아니라, 딤이 자체
+                  AI 를 다시 그리지 않게 막는 몫만 한다. */}
               <div
                 className="pointer-events-auto flex items-center justify-between transition-opacity duration-150 ease-out"
                 // 시간바와 붙인다 — 12 → 4(사용자 지정 2026-08-14). 시간바 자체가
@@ -903,7 +904,10 @@ export default function VariantA4({
                         className="flex flex-1 items-center"
                         style={{ gap: "16px" }}
                       >
-                        {btn({ key: "ai", label: "AI 검색", src: `${BASE}/ai_Icon.svg`, onClick: () => setAiOpen(true) })}
+                        {/* AI 는 뺐다(사용자 지정 2026-09-07: "AI 버튼 빼",
+                            "뺀만큼 그 자리 채우고, 옆에 아이콘들로"). 이 묶음이 flex 라
+                            메뉴·움직임 감지가 그만큼 왼쪽으로 당겨져 빈자리를 메운다 —
+                            자리를 비워 두지 않는다. A-4 · A-4(수정01) 둘 다다. */}
                         {/* 메뉴 — 오른쪽 패널을 '카메라 목록' 탭으로 연다.
                             열려 있는 쪽을 다시 누르면 닫힌다(사용자 지정 2026-08-18).
                             단일에서만 — 다채널은 화면에 이미 카메라가 다 깔려 있고
@@ -2315,47 +2319,13 @@ function ExpandedView({
                 }}
               />
             </button>
-            {/* 딤 왼쪽 아래 — AI 하나. 오른쪽 아래 크게 보기와 같은 높이(bottom 12).
-                예전엔 가로 딤과 구성을 맞추려고 메뉴·움직임 감지도 같이 뒀는데
-                (2026-08-14), 세로는 영상 바로 아래에 카메라 목록/움직임 감지 탭이
-                이미 있어서 같은 입구가 두 벌이었다 — 게다가 그 둘은 동작도 없었다.
-                뺀다(사용자 지정 2026-08-18). 가로 딤에는 탭이 없어 거긴 그대로 둔다. */}
-            <div
-              className="absolute flex items-center"
-              style={{
-                bottom: "12px",
-                left: "16px",
-                gap: "12px",
-                pointerEvents: showControls ? "auto" : "none",
-              }}
-            >
-              {[
-                { key: "ai", label: "AI 검색", src: `${BASE}/ai_Icon.svg`, onClick: onOpenAi },
-              ].map((b) => (
-                <button
-                  key={b.key}
-                  type="button"
-                  aria-label={b.label}
-                  onClick={b.onClick}
-                  className="flex items-center justify-center rounded-full"
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    backgroundColor: DIM_TINT,
-                  }}
-                >
-                  <img
-                    src={b.src}
-                    alt=""
-                    className="h-7 w-7"
-                    style={{
-                      filter:
-                        "brightness(0) invert(1) drop-shadow(0 0 4px rgba(0,0,0,0.6))",
-                    }}
-                  />
-                </button>
-              ))}
-            </div>
+            {/* 딤 왼쪽 아래는 비었다 — AI 하나뿐이었는데 뺐다(사용자 지정
+                2026-09-07: "AI 버튼 빼"). 가로 딤은 AI 옆에 메뉴·움직임 감지가
+                있어 그것들이 왼쪽으로 당겨져 자리를 메우지만, 세로는 이 자리에
+                AI 혼자였어서 당겨 올 게 없다. 오른쪽 아래 '크게 보기'는 그대로
+                둔다 — 옮기면 구멍이 오른쪽으로 옮겨갈 뿐이다.
+                onOpenAi prop 은 남겨 둔다(되돌리기가 한 줄이다). A-4 ·
+                A-4(수정01) 둘 다다. */}
           </div>
           <VideoSkeleton visible={videoLoading} />
           {/* 화면 맞춤 토스트 — 탐색·캡처 토스트와 같은 자리(영역 하단 20px 위). */}
