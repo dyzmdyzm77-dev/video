@@ -183,17 +183,42 @@ export function useListLayout(
   // (1) 매 렌더 뒤 재계산 — 실시간↔녹화, 목록↔움직임감지 처럼 제목·여백이 바뀌면
   //     크롬 높이가 달라진다. 이때 React 가 '타일 행' DOM 을 새로 만들 수 있어서
   //     ResizeObserver 만으로는 못 잡는다(옛 노드를 계속 보고 있게 됨).
+  //
+  //     첫 판정은 한 번으로 안 끝난다. 화면에 막 들어온 순간에는 영상 영역이
+  //     아직 제 높이를 못 받았거나(컨테이너 쿼리·이미지 로드), 모바일 브라우저
+  //     주소창이 접히는 중이라 실제보다 세로가 넉넉하게 잡힌다. 그 한 번으로
+  //     굳으면 배치가 틀린 채 남는다 — 폴드8 접힘 실기기에서 실시간 단일에 처음
+  //     들어가면 세로 2열, 녹화를 다녀오면 가로 한 줄로 서로 달랐다(사용자 지적
+  //     2026-09-07: "녹화 접속했다가 다시 실시간 가면 가로 스크롤로 적용되어있어").
+  //     그래서 다음 프레임과 잠깐 뒤에 한 번 더 잰다. 판정 자체는 순수한 DOM
+  //     읽기라 여러 번 불러도 결과가 같고, 값이 안 바뀌면 setState 도 안 튄다.
   useEffect(() => {
     pickRef.current?.();
+    const raf = requestAnimationFrame(() => pickRef.current?.());
+    const t = setTimeout(() => pickRef.current?.(), 300);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t);
+    };
   });
   // (2) 크기 변화 — 기기 폭/높이 전환, 회전 등. area 는 렌더가 바뀌어도 같은 노드라
   //     한 번만 붙여 두면 된다.
+  //
+  //     visualViewport 도 같이 듣는다. 실기기에서 주소창이 접히거나 펴질 때
+  //     바뀌는 건 시각 뷰포트뿐이고, 레이아웃은 100svh 로 잡혀 있어 area 크기가
+  //     안 움직인다 — ResizeObserver 만으로는 그 순간을 못 잡는다.
   useEffect(() => {
     const el = areaRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => pickRef.current?.());
+    const repick = () => pickRef.current?.();
+    const ro = new ResizeObserver(repick);
     ro.observe(el);
-    return () => ro.disconnect();
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    vv?.addEventListener("resize", repick);
+    return () => {
+      ro.disconnect();
+      vv?.removeEventListener("resize", repick);
+    };
   }, []);
   return [areaRef, rowRef, listWide, videoRef] as const;
 }

@@ -816,9 +816,11 @@ export default function VariantA4({
                       backgroundColor: DIM_TINT,
                       textShadow: "0 0 4px rgba(0,0,0,0.6)",
                       whiteSpace: "nowrap",
-                      // 시간바를 끄는(스크럽) 동안엔 같이 걷는다 — 예전에
-                      // RecordingControls 안에 있을 때와 같은 규칙이다.
-                      opacity: isScrubbing ? 0 : 1,
+                      // 스크럽 중에도 남는다(사용자 지적 2026-09-07: "시간바
+                      // 드래그하면 현재시간은 같이 남아야지 걔는 왜 같이
+                      // 꺼지는데"). 끌면서 보는 값이 바로 이 시각이라, 끄면
+                      // 지금 어디로 가고 있는지가 안 보인다. 걷히는 건 딤의
+                      // 보조 UI(아이콘 줄·헤더)뿐이다.
                     }}
                   >
                     {dimClockLabel}
