@@ -38,17 +38,20 @@ export const VARIANT_LABEL: Record<VariantKey, string> = {
   a4m01: "A-4(수정01)",
 };
 
-/** 경로(/a1·/a2·/a3·/a4·/a4m01)에서 안 키를 뽑는다. 모르면 A-1안(기본 진입).
- *  옛 경로 /a 는 한때 A안(지금의 A-2안)이었지만, 지금은 기본인 A-1안으로
- *  보낸다 — 그 링크를 저장해 둔 사람이 A-2안으로 떨어지던 걸 막는다.
+/** 경로(/a1·/a2·/a3·/a4·/a4m01)에서 안 키를 뽑는다. 모르면 A-4안(기본 진입).
+ *  기본 안은 A-1 → A-4 로 바뀌었다(사용자 지정 2026-09-07). 이 함수와 루트(/)
+ *  리다이렉트·옛 경로 /a 가 같은 '기본 안' 하나를 따라간다 — 셋이 어긋나면
+ *  들어온 문으로 보는 안이 달라진다.
+ *  옛 경로 /a 는 한때 A안(지금의 A-2안)이었지만, 지금은 기본 안으로 보낸다 —
+ *  그 링크를 저장해 둔 사람이 A-2안으로 떨어지던 걸 막는다.
  *  A-2안의 주소는 /a2 다. */
 export function variantFromPath(pathname: string): VariantKey {
   const seg = pathname.replace(/^\/+|\/+$/g, "");
-  return (KEYS as string[]).includes(seg) ? (seg as VariantKey) : "a1";
+  return (KEYS as string[]).includes(seg) ? (seg as VariantKey) : "a4";
 }
 
 /** 문서 루트에서 현재 안을 읽는다. 아직 안 심겼으면 fallback. */
-export function readVariant(fallback: VariantKey = "a1"): VariantKey {
+export function readVariant(fallback: VariantKey = "a4"): VariantKey {
   if (typeof document === "undefined") return fallback;
   const v = document.documentElement.dataset.variant;
   return (KEYS as string[]).includes(v ?? "") ? (v as VariantKey) : fallback;

@@ -78,7 +78,7 @@ function shotTargets(): Target[] {
     document.querySelectorAll<HTMLElement>(".app-safe-frame"),
   ).find((el) => !el.closest(".asis-frame"));
   if (main) {
-    const who = targetLabel(readVariant("a1"));
+    const who = targetLabel(readVariant("a4"));
     out.push({ el: main, name: `${who}_${slotSize(0)}_${tag}.png` });
   }
   return out;

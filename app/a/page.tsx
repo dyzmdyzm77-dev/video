@@ -9,7 +9,7 @@ import AppShell from "../_variants/AppShell";
 export default function PageA() {
   return (
     <Suspense>
-      <AppShell initialVariant="a1" />
+      <AppShell initialVariant="a4" />
     </Suspense>
   );
 }
