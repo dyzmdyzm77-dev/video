@@ -710,6 +710,12 @@ export default function VariantA4({
   // 실시간이면 지금 시각이다 — LandscapeVideo 의 헤더 클록이 세던 것과 같은
   // 규칙이고, 그 헤더 줄은 hideHeaderClock 으로 끈다(같은 시각이 두 군데
   // 뜨지 않게). 서식은 세로 화면 날짜 알약(dateLabel)과 한 함수를 쓴다.
+  // 시간바 위 알약이 뜨는 경우인가 — 녹화 + 단일일 때만이다. 위 controls 의
+  // RecordingControls(timelineOnly) 조건과 같은 식이라 둘이 어긋나면 안 된다.
+  // 녹화 다채널은 시간바를 안 둬서(사용자 지정 2026-08-19) 시각을 띄울 데가
+  // 아이콘 줄뿐이다 — 여기서 안 가르면 그 화면만 시각이 통째로 사라진다
+  // (사용자 지적 2026-09-07: "녹화 다채널 가로에는 왜 날짜 시간 안떠?").
+  const timebarClockShown = mode === "recording" && expandedIndex !== null;
   const dimClockLabel = (() => {
     const d =
       mode === "recording"
@@ -841,19 +847,52 @@ export default function VariantA4({
               }}
             >
               {mode === "recording" && expandedIndex !== null && (
-              <RecordingControls
-                overlay
-                timelineOnly
-                now={now}
-                onScrubbingChange={setIsScrubbing}
-                playbackMs={playbackMs}
-                setPlaybackMs={setPlaybackMs}
-                onOpenDateTime={() => setDateTimeOpen(true)}
-                isPlaying={isPlaying}
-                onTogglePlay={() => setIsPlaying((p) => !p)}
-                onPlay={() => setIsPlaying(true)}
-                onSpeedChange={setPlaybackRate}
-              />
+              // 세로 단일과 **같은 시간바 컴포넌트**를 그대로 쓴다(사용자 지정
+              // 2026-09-07: "그 세로 시간바랑 동일하게 넣고 선 색만 바꾸면
+              // 되잖아"). 예전엔 다채널용 RecordingControls 를 timelineOnly 로
+              // 썼는데, 두 컴포넌트가 눈금·라벨·중앙선 좌표를 각자 갖고 있어
+              // 같은 화면인데 방향마다 그림이 달랐다. overlay 는 색만 바꾼다 —
+              // 치수는 하나도 안 건드리므로 세로와 자동으로 같아진다.
+              <div className="relative">
+                {/* 날짜·시각 알약 — 세로에서는 시간바 위 자기 줄에 있는 그것이다.
+                    여기선 시간바 블록 위에 절대배치로 얹어 같은 간격을 만든다:
+                    알약 아래가 첫 눈금 라벨(블록 top + barPad 8)에서 18 뜬다
+                    → top = -(26 + 10). 세로 실측(알약 bottom 350.5, 라벨 top
+                    368.5)과 같은 18 이다. */}
+                {dimClockLabel ? (
+                  <span
+                    suppressHydrationWarning
+                    className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-full"
+                    style={{
+                      top: "-36px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      height: "26px",
+                      padding: "0 10px",
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      lineHeight: "14px",
+                      color: "#FFFFFF",
+                      backgroundColor: DIM_TINT,
+                      textShadow: "0 0 4px rgba(0,0,0,0.6)",
+                      whiteSpace: "nowrap",
+                      // 시간바를 끄는(스크럽) 동안엔 같이 걷는다 — 예전에
+                      // RecordingControls 안에 있을 때와 같은 규칙이다.
+                      opacity: isScrubbing ? 0 : 1,
+                    }}
+                  >
+                    {dimClockLabel}
+                  </span>
+                ) : null}
+                <RecordingEventTimeline
+                  part="bar"
+                  overlay
+                  playbackMs={playbackMs}
+                  setPlaybackMs={setPlaybackMs}
+                  cameraSrc={CAMERAS[expandedIndex]!.src}
+                  onScrubbingChange={setIsScrubbing}
+                />
+              </div>
               )}
               {/* 시간바 아래 아이콘 줄 — 메뉴 · 움직임 감지를 가운데로 모은다
                   (사용자 지정 2026-08-14). 원 모양은 딤의 다른 원 버튼
@@ -1030,10 +1069,11 @@ export default function VariantA4({
                           DIM_TINT) — 같은 화면의 알약 둘이 다르게 생기면 안 된다.
                           헤더 쪽 줄은 LandscapeVideo 의 hideHeaderClock 으로 끈다.
                           A-4 · A-4(수정01) 둘 다다. */}
-                      {/* 녹화일 땐 안 그린다 — 시간바 위 알약이 같은 값을
-                          이미 띄운다(사용자 지정 2026-09-07: 둘을 하나로).
-                          실시간은 시간바가 없어 여기가 유일한 자리다. */}
-                      {mode !== "recording" && dimClockLabel ? (
+                      {/* 시간바 위 알약이 뜨는 화면(녹화 단일)에서만 안 그린다
+                          — 같은 값을 두 군데 띄우지 않으려는 것이다(사용자 지정
+                          2026-09-07: 둘을 하나로). 실시간은 시간바가 없고, 녹화
+                          다채널도 시간바를 안 둬서 여기가 유일한 자리다. */}
+                      {!timebarClockShown && dimClockLabel ? (
                         <span
                           suppressHydrationWarning
                           className="pointer-events-none rounded-full"
@@ -3345,6 +3385,7 @@ function RecordingEventTimeline({
   setPlaybackMs,
   cameraSrc,
   onScrubbingChange,
+  overlay = false,
   part = "both",
 }: {
   playbackMs: number | null;
@@ -3353,6 +3394,12 @@ function RecordingEventTimeline({
   ) => void;
   cameraSrc: string;
   onScrubbingChange?: (s: boolean) => void;
+  /** 딤(영상) 위에 얹는가. 기본 false = 흰 바 위(세로 화면, 지금까지의 동작).
+   *  켜면 배경을 걷고 글자·눈금·중앙선을 흰 계열로 바꾼다 — 치수는 하나도
+   *  안 건드린다. 가로 딤이 이 컴포넌트를 그대로 쓰기 위한 것이다(사용자 지정
+   *  2026-09-07: "그 세로 시간바랑 동일하게 넣고 선 색만 바꾸면 되잖아").
+   *  값은 RecordingControls 의 overlay 처리와 같은 것을 쓴다. */
+  overlay?: boolean;
   /** 어느 부분을 그릴지 — A-1·A-2 와 같은 규칙이다.
    *   · "bar"    — 시간바만. 5버튼 아래 고정 띠(motionBlock)가 쓴다.
    *   · "thumbs" — 썸네일 레일만. '움직임 감지' 탭 내용이다.
@@ -3782,7 +3829,21 @@ function RecordingEventTimeline({
     <div
       ref={containerRef}
       className="relative flex min-h-0 flex-1 flex-col overflow-hidden touch-none select-none"
-      style={{ backgroundColor: TIMEBAR_BG, cursor: "grab" }}
+      style={{
+        backgroundColor: overlay ? "transparent" : TIMEBAR_BG,
+        // 좌우 페이드 — 흰 배경일 땐 아래 그라데이션 두 장으로 덮지만, 배경이
+        // 없는 딤 위에선 덮을 색이 없다. 대신 영역을 마스크로 깎는다
+        // (RecordingControls 의 overlay 와 같은 값).
+        ...(overlay
+          ? {
+              WebkitMaskImage:
+                "linear-gradient(to right, transparent 2%, #000 20%, #000 80%, transparent 98%)",
+              maskImage:
+                "linear-gradient(to right, transparent 2%, #000 20%, #000 80%, transparent 98%)",
+            }
+          : null),
+        cursor: "grab",
+      }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -3820,7 +3881,7 @@ function RecordingEventTimeline({
               style={{
                 left: `calc(50% + ${xOf(secOffset)}px)`,
                 top: "0",
-                color: "#A4A4A4",
+                color: overlay ? "rgba(255,255,255,0.75)" : "#A4A4A4",
                 transform: "translateX(-50%)",
                 fontSize: "10px",
                 fontWeight: 500,
@@ -3858,7 +3919,9 @@ function RecordingEventTimeline({
                   top: "17px",
                   width: `${x1 - x0 + 2}px`,
                   height: "3px",
-                  backgroundColor: "rgba(173,173,173,0.7)",
+                  backgroundColor: overlay
+                    ? "rgba(255,255,255,0.55)"
+                    : "rgba(173,173,173,0.7)",
                 }}
               />
             );
@@ -3878,7 +3941,7 @@ function RecordingEventTimeline({
                   top: "17px",
                   width: "3px",
                   height: "3px",
-                  backgroundColor: "#353535",
+                  backgroundColor: overlay ? "#FFFFFF" : "#353535",
                 }}
               />
             ))}
@@ -3909,7 +3972,11 @@ function RecordingEventTimeline({
             />
           ))}
         </div>
-        {/* 좌우 페이드(다채널과 동일 — 블록 전체 높이) */}
+        {/* 좌우 페이드(다채널과 동일 — 블록 전체 높이).
+            딤 위에선 안 그린다 — 흰 그라데이션이라 영상 위에 흰 띠가 된다.
+            그쪽은 컨테이너에 건 마스크가 같은 일을 한다. */}
+        {!overlay && (
+        <>
         <div
           className="pointer-events-none absolute"
           style={{
@@ -3936,6 +4003,8 @@ function RecordingEventTimeline({
               `linear-gradient(to right, rgba(255,255,255,0) 0%, ${TIMEBAR_BG} 89.9%)`,
           }}
         />
+        </>
+        )}
         {/* 중앙 현재시각 라벨은 없앴다 — A-4 만(사용자 지정 2026-08-26: "시간바에
             현재시간 표시하는 거 빼도 될 것 같다"). 같은 값이 바로 위 날짜 줄
             한가운데(검정 알약)에 이미 떠 있다. */}
@@ -3949,7 +4018,8 @@ function RecordingEventTimeline({
             width: "2px",
             // 눈금 줄(17~20)보다 3 더 내려오는 길이 — 라벨 윗변에서 시작한다.
             height: "23px",
-            backgroundColor: "#111111",
+            // 딤 위에선 흰 선 — 자리·길이는 그대로다(사용자 지정 2026-09-07).
+            backgroundColor: overlay ? "#FFFFFF" : "#111111",
           }}
         />
         {/* 날짜·시간 선택 버튼은 여기 없다 — 위 '녹화 + 날짜 + 캡처' 줄 맨 왼쪽으로
