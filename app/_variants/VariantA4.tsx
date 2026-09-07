@@ -78,6 +78,7 @@ import {
   nearestGridCountIndex,
   DIM_CLOCK_DATE_BP,
   IMMERSIVE_EXTRA_INSET,
+  LANDSCAPE_MENU_ROTATE_H,
   LANDSCAPE_BOTTOM_INSET,
   LANDSCAPE_EDGE,
   LANDSCAPE_EDGE_ANDROID,
@@ -341,9 +342,14 @@ export default function VariantA4({
   // 실기기 확대는 폰이 세로인 채 화면만 CSS 로 돌린 것이라 뷰포트 비율이 세로
   // 그대로다 — 회전이 걸려 있으면 뒤집어서 본다(A-1 과 같은 처리).
   const rawRatio = useDeviceRatio();
+  const deviceWForMenu = useDeviceWidth();
   const ratioFlipped = useRotatedInput();
-  const panelBottom =
-    (ratioFlipped && rawRatio > 0 ? 1 / rawRatio : rawRatio) < 1;
+  const effRatio = ratioFlipped && rawRatio > 0 ? 1 / rawRatio : rawRatio;
+  const panelBottom = effRatio < 1;
+  // 지금 화면의 짧은 변(눕혔을 때의 높이). 가로 딤 '메뉴' 버튼이 세로로
+  // 전환할지 오른쪽 패널을 열지를 이 값으로 가른다 — 눕히면 폭은 긴 변이라
+  // 폴드8 접힘(752×476)과 360 폰(780×360)을 못 가른다.
+  const screenShortH = effRatio > 0 ? deviceWForMenu / effRatio : 0;
   const orientKey: "portrait" | "landscape" = wideNow
     ? "landscape"
     : "portrait";
@@ -894,18 +900,31 @@ export default function VariantA4({
                             key: "menu",
                             label: "메뉴",
                             src: `${BASE}/nav/menu.svg`,
-                            // 오른쪽 패널을 열던 자리다. 이제는 세로 화면으로
+                            // 화면 높이에 따라 하는 일이 갈린다
+                            // (layoutRules.LANDSCAPE_MENU_ROTATE_H).
+                            //
+                            // 넓은 화면(폴드8 접힘 476 이상) — 세로 화면으로
                             // 돌아간다(사용자 지정 2026-09-03: "메뉴 버튼 누르면
                             // 오른쪽에서 패널 나오잖아. 그때 세로로 전환해줘").
                             // 세로엔 카메라 목록·움직임 감지가 이미 탭으로 있어,
                             // 가로에서 같은 것을 판으로 또 띄울 이유가 없다.
-                            //
                             // 들어온 경로가 둘이라 나가는 길도 둘이다 — 확대로
                             // 들어왔으면 축소(exitImmersive, 회전도 같이 되돌린다),
                             // 그냥 눕혀서 들어왔으면 회전만 되돌린다. 축소 버튼과
                             // 달리 toggleImmersive 를 못 쓴다 — 확대가 아닌
                             // 상태에서 부르면 오히려 확대가 켜진다.
+                            //
+                            // 좁은 화면(360 등) — 예전처럼 오른쪽 패널을 연다.
+                            // 위 지시는 폴드8 접힘에서 나온 것인데 폭 구분 없이
+                            // 전체에 걸려 있었다(사용자 지적 2026-09-07: "폴드8
+                            // 접힘에서는 돌아가라고 했는데, 360은 언제 내가
+                            // 돌리라했니", "360에서 메뉴 누르면 (…) 오른쪽 패널
+                            // 열겠지"). 같은 자리를 다시 누르면 닫힌다.
                             onClick: () => {
+                              if (screenShortH < LANDSCAPE_MENU_ROTATE_H) {
+                                setLsPanel((v) => (v === "list" ? null : "list"));
+                                return;
+                              }
                               setLsPanel(null);
                               if (readImmersive()) exitImmersive();
                               else requestDeviceRotate(false);
@@ -4729,7 +4748,11 @@ function RecordingControls({
         그대로다. 흰 바탕(세로)은 손대지 않는다. */}
     <div
       className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2"
-      style={{ top: overlay ? "-4px" : "6px", lineHeight: 0 }}
+      // 딤 위에서는 알약 아래가 시간바 첫 눈금에서 18 뜬다 — 세로 화면의
+      // 날짜 알약↔시간바 간격과 같은 값이다(사용자 지정 2026-09-07: "그
+      // 세로처럼 간격을 동일하게 하자"). 780×360 에서 재서 맞춘 값이라,
+      // -4 로 두면 알약이 눈금 줄을 10 만큼 덮는다.
+      style={{ top: overlay ? "-32px" : "6px", lineHeight: 0 }}
     >
       <span
         suppressHydrationWarning
