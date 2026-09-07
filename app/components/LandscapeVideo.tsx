@@ -130,6 +130,7 @@ export default function LandscapeVideo({
   singleBadgeAlign,
   modePillHeader = false,
   hideHeaderClock = false,
+  onModePress,
   singleHeaderCamera = false,
   gridHeaderLabel,
   controls,
@@ -289,6 +290,12 @@ export default function LandscapeVideo({
    *  안 끄면 같은 시각이 위아래 두 군데에 뜬다.
    *  모드 알약은 헤더에 그대로 남는다 — 옮기라고 한 건 날짜·시각뿐이다. */
   hideHeaderClock?: boolean;
+  /** 헤더의 '● 실시간/녹화영상' 알약을 눌렀을 때. 안 주면 지금까지처럼 그냥
+   *  표시다(누를 수 없음). A-4 가 녹화일 때만 넘긴다(사용자 지정 2026-09-07:
+   *  "가로에는 탭이 없으니, 녹화영상 알약누르면 뜨게") — 세로에서 '녹화영상'
+   *  탭을 누르면 날짜·시간 시트가 열리는데, 가로엔 그 탭이 없어 같은 말을 하는
+   *  이 알약이 그 입구를 대신한다. */
+  onModePress?: () => void;
   /** 단일 화면 딤 헤더를 '뒤로가기 + 카메라 이름'으로 바꿀지. 기본 false =
    *  지금까지처럼 장소명 + 지점명(계약번호). A-3 만 켠다(사용자 결정 2026-08-14) —
    *  가로 단일에서 지금 보는 게 어느 카메라인지가 장소보다 급하고, 다채널로
@@ -609,23 +616,33 @@ export default function LandscapeVideo({
 
   // '● 실시간/녹화영상' 알약. 아래 시각 알약과 같은 규격이다(22px · 13px ·
    //  #666666 40% + blur) — 같은 화면의 알약 둘이 다르게 생기면 안 된다.
-  const modePill = (
-    <span
-      className="rounded-full"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        height: `${pillH}px`,
-        padding: "0 10px",
-        fontSize: `${pillFS}px`,
-        fontWeight: 700,
-        lineHeight: `${pillFS}px`,
-        color: "#FFFFFF",
-        backgroundColor: dimTint,
-        ...blurStyle,
-        textShadow: "0 0 4px rgba(0,0,0,0.6)",
-      }}
+  const modePillStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    height: `${pillH}px`,
+    padding: "0 10px",
+    fontSize: `${pillFS}px`,
+    fontWeight: 700,
+    lineHeight: `${pillFS}px`,
+    color: "#FFFFFF",
+    backgroundColor: dimTint,
+    ...blurStyle,
+    textShadow: "0 0 4px rgba(0,0,0,0.6)",
+  };
+  // onModePress 를 받으면 버튼이 된다 — 헤더 껍데기가 pointer-events: none 이라
+  // 여기서 auto 로 되살려야 눌린다(같은 줄 다른 요소는 그대로 통과시킨다).
+  const modePill = onModePress ? (
+    <button
+      type="button"
+      className="pointer-events-auto rounded-full"
+      style={modePillStyle}
+      onClick={onModePress}
     >
+      {modeDot}
+      {modeText}
+    </button>
+  ) : (
+    <span className="rounded-full" style={modePillStyle}>
       {modeDot}
       {modeText}
     </span>

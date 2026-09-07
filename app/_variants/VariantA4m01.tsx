@@ -777,6 +777,13 @@ export default function VariantA4({
           // 내렸다(사용자 지정 2026-09-07) — 헤더 쪽 줄은 여기서 끈다.
           // 모드 알약은 헤더에 그대로 남는다.
           hideHeaderClock
+          // 세로에서 '녹화영상' 탭을 누르면 날짜·시간 시트가 열린다. 가로엔 그
+          // 탭이 없어서 같은 말을 하는 이 알약이 입구를 대신한다(사용자 지정
+          // 2026-09-07: "가로에는 탭이 없으니, 녹화영상 알약누르면 뜨게").
+          // 실시간엔 안 건다 — 고를 날짜가 없다(세로와 같은 규칙).
+          onModePress={
+            mode === "recording" ? () => setDateTimeOpen(true) : undefined
+          }
           // AI·크게 보기를 시간바 아래 가운데 줄로 옮겼다 — 딤 좌우 아래 원은 끈다.
           showOverlayAi={false}
           showOverlayZoom={false}
@@ -860,9 +867,17 @@ export default function VariantA4({
                     → top = -(26 + 10). 세로 실측(알약 bottom 350.5, 라벨 top
                     368.5)과 같은 18 이다. */}
                 {dimClockLabel ? (
-                  <span
+                  // 누르면 날짜·시간 시트가 열린다 — 세로에서 이 알약이 하던
+                  // 그대로다(사용자 지정 2026-09-07: "세로에서 현재 날짜 시간
+                  // 영역이랑 (…) 바텀시트 뜨잖아. 그거 가로도 동일하게 반영해").
+                  // 시간바 위에 얹혀 있어 pointerdown 을 여기서 끊는다 — 안 끊으면
+                  // 알약을 누르는 순간 아래 시간바가 스크럽을 시작한다.
+                  <button
+                    type="button"
                     suppressHydrationWarning
-                    className="pointer-events-none absolute left-1/2 z-10 -translate-x-1/2 rounded-full"
+                    className="pointer-events-auto absolute left-1/2 z-10 -translate-x-1/2 rounded-full"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => setDateTimeOpen(true)}
                     style={{
                       top: "-36px",
                       display: "inline-flex",
@@ -890,7 +905,7 @@ export default function VariantA4({
                     }}
                   >
                     {dimClockLabel}
-                  </span>
+                  </button>
                 ) : null}
                 <RecordingEventTimeline
                   part="bar"
@@ -1082,9 +1097,24 @@ export default function VariantA4({
                           2026-09-07: 둘을 하나로). 실시간은 시간바가 없고, 녹화
                           다채널도 시간바를 안 둬서 여기가 유일한 자리다. */}
                       {!timebarClockShown && dimClockLabel ? (
-                        <span
+                        // 녹화면 누를 수 있다 — 날짜·시간 시트가 열린다(세로의
+                        // 날짜 알약과 같은 동작). 실시간엔 고를 날짜가 없어
+                        // 그냥 표시다(세로와 같은 규칙).
+                        <button
+                          type="button"
                           suppressHydrationWarning
-                          className="pointer-events-none rounded-full"
+                          // 실시간엔 고를 날짜가 없어 눌리지 않는다(세로와 같은
+                          // 규칙) — 그림은 그대로고 클릭만 통과시킨다.
+                          className={
+                            mode === "recording"
+                              ? "pointer-events-auto rounded-full"
+                              : "pointer-events-none rounded-full"
+                          }
+                          onClick={
+                            mode === "recording"
+                              ? () => setDateTimeOpen(true)
+                              : undefined
+                          }
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
@@ -1106,7 +1136,7 @@ export default function VariantA4({
                           }}
                         >
                           {dimClockLabel}
-                        </span>
+                        </button>
                       ) : null}
                       {/* 크게 보기 ↔ 원래 크기로. 가로에서만 뜨는 줄이라 늘
                           '원래 크기로'다. 딤 오른쪽 아래에 있던 그 버튼이다. */}
