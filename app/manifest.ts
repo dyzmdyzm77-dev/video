@@ -23,7 +23,12 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "에스원 CCTV",
     short_name: "에스원 CCTV",
     description: "8층 사무실 실시간 영상",
-    start_url: `${BASE}/a1`,
+    // 기본 안을 따라간다 — 루트(/) 리다이렉트·variantRoute 와 같은 값이어야
+    // 한다. A-1 로 박혀 있어서, 홈 화면에 추가해 연 사람만 A-4 가 아니라
+    // A-1 이 떴다(2026-09-07 에 기본 안을 A-4 로 바꾸면서 여기만 빠졌다).
+    // ※ 설치 순간 박히는 값이라, 이미 추가해 둔 아이콘은 지우고 다시 추가해야
+    //   바뀐다.
+    start_url: `${BASE}/a4`,
     // standalone — 세로 화면에서는 안드로이드 상태바·내비바가 계속 보여야 한다
     // (사용자 지정 2026-08-18: "안드로이드바가 계속 있어야지. 세로일떄는").
     // fullscreen 으로 설치하면 앱이 화면 전체를 받아 바가 아예 안 뜨고, 가장자리를
