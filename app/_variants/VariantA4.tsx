@@ -3584,6 +3584,16 @@ function RecordingEventTimeline({
   const isActiveEvent = (ms: number, durSec: number) =>
     playbackMs !== null && playbackMs >= ms && playbackMs < ms + durSec * 1000;
 
+  // 실기기 가로는 폰이 세로인 채 앱만 CSS 로 90° 돌아간 상태다. 그때 눈에
+  // 보이는 '가로'는 뷰포트 기준 세로라, 시간바를 옆으로 밀면 clientX 가 아니라
+  // clientY 가 움직인다 — 안 바꾸면 가로에서 드래그가 안 먹는다(사용자 지적
+  // 2026-09-08: "녹화 가로 시간바 드래그는 (…) 왜 가로로 드래그 되게 해야지").
+  // 다채널 시간바(RecordingControls)가 쓰던 것과 같은 보정이다. 세로에서는
+  // rotatedInput 이 false 라 지금까지와 똑같이 clientX 를 쓴다.
+  const rotatedInput = useRotatedInput();
+  const dragAxis = (e: { clientX: number; clientY: number }) =>
+    rotatedInput ? e.clientY : e.clientX;
+
   // 드래그 + 핀치 줌
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (playbackMs === null) return;
@@ -3601,7 +3611,7 @@ function RecordingEventTimeline({
       dragStartRef.current = null;
     } else {
       isDraggingRef.current = true;
-      dragStartRef.current = { x: e.clientX, ms: playbackMs };
+      dragStartRef.current = { x: dragAxis(e), ms: playbackMs };
       tapRef.current = { x: e.clientX, y: e.clientY, t: Date.now(), moved: false };
       onScrubbingChange?.(true);
     }
@@ -3621,7 +3631,7 @@ function RecordingEventTimeline({
       dragStartRef.current &&
       pointersRef.current.size === 1
     ) {
-      const dx = e.clientX - dragStartRef.current.x;
+      const dx = dragAxis(e) - dragStartRef.current.x;
       if (tapRef.current && !tapRef.current.moved) {
         const moveDist = Math.hypot(
           e.clientX - tapRef.current.x,
