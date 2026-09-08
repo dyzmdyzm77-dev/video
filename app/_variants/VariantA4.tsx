@@ -327,10 +327,6 @@ export default function VariantA4({
   // 기기가 가로로 긴 상태인가 — 판정은 useDeviceWide 하나에 모아 뒀다
   // (데스크톱 미리보기와 실기기가 회전을 다르게 표현해서다. useDeviceWidth.ts).
   const wideNow = useDeviceWide();
-  // 딤 알약에 날짜까지 적을 만큼 넓은가(layoutRules.DIM_CLOCK_DATE_BP).
-  // 가로로 눕히면 긴 변이 폭이라 대개 넓고, 360 세로 확대처럼 좁으면 시각만
-  // 남긴다 — 알약이 길면 아이콘 줄을 밀어 '원래 크기로'가 화면 밖으로 나갔다.
-  const dimClockWide = useDeviceWidth() >= DIM_CLOCK_DATE_BP;
   // 패널을 오른쪽에서 낼지, 아래에서 낼지.
   //
   // 기준은 '세로가 가로보다 긴가'(비율 < 1) 하나다. A-1 은 정사각형에 가까우면
@@ -346,10 +342,25 @@ export default function VariantA4({
   const ratioFlipped = useRotatedInput();
   const effRatio = ratioFlipped && rawRatio > 0 ? 1 / rawRatio : rawRatio;
   const panelBottom = effRatio < 1;
-  // 지금 화면의 짧은 변(눕혔을 때의 높이). 가로 딤 '메뉴' 버튼이 세로로
-  // 전환할지 오른쪽 패널을 열지를 이 값으로 가른다 — 눕히면 폭은 긴 변이라
-  // 폴드8 접힘(752×476)과 360 폰(780×360)을 못 가른다.
-  const screenShortH = effRatio > 0 ? deviceWForMenu / effRatio : 0;
+  // ── 지금 눈에 보이는 화면의 폭·높이 ────────────────────────────────────────
+  // useDeviceWidth 는 '기기 폭'이라 실기기에서 앱만 CSS 로 눕힌 경우(폰은 세로인
+  // 채 화면만 90° 돌아간 상태) 여전히 세로 폭(360)을 준다. 눈에 보이는 가로
+  // 화면의 폭은 그 반대인 높이 쪽이다 — 안 뒤집으면 실기기 가로에서 폭을 360 으로
+  // 읽어, 알약이 좁은 화면인 줄 알고 날짜를 떼 버린다(사용자 지적 2026-09-07:
+  // "실제 기기에서 볼때는 왜 가로 딤에서 날짜 시간 알약이, 날짜는 안뜨고 시간만
+  // 떠?"). 데스크톱 미리보기는 --device-w/h 를 아예 맞바꾸므로 뒤집지 않는다.
+  // 뒤집을지 여부는 위 panelBottom 과 같은 기준(ratioFlipped)을 쓴다.
+  const rawScreenH = rawRatio > 0 ? deviceWForMenu / rawRatio : 0;
+  const screenW = ratioFlipped ? rawScreenH : deviceWForMenu;
+  // 짧은 변. 가로 딤 '메뉴' 버튼이 세로로 전환할지 오른쪽 패널을 열지를 이 값으로
+  // 가른다 — 눕히면 폭은 긴 변이라 폴드8 접힘(752×476)과 360 폰(780×360)을
+  // 못 가른다.
+  const screenShortH = ratioFlipped ? deviceWForMenu : rawScreenH;
+  // 딤 알약에 날짜까지 적을 만큼 넓은가(layoutRules.DIM_CLOCK_DATE_BP).
+  // 보이는 화면의 폭(screenW)으로 본다 — 기기 폭으로 보면 실기기 가로에서
+  // 세로 폭(360)을 읽어 날짜가 떨어져 나간다. 좁으면 시:분:초만 — 알약이 길면
+  // 아이콘 줄을 밀어 '원래 크기로'가 화면 밖으로 나간다.
+  const dimClockWide = screenW >= DIM_CLOCK_DATE_BP;
   const orientKey: "portrait" | "landscape" = wideNow
     ? "landscape"
     : "portrait";
