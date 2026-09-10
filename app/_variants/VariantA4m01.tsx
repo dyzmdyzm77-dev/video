@@ -88,11 +88,6 @@ import {
   LANDSCAPE_TOP_INSET,
 } from "../components/layoutRules";
 
-// 영상 딤 테스트 값(사용자 지정 2026-09-10) — A-4(수정01)만. 세로 단일 · 세로
-// 다채널 · 가로 세 자리가 이 두 값을 같이 쓴다. 되돌리려면 이 셋을 지우면 된다.
-const A4M01_DIM_TOP_PX = 80;
-const A4M01_DIM_TOP_ALPHA = 0.7;
-
 // 가로 딤에서 '아래로' 나오는 판의 높이(PANEL_BOTTOM_H)는 공용 값을 쓴다.
 // 예전엔 A-4 만 스트립을 낮춰 써서 A4_* 상수를 따로 뒀는데, 2026-09-01 에 네
 // 안이 같은 값(TILE_MIN_H 64 · MOTION_MIN_H 88)을 쓰기로 하면서 같아졌다.
@@ -803,12 +798,6 @@ export default function VariantA4({
           // AI·크게 보기를 시간바 아래 가운데 줄로 옮겼다 — 딤 좌우 아래 원은 끈다.
           showOverlayAi={false}
           showOverlayZoom={false}
-          // 딤 테스트(사용자 지정 2026-09-10) — 세로와 같은 값. 위 80 고정 · 0.7→0,
-          // 아래 없음. 가로는 아래 딤 위에 시간바가 얹혀 있어 눈금 글자가 영상에
-          // 묻힐 수 있다 — 테스트라 일단 그대로 뺀다.
-          dimTopHeight={`${A4M01_DIM_TOP_PX}px`}
-          dimBottomHeight="0%"
-          dimAlpha={A4M01_DIM_TOP_ALPHA}
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 — 아래 아이콘 줄과 한 값을 쓴다(dimEdge).
@@ -1750,11 +1739,6 @@ function GridView({
           // swapAiZoom 이라 AI 는 왼쪽 아래 원 하나뿐이라 당겨 올 이웃이 없어
           // 그 자리는 빈다(세로 단일 딤과 같은 처리). 크게 보기는 오른쪽 아래 그대로.
           showAi={false}
-          // 딤 테스트(사용자 지정 2026-09-10) — 위 80 고정 · 0.7→0, 아래 없음.
-          // A-4(수정01)만. 값은 A4M01_DIM_* 한 곳(단일·가로와 같이 움직인다).
-          topHeight={`${A4M01_DIM_TOP_PX}px`}
-          bottomHeight="0%"
-          dimAlpha={A4M01_DIM_TOP_ALPHA}
           dimStyle="a3"
           dimBlur={false}
           dimTint={DIM_TINT}
@@ -2421,16 +2405,20 @@ function ExpandedView({
             className="pointer-events-none absolute inset-0 transition-opacity duration-300 ease-out"
             style={{ opacity: showControls ? 1 : 0 }}
           >
-            {/* 딤 테스트(사용자 지정 2026-09-10) — A-4(수정01)만. 영상 딤이 나오는
-                세 자리(세로 단일 · 세로 다채널 · 가로)가 같은 값이다.
-                · 위 딤: 높이 80 고정(% 아님), 위 0.7 → 아래 0 ("위쪽 딤은 세로
-                  사이즈 80 고정이고, 위쪽 70%~아래쪽 0%로").
-                · 아래 딤: 뺐다("아래쪽 딤은 빼봐"). */}
             <div
               className="absolute inset-x-0 top-0"
               style={{
-                height: `${A4M01_DIM_TOP_PX}px`,
-                background: `linear-gradient(to bottom, rgba(0,0,0,${A4M01_DIM_TOP_ALPHA}) 0%, rgba(0,0,0,0) 100%)`,
+                height: "33%",
+                background:
+                  "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
+              }}
+            />
+            <div
+              className="absolute inset-x-0 bottom-0"
+              style={{
+                height: "33%",
+                background:
+                  "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
               }}
             />
             {/* '● 실시간/녹화영상' 알약 — 딤 왼쪽 위. 카메라 이름이 있던
