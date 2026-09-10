@@ -484,6 +484,9 @@ export function exitImmersive() {
   // 예전엔 앞쪽(확대가 눕힌 경우)만 되돌려서, 회전으로 켜진 확대를 끄면 가로에
   // 남았다.
   ds.immersive = "false";
+  // 지우기 전에 읽어 둔다 — 아래에서 '앱이 눕힌 것이었나'를 이걸로 가른다.
+  const wasRotatedByApp = ds[ROTATED_FLAG] === "true";
+  const wasOpenedByRotate = ds[BY_ROTATE_FLAG] === "true";
   ds[ROTATED_FLAG] = "false";
   ds[BY_ROTATE_FLAG] = "false";
   // 축소 뒤에 화면을 세로로 세울 기기인가. '지금 누워 있다'만으로는 부족하다 —
@@ -530,7 +533,18 @@ export function exitImmersive() {
   // 경로에선 축소해도 가로에 남았다(사용자 지적: "가로로 돌려졌을 때 축소버튼
   // 누르면 세로로 돌아와야지. 왜 그 가로 상태에서 축소되냐?").
   // 목표값 false 를 실어 보내므로 이미 세로면 상태가 안 바뀌어 아무 일도 안 난다.
-  requestDeviceRotate(false);
+  //
+  // 다만 '앱이 눕힌 것'일 때만이다. 사용자가 먼저 회전 버튼으로 눕혀 둔 가로는
+  // 축소한다고 되돌리면 안 된다 — 누르지도 않은 회전이 일어난다(사용자 지적
+  // 2026-09-10, Z 폴드 8 펼침: "왼쪽으로 회전 후에 확대 버튼을 눌렀다가, 다시
+  // 축소를 눌렀더니 원래대로 회전을 하네?"). 폴드 펼침은 이미 가로가 이득이
+  // 아니라 확대가 눕히지 않으므로(shouldRotate false) ROTATED_FLAG 도 안 선다.
+  // 그 상태에서 무조건 되돌리면 사용자가 잡아 둔 방향만 풀린다.
+  //
+  // 되돌리는 경우는 둘이다 — 확대가 눕혔거나(ROTATED_FLAG), 눕혀서 확대가
+  // 켜졌거나(BY_ROTATE_FLAG). 실기기에서 폰을 눕혀 켜진 확대는 뒤쪽이라
+  // "눕힌 상황에서 축소하면 세로로 돌아와야지"는 그대로 지켜진다.
+  if (wasRotatedByApp || wasOpenedByRotate) requestDeviceRotate(false);
   // '바로' 세로로 — 축소는 회전 연출(0.35s) 없이 즉시 끝낸다(사용자 지정:
   // "축소 버튼 누르면 바로 세로 화면으로 이동하게 해").
   document.documentElement.dataset.rotateAnim = "false";
