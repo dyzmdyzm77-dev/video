@@ -1733,6 +1733,12 @@ function GridView({
           auto={gridAuto}
           // A-3: AI 는 우상단 아이콘 줄로, 크게 보기는 우하단 원 버튼으로 맞바꾼다.
           swapAiZoom
+          // AI 는 여기서도 뺀다(사용자 지적 2026-09-10: "A-4랑 A-4(수정01) AI
+          // 버튼은 왜 다 안뺐어?"). 9/7 에 가로 딤 아이콘 줄과 세로 단일 딤만
+          // 빼고 이 세로 다채널 딤은 남겨 뒀었다 — "AI 버튼 빼"는 전부였다.
+          // swapAiZoom 이라 AI 는 왼쪽 아래 원 하나뿐이라 당겨 올 이웃이 없어
+          // 그 자리는 빈다(세로 단일 딤과 같은 처리). 크게 보기는 오른쪽 아래 그대로.
+          showAi={false}
           dimStyle="a3"
           dimBlur={false}
           dimTint={DIM_TINT}
