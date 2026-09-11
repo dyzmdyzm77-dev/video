@@ -39,10 +39,15 @@ const ICON_FILE: Record<VideoFit, string> = {
   cover: "video-fit-cover.svg",
 };
 
-/** 다음 상태. */
-export function nextVideoFit(f: VideoFit): VideoFit {
-  const i = VIDEO_FIT_ORDER.indexOf(f);
-  return VIDEO_FIT_ORDER[(i + 1) % VIDEO_FIT_ORDER.length];
+/** 다음 상태. order 를 주면 그 순서로 돈다 — 모드 일부를 빼는 안이 쓴다
+ *  (A-4(수정01): 화면 늘리기를 뺀다). 안 주면 지금 순서 그대로다.
+ *  지금 값이 order 에 없으면(빠진 모드였다면) 맨 앞으로 간다. */
+export function nextVideoFit(
+  f: VideoFit,
+  order: readonly VideoFit[] = VIDEO_FIT_ORDER,
+): VideoFit {
+  const i = order.indexOf(f);
+  return order[(i + 1) % order.length];
 }
 
 /**

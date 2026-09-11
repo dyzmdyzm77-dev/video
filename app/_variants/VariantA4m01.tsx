@@ -48,7 +48,7 @@ import { VARIANT_LABEL } from "../components/variantRoute";
 import MoreSheet from "../components/MoreSheet";
 import AiSearchSheet from "../components/AiSearchSheet";
 import { VideoFitToast, useVideoFit } from "../components/VideoFitToast";
-import { nextVideoFit, videoFitIcon } from "../components/videoFit";
+import { nextVideoFit, videoFitIcon, type VideoFit } from "../components/videoFit";
 import { AUTO_HIDE_MS, useAutoHide } from "../components/useAutoHide";
 import { useDimSync } from "../components/dimSync";
 import AndroidNav from "../components/AndroidNav";
@@ -87,6 +87,12 @@ import {
   LANDSCAPE_EDGE_ANDROID,
   LANDSCAPE_TOP_INSET,
 } from "../components/layoutRules";
+
+// 화면 맞춤이 도는 순서 — 원본 비율 유지 ↔ 화면 채우기 둘만. 화면 늘리기는 뺐다
+// (사용자 지정 2026-09-11: "화면늘리기 아이콘도 빼, 원본 비율 유지랑 화면 채우기만 해").
+// 단일·다채널·가로가 이 하나를 같이 쓴다 — 순환과 딤 아이콘이 같은 순서를 봐야
+// 아이콘이 빠진 모드를 띄우지 않는다. A-4(수정01)만.
+const A4M01_FIT_ORDER: readonly VideoFit[] = ["contain", "cover"];
 
 // 가로 딤에서 '아래로' 나오는 판의 높이(PANEL_BOTTOM_H)는 공용 값을 쓴다.
 // 예전엔 A-4 만 스트립을 낮춰 써서 A4_* 상수를 따로 뒀는데, 2026-09-01 에 네
@@ -698,7 +704,9 @@ export default function VariantA4({
   // 따로 기억해서, 한쪽에서 맞춤을 바꾸고 다른 쪽으로 넘어가면 화면이 저절로
   // 바뀐 것처럼 보였다(가로에선 맞춤 토스트까지 떴다). 맞춤은 '이 영상들을 어떻게
   // 채워 볼지'라는 하나의 취향이라 화면 종류로 갈릴 이유가 없다.
-  const fitState = useVideoFit("fill");
+  // 기본은 화면 채우기 — 화면 늘리기를 빼면서 옮겼다. 영역을 꽉 채우는 느낌이
+  // 늘리기와 가장 가깝다(늘리지 않고 잘라서 채운다).
+  const fitState = useVideoFit("cover", A4M01_FIT_ORDER);
 
   const layoutDims = bestGridForCount(gridCount, gridRatio);
   const pageSize = layoutDims.cols * layoutDims.rows;
@@ -798,6 +806,9 @@ export default function VariantA4({
           // AI·크게 보기를 시간바 아래 가운데 줄로 옮겼다 — 딤 좌우 아래 원은 끈다.
           showOverlayAi={false}
           showOverlayZoom={false}
+          // 가로 딤도 세로와 같이 — 화면 구성 버튼 빼기, 맞춤은 원본/채우기 둘만.
+          showOverlayGallery={false}
+          fitOrder={A4M01_FIT_ORDER}
           // 시간바를 끄는 동안엔 딤 UI 를 걷어 시간바만 남긴다.
           scrubbing={isScrubbing}
           // 딤 위 UI 좌우 여백 — 아래 아이콘 줄과 한 값을 쓴다(dimEdge).
@@ -1730,6 +1741,9 @@ function GridView({
           onAi={onOpenAi}
           onFit={cycleGridFit}
           fit={gridFit}
+          // 화면 구성 버튼 빼기 · 맞춤은 원본/채우기 둘만(사용자 지정 2026-09-11).
+          showGallery={false}
+          fitOrder={A4M01_FIT_ORDER}
           auto={gridAuto}
           // A-3: AI 는 우상단 아이콘 줄로, 크게 보기는 우하단 원 버튼으로 맞바꾼다.
           swapAiZoom
@@ -2454,7 +2468,7 @@ function ExpandedView({
                 onClick={cycleVideoFit}
               >
                 <img
-                  src={videoFitIcon(BASE, nextVideoFit(videoFit))}
+                  src={videoFitIcon(BASE, nextVideoFit(videoFit, A4M01_FIT_ORDER))}
                   alt=""
                   className="h-7 w-7"
                 />

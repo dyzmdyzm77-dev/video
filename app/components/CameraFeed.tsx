@@ -297,6 +297,8 @@ export function GridSelectionOverlay({
   swapAiZoom = false,
   showAi = true,
   showZoom = true,
+  showGallery = true,
+  fitOrder,
   dimStyle,
   dimBlur = true,
   dimTint = "rgba(102,102,102,0.4)",
@@ -356,6 +358,12 @@ export function GridSelectionOverlay({
    *  A-3 가로는 AI 를 시간바 아래 가운데 줄로 옮겨서 여기선 끈다
    *  (사용자 지정 2026-08-14) — 안 끄면 같은 버튼이 두 개가 된다. */
   showAi?: boolean;
+  /** 우상단 줄의 '화면 구성'(갤러리) 버튼을 그릴지. 기본 true = 기존 그대로.
+   *  A-4(수정01)이 끈다(사용자 지정 2026-09-11: "딤에 화면구성 아이콘 빼"). */
+  showGallery?: boolean;
+  /** 화면 맞춤이 도는 순서. 버튼에 '다음 상태' 아이콘을 그릴 때 이 순서를 따른다 —
+   *  순환만 줄이고 아이콘은 빠진 모드를 띄우는 일이 없게. 기본 = videoFit 의 전체 순서. */
+  fitOrder?: readonly VideoFit[];
   /** 딤 아래 '크게 보기/원래 크기로' 원 버튼을 그릴지. 기본 true = 기존 그대로.
    *  A-3 가로는 이 버튼도 시간바 아래 가운데 줄로 옮겨서 여기선 끈다
    *  (사용자 지정 2026-08-14). */
@@ -529,18 +537,20 @@ export function GridSelectionOverlay({
         }}
         {...(auto?.holdProps ?? {})}
       >
-        <button
-          type="button"
-          aria-label="갤러리"
-          className="px-1.5 py-2"
-          onClick={onGallery}
-          style={{ pointerEvents: visible ? "auto" : "none" }}
-        >
-          <OverlayIcon
-            src={`${BASE}/ic_list_gallery.svg`}
-            size={28}
-          />
-        </button>
+        {showGallery && (
+          <button
+            type="button"
+            aria-label="갤러리"
+            className="px-1.5 py-2"
+            onClick={onGallery}
+            style={{ pointerEvents: visible ? "auto" : "none" }}
+          >
+            <OverlayIcon
+              src={`${BASE}/ic_list_gallery.svg`}
+              size={28}
+            />
+          </button>
+        )}
         {/* 화면 맞춤 — 단일 화면과 같은 자리·같은 아이콘. 그리드 타일 전체에 걸린다. */}
         <button
           type="button"
@@ -549,7 +559,7 @@ export function GridSelectionOverlay({
           onClick={onFit}
           style={{ pointerEvents: visible ? "auto" : "none" }}
         >
-          <OverlayIcon src={videoFitIcon(BASE, nextVideoFit(fit))} size={28} />
+          <OverlayIcon src={videoFitIcon(BASE, nextVideoFit(fit, fitOrder))} size={28} />
         </button>
         {/* 크게 보기 — 상태바·헤더·하단 탭바·안드로이드 내비를 걷고 영상만 화면을
             꽉 채운다(immersive.ts). 회전이 아니라 '지금 방향 그대로 키우기'다.

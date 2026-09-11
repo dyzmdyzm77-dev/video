@@ -102,6 +102,8 @@ export default function LandscapeVideo({
   onAi,
   swapAiZoom = false,
   showOverlayAi = true,
+  showOverlayGallery = true,
+  fitOrder,
   showOverlayZoom = true,
   topInset = 0,
   dimStyle,
@@ -176,6 +178,11 @@ export default function LandscapeVideo({
   /** 딤 아래 AI 원 버튼을 그릴지. 기본 true. A-3 은 AI 를 시간바 아래 줄로
    *  옮겨서 끈다(사용자 지정 2026-08-14). */
   showOverlayAi?: boolean;
+  /** 딤 우상단 '화면 구성' 버튼. 기본 true. GridSelectionOverlay 의 showGallery 로 간다. */
+  showOverlayGallery?: boolean;
+  /** 화면 맞춤 순서 — 딤 아이콘이 '다음 상태'를 이 순서로 그린다. 순환 자체는
+   *  onFitCycle 을 준 안이 자기 순서로 돈다. */
+  fitOrder?: readonly VideoFit[];
   /** 딤 아래 '크게 보기' 원 버튼을 그릴지. 기본 true. A-3 은 그 버튼도 시간바
    *  아래 줄로 옮겨서 끈다(사용자 지정 2026-08-14). */
   showOverlayZoom?: boolean;
@@ -995,6 +1002,8 @@ export default function LandscapeVideo({
       onAi={onAi}
       swapAiZoom={swapAiZoom}
       showAi={showOverlayAi}
+      showGallery={showOverlayGallery}
+      fitOrder={fitOrder}
       showZoom={showOverlayZoom}
       dimStyle={dimStyle}
       dimBlur={dimBlur}

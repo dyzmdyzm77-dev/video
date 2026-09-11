@@ -8,7 +8,10 @@ import { VIDEO_FIT_LABEL, nextVideoFit, type VideoFit } from "./videoFit";
 // 순서나 문구가 금방 갈린다 — 실제로 아이콘이 임시(expand.svg)로 남아 있던 것도
 // 그렇게 흩어져 있었기 때문이다.
 
-export function useVideoFit(initial: VideoFit = "cover") {
+export function useVideoFit(
+  initial: VideoFit = "cover",
+  order?: readonly VideoFit[],
+) {
   const [fit, setFit] = useState<VideoFit>(initial);
   const [toast, setToast] = useState<string | null>(null);
   // key 는 같은 문구를 연속으로 띄울 때도 등장 애니메이션을 다시 태우기 위한 것.
@@ -22,7 +25,7 @@ export function useVideoFit(initial: VideoFit = "cover") {
   }, []);
 
   const cycle = () => {
-    const next = nextVideoFit(fit);
+    const next = nextVideoFit(fit, order);
     setFit(next);
     setToast(VIDEO_FIT_LABEL[next]);
     setToastKey((k) => k + 1);
