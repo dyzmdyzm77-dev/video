@@ -23,14 +23,21 @@
 
 export type VideoFit = "fill" | "contain" | "cover";
 
-/** 버튼을 누를 때 도는 순서 — 원본 비율 유지 → 화면 늘리기 → 화면 채우기. */
+/** 버튼을 누를 때 도는 순서 — contain → fill → cover
+ *  (문구로는 원본 비율 유지 → 화면 채우기 → 화면 늘리기). */
 export const VIDEO_FIT_ORDER: VideoFit[] = ["contain", "fill", "cover"];
 
-/** 토스트에 띄우는 문구. 아이콘 파일명과 같은 표현을 쓴다. */
+/** 토스트에 띄우는 문구.
+ *
+ *  fill · cover 문구를 서로 바꿨다(사용자 지정 2026-09-11: "화면 채우기 늘리기
+ *  서로 바뀐거같아. 그 눌렀을때 토스트 팝업 문구 서로 바꿔줘", 적용 범위 "전체 다").
+ *  비율을 무시하고 영역에 맞추는 fill 이 '채우기', 비율을 지킨 채 키워 넘치는 쪽을
+ *  자르는 cover 가 '늘리기'로 읽힌다는 판단이다. 바꾼 건 문구뿐이다 — 모드 이름
+ *  (fill/cover)·동작·아이콘 파일은 그대로다. */
 export const VIDEO_FIT_LABEL: Record<VideoFit, string> = {
-  fill: "화면 늘리기",
+  fill: "화면 채우기",
   contain: "원본 비율 유지",
-  cover: "화면 채우기",
+  cover: "화면 늘리기",
 };
 
 const ICON_FILE: Record<VideoFit, string> = {
@@ -40,7 +47,7 @@ const ICON_FILE: Record<VideoFit, string> = {
 };
 
 /** 다음 상태. order 를 주면 그 순서로 돈다 — 모드 일부를 빼는 안이 쓴다
- *  (A-4(수정01): 화면 늘리기를 뺀다). 안 주면 지금 순서 그대로다.
+ *  (A-4(수정01): fill 을 뺀다). 안 주면 지금 순서 그대로다.
  *  지금 값이 order 에 없으면(빠진 모드였다면) 맨 앞으로 간다. */
 export function nextVideoFit(
   f: VideoFit,
