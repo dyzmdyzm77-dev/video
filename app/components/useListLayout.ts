@@ -192,13 +192,32 @@ export function useListLayout(
   //     2026-09-07: "녹화 접속했다가 다시 실시간 가면 가로 스크롤로 적용되어있어").
   //     그래서 다음 프레임과 잠깐 뒤에 한 번 더 잰다. 판정 자체는 순수한 DOM
   //     읽기라 여러 번 불러도 결과가 같고, 값이 안 바뀌면 setState 도 안 튄다.
+  //     300ms 로도 모자랐다(사용자 지적 2026-09-16, 폴드8 접힘 실기기: "단일화면에서
+  //     왜 카메라 목록이 최초 진입했을 때 세로 스크롤인거야? 녹화영상갔다가 다시
+  //     실시간 가면 가로 스크롤로 바뀌네?" — 그리고 "녹화영상 갔다가 실시간
+  //     돌아왔을때의 레이아웃이 맞다"). 첫 판정이 자리 덜 잡은 큰 높이로 굳고,
+  //     녹화를 다녀오며 다시 재야 제값이 나오던 것이다. 그래서 늦은 시점까지
+  //     몇 번 더 본다 — 글꼴이 자리 잡는 순간(document.fonts.ready)과 load,
+  //     그리고 800ms · 2s. 판정은 순수한 DOM 읽기라 값이 그대로면 아무 일도 안 난다.
   useEffect(() => {
     pickRef.current?.();
     const raf = requestAnimationFrame(() => pickRef.current?.());
-    const t = setTimeout(() => pickRef.current?.(), 300);
+    const timers = [300, 800, 2000].map((ms) =>
+      setTimeout(() => pickRef.current?.(), ms),
+    );
+    const repick = () => pickRef.current?.();
+    // 글꼴이 늦게 붙으면 제목 줄 높이(chrome)가 달라져 판정이 뒤집힌다.
+    let alive = true;
+    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
+    fonts?.ready.then(() => {
+      if (alive) repick();
+    });
+    window.addEventListener("load", repick);
     return () => {
+      alive = false;
       cancelAnimationFrame(raf);
-      clearTimeout(t);
+      timers.forEach(clearTimeout);
+      window.removeEventListener("load", repick);
     };
   });
   // (2) 크기 변화 — 기기 폭/높이 전환, 회전 등. area 는 렌더가 바뀌어도 같은 노드라
