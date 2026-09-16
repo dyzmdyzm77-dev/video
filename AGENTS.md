@@ -20,9 +20,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
   CSS 에 `flex-grow` 를 켜면 어느 배치에서든 영상이 먼저 다 먹어 목록이 붕괴한다.
   세로 2열일 땐 목록이 남는 세로를 쓰므로 영상은 16:9 그대로.
 - **카메라 목록 방향(가로 1줄 ↔ 세로 2열)은 폭으로 정하지 않는다.** 세로 2열로
-  `LIST_VERTICAL_MIN_ROWS` 줄(지금 3줄)이 다 보이지 않으면 가로로 넘어간다.
-  1.5줄로 시작했다가 폴드8 접힘에서 두 줄 반이 보이는데도 세로로 남아 올렸다
-  (사용자 지정 2026-09-16). 값은 `layoutRules.ts` 에 있다.
+  `LIST_VERTICAL_MIN_ROWS` 줄(지금 1.75줄)이 다 보이지 않으면 가로로 넘어간다.
+  1.5줄로 시작했다가 폴드8 접힘 때문에 올렸다(사용자 지정 2026-09-16, 3 → 2.25 →
+  1.75). 값은 `layoutRules.ts` 에 있다 — 거기 실측표도 같이 있다.
   `app/components/useListLayout.ts` 훅 하나를 안들이 공유한다.
 - **가로 1줄일 때 목록 영역 높이 = 움직임 감지 탭 높이(`MOTION_MIN_H` 88).**
   최소가 아니라 **정확히 그 값**으로 못 박는다(실시간·녹화 공통) — 두 탭(카메라
