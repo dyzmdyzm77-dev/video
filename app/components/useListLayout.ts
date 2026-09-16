@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LIST_MIN_H, LIST_MIN_VISIBLE, TILE_MIN_H } from "./layoutRules";
+import {
+  LIST_MIN_H,
+  LIST_MIN_VISIBLE,
+  LIST_VERTICAL_MIN_ROWS,
+  TILE_MIN_H,
+} from "./layoutRules";
 
 // 카메라 목록 배치(가로 한 줄 ↔ 세로 2열)를 정하는 단일 규칙 — 자세한 근거는
 // app/components/layoutRules.ts 참고.
 //
-// 전환 기준: 세로 2열로 '완전히 보이는 2개 + 반쯤 보이는 2개'(= 1.5줄)에 못 미치면
-// 가로 한 줄로 넘어간다. 폭만으로는 못 가른다(620px 이라도 4:5 처럼 세로로 긴 화면은
+// 전환 기준: 세로 2열로 LIST_VERTICAL_MIN_ROWS 줄에 못 미치면 가로 한 줄로 넘어간다. 폭만으로는 못 가른다(620px 이라도 4:5 처럼 세로로 긴 화면은
 // 세로 2열이 넉넉하다).
 //
 // 쓰는 법: areaRef 는 '목록 영역'(제목 + 타일 행을 감싸는 flex-1 박스, position:
@@ -130,15 +134,15 @@ export function useListLayout(
         return;
       }
 
-      // ── 2) 세로 2열로 '1.5줄'이 되나 ────────────────────────────────────────
-      // 기준은 '완전히 보이는 2개 + 반쯤 보이는 2개'(= 1.5줄). 그만큼도 안 들어가면
-      // 세로 2열은 한 줄(2개)만 덩그러니 보이고 나머진 스크롤이라 목록 구실을 못 한다
-      // → 가로 한 줄로 넘어간다. 필요한 세로 = 1줄 + 갭 + 반줄.
+      // ── 2) 세로 2열로 기준 줄 수가 되나 ─────────────────────────────────────
+      // 기준은 layoutRules 의 LIST_VERTICAL_MIN_ROWS(지금 3줄). 그만큼 안 들어가면
+      // 세로 2열은 몇 개만 덩그러니 보이고 나머진 스크롤이라 목록 구실을 못 한다
+      // → 가로 한 줄로 넘어간다. 필요한 세로 = 타일 × 줄 수 + 갭.
       //
       // '두 배치의 노출 개수를 세서 많은 쪽'으로 바꿔 본 적 있는데(832e35a), 405×648
-      // 처럼 양쪽 다 2개인 구간에서 비겨 세로에 눌러앉아 1.5줄 규칙을 어겼다. 되돌렸다.
+      // 처럼 양쪽 다 2개인 구간에서 비겨 세로에 눌러앉아 줄 수 규칙을 어겼다. 되돌렸다.
       const tileHv = (W - GAP) / 2 / RATIO; // 세로 2열 타일 높이(폭에서 나옴)
-      const wide = availH < tileHv * 1.5 + GAP;
+      const wide = availH < tileHv * LIST_VERTICAL_MIN_ROWS + GAP;
       setListWide(wide);
 
       // 가로 한 줄일 때 타일 높이는 '최소 N개가 보이는' 폭에서 거꾸로 나온다
