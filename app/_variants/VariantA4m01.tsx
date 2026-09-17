@@ -5071,48 +5071,6 @@ function RecordingControls({
   );
   return (
     <div className="relative flex flex-col">
-      {/* 녹화 + 날짜 — 가로 딤(overlay)에선 안 그린다. LandscapeVideo 가 같은
-          정보를 딤에 맞춘 색으로 이미 얹고 있어서 칩 줄이 두 번 겹친다. */}
-      {!overlay && !playerOnly && (
-      <div
-        className="relative flex items-center px-5"
-        style={{ height: "48px", gap: "8px" }}
-      >
-        {/* 녹화영상 배지는 뺐다 — A-4 만(사용자 지정 2026-08-26).
-            날짜·시각은 줄 한가운데고, 날짜를 고르는 입구는 단일 화면과 같은
-            왼쪽 달력 버튼이다(사용자 지정 2026-08-26: "화살표 빼고 왼쪽에 달력
-            버튼 넣어줘, 단일처럼"). 규격도 단일과 같은 28 원 + 아이콘 24. */}
-        <button
-          type="button"
-          aria-label="날짜, 시간 선택"
-          onClick={onOpenDateTime}
-          className="flex h-[28px] w-[28px] flex-none items-center justify-center rounded-full border border-neutral-300"
-        >
-          <img src={`${BASE}/time.svg`} alt="" className="h-6 w-6" />
-        </button>
-        <button
-          type="button"
-          onClick={onOpenDateTime}
-          className="absolute left-1/2 flex -translate-x-1/2 items-center gap-0 text-[14px] font-medium leading-none"
-          style={{
-            // 검정 50% 알약 — 흰 줄 위에서도 시각이 한 덩어리로 읽힌다
-            // (사용자 지정 2026-08-26: "알약 형태로 블랙 50%로 둘러줘").
-            height: "26px",
-            padding: "0 10px",
-            borderRadius: "9999px",
-            backgroundColor: "rgba(0,0,0,0.5)",
-            color: "#FFFFFF",
-            whiteSpace: "nowrap" as const,
-          }}
-        >
-          {/* 화살표는 뺐다 — A-4 만(사용자 지정 2026-08-26). 날짜를 고르는
-              입구가 왼쪽 달력 버튼으로 돌아와서 같은 말을 두 번 하게 됐다.
-              글자는 그대로 눌러도 시트가 열린다. */}
-          <span suppressHydrationWarning>{labelDate}</span>
-        </button>
-        <RowSkeleton visible={rowLoading} />
-      </div>
-      )}
       {/* REC 칩을 누르면 이 아래(플레이어 버튼 + 시간바)만 숨겨진다 — 위 헤더
           행(REC+날짜)은 남아서 다시 누르면 되돌릴 수 있다. 예전엔 이 칩이
           가짜 시스템 바(chromeVisible)를 같이 토글했는데, 그 둘은 무관한
@@ -5120,11 +5078,8 @@ function RecordingControls({
       {/* 가로 딤엔 REC 칩(숨기기 토글)이 없으므로 항상 편다. */}
       {(overlay || timelineVisible) && (
       <>
-      {/* 구분선 — 흰 바 위(세로)에서만 그린다. 확대·가로 딤에선 영상 위에
-          흰 줄이 그어져 보여 뺐다(사용자 요청). */}
-      {!overlay && (
-        <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
-      )}
+      {/* 맨 위 구분선은 뺐다 — 날짜 줄이 5버튼 아래로 내려가면서 그 자리가 영상(그리드)과
+          5버튼 사이가 됐다. 단일 녹화 화면도 영상 바로 아래 5버튼이고 선이 없다. */}
       <div className="relative">
       {/* 플레이어 컨트롤 — 시간바(타임라인) 위.
           가로(overlay)에선 시간바를 끄는 동안 잠깐 감춘다 — 손을 떼면 돌아온다.
@@ -5201,6 +5156,56 @@ function RecordingControls({
       {/* 구분선 — 흰 바 위(세로)에서만 그린다. 확대·가로 딤에선 영상 위에
           흰 줄이 그어져 보여 뺐다(사용자 요청). */}
       {!overlay && (
+        <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
+      )}
+      {/* 녹화 + 날짜 — 5버튼 아래로 옮겼다(사용자 지정 2026-09-17: "5버튼 시간날짜
+          알략 영역 위로 올려줘. 그냥 순서를 바꾸는거야. 단일처럼"). 단일 녹화 화면과
+          같은 순서(5버튼 → 구분선 → 날짜 줄)다. A-4(수정01)만.
+          가로 딤(overlay)에선 안 그린다. LandscapeVideo 가 같은 정보를 딤에 맞춘
+          색으로 이미 얹고 있어서 칩 줄이 두 번 겹친다. */}
+      {!overlay && !playerOnly && (
+      <div
+        className="relative flex items-center px-5"
+        style={{ height: "48px", gap: "8px" }}
+      >
+        {/* 녹화영상 배지는 뺐다 — A-4 만(사용자 지정 2026-08-26).
+            날짜·시각은 줄 한가운데고, 날짜를 고르는 입구는 단일 화면과 같은
+            왼쪽 달력 버튼이다(사용자 지정 2026-08-26: "화살표 빼고 왼쪽에 달력
+            버튼 넣어줘, 단일처럼"). 규격도 단일과 같은 28 원 + 아이콘 24. */}
+        <button
+          type="button"
+          aria-label="날짜, 시간 선택"
+          onClick={onOpenDateTime}
+          className="flex h-[28px] w-[28px] flex-none items-center justify-center rounded-full border border-neutral-300"
+        >
+          <img src={`${BASE}/time.svg`} alt="" className="h-6 w-6" />
+        </button>
+        <button
+          type="button"
+          onClick={onOpenDateTime}
+          className="absolute left-1/2 flex -translate-x-1/2 items-center gap-0 text-[14px] font-medium leading-none"
+          style={{
+            // 검정 50% 알약 — 흰 줄 위에서도 시각이 한 덩어리로 읽힌다
+            // (사용자 지정 2026-08-26: "알약 형태로 블랙 50%로 둘러줘").
+            height: "26px",
+            padding: "0 10px",
+            borderRadius: "9999px",
+            backgroundColor: "rgba(0,0,0,0.5)",
+            color: "#FFFFFF",
+            whiteSpace: "nowrap" as const,
+          }}
+        >
+          {/* 화살표는 뺐다 — A-4 만(사용자 지정 2026-08-26). 날짜를 고르는
+              입구가 왼쪽 달력 버튼으로 돌아와서 같은 말을 두 번 하게 됐다.
+              글자는 그대로 눌러도 시트가 열린다. */}
+          <span suppressHydrationWarning>{labelDate}</span>
+        </button>
+        <RowSkeleton visible={rowLoading} />
+      </div>
+      )}
+      {/* 날짜 줄 아래에 시간바가 이어질 때만 구분선 — 단일과 같은 구성. 세로 다채널은
+          시간바가 없어(noTimeline) 여기서 끝난다. */}
+      {!overlay && !playerOnly && !noTimeline && (
         <div className="h-px" style={{ backgroundColor: "#EBEBEB" }} />
       )}
       {!playerOnly && !noTimeline && (
