@@ -4294,32 +4294,10 @@ function LayoutConfigSheet({
         </div>
 
         <div className="px-5 pb-2 overflow-y-auto">
-          <div
-            className="flex items-center justify-between"
-            style={{ marginBottom: "16px" }}
-          >
-            <h3 className="text-[20px] font-bold leading-none text-neutral-900">
-              화면 개수
-            </h3>
-            <button
-              type="button"
-              onClick={() => {
-                const next = !auto;
-                setAuto(next);
-                preview(next, counts);
-              }}
-              className="inline-flex items-center justify-center text-[14px] font-semibold leading-none"
-              style={{
-                height: "32px",
-                padding: "0 14px",
-                borderRadius: "16px",
-                backgroundColor: auto ? "#1D6CEB" : "#F2F2F2",
-                color: auto ? "#FFFFFF" : "#7F7F7F",
-              }}
-            >
-              자동
-            </button>
-          </div>
+          {/* '화면 개수' 제목과 '자동' 버튼은 뺐다(사용자 지정 2026-09-18: "화면 개수
+              타이틀이랑 자동 버튼 그거 빼줘"). 시트가 그만큼 낮아진다. 자동 상태 자체는
+              남는다 — 처음 값이 자동이면 슬라이더가 흐리게 보이고, 만지면 고정된다.
+              되돌리는 버튼이 없어졌을 뿐이다. A-4 · A-4(수정01)만. */}
 
           {/* disabled 를 안 쓴다 — 자동일 때 슬라이더를 막으면 자동을 먼저 꺼야만
               드래그할 수 있어 한 단계가 더 든다. 항상 드래그 가능하게 두고
