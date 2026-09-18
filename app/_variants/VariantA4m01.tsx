@@ -1243,6 +1243,7 @@ export default function VariantA4({
         <LayoutConfigSheet
           open={sheetOpen}
           selected={userCounts}
+          only={orientKey}
           resolved={sheetCounts}
           maxCount={cameras.length}
           onClose={() => setSheetOpen(false)}
@@ -1454,6 +1455,7 @@ export default function VariantA4({
       <LayoutConfigSheet
         open={sheetOpen}
         selected={userCounts}
+        only={orientKey}
         resolved={sheetCounts}
         maxCount={cameras.length}
         onClose={() => setSheetOpen(false)}
@@ -4294,6 +4296,7 @@ function LayoutConfigSheet({
   onClose,
   onPreview,
   maxCount,
+  only,
 }: {
   open: boolean;
   /** 방향별로 사용자가 직접 고른 개수. null 이면 그 방향은 '자동'. */
@@ -4303,6 +4306,10 @@ function LayoutConfigSheet({
   onClose: () => void;
   /** 값이 바뀔 때마다 즉시 호출 — 화면이 바로 따라온다. */
   onPreview: (counts: OrientCounts) => void;
+  /** 지금 떠 있는 화면의 방향. 이 방향 하나만 고르게 한다(사용자 지정 2026-09-18:
+   *  "세로 화면, 가로 화면 선택하게 되어있는데. 지금 떠있는 화면 변경하는거로만
+   *  쓰게 해줘"). 반대 방향 값은 시트가 손대지 않는다. */
+  only: "portrait" | "landscape";
   /** 고를 수 있는 최대 채널 수 — 카메라 대수다. 클라우드는 8(useCameras).
    *  안 주면 GRID_COUNT_OPTIONS 끝까지. */
   maxCount?: number;
@@ -4312,7 +4319,7 @@ function LayoutConfigSheet({
     ? GRID_COUNT_OPTIONS.filter((n) => n <= maxCount)
     : GRID_COUNT_OPTIONS;
   const [auto, setAuto] = useState(
-    selected.portrait === null && selected.landscape === null,
+    selected[only] === null,
   );
   const [counts, setCounts] = useState({
     portrait: resolved.portrait,
@@ -4323,7 +4330,7 @@ function LayoutConfigSheet({
 
   useEffect(() => {
     if (open) {
-      setAuto(selected.portrait === null && selected.landscape === null);
+      setAuto(selected[only] === null);
       setCounts({ portrait: resolved.portrait, landscape: resolved.landscape });
       originalRef.current = selected;
     }
@@ -4340,10 +4347,14 @@ function LayoutConfigSheet({
     nextAuto: boolean,
     next: { portrait: number; landscape: number },
   ) => {
-    onPreview(nextAuto ? { portrait: null, landscape: null } : next);
+    // 지금 방향만 바꾼다 — 반대 방향은 들어온 값 그대로 돌려보낸다.
+    onPreview({
+      ...selected,
+      [only]: nextAuto ? null : next[only],
+    });
   };
 
-  const ROWS = [
+  const ALL_ROWS = [
     {
       key: "portrait" as const,
       label: "세로 화면",
@@ -4351,6 +4362,9 @@ function LayoutConfigSheet({
     },
     { key: "landscape" as const, label: "가로 화면", hint: "기기를 눕혔을 때" },
   ];
+  // 지금 떠 있는 화면 한 줄만 — 두 방향을 같이 보여 주고 고르게 하던 걸 바꿨다
+  // (사용자 지정 2026-09-18). 반대 방향은 그 화면에서 열었을 때 고치면 된다.
+  const ROWS = ALL_ROWS.filter((r) => r.key === only);
 
   return (
     <div
