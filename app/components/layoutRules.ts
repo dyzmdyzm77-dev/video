@@ -363,12 +363,24 @@ export function bestGridForCount(
  */
 export const GRID_COUNT_OPTIONS = [2, 3, 4, 6, 8, 9, 10, 12, 14, 15, 16];
 
-/** count 와 가장 가까운 GRID_COUNT_OPTIONS 인덱스. 슬라이더 초기 위치 계산용. */
-export function nearestGridCountIndex(count: number): number {
+/** A-4 · A-4(수정01) 화면 구성 시트가 방향마다 고를 수 있는 개수(사용자 지정
+ *  2026-09-21: "세로에서는 2,3,4,8 로 해주고, 가로에서는 2,4,9,12,16"). 그 시트는
+ *  지금 화면 방향 한 줄만 그리므로(only) 그 방향 목록 하나만 쓴다.
+ *  A-1~A-3 은 위 GRID_COUNT_OPTIONS 그대로다. */
+export const GRID_COUNT_OPTIONS_PORTRAIT = [2, 3, 4, 8];
+export const GRID_COUNT_OPTIONS_LANDSCAPE = [2, 4, 9, 12, 16];
+
+/** count 와 가장 가까운 options 의 인덱스. 슬라이더 초기 위치 계산용.
+ *  options 를 안 주면 GRID_COUNT_OPTIONS — 목록을 바꿔 쓰는 시트는 자기 목록을
+ *  넘겨야 손잡이 칸이 안 어긋난다. */
+export function nearestGridCountIndex(
+  count: number,
+  options: readonly number[] = GRID_COUNT_OPTIONS,
+): number {
   let bestIdx = 0;
   let bestDiff = Infinity;
-  for (let i = 0; i < GRID_COUNT_OPTIONS.length; i++) {
-    const diff = Math.abs(GRID_COUNT_OPTIONS[i] - count);
+  for (let i = 0; i < options.length; i++) {
+    const diff = Math.abs(options[i] - count);
     if (diff < bestDiff) {
       bestDiff = diff;
       bestIdx = i;

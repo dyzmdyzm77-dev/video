@@ -77,7 +77,8 @@ import {
   THUMB_MIN_H,
   autoGridCount,
   bestGridForCount,
-  GRID_COUNT_OPTIONS,
+  GRID_COUNT_OPTIONS_LANDSCAPE,
+  GRID_COUNT_OPTIONS_PORTRAIT,
   nearestGridCountIndex,
   DIM_CLOCK_DATE_BP,
   IMMERSIVE_EXTRA_INSET,
@@ -4311,13 +4312,22 @@ function LayoutConfigSheet({
    *  쓰게 해줘"). 반대 방향 값은 시트가 손대지 않는다. */
   only: "portrait" | "landscape";
   /** 고를 수 있는 최대 채널 수 — 카메라 대수다. 클라우드는 8(useCameras).
-   *  안 주면 GRID_COUNT_OPTIONS 끝까지. */
+   *  안 주면 그 방향 목록 끝까지. */
   maxCount?: number;
 }) {
   // 카메라보다 많은 칸은 고를 수 없다 — 골라 봐야 뒤가 빈 타일이다.
-  const options = maxCount
-    ? GRID_COUNT_OPTIONS.filter((n) => n <= maxCount)
-    : GRID_COUNT_OPTIONS;
+  // 방향마다 고를 수 있는 개수가 다르다 — layoutRules 의 GRID_COUNT_OPTIONS_PORTRAIT /
+  // _LANDSCAPE(사용자 지정 2026-09-21). 이 시트는 지금 방향 한 줄만 다룬다(only).
+  // 카메라 대수를 넘는 칸은 여전히 뺀다. 다 빠지면(카메라가 2 대 미만) 첫 값은 남긴다 —
+  // 슬라이더가 빈 목록이면 값을 못 꺼낸다.
+  const baseOptions =
+    only === "landscape"
+      ? GRID_COUNT_OPTIONS_LANDSCAPE
+      : GRID_COUNT_OPTIONS_PORTRAIT;
+  const fitted = maxCount
+    ? baseOptions.filter((n) => n <= maxCount)
+    : baseOptions;
+  const options = fitted.length ? fitted : baseOptions.slice(0, 1);
   const [auto, setAuto] = useState(
     selected[only] === null,
   );
@@ -4426,7 +4436,7 @@ function LayoutConfigSheet({
           {/* disabled 를 안 쓴다 — 자동일 때 슬라이더를 막으면 자동을 먼저 꺼야만
               드래그할 수 있어 한 단계가 더 든다. 항상 드래그 가능하게 두고
               흐림(opacity)만 자동 상태를 알린다 — 만지는 순간 자동이 꺼진다.
-              슬라이더는 GRID_COUNT_OPTIONS 의 '인덱스'를 움직인다 — native range
+              슬라이더는 그 방향 목록(options)의 '인덱스'를 움직인다 — native range
               의 step 은 균일 간격만 지원해 2,3,4,6,8,9,12,16 처럼 듬성듬성한
               목록엔 못 쓴다. */}
           {ROWS.map(({ key, label, hint }) => (
@@ -4451,7 +4461,7 @@ function LayoutConfigSheet({
                 max={options.length - 1}
                 step={1}
                 value={Math.min(
-                  nearestGridCountIndex(counts[key]),
+                  nearestGridCountIndex(counts[key], options),
                   options.length - 1,
                 )}
                 onChange={(e) => {
