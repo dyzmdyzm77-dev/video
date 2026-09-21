@@ -28,6 +28,7 @@ import {
   readImmersive,
   toggleImmersive,
   useImmersive,
+  useImmersiveByRotate,
   useImmersiveRotated,
 } from "../components/immersive";
 import LandscapeVideo from "../components/LandscapeVideo";
@@ -429,6 +430,9 @@ export default function VariantA4({
   const isAndroid = useIsAndroid();
   // '확대가 화면을 돌렸는가'. 폰을 이미 눕힌 채 확대를 누르면(제자리) false 다.
   const rotatedNow = useImmersiveRotated();
+  // '확대가 기기를 눕혀서 켜졌는가'(손으로 눕히거나 좌측 패널 회전). rotatedNow 와
+  // 둘 중 하나면 세로 기기를 가로로 돌려서 된 확대다 — S26 · 폴드8 접힘.
+  const byRotateNow = useImmersiveByRotate();
   // 눕힌 화면 값은 기기별로 다르다 — 아이폰 60, 안드로이드 30(사용자 지정
   // 2026-08-18).
   //
@@ -810,6 +814,9 @@ export default function VariantA4({
           // AI·크게 보기를 시간바 아래 가운데 줄로 옮겼다 — 딤 좌우 아래 원은 끈다.
           showOverlayAi={false}
           showOverlayZoom={false}
+          // 세로 기기를 가로로 돌려서 된 확대(S26 · 폴드8 접힘)면 영상을 16:9 박스로만
+          // 채운다 — 딤 UI 는 화면 가장자리 그대로(사용자 지정 2026-09-21).
+          box169={rotatedNow || byRotateNow}
           // 가로 딤도 세로와 같이 — 화면 구성 버튼 빼기, 맞춤은 원본/채우기 둘만.
           showOverlayGallery={false}
           fitOrder={A4M01_FIT_ORDER}

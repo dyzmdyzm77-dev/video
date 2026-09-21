@@ -104,6 +104,7 @@ export default function LandscapeVideo({
   showOverlayAi = true,
   showOverlayGallery = true,
   fitOrder,
+  box169 = false,
   showOverlayZoom = true,
   topInset = 0,
   dimStyle,
@@ -183,6 +184,13 @@ export default function LandscapeVideo({
   /** 화면 맞춤 순서 — 딤 아이콘이 '다음 상태'를 이 순서로 그린다. 순환 자체는
    *  onFitCycle 을 준 안이 자기 순서로 돈다. */
   fitOrder?: readonly VideoFit[];
+  /** 영상 영역을 화면 전체가 아니라 가운데 16:9 박스로만 채운다(남는 자리는 검정).
+   *  딤 UI 는 그대로 화면 가장자리 기준이다. 단일·다채널 둘 다.
+   *  A-4 · A-4(수정01)이 '세로 기기를 가로로 돌려서 된 확대'(S26 · 폴드8 접힘)에서
+   *  켠다(사용자 지정 2026-09-21: "가로로 돌아갔을때, 영상 뷰 사이즈 지금 다 가득
+   *  채우잖아. 디바이스 화면 전체를. 그러지말고, 16:9 사이즈로만 채워줄 수 있어?").
+   *  기본 false = 지금 그대로. */
+  box169?: boolean;
   /** 딤 아래 '크게 보기' 원 버튼을 그릴지. 기본 true. A-3 은 그 버튼도 시간바
    *  아래 줄로 옮겨서 끈다(사용자 지정 2026-08-14). */
   showOverlayZoom?: boolean;
@@ -412,7 +420,12 @@ export default function LandscapeVideo({
   // 훨씬 가깝다. 판정 기준은 세로와 같은 bestGridForCount 하나를 쓴다.
   // (사용자가 정하는 건 '방향별 채널 수'다 — 그 수를 어떻게 나눌지는 여기 몫.)
   const [gridAreaRef, landscapeRatio] = useGridAreaRatio();
-  const { cols, rows } = bestGridForCount(pageSize, landscapeRatio);
+  // 16:9 박스로 줄일 땐(box169) 격자가 그 박스 안에 그려지므로 배치도 16:9 로 고른다 —
+  // 화면 비율(≈2.17)로 고른 배치를 16:9 박스에 넣으면 타일이 찌그러진다.
+  const { cols, rows } = bestGridForCount(
+    pageSize,
+    box169 ? 16 / 9 : landscapeRatio,
+  );
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 확대(몰입) 중 영상 영역을 위/아래로 그으면 확대를 푼다(사용자 요청).
@@ -1171,12 +1184,31 @@ export default function LandscapeVideo({
       <div
         className="landscape-video-area h-full w-full bg-black"
         onClick={() => handleTap(null)}
+        // box169 — 영상 겹을 가운데 16:9 박스로 줄인다. 크기는 컨테이너 단위로 잡는다
+        // (가로 여백(상태바 자리)을 뺀 안쪽 기준이라 cq 가 그대로 맞는다).
+        style={
+          box169
+            ? {
+                containerType: "size",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }
+            : undefined
+        }
       >
         {/* 한 겹 더 — 이름 배지를 줌 밖에 두면서도 예전과 같은 자리에 찍으려는
             것이다. 배지를 바깥 .landscape-video-area 에 직접 붙이면 그 요소의
             좌우 여백(상태바 자리, padding-inline)까지 넘어가 영상 밖에 걸린다.
             이 겹은 그 여백 '안쪽'을 그대로 차지하므로 기준이 영상과 같아진다. */}
-        <div className="relative h-full w-full">
+        <div
+          className="relative h-full w-full"
+          style={
+            box169
+              ? { width: "min(100cqw, calc(100cqh * 16 / 9))", height: "min(100cqh, calc(100cqw * 9 / 16))", flex: "none" }
+              : undefined
+          }
+        >
         {/* 줌 껍데기 — 확대·이동은 이 한 겹에만 건다. 부모의 상태바 여백
             (padding-inline)을 그대로 받도록 absolute 가 아니라 h-full w-full 이다. */}
         <div
@@ -1245,11 +1277,26 @@ export default function LandscapeVideo({
       // (사용자 지적 2026-08-18: "다채널일때는 그 공간이 왜 흰색이니?").
       // 안쪽 격자만 흰색을 유지한다 — 타일 사이 2px 구분선이 그 흰색이다.
       className="landscape-video-area h-full w-full bg-black"
+      // box169 — 격자를 감싸지 않고 격자 자체를 16:9 박스로 줄인다. 한 겹 감싸면
+      // globals.css 의 '.landscape-video-area > div:not(.grid) > div' 가 격자 배경을
+      // 검정으로 덮어 타일 사이 흰 구분선이 사라진다.
+      style={
+        box169
+          ? {
+              containerType: "size",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }
+          : undefined
+      }
     >
       <div
         className="grid h-full bg-white"
         style={{
-          ...gridBox,
+          ...(box169
+            ? { width: "min(100cqw, calc(100cqh * 16 / 9))", height: "min(100cqh, calc(100cqw * 9 / 16))", flex: "none" }
+            : gridBox),
           gridTemplateColumns: `repeat(${cols}, 1fr)`,
           gridTemplateRows: `repeat(${rows}, 1fr)`,
           gap: "2px",

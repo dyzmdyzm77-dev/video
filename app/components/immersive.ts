@@ -399,6 +399,16 @@ export function readImmersiveRotated(): boolean {
   );
 }
 
+/** 지금 확대가 '기기를 눕혀서' 켜진 상태인가(syncImmersiveWithLandscape).
+ *  readImmersiveRotated 와 짝이다 — 둘 중 하나면 '세로 기기를 가로로 돌려서 된
+ *  확대'다. 폴드8 펼침처럼 제자리 확대되는 기기는 둘 다 아니다. */
+export function readImmersiveByRotate(): boolean {
+  if (typeof document === "undefined") return false;
+  return (
+    readImmersive() && document.documentElement.dataset[BY_ROTATE_FLAG] === "true"
+  );
+}
+
 /** 확대 중 폰을 눕혀도 앱은 아무것도 안 한다 — 그냥 냅둔다(사용자 지정:
  *  "가로 모드로 된 경우는 그냥 냅둬야지"). 나가는 길은 축소 버튼뿐이다.
  *
@@ -636,6 +646,19 @@ export function useImmersiveRotated(): boolean {
   const [on, setOn] = useState(false);
   useEffect(() => {
     const sync = () => setOn(readImmersiveRotated());
+    sync();
+    const evts = [IMMERSIVE_EVENT, LANDSCAPE_EVENT, "resize"];
+    evts.forEach((e) => window.addEventListener(e, sync));
+    return () => evts.forEach((e) => window.removeEventListener(e, sync));
+  }, []);
+  return on;
+}
+
+/** readImmersiveByRotate 의 훅판 — useImmersiveRotated 와 같은 이벤트로 다시 읽는다. */
+export function useImmersiveByRotate(): boolean {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const sync = () => setOn(readImmersiveByRotate());
     sync();
     const evts = [IMMERSIVE_EVENT, LANDSCAPE_EVENT, "resize"];
     evts.forEach((e) => window.addEventListener(e, sync));
