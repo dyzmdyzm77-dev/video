@@ -107,8 +107,9 @@ const CAMERAS = [
   { label: "카메라 03", src: `${BASE}/cameras/cam3.gif` },
   { label: "카메라 04", src: `${BASE}/cameras/cam4.gif` },
   { label: "카메라 05", src: `${BASE}/cameras/cam1.gif` },
-  { label: "카메라 06", src: `${BASE}/cameras/cam2.gif` },
-  { label: "카메라 07", src: `${BASE}/cameras/cam3.gif` },
+  // 카메라 06 · 07 은 영상 없이 #9D9D9D 단색이다(사용자 지정 2026-09-22) — cam-empty.gif.
+  { label: "카메라 06", src: `${BASE}/cameras/cam-empty.gif` },
+  { label: "카메라 07", src: `${BASE}/cameras/cam-empty.gif` },
   { label: "카메라 08", src: `${BASE}/cameras/cam4.gif` },
   { label: "카메라 09", src: `${BASE}/cameras/cam2.gif` },
   { label: "카메라 10", src: `${BASE}/cameras/cam4.gif` },

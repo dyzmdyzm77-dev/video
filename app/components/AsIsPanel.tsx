@@ -31,14 +31,16 @@ import { Inner as HomeScreen } from "../home/page";
 // 안 되므로 HTML 로 재구성하고, 아이콘만 원본 SVG 의 path 를 좌표 그대로 쓴다.
 
 // 카메라 목록 타일 — 전부 영상(16:9). 원본의 회색 '에스원' 카드도 영상으로 대체.
+// 사무실 06 · 07 은 영상 없이 #9D9D9D 단색이다(사용자 지정 2026-09-22) — 개선안의
+// 카메라 06 · 07 과 같은 자리다.
 const CAMS = [
   "cam1",
   "cam2",
   "cam3",
   "cam4",
   "cam1",
-  "cam2",
-  "cam3",
+  "cam-empty",
+  "cam-empty",
   "cam4",
 ];
 
