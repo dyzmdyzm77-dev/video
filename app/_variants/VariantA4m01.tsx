@@ -41,6 +41,7 @@ import {
   GridSelectionOverlay,
   useGifFrameCanvas,
 } from "../components/CameraFeed";
+import EmptyCamLogo, { isEmptyCam } from "../components/EmptyCamLogo";
 import EventCardFace, { formatEventTime } from "../components/EventCardFace";
 import EventKindChip from "../components/EventKindChip";
 import { useEventThumbs } from "../components/eventThumbs";
@@ -1886,6 +1887,8 @@ function ExpandedSlide({
       {/* 단일 화면에선 영상 위에 카메라 이름을 안 띄운다 — 딤 왼쪽 위로 옮겼다
           (사용자 지정 2026-08-14). 영상만 볼 땐 화면이 깨끗하고, 어느 카메라인지는
           딤을 켜면 바로 보인다. 다채널 타일은 그대로 이름을 단다. */}
+      {/* 영상 없는 카메라면 회색 위 가운데에 로고(EmptyCamLogo 주석). */}
+      {isEmptyCam(c.src) && <EmptyCamLogo />}
     </>
   );
 }
@@ -2068,6 +2071,7 @@ function ExpandedView({
           { objectFit: "cover" }
         }
       />
+      {isEmptyCam(c.src) && <EmptyCamLogo />}
       <div
         className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
         style={{

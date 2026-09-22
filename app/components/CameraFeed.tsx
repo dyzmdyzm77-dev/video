@@ -1,4 +1,5 @@
 import { BASE } from "../basePath";
+import EmptyCamLogo, { isEmptyCam } from "./EmptyCamLogo";
 import { nextVideoFit, videoFitIcon, type VideoFit } from "./videoFit";
 import { requestDeviceRotate, useDeviceLandscape } from "./deviceRotate";
 import { toggleImmersive, useImmersive } from "./immersive";
@@ -244,6 +245,8 @@ function CameraFeedImpl({
           opacity: driving ? (decodeOk ? 1 : 0) : paused || !animate ? 1 : 0,
         }}
       />
+      {/* 영상 없는 카메라면 회색 위 가운데에 로고(EmptyCamLogo 주석). */}
+      {isEmptyCam(src) && <EmptyCamLogo />}
 
       {/* 스캔라인 효과 */}
       <div

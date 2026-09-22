@@ -32,6 +32,7 @@ import {
   GridSelectionOverlay,
   useGifFrameCanvas,
 } from "../components/CameraFeed";
+import EmptyCamLogo, { isEmptyCam } from "../components/EmptyCamLogo";
 import EventCardFace from "../components/EventCardFace";
 import EventKindChip from "../components/EventKindChip";
 import { useEventThumbs } from "../components/eventThumbs";
@@ -1202,6 +1203,8 @@ function ExpandedSlide({
       >
         {c.label}
       </div>
+      {/* 영상 없는 카메라면 회색 위 가운데에 로고(EmptyCamLogo 주석). */}
+      {isEmptyCam(c.src) && <EmptyCamLogo />}
     </>
   );
 }
@@ -1353,6 +1356,7 @@ function ExpandedView({
           { objectFit: "cover" }
         }
       />
+      {isEmptyCam(c.src) && <EmptyCamLogo />}
       <div
         className="absolute inline-flex items-center bg-black/55 text-[10px] font-medium leading-none text-white"
         style={{
