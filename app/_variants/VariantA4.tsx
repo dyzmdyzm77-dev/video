@@ -5361,12 +5361,10 @@ function PlayerButton({
       onPointerCancel={() => setPressed(false)}
       className="flex items-center justify-center rounded-full"
       style={{
-        // 가로 딤도 40 으로 시험 중(사용자 지정 2026-09-22: "40으로 줄여볼래?
-        // 잠깐 테스트 해보게") — 아이콘 24 · 배속 글자 14 도 세로와 같게.
-        // 그 전엔 50 — 영상 위에 떠 있는 버튼이라 세로(40)보다는 커야 눌리는데,
+        // 가로 딤은 50 — 영상 위에 떠 있는 버튼이라 세로(40)보다는 커야 눌리는데,
         // 60 은 너무 컸다(사용자 지정 2026-08-14). 세로는 그대로 40.
-        width: overlay ? "40px" : "40px",
-        height: overlay ? "40px" : "40px",
+        width: overlay ? "50px" : "40px",
+        height: overlay ? "50px" : "40px",
         // 가로 딤 위 버튼은 테두리 없이 #666666 50% + 흰 아이콘(사용자 지정 2026-08-14).
         // #2B2B2B → #4A4A4A → #666666 으로 색을 올려 왔다(투명도가 아니라 색).
         // 검정 반투명에서 아래 아이콘 원과 같은 회색으로 맞췄다 — 같은 화면에
@@ -5393,7 +5391,7 @@ function PlayerButton({
       {label != null ? (
         <span
           style={{
-            fontSize: overlay ? "14px" : "14px",
+            fontSize: overlay ? "17px" : "14px",
             fontWeight: 500,
             // 배속 글자도 아이콘과 같은 규칙 — 가로 딤이면 흰색 + 같은 그림자.
             color: overlay ? "#FFFFFF" : "#262626",
@@ -5406,7 +5404,7 @@ function PlayerButton({
         <PlayerIcon
           kind={kind}
           // 버튼(50)에 맞춰 32 → 27. 비율을 그대로 두면 아이콘만 꽉 차 보인다.
-          size={overlay ? 24 : 24}
+          size={overlay ? 27 : 24}
           // 가로 딤이면 흰색으로 뒤집는다 — 배경이 검정 50% 라 흰 아이콘이 또렷하다.
           invert={overlay}
         />
