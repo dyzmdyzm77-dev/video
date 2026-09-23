@@ -139,7 +139,24 @@ export async function captureShot(): Promise<{ url: string; name: string }[]> {
     // transform: scale(0.72) 가 걸려 있고(원점은 왼쪽 아래), 그대로 복제하면
     // 캡처 안에서도 72% 로 줄어 위쪽에 흰 여백이 남는다. 우리가 원하는 건
     // 앱 프레임 원본 크기(360×780 등)라 여기서 꺼 준다.
-    style: { transform: "none", transformOrigin: "top left" },
+    //
+    // 자리도 같이 되돌려야 한다 — 가로(회전)에서는 globals.css 가 이 프레임을
+    // `position: fixed` + `top/left: calc(...)` 로 띄우고 `translate(-50%,-50%)`
+    // 로 중심을 맞춘다. 위에서 transform 만 끄면 그 중심 보정이 사라져, 복제본이
+    // top/left(100vh 기준 계산) 만큼 밀려 캡처 박스 밖으로 나간다 — PNG 가 통째로
+    // 흰 종이로 나왔다(사용자 지적 2026-09-23: "png 로 저장 눌렀는데 왜 흰화면만
+    // 나와 특히 가로"). 복제본 안 규칙까지 다시 쓸 수는 없으니(같은 문서라
+    // html[data-rotate] 선택자가 복제본에도 그대로 걸린다) 여기서 못 박는다.
+    // position 만 static 으로 돌린다 — top/left 를 0 으로 덮는 것은 안 먹었다
+    // (html-to-image 가 원본의 계산된 스타일을 나중에 다시 입힌다). static 이면
+    // 그 top/left 가 애초에 자리를 안 잡는다. 안쪽 절대배치는 그대로 맞는다 —
+    // 복제본에 다른 배치 조상이 없어서 이 프레임 크기 그대로인 캡처 박스를
+    // 기준으로 잡기 때문이다(프레임 = 캡처 박스라 같은 자리).
+    style: {
+      transform: "none",
+      transformOrigin: "top left",
+      position: "static",
+    },
   };
   const shots: { url: string; name: string }[] = [];
   for (const t of targets) {
