@@ -907,10 +907,13 @@ body {
     text-align: left;
     cursor: pointer;
   }
+  /* 삼각형은 제목 글자(11)보다 크게 간다(사용자 지정 2026-10-02) — 9 였을 땐
+     접혔는지 펴졌는지가 눈에 안 들어왔다. 글자가 아니라 표지라서 같은 크기면
+     작아 보인다(패널의 ☰ · ⟲ 가 12 사이에서 16 인 것과 같은 이유). */
   .desktop-variant-nav .dvn-fold {
     flex: none;
     color: #a3a3a3;
-    font-size: 9px;
+    font-size: 15px;
     line-height: 1;
     transition: color 0.15s ease;
   }
