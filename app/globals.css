@@ -825,7 +825,15 @@ body {
     border-right: 1px solid #e5e5e5;
     box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
     z-index: 10;
-    overflow: hidden;
+    /* 가로는 못 넘긴다 — 64px 레일로 줄어드는 동안 라벨이 밖으로 새면 안 된다.
+       세로는 넘치면 굴린다: 그룹 셋이 다 펼쳐진 900px 높이에서 아래 액션 줄
+       (PNG 로 저장 · 비교하기 · 치수 표시)이 패널 밖으로 잘려 안 보였다.
+       그룹 접기(아코디언)가 본래 해법이고 이건 그래도 안 들어갈 때의 바닥이다.
+       자식 중 fixed 인 시안 칩(.device-preset-chips)은 스크롤 컨테이너에
+       안 잘린다 — nav 에 transform 이 없어서다(위 주석과 같은 이유). */
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
     transition: width 0.22s ease;
   }
   .desktop-variant-nav[data-open="false"] {
@@ -879,19 +887,43 @@ body {
     color: #171717;
   }
 
-  /* 그룹 제목(화면안 / 해상도). 펼침 상태에서만 보인다. */
+  /* 그룹 제목(저장 방식 / 화면 시안 / 해상도). 펼침 상태에서만 보인다.
+     제목 줄 자체가 그 아래 묶음을 여닫는 손잡이다(아코디언) — 오른쪽 끝
+     삼각형이 지금 펼쳐졌는지 접혔는지를 말한다. */
   .desktop-variant-nav .dvn-group-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    width: 100%;
     margin: 18px 0 2px;
     padding: 0 4px;
+    border: none;
+    background: transparent;
     color: #000000;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.02em;
+    text-align: left;
+    cursor: pointer;
   }
+  .desktop-variant-nav .dvn-fold {
+    flex: none;
+    color: #a3a3a3;
+    font-size: 9px;
+    line-height: 1;
+    transition: color 0.15s ease;
+  }
+  .desktop-variant-nav .dvn-group-title:hover .dvn-fold {
+    color: #000000;
+  }
+  /* 접힘(64px) 레일에선 제목이 1px 로 눌려 안 보인다 — 보이지도 않는 걸
+     누르는 일이 없게 클릭도 막는다(펴는 손잡이는 상단 ☰ 하나뿐이다). */
   .desktop-variant-nav[data-open="false"] .dvn-group-title {
     margin: 14px 0 0;
     height: 1px;
     overflow: hidden;
+    pointer-events: none;
   }
 
   /* 메뉴 목록. */
@@ -1024,6 +1056,21 @@ body {
   .desktop-variant-nav .dvn-actual-toggle:hover,
   .desktop-variant-nav .dvn-actual-toggle[data-active="true"] {
     color: #000000;
+  }
+  /* margin-top:auto 는 '하단 그룹을 바닥으로 민다'는 뜻이라 그룹의 첫 줄에만
+     걸려야 한다. 같은 클래스를 쓰는 줄이 여럿이면 남는 세로가 그 수만큼
+     쪼개져 줄 사이가 벌어진다(실제 사이즈 / 모션 받기 / PNG 로 저장). */
+  .desktop-variant-nav .dvn-actual-toggle + .dvn-actual-toggle {
+    margin-top: 0;
+  }
+  /* 모션 받기는 <a> 라 버튼 기본값이 없다 — 밑줄만 지우면 나머지는 같다. */
+  .desktop-variant-nav .dvn-download {
+    text-decoration: none;
+  }
+  /* 라벨이 패널에서 가장 길다(13자). 200px 패널에서 한 줄에 겨우 들어가므로
+     자간만 조금 좁혀 둔다 — 넘치면 nav 가 가로로 잘라 버린다. */
+  .desktop-variant-nav .dvn-download .dvn-label {
+    letter-spacing: -0.02em;
   }
   /* 접힘 상태용 짧은 토큰(1:1/↺)은 숫자라 폰트를 작게. 펼침 상태에선 숨긴다. */
   .desktop-variant-nav .dvn-actual-toggle .dvn-icon {

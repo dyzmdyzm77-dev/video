@@ -81,6 +81,10 @@ const COMPARE_COUNTS: { n: CompareCount; token: string; label: string }[] = [
   { n: 4, token: "4", label: "4개" },
 ];
 
+// 접고 펼 수 있는 그룹 — 제목 한 줄이 그 아래 묶음 전체를 여닫는다.
+// '해상도'는 목록과 직접 입력(커스텀 px)이 한 묶음이다.
+type GroupKey = "storage" | "variant" | "device";
+
 // 가로:세로 비율. 이름 없는 제너릭 폭 라벨에 "360px(6:13)"처럼 붙인다.
 // 흔한 비율에 아주 가까우면(≤0.8%) 그 예쁜 비율을 쓰고(620×780→4:5 등),
 // 아니면 약분한 정수비를 그대로 쓴다(360→6:13, 1080→18:13 등).
@@ -138,6 +142,19 @@ export default function DesktopVariantNav() {
     return () => window.removeEventListener(VARIANT_EVENT, sync);
   }, [routeVariant]);
   const [open, setOpen] = useState(true);
+  // 좌측 패널 그룹 접기(아코디언). 그룹이 셋이나 돼서 900px 높이 화면에서는
+  // 아래 액션 줄(PNG 로 저장 · 비교하기 · 치수 표시)이 패널 밖으로 밀려 아예
+  // 안 보였다 — 안 쓰는 그룹을 접어 자리를 비운다(사용자 요청 2026-10-02).
+  // 접힘(64px) 레일에서는 무시한다: 거기선 그룹 제목이 1px 로 눌려 있어
+  // 다시 펼 손잡이가 없는데, 접힌 채로 들어가면 아이콘까지 사라져 길이 막힌다.
+  const [folded, setFolded] = useState<Record<GroupKey, boolean>>({
+    storage: false,
+    variant: false,
+    device: false,
+  });
+  const toggleGroup = (k: GroupKey) =>
+    setFolded((f) => ({ ...f, [k]: !f[k] }));
+  const groupOpen = (k: GroupKey) => !open || !folded[k];
   const [active, setActive] = useState(DEFAULT_PRESET); // 강조 표시할 DEVICES 인덱스
   // PNG 저장 진행 상태 — 큰 화면은 1초 남짓 걸려서 누른 티가 나야 한다.
   const [shooting, setShooting] = useState(false);
@@ -591,141 +608,182 @@ export default function DesktopVariantNav() {
 
       {/* 저장 방식 — 영상이 NVR(로컬 녹화기)에 있느냐 클라우드에 있느냐.
           '화면 시안'보다 위다: 어느 안을 볼지보다 먼저 정하는 전제라서. */}
-      <p className="dvn-group-title dvn-label">저장 방식</p>
-      <div className="dvn-seg" role="group" aria-label="저장 방식">
-        {STORAGE_MODES.map((m) => (
-          <button
-            key={m.key}
-            type="button"
-            className="dvn-seg-btn"
-            data-active={storage === m.key}
-            aria-pressed={storage === m.key}
-            title={m.label}
-            onClick={() => requestStorageMode(m.key)}
-          >
-            <span className="dvn-icon" aria-hidden>
-              {m.token}
-            </span>
-            <span className="dvn-label">{m.label}</span>
-          </button>
-        ))}
-      </div>
+      <button
+        type="button"
+        className="dvn-group-title dvn-label"
+        aria-expanded={!folded.storage}
+        title={folded.storage ? "저장 방식 펼치기" : "저장 방식 접기"}
+        onClick={() => toggleGroup("storage")}
+      >
+        저장 방식
+        <span className="dvn-fold" aria-hidden>
+          {folded.storage ? "▸" : "▾"}
+        </span>
+      </button>
+      {groupOpen("storage") && (
+        <div className="dvn-seg" role="group" aria-label="저장 방식">
+          {STORAGE_MODES.map((m) => (
+            <button
+              key={m.key}
+              type="button"
+              className="dvn-seg-btn"
+              data-active={storage === m.key}
+              aria-pressed={storage === m.key}
+              title={m.label}
+              onClick={() => requestStorageMode(m.key)}
+            >
+              <span className="dvn-icon" aria-hidden>
+                {m.token}
+              </span>
+              <span className="dvn-label">{m.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
-      <p className="dvn-group-title dvn-label">화면 시안</p>
-      <ul className="dvn-list">
-        {/* As Is — 현행 앱 재현. 고르면 시안 대신 이것만 뜬다(비교하기와 다름). */}
-        <li>
-          <button
-            type="button"
-            data-active={asisOnly}
-            title="As Is (현행 앱)"
-            onClick={() => {
-              setAsisOnly(true);
-              setCompare(false);
-            }}
-          >
-            <span className="dvn-icon" aria-hidden>
-              현행
-            </span>
-            <span className="dvn-label">As Is</span>
-          </button>
-        </li>
-        {VARIANTS.map((v) => (
-          <li key={v.key}>
+      <button
+        type="button"
+        className="dvn-group-title dvn-label"
+        aria-expanded={!folded.variant}
+        title={folded.variant ? "화면 시안 펼치기" : "화면 시안 접기"}
+        onClick={() => toggleGroup("variant")}
+      >
+        화면 시안
+        <span className="dvn-fold" aria-hidden>
+          {folded.variant ? "▸" : "▾"}
+        </span>
+      </button>
+      {groupOpen("variant") && (
+        <ul className="dvn-list">
+          {/* As Is — 현행 앱 재현. 고르면 시안 대신 이것만 뜬다(비교하기와 다름). */}
+          <li>
             <button
               type="button"
-              data-active={!asisOnly && variant === v.key}
-              title={VARIANT_LABEL[v.key]}
-              // URL 을 안 건드리고 안만 갈아끼운다 — 안 화면의 시안 목록 시트와
-              // 같은 경로다(variantRoute.ts). platform·chrome 쿼리도 그대로 남는다.
+              data-active={asisOnly}
+              title="As Is (현행 앱)"
               onClick={() => {
-                setAsisOnly(false);
-                requestVariant(v.key);
+                setAsisOnly(true);
+                setCompare(false);
               }}
             >
               <span className="dvn-icon" aria-hidden>
-                {v.icon}
+                현행
               </span>
-              <span className="dvn-label">{VARIANT_LABEL[v.key]}</span>
+              <span className="dvn-label">As Is</span>
             </button>
           </li>
-        ))}
-      </ul>
+          {VARIANTS.map((v) => (
+            <li key={v.key}>
+              <button
+                type="button"
+                data-active={!asisOnly && variant === v.key}
+                title={VARIANT_LABEL[v.key]}
+                // URL 을 안 건드리고 안만 갈아끼운다 — 안 화면의 시안 목록 시트와
+                // 같은 경로다(variantRoute.ts). platform·chrome 쿼리도 그대로 남는다.
+                onClick={() => {
+                  setAsisOnly(false);
+                  requestVariant(v.key);
+                }}
+              >
+                <span className="dvn-icon" aria-hidden>
+                  {v.icon}
+                </span>
+                <span className="dvn-label">{VARIANT_LABEL[v.key]}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
-      <p className="dvn-group-title dvn-label">해상도</p>
-      <ul className="dvn-list">
-        {DEVICES.map((d, i) => (
-          <li key={`${d.w}-${d.sub}`}>
-            <button
-              type="button"
-              data-active={active === i}
-              title={`${d.label}${d.sub ? ` · ${d.sub}` : ""}`}
-              onClick={() => applyPreset(i)}
-            >
-              <span className="dvn-icon dvn-icon-num" aria-hidden>
-                {d.w}
-              </span>
-              {/* 표시 기준은 실기기 크기(mm)다 — 몸체 폭을 아는 프리셋은 그걸
-                  앞에 세우고, 뷰포트(가로×세로)는 기기마다 따로 뒤에 적는다
-                  (사용자 지정 2026-09-04: "표시 기준은 실제 값으로 하고, 뷰포트는
-                  각 디바이스별로 따로 표시"). 둘은 서로 환산되지 않는다 —
-                  1 CSS px 의 물리 길이가 기기마다 달라서다.
-                  mm 를 모르는 제너릭 폭은 예전처럼 뷰포트+비율만 적는다. */}
-              <span className="dvn-label">
-                {presetSize(d) ? (
-                  <>
-                    {d.sub || d.label}
-                    <span className="dvn-sub">{`${presetSize(d)} · ${d.w}×${d.h}`}</span>
-                  </>
-                ) : (
-                  `${d.label}(${ratioText(d.w, d.h)})${d.sub ? ` · ${d.sub}` : ""}`
-                )}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      <button
+        type="button"
+        className="dvn-group-title dvn-label"
+        aria-expanded={!folded.device}
+        title={folded.device ? "해상도 펼치기" : "해상도 접기"}
+        onClick={() => toggleGroup("device")}
+      >
+        해상도
+        <span className="dvn-fold" aria-hidden>
+          {folded.device ? "▸" : "▾"}
+        </span>
+      </button>
+      {groupOpen("device") && (
+        <>
+          <ul className="dvn-list">
+            {DEVICES.map((d, i) => (
+              <li key={`${d.w}-${d.sub}`}>
+                <button
+                  type="button"
+                  data-active={active === i}
+                  title={`${d.label}${d.sub ? ` · ${d.sub}` : ""}`}
+                  onClick={() => applyPreset(i)}
+                >
+                  <span className="dvn-icon dvn-icon-num" aria-hidden>
+                    {d.w}
+                  </span>
+                  {/* 표시 기준은 실기기 크기(mm)다 — 몸체 폭을 아는 프리셋은 그걸
+                      앞에 세우고, 뷰포트(가로×세로)는 기기마다 따로 뒤에 적는다
+                      (사용자 지정 2026-09-04: "표시 기준은 실제 값으로 하고, 뷰포트는
+                      각 디바이스별로 따로 표시"). 둘은 서로 환산되지 않는다 —
+                      1 CSS px 의 물리 길이가 기기마다 달라서다.
+                      mm 를 모르는 제너릭 폭은 예전처럼 뷰포트+비율만 적는다. */}
+                  <span className="dvn-label">
+                    {presetSize(d) ? (
+                      <>
+                        {d.sub || d.label}
+                        <span className="dvn-sub">{`${presetSize(d)} · ${d.w}×${d.h}`}</span>
+                      </>
+                    ) : (
+                      `${d.label}(${ratioText(d.w, d.h)})${d.sub ? ` · ${d.sub}` : ""}`
+                    )}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
 
-      {/* 직접 입력 — 가로·세로(px)로 커스텀 해상도. 비율은 아래에 미리보기. */}
-      <div className="dvn-custom">
-        <div className="dvn-custom-row">
-          <input
-            type="number"
-            className="dvn-custom-input"
-            placeholder="가로"
-            aria-label="가로(px)"
-            value={customW}
-            onChange={(e) => setCustomW(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") applyCustom();
-            }}
-          />
-          <span className="dvn-custom-x" aria-hidden>
-            ×
-          </span>
-          <input
-            type="number"
-            className="dvn-custom-input"
-            placeholder="세로"
-            aria-label="세로(px)"
-            value={customH}
-            onChange={(e) => setCustomH(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") applyCustom();
-            }}
-          />
-          <button
-            type="button"
-            className="dvn-custom-apply"
-            onClick={applyCustom}
-          >
-            적용
-          </button>
-        </div>
-        <p className="dvn-custom-ratio">
-          {customRatio ? `비율 ${customRatio}` : "가로 × 세로 입력"}
-        </p>
-      </div>
+          {/* 직접 입력 — 가로·세로(px)로 커스텀 해상도. 비율은 아래에 미리보기. */}
+          <div className="dvn-custom">
+            <div className="dvn-custom-row">
+              <input
+                type="number"
+                className="dvn-custom-input"
+                placeholder="가로"
+                aria-label="가로(px)"
+                value={customW}
+                onChange={(e) => setCustomW(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") applyCustom();
+                }}
+              />
+              <span className="dvn-custom-x" aria-hidden>
+                ×
+              </span>
+              <input
+                type="number"
+                className="dvn-custom-input"
+                placeholder="세로"
+                aria-label="세로(px)"
+                value={customH}
+                onChange={(e) => setCustomH(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") applyCustom();
+                }}
+              />
+              <button
+                type="button"
+                className="dvn-custom-apply"
+                onClick={applyCustom}
+              >
+                적용
+              </button>
+            </div>
+            <p className="dvn-custom-ratio">
+              {customRatio ? `비율 ${customRatio}` : "가로 × 세로 입력"}
+            </p>
+          </div>
+        </>
+      )}
 
       {/* 왼쪽으로 회전 — 디바이스를 시계반대 90° 시각적으로 회전(가로).
           확대 중에도 누를 수 있다. 한동안 막아 뒀었는데(도는 동안 콘텐츠까지
@@ -782,6 +840,22 @@ export default function DesktopVariantNav() {
           {actualSize ? "되돌리기" : "실제 사이즈로 보기"}
         </span>
       </button>
+
+      {/* 카메라 리스트 모션(Lottie JSON) 받기 — 사용자 요청 2026-10-02.
+          원본은 96x96 40프레임 애니메이션 webp 였고, 래스터를 박는 대신 막대
+          3개를 벡터로 다시 그린 것이 public/camera-list-motion.json 이다.
+          <a download> 이라 버튼처럼 보이지만 클릭 핸들러가 없다. */}
+      <a
+        className="dvn-actual-toggle dvn-download"
+        href="/camera-list-motion.json"
+        download="camera-list-motion.json"
+        title="카메라 리스트 모션 다운로드 (Lottie JSON)"
+      >
+        <span className="dvn-icon" aria-hidden>
+          모션
+        </span>
+        <span className="dvn-label">카메라 리스트 모션 다운로드</span>
+      </a>
 
       {/* PNG 저장 — 지금 보고 있는 화면을 앱 프레임 원본 크기로 받는다.
           비교하기가 켜져 있으면 나란히 선 기기들을 한 장으로 이어 붙인다
