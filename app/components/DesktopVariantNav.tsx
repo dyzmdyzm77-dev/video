@@ -147,10 +147,12 @@ export default function DesktopVariantNav() {
   // 안 보였다 — 안 쓰는 그룹을 접어 자리를 비운다(사용자 요청 2026-10-02).
   // 접힘(64px) 레일에서는 무시한다: 거기선 그룹 제목이 1px 로 눌려 있어
   // 다시 펼 손잡이가 없는데, 접힌 채로 들어가면 아이콘까지 사라져 길이 막힌다.
+  // 시작은 셋 다 접힌 상태다(사용자 지정 2026-10-02) — 열고 들어오면 제목
+  // 세 줄과 하단 액션만 보이고, 필요한 그룹만 펴서 쓴다.
   const [folded, setFolded] = useState<Record<GroupKey, boolean>>({
-    storage: false,
-    variant: false,
-    device: false,
+    storage: true,
+    variant: true,
+    device: true,
   });
   const toggleGroup = (k: GroupKey) =>
     setFolded((f) => ({ ...f, [k]: !f[k] }));
