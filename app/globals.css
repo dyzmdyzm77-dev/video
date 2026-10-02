@@ -907,15 +907,22 @@ body {
     text-align: left;
     cursor: pointer;
   }
-  /* 삼각형은 제목 글자(11)보다 크게 간다(사용자 지정 2026-10-02) — 9 였을 땐
-     접혔는지 펴졌는지가 눈에 안 들어왔다. 글자가 아니라 표지라서 같은 크기면
-     작아 보인다(패널의 ☰ · ⟲ 가 12 사이에서 16 인 것과 같은 이유). */
+  /* 접기 꺾쇠. 글자 삼각형(▾)이 아니라 SVG 다(사용자 지적 2026-10-02 "너무
+     작아" ×2) — ▾ 는 폰트가 em 박스 안에 작게 그리는 글리프라 font-size 를
+     9 → 15 로 올려도 실제 그림은 그 절반도 안 됐다. SVG 면 16 이 그대로 16 이고
+     굵기(2.2)도 직접 잡힌다.
+     펼침이 아래 꺾쇠, 접힘은 -90° 돌려 오른쪽 — 모양이 하나라 상태가 각도로만
+     갈리니 도는 게 그대로 읽힌다. */
   .desktop-variant-nav .dvn-fold {
+    display: inline-flex;
     flex: none;
-    color: #a3a3a3;
-    font-size: 15px;
-    line-height: 1;
-    transition: color 0.15s ease;
+    color: #737373;
+    transition:
+      transform 0.18s ease,
+      color 0.15s ease;
+  }
+  .desktop-variant-nav .dvn-fold[data-folded="true"] {
+    transform: rotate(-90deg);
   }
   .desktop-variant-nav .dvn-group-title:hover .dvn-fold {
     color: #000000;

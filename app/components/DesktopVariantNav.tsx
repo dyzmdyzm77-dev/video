@@ -618,8 +618,17 @@ export default function DesktopVariantNav() {
         onClick={() => toggleGroup("storage")}
       >
         저장 방식
-        <span className="dvn-fold" aria-hidden>
-          {folded.storage ? "▸" : "▾"}
+        <span className="dvn-fold" data-folded={folded.storage} aria-hidden>
+          <svg viewBox="0 0 16 16" width="16" height="16">
+            <path
+              d="M4 6.5 L8 10.5 L12 6.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </span>
       </button>
       {groupOpen("storage") && (
@@ -651,8 +660,17 @@ export default function DesktopVariantNav() {
         onClick={() => toggleGroup("variant")}
       >
         화면 시안
-        <span className="dvn-fold" aria-hidden>
-          {folded.variant ? "▸" : "▾"}
+        <span className="dvn-fold" data-folded={folded.variant} aria-hidden>
+          <svg viewBox="0 0 16 16" width="16" height="16">
+            <path
+              d="M4 6.5 L8 10.5 L12 6.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </span>
       </button>
       {groupOpen("variant") && (
@@ -705,8 +723,17 @@ export default function DesktopVariantNav() {
         onClick={() => toggleGroup("device")}
       >
         해상도
-        <span className="dvn-fold" aria-hidden>
-          {folded.device ? "▸" : "▾"}
+        <span className="dvn-fold" data-folded={folded.device} aria-hidden>
+          <svg viewBox="0 0 16 16" width="16" height="16">
+            <path
+              d="M4 6.5 L8 10.5 L12 6.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </span>
       </button>
       {groupOpen("device") && (
